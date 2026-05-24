@@ -16,6 +16,7 @@ import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.messages.MessageWriter;
+import io.airlift.mcp.model.CacheableResult;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteReference;
@@ -61,6 +62,7 @@ import java.util.Set;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
+import static io.airlift.mcp.model.CacheScope.PRIVATE;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
@@ -91,7 +93,7 @@ import static java.util.Objects.requireNonNullElse;
 public class OperationsImpl
         implements Operations
 {
-    private final McpMetadataMapper metadata;
+    private final McpMetadataMapper metadataMapper;
     private final JsonMapper jsonMapper;
     private final IconHelper iconHelper;
     private final Set<String> serverIcons;
@@ -101,7 +103,7 @@ public class OperationsImpl
 
     @Inject
     OperationsImpl(
-            McpMetadataMapper metadata,
+            McpMetadataMapper metadataMapper,
             JsonMapper jsonMapper,
             McpConfig mcpConfig,
             IconHelper iconHelper,
@@ -109,7 +111,7 @@ public class OperationsImpl
             McpEntities entities,
             ValidationMode validationMode)
     {
-        this.metadata = requireNonNull(metadata, "metadata is null");
+        this.metadataMapper = requireNonNull(metadataMapper, "metadataMapper is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.iconHelper = requireNonNull(iconHelper, "iconHelper is null");
         this.serverIcons = requireNonNull(serverIcons, "serverIcons is null");
@@ -152,16 +154,18 @@ public class OperationsImpl
         RequestMetadata requestMetadata = RequestMetadata.fromRequest(jsonMapper, request, meta, method, validationMode);
         RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated);
 
+        McpMetadata metadata = metadataMapper.map(requestContext.request());
+
         Object result = switch (method) {
-            case METHOD_TOOLS_LIST -> listTools(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_TOOLS_LIST -> listTools(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ListRequest.class));
             case METHOD_TOOLS_CALL -> callTool(requestContext, requestMetadata, convertParams(jsonMapper, rpcRequest, CallToolRequest.class));
-            case METHOD_PROMPT_LIST -> listPrompts(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_PROMPT_LIST -> listPrompts(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ListRequest.class));
             case METHOD_PROMPT_GET -> getPrompt(requestContext, requestMetadata, convertParams(jsonMapper, rpcRequest, GetPromptRequest.class));
-            case METHOD_RESOURCES_LIST -> listResources(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> listResourceTemplates(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
-            case METHOD_RESOURCES_READ -> readResources(requestContext, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class));
+            case METHOD_RESOURCES_LIST -> listResources(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> listResourceTemplates(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_RESOURCES_READ -> readResources(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class));
             case METHOD_COMPLETION_COMPLETE -> completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
-            case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, requestMetadata);
+            case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, metadata, requestMetadata);
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
@@ -202,7 +206,7 @@ public class OperationsImpl
         response.setStatus(SC_METHOD_NOT_ALLOWED);
     }
 
-    public static Object readResources(McpEntities entities, McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
+    public static ReadResourceResult readResources(McpEntities entities, McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
@@ -226,10 +230,10 @@ public class OperationsImpl
         }
     }
 
-    private ListToolsResult listTools(RequestContextImpl requestContext, ListRequest listRequest)
+    private ListToolsResult listTools(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<Tool> localTools = entities.tools(requestContext);
-        return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
+        return paginationUtil.paginate(listRequest, localTools, Tool::name, (tools, newCursor) -> withCacheableResult(metadata, ListToolsResult.class, new ListToolsResult(tools, newCursor)));
     }
 
     private CallToolResult callTool(RequestContextImpl requestContext, RequestMetadata requestMetadata, CallToolRequest callToolRequest)
@@ -248,10 +252,10 @@ public class OperationsImpl
         }
     }
 
-    private ListPromptsResult listPrompts(RequestContextImpl requestContext, ListRequest listRequest)
+    private ListPromptsResult listPrompts(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<Prompt> localPrompts = entities.prompts(requestContext);
-        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
+        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, (prompts, nextCursor) -> withCacheableResult(metadata, ListPromptsResult.class, new ListPromptsResult(prompts, nextCursor)));
     }
 
     private GetPromptResult getPrompt(RequestContextImpl requestContext, RequestMetadata requestMetadata, GetPromptRequest getPromptRequest)
@@ -265,21 +269,21 @@ public class OperationsImpl
         return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
     }
 
-    private ListResourcesResult listResources(RequestContextImpl requestContext, ListRequest listRequest)
+    private ListResourcesResult listResources(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<Resource> localResources = entities.resources(requestContext);
-        return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
+        return paginationUtil.paginate(listRequest, localResources, Resource::name, (resources, nextCursor) -> withCacheableResult(metadata, ListResourcesResult.class, new ListResourcesResult(resources, nextCursor)));
     }
 
-    private ListResourceTemplatesResult listResourceTemplates(RequestContextImpl requestContext, ListRequest listRequest)
+    private ListResourceTemplatesResult listResourceTemplates(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext);
-        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
+        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ((resourceTemplates, nextCursor) -> withCacheableResult(metadata, ListResourceTemplatesResult.class, new ListResourceTemplatesResult(resourceTemplates, nextCursor))));
     }
 
-    private Object readResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
+    private ReadResourceResult readResources(RequestContextImpl requestContext, McpMetadata metadata, ReadResourceRequest readResourceRequest)
     {
-        return readResources(entities, requestContext, readResourceRequest);
+        return withCacheableResult(metadata, ReadResourceResult.class, readResources(entities, requestContext, readResourceRequest));
     }
 
     private CompleteResult completionComplete(RequestContextImpl requestContext, CompleteRequest completeRequest)
@@ -289,7 +293,7 @@ public class OperationsImpl
                 .orElseGet(() -> new CompleteResult(new CompleteResult.CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED)));
     }
 
-    private DiscoverResult serverDiscover(RequestContextImpl requestContext, RequestMetadata requestMetadata)
+    private DiscoverResult serverDiscover(RequestContextImpl requestContext, McpMetadata metadata, RequestMetadata requestMetadata)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_PROTOCOL_VERSION, requestMetadata.protocol().value()));
 
@@ -303,14 +307,18 @@ public class OperationsImpl
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
                 Optional.of(new LoggingCapabilities()),
-                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
-                resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(false, false)),
-                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
+                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
+                resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(true, true)),
+                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 Optional.empty());
 
-        McpMetadata localMetadata = metadata.map(requestContext.request());
-        Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> localMetadata.implementation().withAdditionalIcons(icons))
-                .orElse(localMetadata.implementation());
-        return new DiscoverResult(COMPLETE, SUPPORTED_VERSIONS, serverCapabilities, serverImplementation, localMetadata.instructions(), Optional.empty());
+        Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
+                .orElse(metadata.implementation());
+        return new DiscoverResult(COMPLETE, SUPPORTED_VERSIONS, serverCapabilities, serverImplementation, metadata.instructions(), Optional.empty());
+    }
+
+    private <T extends CacheableResult> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
+    {
+        return clazz.cast(result.withCacheableResult(metadata.cacheableResultValues().ttlMs().orElse(0), metadata.cacheableResultValues().cacheScope().orElse(PRIVATE)));
     }
 }
