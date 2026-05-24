@@ -35,6 +35,6 @@ public record ReadResourceRequest(String uri, Optional<String> requestState, Opt
 
     public ReadResourceRequest withInputResponses(Optional<String> requestState, Map<String, Object> inputResponses)
     {
-        return new  ReadResourceRequest(uri, requestState, Optional.of(inputResponses), meta);
+        return new ReadResourceRequest(uri, requestState, Optional.of(inputResponses), meta);
     }
 }
