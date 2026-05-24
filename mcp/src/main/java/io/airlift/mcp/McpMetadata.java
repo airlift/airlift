@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.model.CacheableResult;
 import io.airlift.mcp.model.Implementation;
 
 import java.util.Optional;
@@ -8,7 +9,7 @@ import static io.airlift.mcp.model.Constants.SKILL_INDEX_URI;
 import static io.airlift.mcp.model.Constants.SKILL_MD_FILE;
 import static java.util.Objects.requireNonNull;
 
-public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, boolean autoAddSkillInstructions)
+public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, CacheableResult cacheableResultValues, boolean autoAddSkillInstructions)
 {
     public static final McpMetadata DEFAULT = new McpMetadata("/mcp");
 
@@ -25,26 +26,27 @@ public record McpMetadata(String uriPath, Implementation implementation, Optiona
         requireNonNull(uriPath, "uriPath is null");
         requireNonNull(implementation, "implementation is null");
         requireNonNull(instructions, "instructions is null");
+        requireNonNull(cacheableResultValues, "cacheableResultValues is null");
     }
 
     public McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions)
     {
-        this(uriPath, implementation, instructions, true);
+        this(uriPath, implementation, instructions, CacheableResult.DEFAULT, true);
     }
 
     public McpMetadata(String uriPath)
     {
-        this(uriPath, new Implementation("mcp", "1.0.0"), Optional.empty(), true);
+        this(uriPath, new Implementation("mcp", "1.0.0"), Optional.empty(), CacheableResult.DEFAULT, true);
     }
 
     public McpMetadata withImplementation(Implementation implementation)
     {
-        return new McpMetadata(uriPath, implementation, instructions, autoAddSkillInstructions);
+        return new McpMetadata(uriPath, implementation, instructions, cacheableResultValues, autoAddSkillInstructions);
     }
 
     public McpMetadata withInstructions(String instructions)
     {
-        return new McpMetadata(uriPath, implementation, Optional.ofNullable(instructions), autoAddSkillInstructions);
+        return new McpMetadata(uriPath, implementation, Optional.ofNullable(instructions), cacheableResultValues, autoAddSkillInstructions);
     }
 
     public Optional<String> adjustedInstructions(boolean serverHasSkills)
@@ -54,5 +56,10 @@ public record McpMetadata(String uriPath, Implementation implementation, Optiona
         }
         return instructions.map(value -> value + "\n\n" + SKILLS_INSTRUCTIONS)
                 .or(() -> Optional.of(SKILLS_INSTRUCTIONS));
+    }
+
+    public McpMetadata withCacheableResultValues(CacheableResult cacheableResultValues)
+    {
+        return new McpMetadata(uriPath, implementation, instructions, cacheableResultValues, autoAddSkillInstructions);
     }
 }
