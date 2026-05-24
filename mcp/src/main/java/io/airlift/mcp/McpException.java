@@ -52,6 +52,12 @@ public class McpException
         return errorDetail;
     }
 
+    public static McpException exception(JsonRpcErrorCode errorCode, Throwable cause, String message)
+    {
+        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode.code(), message, Optional.empty());
+        return new McpException(cause, detail);
+    }
+
     public static McpException exception(JsonRpcErrorCode errorCode, String message)
     {
         JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode.code(), message, Optional.empty());
