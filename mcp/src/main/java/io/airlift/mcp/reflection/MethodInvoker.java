@@ -14,6 +14,7 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
@@ -25,6 +26,7 @@ import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.InputResponsesParameter;
 import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
@@ -174,6 +176,7 @@ public class MethodInvoker
                                 case McpRequestContextParameter _ -> requestContext;
                                 case GetPromptRequestParameter _ -> getPromptRequest.orElseThrow(() -> new IllegalStateException("GetPromptRequest is required"));
                                 case CallToolRequestParameter _ -> callToolRequest.orElseThrow(() -> new IllegalStateException("CallToolRequest is required"));
+                                case InputResponsesParameter _ -> extractInputResponses();
                                 case SourceResourceParameter _ -> sourceResource.orElseThrow(() -> new IllegalStateException("SourceResource is required"));
                                 case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
@@ -202,6 +205,14 @@ public class MethodInvoker
                         default -> new McpException(rootCause, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
                     };
                 }
+            }
+
+            private InputResponses extractInputResponses()
+            {
+                return callToolRequest.map(c -> (InputResponses) c)
+                        .or(() -> getPromptRequest.map(p -> (InputResponses) p))
+                        .or(() -> readResourceRequest.map(r -> (InputResponses) r))
+                        .orElse(InputResponses.EMPTY);
             }
         };
     }

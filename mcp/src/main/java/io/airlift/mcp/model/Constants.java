@@ -19,6 +19,7 @@ public interface Constants
     String METHOD_PROMPT_GET = "prompts/get";
     String METHOD_COMPLETION_COMPLETE = "completion/complete";
     String METHOD_LOGGING_SET_LEVEL = "logging/setLevel";
+    String METHOD_ROOTS_LIST = "roots/list";
     String METHOD_SAMPLING_CREATE_MESSAGE = "sampling/createMessage";
     String METHOD_ELICITATION_CREATE = "elicitation/create";
     String METHOD_SERVER_DISCOVER = "server/discover";
