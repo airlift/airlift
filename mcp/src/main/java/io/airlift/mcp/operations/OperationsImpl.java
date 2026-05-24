@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import io.airlift.log.Logger;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
@@ -96,6 +97,8 @@ import static java.util.Objects.requireNonNullElse;
 public class OperationsImpl
         implements Operations
 {
+    private static final Logger log = Logger.get(OperationsImpl.class);
+
     private final McpMetadataMapper metadataMapper;
     private final JsonMapper jsonMapper;
     private final IconHelper iconHelper;
