@@ -12,6 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -24,7 +25,7 @@ public class TestConformance
 {
     private static final List<String> SCENARIOS = List.of(
             "http-header-validation",
-            // "server-stateless", needs to wait for subscriptions
+            "server-stateless",
             "caching",
             "sep-2164-resource-not-found",
             "server-initialize",
@@ -63,7 +64,9 @@ public class TestConformance
     {
         nodeContainer = closer.register(new TestingNodeContainer());
 
-        TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
+        Map<String, String> properties = ImmutableMap.of("mcp.resource-subscription.cache-period", "1ms");
+
+        TestingServer testingServer = closer.register(new TestingServer(properties, Optional.empty(), builder -> builder
                 .withStrictValidation()
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))

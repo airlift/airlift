@@ -664,7 +664,7 @@ public abstract class TestMcp
 
             // send a cancellation notification for the random run
             URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
-            CancelledNotification cancelledNotification = new CancelledNotification(requestId, Optional.of("Just because"));
+            CancelledNotification cancelledNotification = new CancelledNotification(requestId, Optional.of("Just because"), Optional.empty());
             JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
 
             // can't know which session it is - try em all
