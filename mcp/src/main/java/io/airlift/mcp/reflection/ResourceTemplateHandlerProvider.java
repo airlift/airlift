@@ -19,6 +19,7 @@ import java.util.OptionalDouble;
 
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isResourceTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
@@ -55,7 +56,7 @@ public class ResourceTemplateHandlerProvider
         resourceMimeType = mcpResourceTemplate.mimeType();
         this.isSkill = isSkill;
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues).or(isInputResponses), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         this.resultIsSingleContent = returnsResourceContents.test(method);
 
         this.resourceTemplate = buildResourceTemplate(
