@@ -27,6 +27,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.reflection.Predicates.isGetPromptRequest;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isString;
 import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
@@ -56,7 +57,7 @@ public class PromptHandlerProvider
         this.role = mcpPrompt.role();
         icons = ImmutableList.copyOf(mcpPrompt.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isString).or(isGetPromptRequest).or(isInputResponses), returnsString.or(returnsGetPromptResult));
 
         Optional<Map<String, Object>> meta = buildMeta(mcpPrompt.meta());
 

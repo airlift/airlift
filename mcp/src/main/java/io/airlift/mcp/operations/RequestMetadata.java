@@ -86,7 +86,7 @@ public record RequestMetadata(
 
     private static McpException unsupportedProtocol(String protocolVersionHeader)
     {
-        // https://modelcontextprotocol.io/specification/draft/basic/lifecycle#protocol-version-negotiation
+        // https://modelcontextprotocol.io/specification/2026-07-28/basic/lifecycle#protocol-version-negotiation
         Map<String, Object> params = ImmutableMap.of("supported", SUPPORTED_VERSIONS, "requested", protocolVersionHeader);
         return exceptionWithData(UNSUPPORTED_PROTOCOL, "Unsupported protocol version", params);
     }

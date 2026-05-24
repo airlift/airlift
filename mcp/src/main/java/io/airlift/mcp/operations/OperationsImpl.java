@@ -27,6 +27,7 @@ import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
+import io.airlift.mcp.model.InputRequests;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListChanged;
@@ -41,7 +42,6 @@ import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResultType;
 import io.airlift.mcp.model.SubscribeListChanged;
@@ -164,9 +164,11 @@ public class OperationsImpl
             result = addServerInfo(serverImplementation, resultMeta);
         }
 
-        if (!(result instanceof MetaOnly)) {
-            result = new ResultTypeWrapper(ResultType.COMPLETE, result);
-        }
+        result = switch (result) {
+            case Object obj when isInputRequired(obj) -> new ResultTypeWrapper(ResultType.INPUT_REQUIRED, result);
+            case MetaOnly _ -> result;
+            default -> new ResultTypeWrapper(ResultType.COMPLETE, result);
+        };
 
         writeResult(jsonMapper, messageWriter, response, requestId, result);
     }
@@ -208,14 +210,21 @@ public class OperationsImpl
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
-        List<ResourceContents> resourceContents = entities.readResourceContents(requestContext, readResourceRequest)
-                .filter(contents -> !contents.isEmpty())
+        return entities.readResourceContents(requestContext, readResourceRequest)
+                .filter(result -> isInputRequired(result) || result.contents().map(contents -> !contents.isEmpty()).orElse(false))
                 .orElseThrow(() -> {
                     Map<String, String> data = ImmutableMap.of("uri", readResourceRequest.uri());
                     return new McpClientException(exceptionWithData(INVALID_PARAMS, "Resource not found: " + readResourceRequest.uri(), data));
                 });
+    }
 
-        return new ReadResourceResult(resourceContents);
+    private static boolean isInputRequired(Object result)
+    {
+        if (result instanceof InputRequests inputRequests) {
+            return inputRequests.requestState().isPresent()
+                    || inputRequests.inputRequests().map(map -> !map.isEmpty()).orElse(false);
+        }
+        return false;
     }
 
     private void validateMcpName(RequestMetadata requestMetadata, String name)

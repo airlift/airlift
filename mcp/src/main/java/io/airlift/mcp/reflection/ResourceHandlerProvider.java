@@ -9,6 +9,7 @@ import io.airlift.mcp.McpResource;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.model.Annotations;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.Role;
@@ -24,8 +25,10 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
+import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResult;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
@@ -42,6 +45,7 @@ public class ResourceHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
+    private final boolean isReadResourceResult;
     private final List<String> icons;
     private final boolean isSkill;
     private final String resourceName;
@@ -61,8 +65,9 @@ public class ResourceHandlerProvider
         icons = ImmutableList.copyOf(mcpResource.icons());
         this.isSkill = isSkill;
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource).or(isInputResponses), returnsString.or(returnsResourceContents).or(returnsResourceContentsList).or(returnsReadResourceResult));
         resultIsSingleContent = returnsResourceContents.test(method);
+        isReadResourceResult = returnsReadResourceResult.test(method);
 
         Optional<Map<String, Object>> meta = buildMeta(mcpResource.meta());
 
@@ -100,7 +105,13 @@ public class ResourceHandlerProvider
             Object result = methodInvoker.builder(requestContext)
                     .withReadResourceRequest(sourceResource, readResourceRequest)
                     .invoke();
-            return mapResult(resourceName, resourceUri, resourceMimeType, method, result, resultIsSingleContent);
+            if (result == null) {
+                throw exception(INTERNAL_ERROR, "ResourceHandler %s returned null".formatted(method.getName()));
+            }
+            if (isReadResourceResult) {
+                return (ReadResourceResult) result;
+            }
+            return new ReadResourceResult(mapResult(resourceName, resourceUri, resourceMimeType, method, result, resultIsSingleContent));
         };
 
         return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler, isSkill);

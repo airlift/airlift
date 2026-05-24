@@ -9,6 +9,7 @@ import io.airlift.mcp.McpResourceTemplate;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.model.Annotations;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Role;
 
@@ -18,11 +19,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
+import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isResourceTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
+import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResult;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
@@ -40,6 +45,7 @@ public class ResourceTemplateHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
+    private final boolean isReadResourceResult;
     private final List<String> icons;
     private final String resourceMimeType;
     private final boolean isSkill;
@@ -57,8 +63,9 @@ public class ResourceTemplateHandlerProvider
         resourceMimeType = mcpResourceTemplate.mimeType();
         this.isSkill = isSkill;
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues).or(isInputResponses), returnsString.or(returnsResourceContents).or(returnsResourceContentsList).or(returnsReadResourceResult));
         this.resultIsSingleContent = returnsResourceContents.test(method);
+        this.isReadResourceResult = returnsReadResourceResult.test(method);
 
         Optional<Map<String, Object>> meta = buildMeta(mcpResourceTemplate.meta());
 
@@ -96,7 +103,13 @@ public class ResourceTemplateHandlerProvider
                     .withReadResourceTemplateRequest(sourceResourceTemplate, readResourceRequest)
                     .withResourceTemplateValues(resourceTemplateValues)
                     .invoke();
-            return mapResult(resourceName, readResourceRequest.uri(), resourceMimeType, method, result, resultIsSingleContent);
+            if (result == null) {
+                throw exception(INTERNAL_ERROR, "ResourceTemplateHandler %s returned null".formatted(method.getName()));
+            }
+            if (isReadResourceResult) {
+                return (ReadResourceResult) result;
+            }
+            return new ReadResourceResult(mapResult(resourceName, readResourceRequest.uri(), resourceMimeType, method, result, resultIsSingleContent));
         };
 
         return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler, isSkill);

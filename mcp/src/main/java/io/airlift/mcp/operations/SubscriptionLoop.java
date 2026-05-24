@@ -12,6 +12,7 @@ import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.SubscriptionFilter;
 
@@ -183,7 +184,8 @@ class SubscriptionLoop
             builder.put(RESOURCE_TEMPLATES_LIST_KEY, listHash(entities.resourceTemplates(requestContext).stream()));
         }
         subscriptionFilter.resourceSubscriptions().ifPresent(resourceSubscriptions -> resourceSubscriptions.forEach(uri -> {
-            Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
+            Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()))
+                    .flatMap(ReadResourceResult::contents);
             String hash = resourceContents
                     .map(contents -> listHash(contents.stream()))
                     .orElse("");
