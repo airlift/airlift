@@ -24,6 +24,7 @@ import io.airlift.mcp.model.CompleteReference.PromptReference;
 import io.airlift.mcp.model.CompleteReference.ResourceReference;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
@@ -275,7 +276,7 @@ public class InternalEntities
     }
 
     @Override
-    public Optional<List<ResourceContents>> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
+    public Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
     {
         if (!capabilityFilter.isAllowed(requestContext.identity(), readResourceRequest.uri())) {
             throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + readResourceRequest.uri()));
@@ -283,7 +284,7 @@ public class InternalEntities
 
         if (readResourceRequest.uri().equals(SKILL_INDEX_URI) && hasSkills(requestContext)) {
             String index = buildSkillIndexResource(requestContext);
-            return Optional.of(ImmutableList.of(new ResourceContents(SKILL_INDEX_URI, SKILL_INDEX_URI, "application/json", index)));
+            return Optional.of(new ReadResourceResult(ImmutableList.of(new ResourceContents(SKILL_INDEX_URI, SKILL_INDEX_URI, "application/json", index))));
         }
 
         URI uri = URI.create(readResourceRequest.uri());

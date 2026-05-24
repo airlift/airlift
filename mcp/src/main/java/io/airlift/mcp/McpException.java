@@ -112,4 +112,11 @@ public class McpException
         JsonRpcErrorDetail errorDetail = new JsonRpcErrorDetail(MISSING_REQUIRED_CLIENT_CAPABILITY, "Client capabilities error", requiredCapabilities);
         return new McpException(errorDetail, true);
     }
+
+    // reported as a protocol-level JSON-RPC error instead of being converted to an in-band tool-domain error result
+    public static McpException nonResultException(JsonRpcErrorCode errorCode, String message)
+    {
+        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode.code(), message, Optional.empty());
+        return new McpException(detail, true);
+    }
 }

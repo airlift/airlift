@@ -25,7 +25,6 @@ import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.operations.legacy.LegacyCancellationController;
 import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
@@ -778,8 +777,8 @@ public abstract class TestMcp
         Set<ResourceEntry> resources = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
         ResourceEntry mcpMapResource = resources.stream().filter(resourceEntry -> resourceEntry.resource().uri().equals("ui://cesium-map/mcp-app.html")).findFirst().orElseThrow();
         // app resource handler doesn't use request context
-        List<ResourceContents> resourceContents = mcpMapResource.handler().readResource(null, mcpMapResource.resource(), new io.airlift.mcp.model.ReadResourceRequest(mcpMapResource.resource().uri()));
-        assertThat(resourceContents).isNotEmpty();
+        io.airlift.mcp.model.ReadResourceResult readResourceResult = mcpMapResource.handler().readResource(null, mcpMapResource.resource(), new io.airlift.mcp.model.ReadResourceRequest(mcpMapResource.resource().uri()));
+        assertThat(readResourceResult.contents().orElseThrow()).isNotEmpty();
     }
 
     @Test
