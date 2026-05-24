@@ -218,7 +218,7 @@ public class OperationsImpl
                 });
     }
 
-    private static boolean isInputRequired(Object result)
+    public static boolean isInputRequired(Object result)
     {
         if (result instanceof InputRequests inputRequests) {
             return inputRequests.requestState().isPresent()
