@@ -239,7 +239,11 @@ public class OperationsImpl
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
         try {
-            return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+            CallToolResult callToolResult = toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+            if (callToolResult.resultType().isEmpty()) {
+                return callToolResult.withResultType(COMPLETE);
+            }
+            return callToolResult;
         }
         catch (McpClientException mcpClientException) {
             return CallToolResult.forError(mcpClientException);
@@ -260,7 +264,11 @@ public class OperationsImpl
         PromptEntry promptEntry = entities.promptEntry(requestContext, getPromptRequest.name())
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name()));
 
-        return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
+        GetPromptResult getPromptResult = promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
+        if (getPromptResult.resultType().isEmpty()) {
+            return getPromptResult.withResultType(COMPLETE);
+        }
+        return getPromptResult;
     }
 
     private ListResourcesResult listResources(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
