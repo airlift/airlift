@@ -25,6 +25,7 @@ public class TestConformance
     private static final List<String> SCENARIOS = List.of(
             "http-header-validation",
             "server-stateless",
+            "caching",
             "sep-2164-resource-not-found",
             "server-initialize",
             "logging-set-level",
