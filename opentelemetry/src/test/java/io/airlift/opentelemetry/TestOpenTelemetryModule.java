@@ -14,10 +14,12 @@ import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.metrics.export.MetricProducer;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -25,6 +27,9 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.semconv.DeploymentAttributes;
 import io.opentelemetry.semconv.ServiceAttributes;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -183,5 +188,31 @@ public class TestOpenTelemetryModule
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
                 entry(DeploymentAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+    }
+
+    @Test
+    void testCustomMetricProducer()
+    {
+        InMemoryMetricReader reader = InMemoryMetricReader.create();
+        AtomicBoolean produced = new AtomicBoolean();
+        MetricProducer producer = _ -> {
+            produced.set(true);
+            return List.of();
+        };
+
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, MetricReader.class).addBinding()
+                        .toInstance(reader),
+                binder -> newSetBinder(binder, MetricProducer.class).addBinding()
+                        .toInstance(producer))
+                .quiet()
+                .initialize();
+
+        injector.getInstance(Meter.class);
+        reader.collectAllMetrics();
+
+        assertThat(produced).isTrue();
     }
 }
