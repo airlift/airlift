@@ -27,8 +27,11 @@ public class OpenTelemetryExporterConfig
     private Optional<Integer> logMaxQueueSize = Optional.empty();
     private Optional<Duration> logScheduleDelay = Optional.empty();
     private Optional<Path> trustedCertificatesPath = Optional.empty();
+    private Optional<String> trustedCertificatesPem = Optional.empty();
     private Optional<Path> clientCertificatePath = Optional.empty();
+    private Optional<String> clientCertificatePem = Optional.empty();
     private Optional<Path> clientKeyPath = Optional.empty();
+    private Optional<String> clientKeyPem = Optional.empty();
     private Optional<String> clientKeyPassword = Optional.empty();
 
     @NotNull
@@ -174,6 +177,18 @@ public class OpenTelemetryExporterConfig
         return this;
     }
 
+    public Optional<String> getTrustedCertificatesPem()
+    {
+        return trustedCertificatesPem;
+    }
+
+    @Config("otel.exporter.tls.trusted-certificates-pem")
+    public OpenTelemetryExporterConfig setTrustedCertificatesPem(String trustedCertificatesPem)
+    {
+        this.trustedCertificatesPem = Optional.ofNullable(trustedCertificatesPem);
+        return this;
+    }
+
     public Optional<@FileExists Path> getClientCertificatePath()
     {
         return clientCertificatePath;
@@ -186,6 +201,18 @@ public class OpenTelemetryExporterConfig
         return this;
     }
 
+    public Optional<String> getClientCertificatePem()
+    {
+        return clientCertificatePem;
+    }
+
+    @Config("otel.exporter.tls.client-certificate-pem")
+    public OpenTelemetryExporterConfig setClientCertificatePem(String clientCertificatePem)
+    {
+        this.clientCertificatePem = Optional.ofNullable(clientCertificatePem);
+        return this;
+    }
+
     public Optional<@FileExists Path> getClientKeyPath()
     {
         return clientKeyPath;
@@ -195,6 +222,19 @@ public class OpenTelemetryExporterConfig
     public OpenTelemetryExporterConfig setClientKeyPath(Path clientKeyPath)
     {
         this.clientKeyPath = Optional.ofNullable(clientKeyPath);
+        return this;
+    }
+
+    public Optional<String> getClientKeyPem()
+    {
+        return clientKeyPem;
+    }
+
+    @Config("otel.exporter.tls.client-key-pem")
+    @ConfigSecuritySensitive
+    public OpenTelemetryExporterConfig setClientKeyPem(String clientKeyPem)
+    {
+        this.clientKeyPem = Optional.ofNullable(clientKeyPem);
         return this;
     }
 
@@ -211,15 +251,43 @@ public class OpenTelemetryExporterConfig
         return this;
     }
 
-    @AssertTrue(message = "client certificate and key paths must be set together")
+    @AssertTrue(message = "client certificate and key must be set together")
     public boolean isClientTlsValid()
     {
-        return clientCertificatePath.isPresent() == clientKeyPath.isPresent();
+        return hasClientCertificate() == hasClientKey();
     }
 
-    @AssertTrue(message = "client key password requires client key path")
+    @AssertTrue(message = "client key password requires client key")
     public boolean isClientKeyPasswordValid()
     {
-        return clientKeyPassword.isEmpty() || clientKeyPath.isPresent();
+        return clientKeyPassword.isEmpty() || hasClientKey();
+    }
+
+    @AssertTrue(message = "trusted certificates path and PEM cannot both be set")
+    public boolean isTrustedCertificatesSourceValid()
+    {
+        return trustedCertificatesPath.isEmpty() || trustedCertificatesPem.isEmpty();
+    }
+
+    @AssertTrue(message = "client certificate path and PEM cannot both be set")
+    public boolean isClientCertificateSourceValid()
+    {
+        return clientCertificatePath.isEmpty() || clientCertificatePem.isEmpty();
+    }
+
+    @AssertTrue(message = "client key path and PEM cannot both be set")
+    public boolean isClientKeySourceValid()
+    {
+        return clientKeyPath.isEmpty() || clientKeyPem.isEmpty();
+    }
+
+    private boolean hasClientCertificate()
+    {
+        return clientCertificatePath.isPresent() || clientCertificatePem.isPresent();
+    }
+
+    private boolean hasClientKey()
+    {
+        return clientKeyPath.isPresent() || clientKeyPem.isPresent();
     }
 }

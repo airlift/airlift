@@ -150,45 +150,63 @@ public class OpenTelemetryExporterModule
             ClientTlsSetter<T> clientTlsSetter)
     {
         config.getTrustedCertificatesPath()
-                .map(OpenTelemetryExporterModule::readFile)
+                .map(path -> readFile(path, "OpenTelemetry trusted certificates"))
+                .or(() -> config.getTrustedCertificatesPem().map(OpenTelemetryExporterModule::pemToBytes))
                 .ifPresent(trustedCertificates -> trustedCertificatesSetter.accept(builder, trustedCertificates));
 
-        if (config.getClientCertificatePath().isPresent() && config.getClientKeyPath().isPresent()) {
+        Optional<byte[]> clientKey = readPrivateKey(config.getClientKeyPath(), config.getClientKeyPem(), config.getClientKeyPassword());
+        Optional<byte[]> clientCertificate = config.getClientCertificatePath()
+                .map(path -> readFile(path, "OpenTelemetry client certificate"))
+                .or(() -> config.getClientCertificatePem().map(OpenTelemetryExporterModule::pemToBytes));
+        if (clientKey.isPresent() && clientCertificate.isPresent()) {
             clientTlsSetter.accept(
                     builder,
-                    readPrivateKeyFile(config.getClientKeyPath().orElseThrow(), config.getClientKeyPassword()),
-                    readFile(config.getClientCertificatePath().orElseThrow()));
+                    clientKey.orElseThrow(),
+                    clientCertificate.orElseThrow());
         }
 
         return builder;
     }
 
-    private static byte[] readFile(Path path)
+    private static byte[] readFile(Path path, String description)
     {
         try {
             return readAllBytes(path);
         }
         catch (IOException e) {
-            throw new UncheckedIOException("Failed to read OpenTelemetry TLS file: " + path, e);
+            throw new UncheckedIOException("Failed to read " + description + " file: " + path, e);
         }
     }
 
-    private static byte[] readPrivateKeyFile(Path path, Optional<String> password)
+    private static Optional<byte[]> readPrivateKey(Optional<Path> path, Optional<String> pem, Optional<String> password)
     {
+        if (path.isEmpty() && pem.isEmpty()) {
+            return Optional.empty();
+        }
+
         if (password.isEmpty()) {
-            return readFile(path);
+            return Optional.of(path.map(file -> readFile(file, "OpenTelemetry client key"))
+                    .orElseGet(() -> pemToBytes(pem.orElseThrow())));
         }
 
         try {
             // OTLP does not accept encrypted PEM private keys, so decode and reencode the key.
-            return PemWriter.writePrivateKey(PemReader.loadPrivateKey(path.toFile(), password)).getBytes(US_ASCII);
+            if (path.isPresent()) {
+                return Optional.of(PemWriter.writePrivateKey(PemReader.loadPrivateKey(path.orElseThrow().toFile(), password)).getBytes(US_ASCII));
+            }
+            return Optional.of(PemWriter.writePrivateKey(PemReader.loadPrivateKey(pem.orElseThrow(), password)).getBytes(US_ASCII));
         }
         catch (IOException e) {
-            throw new UncheckedIOException("Failed to read OpenTelemetry client key file: " + path, e);
+            throw new UncheckedIOException("Failed to read OpenTelemetry client key", e);
         }
         catch (GeneralSecurityException e) {
-            throw new IllegalArgumentException("Failed to read OpenTelemetry client key file: " + path, e);
+            throw new IllegalArgumentException("Failed to read OpenTelemetry client key", e);
         }
+    }
+
+    private static byte[] pemToBytes(String pem)
+    {
+        return pem.getBytes(US_ASCII);
     }
 
     @FunctionalInterface

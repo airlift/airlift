@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
@@ -33,8 +34,11 @@ public class TestOpenTelemetryExporterConfig
                 .setLogMaxQueueSize(null)
                 .setLogScheduleDelay(null)
                 .setTrustedCertificatesPath(null)
+                .setTrustedCertificatesPem(null)
                 .setClientCertificatePath(null)
+                .setClientCertificatePem(null)
                 .setClientKeyPath(null)
+                .setClientKeyPem(null)
                 .setClientKeyPassword(null));
     }
 
@@ -72,7 +76,47 @@ public class TestOpenTelemetryExporterConfig
                 .setClientKeyPath(Path.of("./pom.xml"))
                 .setClientKeyPassword("key-password");
 
-        assertFullMapping(properties, expected);
+        assertFullMapping(
+                properties,
+                expected,
+                Set.of(
+                        "otel.exporter.tls.trusted-certificates-pem",
+                        "otel.exporter.tls.client-certificate-pem",
+                        "otel.exporter.tls.client-key-pem"));
+    }
+
+    @Test
+    public void testExplicitPemPropertyMappings()
+    {
+        Map<String, String> properties = ImmutableMap.<String, String>builder()
+                .put("otel.exporter.tls.trusted-certificates-pem", "trusted-certificates-pem")
+                .put("otel.exporter.tls.client-certificate-pem", "client-certificate-pem")
+                .put("otel.exporter.tls.client-key-pem", "client-key-pem")
+                .put("otel.exporter.tls.client-key-password", "key-password")
+                .buildOrThrow();
+
+        OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
+                .setTrustedCertificatesPem("trusted-certificates-pem")
+                .setClientCertificatePem("client-certificate-pem")
+                .setClientKeyPem("client-key-pem")
+                .setClientKeyPassword("key-password");
+
+        assertFullMapping(
+                properties,
+                expected,
+                Set.of(
+                        "otel.exporter.endpoint",
+                        "otel.exporter.protocol",
+                        "otel.exporter.interval",
+                        "otel.exporter.span.max-export-batch-size",
+                        "otel.exporter.span.max-queue-size",
+                        "otel.exporter.span.schedule-delay",
+                        "otel.exporter.log.max-export-batch-size",
+                        "otel.exporter.log.max-queue-size",
+                        "otel.exporter.log.schedule-delay",
+                        "otel.exporter.tls.trusted-certificates-path",
+                        "otel.exporter.tls.client-certificate-path",
+                        "otel.exporter.tls.client-key-path"));
     }
 
     @Test
@@ -82,7 +126,18 @@ public class TestOpenTelemetryExporterConfig
                 new OpenTelemetryExporterConfig()
                         .setClientCertificatePath(Path.of("/certs/client.pem")),
                 "clientTlsValid",
-                "client certificate and key paths must be set together",
+                "client certificate and key must be set together",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testClientCertificatePemWithoutKeyFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setClientCertificatePem("client-certificate-pem"),
+                "clientTlsValid",
+                "client certificate and key must be set together",
                 AssertTrue.class);
     }
 
@@ -93,7 +148,18 @@ public class TestOpenTelemetryExporterConfig
                 new OpenTelemetryExporterConfig()
                         .setClientKeyPath(Path.of("/certs/client.key")),
                 "clientTlsValid",
-                "client certificate and key paths must be set together",
+                "client certificate and key must be set together",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testClientKeyPemWithoutCertificateFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setClientKeyPem("client-key-pem"),
+                "clientTlsValid",
+                "client certificate and key must be set together",
                 AssertTrue.class);
     }
 
@@ -104,7 +170,43 @@ public class TestOpenTelemetryExporterConfig
                 new OpenTelemetryExporterConfig()
                         .setClientKeyPassword("key-password"),
                 "clientKeyPasswordValid",
-                "client key password requires client key path",
+                "client key password requires client key",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testTrustedCertificatesPathAndPemFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setTrustedCertificatesPath(Path.of("./pom.xml"))
+                        .setTrustedCertificatesPem("trusted-certificates-pem"),
+                "trustedCertificatesSourceValid",
+                "trusted certificates path and PEM cannot both be set",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testClientCertificatePathAndPemFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setClientCertificatePath(Path.of("./pom.xml"))
+                        .setClientCertificatePem("client-certificate-pem"),
+                "clientCertificateSourceValid",
+                "client certificate path and PEM cannot both be set",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testClientKeyPathAndPemFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setClientKeyPath(Path.of("./pom.xml"))
+                        .setClientKeyPem("client-key-pem"),
+                "clientKeySourceValid",
+                "client key path and PEM cannot both be set",
                 AssertTrue.class);
     }
 
