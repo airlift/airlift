@@ -3,12 +3,14 @@ package io.airlift.mcp.operations;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.internal.InternalTaskController;
 import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
+import io.airlift.mcp.model.Task;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
@@ -33,19 +35,22 @@ class RequestContextImpl
     private final JsonMapper jsonMapper;
     private final MessageWriter messageWriter;
     private final Authenticated<?> identity;
+    private final Optional<InternalTaskController> internalTaskController;
 
     RequestContextImpl(
             HttpServletRequest request,
             RequestMetadata requestMetadata,
             JsonMapper jsonMapper,
             MessageWriter messageWriter,
-            Authenticated<?> identity)
+            Authenticated<?> identity,
+            Optional<InternalTaskController> internalTaskController)
     {
         this.request = requireNonNull(request, "request is null");
         this.requestMetadata = requireNonNull(requestMetadata, "requestMetadata is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
         this.identity = requireNonNull(identity, "identity is null");
+        this.internalTaskController = requireNonNull(internalTaskController, "internalTaskController is null");
     }
 
     @Override
@@ -58,6 +63,13 @@ class RequestContextImpl
     public Authenticated<?> identity()
     {
         return identity;
+    }
+
+    @Override
+    public Task createTask()
+    {
+        return internalTaskController.orElseThrow(() -> new IllegalStateException("Tasks have not been enabled"))
+                .createTask(this);
     }
 
     @Override

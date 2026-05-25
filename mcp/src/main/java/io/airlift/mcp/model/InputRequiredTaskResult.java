@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import static io.airlift.mcp.model.ResultType.COMPLETE;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record InputRequiredTaskResult(@JsonUnwrapped Task task, Optional<Map<String, InputRequest>> inputRequests)
         implements Result
@@ -15,7 +16,7 @@ public record InputRequiredTaskResult(@JsonUnwrapped Task task, Optional<Map<Str
     public InputRequiredTaskResult
     {
         requireNonNull(task, "task is null");
-        requireNonNull(inputRequests, "inputRequests is null");
+        inputRequests = requireNonNullElse(inputRequests, Optional.empty());
     }
 
     @JsonProperty

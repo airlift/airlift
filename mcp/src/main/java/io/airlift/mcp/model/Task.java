@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record Task(String taskId, TaskStatus status, Optional<String> statusMessage, String createdAt, String lastUpdatedAt, OptionalInt ttlMs, OptionalInt pollIntervalMs, Optional<JsonRpcErrorDetail> error)
 {
@@ -11,11 +12,11 @@ public record Task(String taskId, TaskStatus status, Optional<String> statusMess
     {
         requireNonNull(taskId, "taskId is null");
         requireNonNull(status, "status is null");
-        requireNonNull(statusMessage, "statusMessage is null");
+        statusMessage = requireNonNullElse(statusMessage, Optional.empty());
         requireNonNull(createdAt, "createdAt is null");
         requireNonNull(lastUpdatedAt, "lastUpdatedAt is null");
-        requireNonNull(ttlMs, "ttlMs is null");
-        requireNonNull(pollIntervalMs, "pollIntervalMs is null");
-        requireNonNull(error, "error is null");
+        ttlMs = requireNonNullElse(ttlMs, OptionalInt.empty());
+        pollIntervalMs = requireNonNullElse(pollIntervalMs, OptionalInt.empty());
+        error = requireNonNullElse(error, Optional.empty());
     }
 }
