@@ -34,7 +34,8 @@ public class TestOpenTelemetryExporterConfig
                 .setLogScheduleDelay(null)
                 .setTrustedCertificatesPath(null)
                 .setClientCertificatePath(null)
-                .setClientKeyPath(null));
+                .setClientKeyPath(null)
+                .setClientKeyPassword(null));
     }
 
     @Test
@@ -53,6 +54,7 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.tls.trusted-certificates-path", "./pom.xml")
                 .put("otel.exporter.tls.client-certificate-path", "./pom.xml")
                 .put("otel.exporter.tls.client-key-path", "./pom.xml")
+                .put("otel.exporter.tls.client-key-password", "key-password")
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
@@ -67,7 +69,8 @@ public class TestOpenTelemetryExporterConfig
                 .setLogScheduleDelay(new Duration(5, TimeUnit.SECONDS))
                 .setTrustedCertificatesPath(Path.of("./pom.xml"))
                 .setClientCertificatePath(Path.of("./pom.xml"))
-                .setClientKeyPath(Path.of("./pom.xml"));
+                .setClientKeyPath(Path.of("./pom.xml"))
+                .setClientKeyPassword("key-password");
 
         assertFullMapping(properties, expected);
     }
@@ -91,6 +94,17 @@ public class TestOpenTelemetryExporterConfig
                         .setClientKeyPath(Path.of("/certs/client.key")),
                 "clientTlsValid",
                 "client certificate and key paths must be set together",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testClientKeyPasswordWithoutKeyFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setClientKeyPassword("key-password"),
+                "clientKeyPasswordValid",
+                "client key password requires client key path",
                 AssertTrue.class);
     }
 
