@@ -3,10 +3,13 @@ package io.airlift.mcp;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
@@ -356,6 +359,7 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindIcons(binder);
         bindSchemaBuilder(binder);
+        bindStorageAndTasks(binder);
 
         binder.install(new InternalMcpModule(filterBindingAnnotation));
         binder.install(new OperationsModule());
@@ -365,6 +369,23 @@ public class McpModule
     {
         schemaBuilderBinding.accept(binder.bind(SchemaBuilder.class));
         binder.bind(JsonSchemaBuilder.class).in(SINGLETON);
+    }
+
+    private void bindStorageAndTasks(Binder binder)
+    {
+        storageControllerBinding.ifPresentOrElse(binding -> {
+            binding.accept(binder.bind(StorageController.class));
+            binder.bind(McpTaskController.class).in(SINGLETON);
+            binder.install(new AbstractModule()
+            {
+                @Provides
+                @Singleton
+                public Optional<McpTaskController> taskController(McpTaskController taskController)
+                {
+                    return Optional.of(taskController);
+                }
+            });
+        }, () -> newOptionalBinder(binder, McpTaskController.class));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

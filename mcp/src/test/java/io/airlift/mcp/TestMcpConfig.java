@@ -27,7 +27,9 @@ public class TestMcpConfig
                 .setCancellationCheckInterval(new Duration(1, SECONDS))
                 .setMaxResumableMessages(100)
                 .setMaxSessionCache(10000)
-                .setResourceSubscriptionCachePeriod(new Duration(1, MINUTES)));
+                .setResourceSubscriptionCachePeriod(new Duration(1, MINUTES))
+                .setTaskTtl(new Duration(15, MINUTES))
+                .setTaskPollInterval(new Duration(15, SECONDS)));
     }
 
     @Test
@@ -42,6 +44,8 @@ public class TestMcpConfig
                 .put("mcp.resumable-messages.max", "962")
                 .put("mcp.session.cache.max-size", "10064")
                 .put("mcp.resource-subscription.cache-period", "123m")
+                .put("mcp.task.ttl", "1d")
+                .put("mcp.task.poll-interval", "3h")
                 .build();
 
         McpConfig expected = new McpConfig()
@@ -52,7 +56,9 @@ public class TestMcpConfig
                 .setCancellationCheckInterval(new Duration(1, HOURS))
                 .setMaxResumableMessages(962)
                 .setMaxSessionCache(10064)
-                .setResourceSubscriptionCachePeriod(new Duration(123, MINUTES));
+                .setResourceSubscriptionCachePeriod(new Duration(123, MINUTES))
+                .setTaskTtl(new Duration(1, DAYS))
+                .setTaskPollInterval(new Duration(3, HOURS));
 
         assertFullMapping(properties, expected);
     }

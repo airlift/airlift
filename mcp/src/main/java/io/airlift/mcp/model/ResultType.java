@@ -8,7 +8,8 @@ import static java.util.Locale.ROOT;
 public enum ResultType
 {
     COMPLETE,
-    INPUT_REQUIRED;
+    INPUT_REQUIRED,
+    TASK;
 
     @JsonValue
     public String toJsonValue()
@@ -17,8 +18,8 @@ public enum ResultType
     }
 
     @JsonCreator
-    public static Role fromJsonValue(String value)
+    public static ResultType fromJsonValue(String value)
     {
-        return Role.valueOf(value.toUpperCase(ROOT));
+        return ResultType.valueOf(value.toUpperCase(ROOT));
     }
 }

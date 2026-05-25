@@ -18,7 +18,9 @@ public record CallToolResult(
         Optional<String> requestState,
         Optional<Map<String, InputRequest>> inputRequests,
         Optional<Map<String, Object>> meta)
-        implements InputRequests, Meta
+        implements InputRequests,
+                   Meta,
+                   Result
 {
     public static InputRequests.Builder<CallToolResult> inputRequestsBuilder()
     {

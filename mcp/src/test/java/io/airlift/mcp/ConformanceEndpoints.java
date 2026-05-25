@@ -19,6 +19,7 @@ import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
 import io.airlift.mcp.model.CreateMessageResult;
+import io.airlift.mcp.model.CreateTaskResult;
 import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
 import io.airlift.mcp.model.GetPromptResult;
@@ -32,7 +33,9 @@ import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.model.Result;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
 
 import java.util.List;
@@ -57,12 +60,14 @@ public class ConformanceEndpoints
 
     private final JsonMapper jsonMapper;
     private final McpEntities entities;
+    private final Optional<McpTaskController> taskController;
 
     @Inject
-    public ConformanceEndpoints(JsonMapper jsonMapper, McpEntities entities)
+    public ConformanceEndpoints(JsonMapper jsonMapper, McpEntities entities, Optional<McpTaskController> taskController)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.entities = requireNonNull(entities, "entities is null");
+        this.taskController = requireNonNull(taskController, "taskController is null");
     }
 
     @McpTool(name = "test_simple_text", description = "Tests simple text content response")
@@ -442,5 +447,19 @@ public class ConformanceEndpoints
         }
 
         return builder.build();
+    }
+
+    @McpTool(name = "greet", description = "test")
+    public String greet()
+    {
+        return "hi";
+    }
+
+    @McpTool(name = "slow_compute", description = "test")
+    public Result slowCompute()
+    {
+        McpTaskController controller = taskController.orElseThrow();
+        Task task = controller.createTask();
+        return new CreateTaskResult(task);
     }
 }

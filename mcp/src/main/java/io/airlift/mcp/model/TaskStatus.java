@@ -5,10 +5,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import static java.util.Locale.ROOT;
 
-public enum CacheScope
+public enum TaskStatus
 {
-    PUBLIC,
-    PRIVATE;
+    WORKING,
+    INPUT_REQUIRED,
+    COMPLETED,
+    FAILED,
+    CANCELLED;
 
     @JsonValue
     public String toJsonValue()
@@ -17,8 +20,8 @@ public enum CacheScope
     }
 
     @JsonCreator
-    public static CacheScope fromJsonValue(String value)
+    public static TaskStatus fromJsonValue(String value)
     {
-        return CacheScope.valueOf(value.toUpperCase(ROOT));
+        return TaskStatus.valueOf(value.toUpperCase(ROOT));
     }
 }
