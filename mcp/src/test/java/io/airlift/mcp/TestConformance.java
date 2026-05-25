@@ -24,6 +24,16 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 public class TestConformance
 {
     private static final List<String> SCENARIOS = List.of(
+            "tasks-lifecycle",
+            "tasks-capability-negotiation",
+            "tasks-wire-fields",
+            "tasks-request-state-removal",
+            "tasks-mrtr-input",
+            "tasks-request-headers",
+            "tasks-dispatch-and-envelope",
+            "tasks-status-notifications",
+            "tasks-required-task-error",
+            "tasks-mrtr-composition",
             "http-header-validation",
             "server-stateless",
             "caching",

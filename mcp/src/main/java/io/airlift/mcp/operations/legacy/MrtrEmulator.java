@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.model.InputRequest;
 import io.airlift.mcp.model.InputRequests;
-import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcResponse;
 
 import java.time.Duration;
@@ -40,10 +39,9 @@ public class MrtrEmulator
             inputRequests.forEach((key, inputRequest) -> {
                 try {
                     JsonRpcResponse<Object> response = requestContext.serverToClientRequest(inputRequest.method(), inputRequest.params(), Object.class, timeout, POLL_INTERVAL);
-                    if (response.error().isPresent()) {
-                        JsonRpcErrorDetail errorDetail = response.error().orElseThrow();
+                    response.error().ifPresent(errorDetail -> {
                         throw exception(errorDetail.code(), errorDetail.message(), errorDetail.data());
-                    }
+                    });
                     response.result().ifPresent(value -> inputResponses.put(key, value));
                 }
                 catch (InterruptedException e) {

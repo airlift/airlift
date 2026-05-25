@@ -23,6 +23,7 @@ import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolResult;
 import io.airlift.mcp.model.UiToolVisibility;
 
 import java.io.UncheckedIOException;
@@ -78,8 +79,8 @@ public class ToolHandlerProvider
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
         }
-        else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
-            returnType = ReturnType.CALL_TOOL_RESULT;
+        else if (ToolResult.class.isAssignableFrom(method.getReturnType())) {
+            returnType = ReturnType.TOOL_RESULT;
         }
         else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.STRUCTURED_RESULT;
@@ -112,7 +113,7 @@ public class ToolHandlerProvider
     private enum ReturnType
     {
         VOID,
-        CALL_TOOL_RESULT,
+        TOOL_RESULT,
         CONTENT,
         STRUCTURED,
         STRUCTURED_RESULT,
@@ -138,7 +139,7 @@ public class ToolHandlerProvider
                 case VOID -> new CallToolResult(ImmutableList.of());
                 case CONTENT -> new CallToolResult(mapToContent(result));
                 case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
-                case CALL_TOOL_RESULT -> (CallToolResult) result;
+                case TOOL_RESULT -> (ToolResult) result;
                 case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
         };
