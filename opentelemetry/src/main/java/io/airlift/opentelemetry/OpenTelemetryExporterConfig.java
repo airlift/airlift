@@ -1,6 +1,7 @@
 package io.airlift.opentelemetry;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.validation.FileExists;
 import io.airlift.units.Duration;
@@ -28,6 +29,7 @@ public class OpenTelemetryExporterConfig
     private Optional<Path> trustedCertificatesPath = Optional.empty();
     private Optional<Path> clientCertificatePath = Optional.empty();
     private Optional<Path> clientKeyPath = Optional.empty();
+    private Optional<String> clientKeyPassword = Optional.empty();
 
     @NotNull
     @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
@@ -196,9 +198,28 @@ public class OpenTelemetryExporterConfig
         return this;
     }
 
+    public Optional<String> getClientKeyPassword()
+    {
+        return clientKeyPassword;
+    }
+
+    @Config("otel.exporter.tls.client-key-password")
+    @ConfigSecuritySensitive
+    public OpenTelemetryExporterConfig setClientKeyPassword(String clientKeyPassword)
+    {
+        this.clientKeyPassword = Optional.ofNullable(clientKeyPassword);
+        return this;
+    }
+
     @AssertTrue(message = "client certificate and key paths must be set together")
     public boolean isClientTlsValid()
     {
         return clientCertificatePath.isPresent() == clientKeyPath.isPresent();
+    }
+
+    @AssertTrue(message = "client key password requires client key path")
+    public boolean isClientKeyPasswordValid()
+    {
+        return clientKeyPassword.isEmpty() || clientKeyPath.isPresent();
     }
 }

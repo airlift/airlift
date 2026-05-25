@@ -3,6 +3,8 @@ package io.airlift.opentelemetry;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import io.airlift.security.pem.PemReader;
+import io.airlift.security.pem.PemWriter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporterBuilder;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
@@ -32,9 +34,12 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.Files.readAllBytes;
 
 public class OpenTelemetryExporterModule
@@ -151,7 +156,7 @@ public class OpenTelemetryExporterModule
         if (config.getClientCertificatePath().isPresent() && config.getClientKeyPath().isPresent()) {
             clientTlsSetter.accept(
                     builder,
-                    readFile(config.getClientKeyPath().orElseThrow()),
+                    readPrivateKeyFile(config.getClientKeyPath().orElseThrow(), config.getClientKeyPassword()),
                     readFile(config.getClientCertificatePath().orElseThrow()));
         }
 
@@ -165,6 +170,24 @@ public class OpenTelemetryExporterModule
         }
         catch (IOException e) {
             throw new UncheckedIOException("Failed to read OpenTelemetry TLS file: " + path, e);
+        }
+    }
+
+    private static byte[] readPrivateKeyFile(Path path, Optional<String> password)
+    {
+        if (password.isEmpty()) {
+            return readFile(path);
+        }
+
+        try {
+            // OTLP does not accept encrypted PEM private keys, so decode and reencode the key.
+            return PemWriter.writePrivateKey(PemReader.loadPrivateKey(path.toFile(), password)).getBytes(US_ASCII);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException("Failed to read OpenTelemetry client key file: " + path, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new IllegalArgumentException("Failed to read OpenTelemetry client key file: " + path, e);
         }
     }
 
