@@ -96,9 +96,4 @@ public record CallToolResult(
     {
         return new CallToolResult(ImmutableList.of(new Content.TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
     }
-
-    public CallToolResult withResultType(ResultType resultType)
-    {
-        return new CallToolResult(content, structuredContent, isError, Optional.of(resultType), requestState, inputRequests, meta);
-    }
 }
