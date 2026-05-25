@@ -26,6 +26,8 @@ public interface McpEntities
 
     Optional<ToolEntry> toolEntry(McpRequestContext requestContext, String toolName);
 
+    Optional<ToolEntry> rawToolEntry(String toolName);
+
     void validateToolAllowed(McpRequestContext requestContext, String toolName);
 
     List<Prompt> prompts(McpRequestContext requestContext);

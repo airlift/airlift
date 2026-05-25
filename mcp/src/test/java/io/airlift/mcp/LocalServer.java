@@ -42,6 +42,7 @@ public class LocalServer
                 .withAllInClass(TestingEndpoints.class)
                 .withAllInClass(MapApp.class)
                 .withAllInClass(DebugApp.class)
+                .withAllInClass(ConformanceEndpoints.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))

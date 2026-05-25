@@ -76,6 +76,11 @@ public record CallToolResult(
         return new CallToolResult(ImmutableList.of(new TextContent(errorMessage)), Optional.empty(), true, Optional.empty());
     }
 
+    public CallToolResult withInputRequests(Optional<String> requestState, Optional<Map<String, InputRequest>> inputRequests)
+    {
+        return new CallToolResult(content, structuredContent, isError, requestState, inputRequests, meta);
+    }
+
     @Override
     public CallToolResult withMeta(Map<String, Object> meta)
     {

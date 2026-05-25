@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 import static com.google.common.base.Throwables.getRootCause;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.RPC_MESSAGE_ATTRIBUTE;
@@ -34,7 +35,6 @@ import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
 
 public class ErrorHandlerImpl
         implements ErrorHandler
@@ -46,7 +46,9 @@ public class ErrorHandlerImpl
     @Inject
     public ErrorHandlerImpl(JsonMapper jsonMapper)
     {
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this.jsonMapper = jsonMapper.rebuild()
+                .disable(FAIL_ON_EMPTY_BEANS)
+                .build();
     }
 
     @Override
