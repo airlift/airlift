@@ -20,6 +20,7 @@ import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.SdkLoggerProviderBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
+import io.opentelemetry.sdk.metrics.export.MetricProducer;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -67,6 +68,7 @@ public class OpenTelemetryModule
     {
         newSetBinder(binder, SpanProcessor.class);
         newSetBinder(binder, MetricReader.class);
+        newSetBinder(binder, MetricProducer.class);
         newSetBinder(binder, LogRecordProcessor.class);
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
     }
@@ -76,12 +78,13 @@ public class OpenTelemetryModule
     public OpenTelemetry createOpenTelemetry(
             Set<SpanProcessor> spanProcessors,
             Set<MetricReader> metricReaders,
+            Set<MetricProducer> metricProducers,
             Set<LogRecordProcessor> logRecordProcessors,
             SdkTracerProvider tracerProvider,
             SdkMeterProvider meterProvider,
             SdkLoggerProvider loggerProvider)
     {
-        if (spanProcessors.isEmpty() && metricReaders.isEmpty() && logRecordProcessors.isEmpty()) {
+        if (spanProcessors.isEmpty() && metricReaders.isEmpty() && metricProducers.isEmpty() && logRecordProcessors.isEmpty()) {
             return OpenTelemetry.noop();
         }
 
@@ -141,11 +144,12 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public SdkMeterProvider createMeterProvider(Resource resource, Set<MetricReader> metricReaders)
+    public SdkMeterProvider createMeterProvider(Resource resource, Set<MetricReader> metricReaders, Set<MetricProducer> metricProducers)
     {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder()
                 .setResource(resource);
         metricReaders.forEach(builder::registerMetricReader);
+        metricProducers.forEach(builder::registerMetricProducer);
         return builder.build();
     }
 
@@ -161,9 +165,9 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public Meter createMeter(Set<MetricReader> metricReaders, SdkMeterProvider meterProvider)
+    public Meter createMeter(Set<MetricReader> metricReaders, Set<MetricProducer> metricProducers, SdkMeterProvider meterProvider)
     {
-        if (metricReaders.isEmpty()) {
+        if (metricReaders.isEmpty() && metricProducers.isEmpty()) {
             return MeterProvider.noop().get("noop");
         }
         return meterProvider.get(serviceName);
