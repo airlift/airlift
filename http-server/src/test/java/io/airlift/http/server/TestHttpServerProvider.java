@@ -33,6 +33,7 @@ import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.TempFile;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -91,6 +92,7 @@ import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.IGNOR
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static io.airlift.testing.Closeables.closeAll;
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static java.lang.String.format;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -221,6 +223,35 @@ public class TestHttpServerProvider
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(response.getHeader(X_PROTOCOL_HEADER)).hasValue("HTTP/2.0");
+        }
+    }
+
+    @Test
+    public void testMaxResponseHeaderSize()
+            throws Exception
+    {
+        DataSize maxResponseHeaderSize = DataSize.of(64, KILOBYTE);
+        String largeHeaderValue = "x".repeat(32 * 1024);
+
+        config.setMaxResponseHeaderSize(maxResponseHeaderSize);
+        createAndStartServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setHeader("X-Large", largeHeaderValue);
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+        });
+
+        HttpClientConfig clientConfig = new HttpClientConfig()
+                .setHttp2Enabled(false)
+                .setMaxResponseHeaderSize(maxResponseHeaderSize);
+        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
+            StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(response.getHeader(HeaderName.of("X-Large"))).hasValue(largeHeaderValue);
         }
     }
 
