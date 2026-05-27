@@ -1,6 +1,7 @@
 package io.airlift.api.binding;
 
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -322,10 +323,13 @@ public class ApiModule
             return;
         }
 
-        MapBinder<Class<?>, JsonDeserializer<?>> mapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        MapBinder<Class<?>, JsonDeserializer<?>> deserializerBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        MapBinder<Class<?>, JsonSerializer<?>> serializerBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
         resourcesWithUnwrappedComponents.forEach(clazz -> {
-            UnwrappedDeserializer deserializer = new UnwrappedDeserializer(clazz);
-            mapBinder.addBinding(clazz).toInstance(deserializer);
+            deserializerBinder.addBinding(clazz).toInstance(new UnwrappedDeserializer(clazz));
+            if (UnwrappedSerializer.hasUnwrappedList(clazz)) {
+                serializerBinder.addBinding(clazz).toInstance(new UnwrappedSerializer(clazz));
+            }
         });
     }
 

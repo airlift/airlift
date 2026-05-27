@@ -151,7 +151,7 @@ class SchemaBuilder
                 case MAP -> new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(asResource(removeContainer(modelResource)), mode));
                 case PAGINATED_RESULT -> buildPaginatedSchema(modelResource);
                 default -> modelResource.modifiers().contains(IS_ANY_OBJECT)
-                        ? new Schema<>().type("object").description(adjustedDescription(modelResource))
+                        ? new Schema<>().description(adjustedDescription(modelResource))
                         : buildBasicOrResourceSchema(modelResource, mode);
             };
         }
@@ -326,6 +326,17 @@ class SchemaBuilder
     {
         if (component.modifiers().contains(IS_UNWRAPPED)) {
             buildResourceSchema(schema, component, ofMode(mode));
+        }
+        else if (component.modifiers().contains(ModelResourceModifier.IS_UNWRAPPED_LIST)) {
+            ModelResource innerResource = asResource(removeContainer(component));
+            innerResource.components().stream()
+                    .filter(inner -> mode.isStandard() || !ModelResourceModifier.hasReadOnly(inner.modifiers()))
+                    .forEach(inner -> {
+                        schema.addProperty(inner.name(), asList(component, buildSchema(inner, mode)));
+                        if (!mode.isPartialPatch() && !inner.modifiers().contains(ModelResourceModifier.OPTIONAL)) {
+                            schema.addRequiredItem(inner.name());
+                        }
+                    });
         }
         else {
             Schema<?> componentSchema = buildSchema(component, mode);

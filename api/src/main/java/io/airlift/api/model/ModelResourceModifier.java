@@ -16,7 +16,8 @@ public enum ModelResourceModifier
     IS_MULTIPART_FORM,
     MULTIPART_RESOURCE_IS_FIRST_ITEM,
     RECURSIVE_REFERENCE,
-    IS_ANY_OBJECT;
+    IS_ANY_OBJECT,
+    IS_UNWRAPPED_LIST;
 
     public static boolean hasReadOnly(Collection<ModelResourceModifier> modifiers)
     {
