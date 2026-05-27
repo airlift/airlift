@@ -387,6 +387,7 @@ public class HttpServerConfig
         return this;
     }
 
+    @MaxDataSize("1GB")
     public DataSize getMaxResponseHeaderSize()
     {
         return maxResponseHeaderSize;
