@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>427-SNAPSHOT</version>
+        <version>427</version>
     </parent>
 
     <artifactId>api-maven-plugin</artifactId>
