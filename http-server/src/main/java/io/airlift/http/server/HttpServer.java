@@ -204,9 +204,7 @@ public class HttpServer
             baseHttpConfiguration.setRequestHeaderSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
         }
         if (config.getMaxResponseHeaderSize() != null) {
-            int maxResponseHeaderSizeBytes = toIntExact(config.getMaxResponseHeaderSize().toBytes());
-            baseHttpConfiguration.setResponseHeaderSize(maxResponseHeaderSizeBytes);
-            baseHttpConfiguration.setMaxResponseHeaderSize(maxResponseHeaderSizeBytes);
+            baseHttpConfiguration.setMaxResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
         }
         if (config.getOutputBufferSize() != null) {
             baseHttpConfiguration.setOutputBufferSize(toIntExact(config.getOutputBufferSize().toBytes()));
