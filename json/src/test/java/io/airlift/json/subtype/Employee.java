@@ -13,6 +13,8 @@
  */
 package io.airlift.json.subtype;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.util.List;
 
 public sealed interface Employee
@@ -20,6 +22,7 @@ public sealed interface Employee
     record Programmer(String name)
             implements Employee {}
 
+    @JsonPropertyOrder({"name", "reports"})
     record Manager(String name, List<Employee> reports)
             implements Employee {}
 }
