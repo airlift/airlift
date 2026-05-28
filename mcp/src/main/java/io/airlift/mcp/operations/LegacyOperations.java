@@ -13,6 +13,7 @@ import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.McpMetadataMapper;
 import io.airlift.mcp.SentMessages;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CancelledNotification;
@@ -101,7 +102,7 @@ public class LegacyOperations
 {
     private static final Logger log = Logger.get(LegacyOperations.class);
 
-    private final McpMetadata metadata;
+    private final McpMetadataMapper metadata;
     private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
     private final LegacyCancellationController cancellationController;
@@ -112,12 +113,13 @@ public class LegacyOperations
     private final LegacyVersionsController versionsController;
     private final Duration sessionTimeout;
     private final OperationsCommon operationsCommon;
+    private final IconHelper iconHelper;
+    private final Set<String> serverIcons;
     private final McpEntities entities;
-    private final Implementation serverImplementation;
 
     @Inject
     public LegacyOperations(
-            McpMetadata metadata,
+            McpMetadataMapper metadata,
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
             LegacyCancellationController cancellationController,
@@ -133,6 +135,8 @@ public class LegacyOperations
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.cancellationController = requireNonNull(cancellationController, "cancellationController is null");
         this.versionsController = requireNonNull(versionsController, "versionsController is null");
+        this.iconHelper = requireNonNull(iconHelper, "iconHelper is null");
+        this.serverIcons = requireNonNull(serverIcons, "serverIcons is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.operationsCommon = requireNonNull(operationsCommon, "operationsCommon is null");
 
@@ -141,9 +145,6 @@ public class LegacyOperations
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
         maxResumableMessages = mcpConfig.getMaxResumableMessages();
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
-
-        serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
-                .orElse(metadata.implementation());
     }
 
     @Override
@@ -298,9 +299,12 @@ public class LegacyOperations
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 Optional.empty());
 
+        McpMetadata thisMetadata = metadata.map(requestContext.request());
+        Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> thisMetadata.implementation().withAdditionalIcons(icons))
+                .orElse(thisMetadata.implementation());
         Implementation localImplementation = supportsIcons(protocol) ? serverImplementation : serverImplementation.simpleForm();
 
-        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
+        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.instructions());
     }
 
     private Object handleSetLoggingLevel(RequestContextImpl requestContext, SetLevelRequest setLevelRequest)
