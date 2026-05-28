@@ -96,7 +96,6 @@ public class HttpServerConfig
     private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);
     private Duration http2StreamIdleTimeout = new Duration(15, SECONDS);
-
     private boolean showStackTrace = true;
 
     private boolean compressionEnabled = true;
