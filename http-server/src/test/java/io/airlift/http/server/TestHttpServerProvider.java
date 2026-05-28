@@ -244,14 +244,64 @@ public class TestHttpServerProvider
             }
         });
 
+        assertMaxResponseHeaderSize(maxResponseHeaderSize, largeHeaderValue, false);
+        assertMaxResponseHeaderSize(maxResponseHeaderSize, largeHeaderValue, true);
+    }
+
+    private void assertMaxResponseHeaderSize(DataSize maxResponseHeaderSize, String largeHeaderValue, boolean http2Enabled)
+    {
         HttpClientConfig clientConfig = new HttpClientConfig()
-                .setHttp2Enabled(false)
+                .setHttp2Enabled(http2Enabled)
                 .setMaxResponseHeaderSize(maxResponseHeaderSize);
         try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(response.getHeader(HeaderName.of("X-Large"))).hasValue(largeHeaderValue);
+        }
+    }
+
+    @Test
+    public void testMaxResponseHeaderSizeExceeded()
+            throws Exception
+    {
+        String largeHeaderValue = "x".repeat(2 * 1024);
+
+        config.setMaxResponseHeaderSize(DataSize.of(1, KILOBYTE));
+        createAndStartServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setHeader("X-Large", largeHeaderValue);
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+        });
+
+        Request request = prepareGet().setUri(httpServerInfo.getHttpUri()).build();
+
+        assertMaxResponseHeaderSizeExceeded(request, false);
+        assertMaxResponseHeaderSizeExceeded(request, true);
+    }
+
+    private void assertMaxResponseHeaderSizeExceeded(Request request, boolean http2Enabled)
+    {
+        HttpClientConfig clientConfig = new HttpClientConfig()
+                .setHttp2Enabled(http2Enabled)
+                .setMaxResponseHeaderSize(DataSize.of(64, KILOBYTE));
+        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
+            if (http2Enabled) {
+                assertThatThrownBy(() -> httpClient.execute(request, createStatusResponseHandler()))
+                        .isInstanceOf(UncheckedIOException.class)
+                        .hasMessageContaining("Failed communicating with server")
+                        .hasRootCauseMessage("cancel_stream_error");
+            }
+            else {
+                StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
+
+                assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                assertThat(response.getHeader(HeaderName.of("X-Large"))).isEmpty();
+            }
         }
     }
 
