@@ -9,6 +9,7 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.McpMetadataMapper;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
@@ -72,26 +73,26 @@ public class SessionlessOperations
 
     private final OperationsCommon operationsCommon;
     private final JsonMapper jsonMapper;
-    private final McpMetadata metadata;
+    private final IconHelper iconHelper;
+    private final McpMetadataMapper metadata;
+    private final Set<String> serverIcons;
     private final McpEntities entities;
-    private final Implementation serverImplementation;
 
     @Inject
     public SessionlessOperations(
             OperationsCommon operationsCommon,
             JsonMapper jsonMapper,
             IconHelper iconHelper,
-            McpMetadata metadata,
+            McpMetadataMapper metadata,
             @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
             McpEntities entities)
     {
         this.operationsCommon = requireNonNull(operationsCommon, "operationsCommon is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this.iconHelper = requireNonNull(iconHelper, "iconHelper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
+        this.serverIcons = requireNonNull(serverIcons, "serverIcons is null");
         this.entities = requireNonNull(entities, "entities is null");
-
-        serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
-                .orElse(metadata.implementation());
     }
 
     @Override
@@ -156,9 +157,12 @@ public class SessionlessOperations
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
                 Optional.empty());
 
+        McpMetadata thisMetadata = metadata.map(requestContext.request());
+        Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> thisMetadata.implementation().withAdditionalIcons(icons))
+                .orElse(thisMetadata.implementation());
         Implementation localImplementation = supportsIcons(protocol) ? serverImplementation : serverImplementation.simpleForm();
 
-        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
+        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.instructions());
     }
 
     @Override

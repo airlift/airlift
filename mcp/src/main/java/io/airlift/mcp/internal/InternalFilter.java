@@ -8,7 +8,7 @@ import io.airlift.mcp.ErrorHandler;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpIdentityMapper;
-import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.McpMetadataMapper;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.operations.Operations;
@@ -48,7 +48,7 @@ public class InternalFilter
 {
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
 
-    private final McpMetadata metadata;
+    private final McpMetadataMapper metadata;
     private final McpIdentityMapper identityMapper;
     private final JsonMapper jsonMapper;
     private final ErrorHandler errorHandler;
@@ -56,7 +56,7 @@ public class InternalFilter
 
     @Inject
     public InternalFilter(
-            McpMetadata metadata,
+            McpMetadataMapper metadata,
             McpIdentityMapper identityMapper,
             JsonMapper jsonMapper,
             ErrorHandler errorHandler,
@@ -155,7 +155,7 @@ public class InternalFilter
     private boolean isMcpRequest(HttpServletRequest request)
     {
         if (ALLOWED_HTTP_METHODS.contains(request.getMethod().toUpperCase(ROOT))) {
-            return metadata.uriPath().equals(request.getRequestURI());
+            return metadata.map(request).uriPath().equals(request.getRequestURI());
         }
         return false;
     }

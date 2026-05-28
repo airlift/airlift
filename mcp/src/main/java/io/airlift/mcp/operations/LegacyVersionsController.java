@@ -42,7 +42,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 
-class LegacyVersionsController
+public class LegacyVersionsController
 {
     private static final Logger log = Logger.get(LegacyVersionsController.class);
 

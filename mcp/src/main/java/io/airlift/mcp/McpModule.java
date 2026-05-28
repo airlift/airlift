@@ -81,7 +81,7 @@ public class McpModule
 {
     public static final String MCP_SERVER_ICONS = "mcp-server-icons";
 
-    private final Consumer<LinkedBindingBuilder<McpMetadata>> metadataBinding;
+    private final Consumer<LinkedBindingBuilder<McpMetadataMapper>> metadataBinding;
     private final IdentityMapperBinding identityMapperBinding;
     private final Set<Class<?>> classes;
     private final Set<Provider<ToolEntry>> tools;
@@ -104,7 +104,7 @@ public class McpModule
     }
 
     private McpModule(
-            Consumer<LinkedBindingBuilder<McpMetadata>> metadataBinding,
+            Consumer<LinkedBindingBuilder<McpMetadataMapper>> metadataBinding,
             IdentityMapperBinding identityMapperBinding,
             Set<Class<?>> classes,
             Set<Provider<ToolEntry>> tools,
@@ -170,7 +170,7 @@ public class McpModule
         private final ImmutableMap.Builder<String, Consumer<LinkedBindingBuilder<Icon>>> icons = ImmutableMap.builder();
         private final ImmutableSet.Builder<String> serverIcons = ImmutableSet.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
-        private Optional<Consumer<LinkedBindingBuilder<McpMetadata>>> metadataBinding = Optional.empty();
+        private Optional<Consumer<LinkedBindingBuilder<McpMetadataMapper>>> metadataBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
@@ -187,7 +187,7 @@ public class McpModule
             return this;
         }
 
-        public Builder withMetadata(Consumer<LinkedBindingBuilder<McpMetadata>> metadataBinding)
+        public Builder withMetadata(Consumer<LinkedBindingBuilder<McpMetadataMapper>> metadataBinding)
         {
             checkArgument(this.metadataBinding.isEmpty(), "Metadata binding is already set");
 
@@ -296,7 +296,7 @@ public class McpModule
             Set<Provider<CompletionEntry>> localCompletions = completions.build();
 
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
-            Consumer<LinkedBindingBuilder<McpMetadata>> localMetadataBinding = metadataBinding.orElseGet(() -> binding -> binding.toInstance(McpMetadata.DEFAULT));
+            Consumer<LinkedBindingBuilder<McpMetadataMapper>> localMetadataBinding = metadataBinding.orElseGet(() -> binding -> binding.toInstance(_ -> McpMetadata.DEFAULT));
             Consumer<LinkedBindingBuilder<SchemaBuilder>> localSchemaBuilderBinding = schemaBuilderBinding.orElseGet(() -> binding -> binding.toProvider(DefaultSchemaBuilderProvider.class));
 
             return new McpModule(
@@ -322,7 +322,7 @@ public class McpModule
     @Override
     public void configure(Binder binder)
     {
-        metadataBinding.accept(binder.bind(McpMetadata.class));
+        metadataBinding.accept(binder.bind(McpMetadataMapper.class));
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
         operationsBinding.accept(binder.bind(Operations.class));
 
