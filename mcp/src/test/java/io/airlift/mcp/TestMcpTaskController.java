@@ -8,6 +8,7 @@ import io.airlift.mcp.model.CompleteTaskResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.InputRequest;
 import io.airlift.mcp.model.InputRequiredTaskResult;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.Result;
 import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.TaskStatus;
@@ -252,9 +253,9 @@ public class TestMcpTaskController
         Map<String, Object> responses = ImmutableMap.of("answer", "42");
         controller.setTaskInputResponses(task.taskId(), Optional.of(responses));
 
-        Optional<Map<String, Object>> retrieved = controller.currentInputResponses(task.taskId());
+        Optional<InputResponses> retrieved = controller.currentInputResponses(task.taskId());
         assertThat(retrieved).isPresent();
-        assertThat(retrieved.get()).containsEntry("answer", "42");
+        assertThat(retrieved.get().inputResponses().orElseThrow()).containsEntry("answer", "42");
     }
 
     @Test

@@ -38,13 +38,17 @@ import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpTaskController.ErrorState.FAILED;
 import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
 import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
@@ -456,10 +460,61 @@ public class ConformanceEndpoints
     }
 
     @McpTool(name = "slow_compute", description = "test")
-    public Result slowCompute()
+    public Result slowCompute(int seconds)
     {
         McpTaskController controller = taskController.orElseThrow();
         Task task = controller.createTask();
+        Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
+            TimeUnit.SECONDS.sleep(seconds);
+            controller.setResult(task.taskId(), Optional.of(new CallToolResult(new TextContent("It worked"))), Optional.empty());
+            return null;
+        });
+        return new CreateTaskResult(task);
+    }
+
+    @McpTool(name = "failing_job", description = "test")
+    public Result failingJob()
+    {
+        McpTaskController controller = taskController.orElseThrow();
+        Task task = controller.createTask();
+        Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
+            TimeUnit.SECONDS.sleep(1);
+            controller.setErrorState(task.taskId(), FAILED, Optional.of("Didn't work"));
+            return null;
+        });
+        return new CreateTaskResult(task);
+    }
+
+    public record ConfirmDelete(boolean confirm) {}
+
+    @McpTool(name = "test_tool_with_elicitation", description = "test")
+    public Result testToolWithElicitation(String filename)
+    {
+        McpTaskController controller = taskController.orElseThrow();
+        Task task = controller.createTask();
+
+        Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
+            ObjectNode schema = new JsonSchemaBuilder().build(Optional.empty(), ConfirmDelete.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Are you sure you want to delete " + filename + "?", schema);
+            CallToolResult requests = CallToolResult.inputRequestsBuilder()
+                    .add("confirm", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .build();
+            controller.setResult(task.taskId(), Optional.of(requests), Optional.empty());
+
+            controller.await(task.taskId(), Duration.ofSeconds(10));
+
+            InputResponses responses = controller.currentInputResponses(task.taskId())
+                    .orElseThrow(() -> new RuntimeException("Responses never received"));
+            ElicitResult elicitResult = responses.mapResponse(jsonMapper, "confirm", ElicitResult.class)
+                    .orElseThrow(() -> new RuntimeException("Missing ElicitResult"));
+            String resultText = ((elicitResult.action() == ElicitResult.Action.ACCEPT)
+                    && elicitResult.mapContent(jsonMapper, "confirm", boolean.class).orElseThrow()) ? "Deleted " + filename : "Deletion cancelled";
+
+            controller.setResult(task.taskId(), Optional.of(new CallToolResult(new TextContent(resultText))), Optional.empty());
+
+            return null;
+        });
+
         return new CreateTaskResult(task);
     }
 }

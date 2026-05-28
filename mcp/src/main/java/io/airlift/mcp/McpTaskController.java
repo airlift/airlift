@@ -18,6 +18,7 @@ import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.InputRequiredTaskResult;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.Result;
 import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.TaskStatus;
@@ -158,12 +159,13 @@ public class McpTaskController
         });
     }
 
-    public Optional<Map<String, Object>> currentInputResponses(String taskId)
+    public Optional<InputResponses> currentInputResponses(String taskId)
     {
         StorageGroupId storageGroupId = toStorageGroupId(taskId);
-        return storageController.getValue(storageGroupId, KEY_ID)
+        Optional<Map<String, Object>> inputResponses = storageController.getValue(storageGroupId, KEY_ID)
                 .map(taskEntryCodec::fromJson)
                 .flatMap(TaskEntry::inputResponses);
+        return Optional.of(() -> inputResponses);
     }
 
     public SetStatus setErrorState(String taskId, ErrorState errorState, Optional<String> statusMessage)

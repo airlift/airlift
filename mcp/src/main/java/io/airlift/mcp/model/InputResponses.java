@@ -25,7 +25,10 @@ public interface InputResponses
     };
 
     @JsonProperty
-    Optional<String> requestState();
+    default Optional<String> requestState()
+    {
+        return Optional.empty();
+    }
 
     @JsonProperty
     Optional<Map<String, Object>> inputResponses();
