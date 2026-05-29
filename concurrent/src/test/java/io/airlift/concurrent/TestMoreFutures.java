@@ -41,7 +41,6 @@ import static io.airlift.concurrent.MoreFutures.unwrapCompletionException;
 import static io.airlift.concurrent.MoreFutures.whenAnyComplete;
 import static io.airlift.concurrent.MoreFutures.whenAnyCompleteCancelOthers;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -813,7 +812,7 @@ public class TestMoreFutures
         return e -> {
             assertThat(e).as("exception is null").isNotNull();
             if (!expectedClass.isInstance(e) || !nullToEmpty(e.getMessage()).matches(expectedMessagePattern)) {
-                fail(format("Expected %s with message '%s', got: %s", expectedClass, expectedMessagePattern, e));
+                fail("Expected %s with message '%s', got: %s".formatted(expectedClass, expectedMessagePattern), e);
             }
             causeVerifier.accept(e.getCause());
         };

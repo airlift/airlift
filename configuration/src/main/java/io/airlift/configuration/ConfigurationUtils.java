@@ -6,7 +6,6 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.lang.String.format;
 import static java.util.regex.Matcher.quoteReplacement;
 
 public final class ConfigurationUtils
@@ -33,7 +32,7 @@ public final class ConfigurationUtils
                 String envName = matcher.group(1);
                 String envValue = environment.get(envName);
                 if (envValue == null) {
-                    onError.accept(propertyKey, format("Configuration property '%s' references unset environment variable '%s'", propertyKey, envName));
+                    onError.accept(propertyKey, "Configuration property '%s' references unset environment variable '%s'".formatted(propertyKey, envName));
                     return;
                 }
                 matcher.appendReplacement(replacedPropertyValue, quoteReplacement(envValue));

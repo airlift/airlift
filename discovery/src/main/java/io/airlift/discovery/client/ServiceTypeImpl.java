@@ -39,7 +39,7 @@ class ServiceTypeImpl
     @Override
     public String toString()
     {
-        return String.format("@%s(value=\"%s\")", ServiceType.class.getName(), value.replace("\"", "\\\""));
+        return "@%s(value=\"%s\")".formatted(ServiceType.class.getName(), value.replace("\"", "\\\""));
     }
 
     @Override

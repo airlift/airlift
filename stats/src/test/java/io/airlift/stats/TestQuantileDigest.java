@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -793,7 +792,7 @@ public class TestQuantileDigest
 
         addAll(digest, values);
 
-        assertThat(digest.equivalent(deserialize(digest.serialize()))).as(format("Serialization roundtrip failed for input: %s", values)).isTrue();
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).as("Serialization roundtrip failed for input: %s".formatted(values)).isTrue();
     }
 
     private QuantileDigest deserialize(Slice serialized)

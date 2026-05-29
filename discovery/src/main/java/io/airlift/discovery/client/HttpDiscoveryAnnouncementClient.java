@@ -115,7 +115,7 @@ public class HttpDiscoveryAnnouncementClient
             {
                 int statusCode = response.getStatusCode();
                 if (!isSuccess(statusCode)) {
-                    throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
+                    throw new DiscoveryException("Announcement failed with status code %s: %s".formatted(statusCode, getBodyForError(response)));
                 }
 
                 return extractMaxAge(response);

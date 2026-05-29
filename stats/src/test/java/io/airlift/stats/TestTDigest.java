@@ -14,7 +14,6 @@
 package io.airlift.stats;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.common.primitives.Doubles;
 import io.airlift.slice.Slices;
@@ -101,7 +100,7 @@ public class TestTDigest
     public void testSmallCountQuantile()
     {
         TDigest digest = new TDigest(200);
-        addAll(digest, Lists.newArrayList(15, 20, 32, 60));
+        addAll(digest, new ArrayList<>(Arrays.asList(15, 20, 32, 60)));
 
         assertThat(digest.valueAt(0.4)).isCloseTo(20, within(1e-10));
         assertThat(digest.valueAt(0.25)).isCloseTo(20, within(1e-10));

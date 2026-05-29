@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -41,7 +40,6 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -530,13 +528,13 @@ public class TestConfigurationFactory
             Pattern matchedPattern = null;
             for (Pattern pattern : patterns) {
                 if (pattern.matcher(messageString).matches()) {
-                    assertThat(matchedPattern).as(format("Error message matches two patterns patterns:\nmessage:\n  %s\npatterns:\n  %s\n  %s", messageString, matchedPattern, pattern)).isNull();
+                    assertThat(matchedPattern).as("Error message matches two patterns patterns:\nmessage:\n  %s\npatterns:\n  %s\n  %s".formatted(messageString, matchedPattern, pattern)).isNull();
                     String usedMatch = usedPatterns.put(pattern, messageString);
-                    assertThat(usedMatch).as(format("Pattern '%s' matches message '%s' and '%s", pattern, messageString, usedMatch)).isNull();
+                    assertThat(usedMatch).as("Pattern '%s' matches message '%s' and '%s".formatted(pattern, messageString, usedMatch)).isNull();
                     matchedPattern = pattern;
                 }
             }
-            assertThat(matchedPattern).as(format("Error message did not match any expected patterns:\nmessage:\n  %s\npatterns:\n  %s", messageString, Joiner.on("\n  ").join(patterns))).isNotNull();
+            assertThat(matchedPattern).as("Error message did not match any expected patterns:\nmessage:\n  %s\npatterns:\n  %s".formatted(messageString, String.join("\n  ", expectedErrorMessagePatterns))).isNotNull();
         }
     }
 

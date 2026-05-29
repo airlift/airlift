@@ -76,7 +76,6 @@ import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerat
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.Duration.nanosSince;
-import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -180,7 +179,7 @@ public abstract class AbstractHttpClientTest
             catch (CapturedException e) {
                 Throwable t = e.getCause();
                 if (!(isConnectTimeout(t) || (t instanceof ClosedChannelException) || (t instanceof TimeoutException))) {
-                    fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
+                    fail("unexpected exception: [%s]".formatted(getStackTraceAsString(t)));
                 }
                 Duration maxDuration = config.getConnectTimeout();
                 maxDuration = new Duration(maxDuration.toMillis() + 300, MILLISECONDS);
@@ -1470,7 +1469,7 @@ public abstract class AbstractHttpClientTest
                 }
                 i++;
             }
-            abort(format("socket backlog is too large (%s connections accepted)", i));
+            abort("socket backlog is too large (%s connections accepted)".formatted(i));
         }
 
         @Override

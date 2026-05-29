@@ -47,7 +47,6 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.alwaysOn;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class OpenTelemetryModule
@@ -112,7 +111,7 @@ public class OpenTelemetryModule
                 .put(OsIncubatingAttributes.OS_NAME, OS_NAME.value())
                 .put(OsIncubatingAttributes.OS_VERSION, OS_VERSION.value())
                 .put(HostIncubatingAttributes.HOST_ARCH, hostArch());
-        nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
+        nodeInfo.getAnnotations().forEach((key, value) -> attributes.put("%s.%s".formatted(NODE_ANNOTATION_PREFIX, key), value));
 
         return Resource.getDefault().merge(Resource.create(attributes.build()));
     }

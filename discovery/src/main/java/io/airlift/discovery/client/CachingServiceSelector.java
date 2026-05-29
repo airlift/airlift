@@ -67,8 +67,8 @@ public class CachingServiceSelector
         this.errorBackOff = new ExponentialBackOff(
                 new Duration(1, MILLISECONDS),
                 new Duration(1, SECONDS),
-                String.format("Discovery server connect succeeded for refresh (%s/%s)", type, pool),
-                String.format("Cannot connect to discovery server for refresh (%s/%s)", type, pool),
+                "Discovery server connect succeeded for refresh (%s/%s)".formatted(type, pool),
+                "Cannot connect to discovery server for refresh (%s/%s)".formatted(type, pool),
                 log);
     }
 

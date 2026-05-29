@@ -24,7 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.repeat;
 import static java.lang.Math.max;
 import static java.util.stream.Collectors.toCollection;
 
@@ -84,6 +83,6 @@ class ColumnPrinter
 
     private static String value(String value, int width)
     {
-        return value + repeat(" ", width - value.length());
+        return value + " ".repeat(width - value.length());
     }
 }

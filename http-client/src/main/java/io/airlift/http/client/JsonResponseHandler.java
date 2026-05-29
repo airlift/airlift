@@ -66,7 +66,7 @@ public class JsonResponseHandler<T>
     {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             throw new UnexpectedResponseException(
-                    String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
+                    "Expected response code to be %s, but was %d".formatted(successfulResponseCodes, response.getStatusCode()),
                     request,
                     response);
         }
@@ -85,7 +85,7 @@ public class JsonResponseHandler<T>
         }
         catch (IllegalArgumentException e) {
             String json = new String(bytes, UTF_8);
-            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response: <%s>", jsonCodec.getType(), json), e);
+            throw new IllegalArgumentException("Unable to create %s from JSON response: <%s>".formatted(jsonCodec.getType(), json), e);
         }
     }
 }

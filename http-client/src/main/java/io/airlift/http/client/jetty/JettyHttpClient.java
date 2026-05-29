@@ -120,7 +120,6 @@ import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -341,7 +340,7 @@ public class JettyHttpClient
         // configure logging
         this.logEnabled = config.isLogEnabled();
         if (logEnabled) {
-            String logFilePath = Path.of(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
+            String logFilePath = Path.of(config.getLogPath(), "%s-http-client.log".formatted(name)).toAbsolutePath().toString();
             requestLogger = new DefaultHttpClientLogger(
                     logFilePath,
                     config.getLogHistory(),
@@ -1175,7 +1174,7 @@ public class JettyHttpClient
     @Managed
     public String dumpAllDestinations()
     {
-        return format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response") +
+        return "%s\t%s\t%s\t%s\t%s\n".formatted("URI", "queued", "request", "wait", "response") +
                 httpClient.getDestinations().stream()
                         .map(JettyHttpClient::dumpDestination)
                         .collect(Collectors.joining("\n"));

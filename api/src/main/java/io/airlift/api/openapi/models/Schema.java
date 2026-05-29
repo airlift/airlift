@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Comparator.naturalOrder;
 
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName"})
 public class Schema<T>
@@ -122,7 +123,7 @@ public class Schema<T>
                 }
             }
         }
-        Collections.sort(list);
+        list.sort(naturalOrder());
         if (list.isEmpty()) {
             list = null;
         }
@@ -141,7 +142,7 @@ public class Schema<T>
             this.required = new ArrayList<>();
         }
         this.required.add(requiredItem);
-        Collections.sort(required);
+        this.required.sort(naturalOrder());
         return this;
     }
 

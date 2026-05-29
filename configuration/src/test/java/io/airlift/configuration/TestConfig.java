@@ -33,7 +33,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -220,7 +219,7 @@ public class TestConfig
     public void testDetectsNoConfigAnnotations()
     {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(Key.get(ConfigWithNoAnnotations.class), ConfigWithNoAnnotations.class, null));
+            Injector injector = createInjector(Map.of(), createModule(Key.get(ConfigWithNoAnnotations.class), ConfigWithNoAnnotations.class, null));
             injector.getInstance(ConfigWithNoAnnotations.class);
             fail("Expected exception due to missing @Config annotations");
         }

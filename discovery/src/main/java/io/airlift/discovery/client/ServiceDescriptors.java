@@ -20,7 +20,6 @@ import io.airlift.units.Duration;
 
 import java.util.List;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class ServiceDescriptors
@@ -65,8 +64,7 @@ public class ServiceDescriptors
         // verify service descriptors match expected type
         for (ServiceDescriptor serviceDescriptor : this.serviceDescriptors) {
             if (!type.equals(serviceDescriptor.getType()) || (pool != null && !pool.equals(serviceDescriptor.getPool()))) {
-                throw new DiscoveryException(format(
-                        "Expected %s service descriptor from pool %s, but was %s service descriptor from pool %s",
+                throw new DiscoveryException("Expected %s service descriptor from pool %s, but was %s service descriptor from pool %s".formatted(
                         type,
                         pool,
                         serviceDescriptor.getType(),

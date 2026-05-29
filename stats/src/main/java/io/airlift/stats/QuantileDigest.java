@@ -32,7 +32,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.stats.ExponentialDecay.weight;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
-import static java.lang.String.format;
 
 /**
  * Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
@@ -1118,8 +1117,7 @@ public class QuantileDigest
 
             for (int node : entry.getValue()) {
                 if (levels[node] == 0) {
-                    builder.append(String.format(
-                            "\t\t%s [label=\"%s:[%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                    builder.append("\t\t%s [label=\"%s:[%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n".formatted(
                             idFor(node),
                             node,
                             lowerBound(node),
@@ -1128,8 +1126,7 @@ public class QuantileDigest
                             counts[node] > 0 ? "salmon2" : "white"));
                 }
                 else {
-                    builder.append(String.format(
-                            "\t\t%s [label=\"%s:[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                    builder.append("\t\t%s [label=\"%s:[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n".formatted(
                             idFor(node),
                             node,
                             lowerBound(node),
@@ -1144,15 +1141,13 @@ public class QuantileDigest
 
         for (int node : nodes) {
             if (lefts[node] != -1) {
-                builder.append(format(
-                        "\t%s -> %s [style=\"%s\"];\n",
+                builder.append("\t%s -> %s [style=\"%s\"];\n".formatted(
                         idFor(node),
                         idFor(lefts[node]),
                         levels[node] - levels[lefts[node]] == 1 ? "solid" : "dotted"));
             }
             if (rights[node] != -1) {
-                builder.append(format(
-                        "\t%s -> %s [style=\"%s\"];\n",
+                builder.append("\t%s -> %s [style=\"%s\"];\n".formatted(
                         idFor(node),
                         idFor(rights[node]),
                         levels[node] - levels[rights[node]] == 1 ? "solid" : "dotted"));
@@ -1166,7 +1161,7 @@ public class QuantileDigest
 
     private static String idFor(int node)
     {
-        return String.format("node_%x", node);
+        return "node_%x".formatted(node);
     }
 
     /**
@@ -1283,7 +1278,7 @@ public class QuantileDigest
         @Override
         public String toString()
         {
-            return String.format("[count: %f, mean: %f]", count, mean);
+            return "[count: %f, mean: %f]".formatted(count, mean);
         }
     }
 

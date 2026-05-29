@@ -17,7 +17,6 @@ package io.airlift.discovery.client;
 
 import java.lang.annotation.Annotation;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 class HttpAnnouncementImpl
@@ -39,7 +38,7 @@ class HttpAnnouncementImpl
     @Override
     public String toString()
     {
-        return format("@%s(announcementId=\"%s\")", annotationType().getName(), announcementId.replace("\"", "\\\""));
+        return "@%s(announcementId=\"%s\")".formatted(annotationType().getName(), announcementId.replace("\"", "\\\""));
     }
 
     @Override

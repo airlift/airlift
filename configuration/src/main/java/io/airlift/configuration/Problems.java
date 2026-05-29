@@ -25,7 +25,6 @@ import java.util.IllegalFormatException;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Collections.emptyList;
 
 class Problems
 {
@@ -60,7 +59,7 @@ class Problems
 
     public void addError(Throwable e, String format, Object... params)
     {
-        Message message = new Message(emptyList(), format(format, params), e);
+        Message message = new Message(List.of(), format(format, params), e);
         errors.add(message);
     }
 
@@ -120,10 +119,10 @@ class Problems
         }
 
         try {
-            return String.format(format, params);
+            return format.formatted(params);
         }
         catch (IllegalFormatException e) {
-            return String.format("%s %s <%s>", format, Arrays.toString(params), e);
+            return "%s %s <%s>".formatted(format, Arrays.toString(params), e);
         }
     }
 }

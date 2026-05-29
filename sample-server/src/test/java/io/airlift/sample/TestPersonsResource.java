@@ -22,9 +22,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
@@ -61,8 +61,8 @@ public class TestPersonsResource
         Response response = resource.listAll();
         assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
         assertThat(response.getEntity()).isInstanceOf(Collection.class);
-        assertThat((Collection<?>) response.getEntity()).isEqualTo(newArrayList(
+        assertThat((Collection<?>) response.getEntity()).isEqualTo(new ArrayList<>(Arrays.asList(
                 new PersonRepresentation("foo@example.com", "Mr Foo", null),
-                new PersonRepresentation("bar@example.com", "Mr Bar", null)));
+                new PersonRepresentation("bar@example.com", "Mr Bar", null))));
     }
 }

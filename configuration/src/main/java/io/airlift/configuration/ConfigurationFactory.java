@@ -76,7 +76,6 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.Problems.exceptionFor;
-import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
@@ -507,7 +506,7 @@ public class ConfigurationFactory
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            throw new InvalidConfigurationException(e, format("Error invoking configuration method [%s]", injectionPoint.getSetter().toGenericString()));
+            throw new InvalidConfigurationException(e, "Error invoking configuration method [%s]".formatted(injectionPoint.getSetter().toGenericString()));
         }
     }
 
@@ -546,7 +545,7 @@ public class ConfigurationFactory
             if (value != null) {
                 String replacement = "deprecated.";
                 if (attribute.getInjectionPoint() != null) {
-                    replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
+                    replacement = "replaced. Use '%s' instead.".formatted(prefix + attribute.getInjectionPoint().getProperty());
                 }
                 problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
 
@@ -591,8 +590,7 @@ public class ConfigurationFactory
         // coerce the property value to the final type
         Object finalValue = coerce(injectionPoint.getPropertyType(), value);
         if (finalValue == null) {
-            throw new InvalidConfigurationException(format(
-                    "Invalid value '%s' for type %s (property '%s') in order to call [%s]",
+            throw new InvalidConfigurationException("Invalid value '%s' for type %s (property '%s') in order to call [%s]".formatted(
                     printableValue,
                     injectionPoint.getPropertyType().getType().getTypeName(),
                     name,

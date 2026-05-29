@@ -38,7 +38,6 @@ package io.airlift.stats;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +49,7 @@ import static java.lang.Math.exp;
 import static java.lang.Math.floor;
 import static java.lang.Math.min;
 import static java.lang.Math.random;
+import static java.util.Comparator.naturalOrder;
 
 /**
  * An exponentially-decaying random sample of {@code long}s. Uses Cormode et
@@ -231,7 +231,7 @@ final class ExponentiallyDecayingSample
 
         final List<Long> values = this.values();
         if (!values.isEmpty()) {
-            Collections.sort(values);
+            values.sort(naturalOrder());
 
             for (int i = 0; i < percentiles.length; i++) {
                 final double p = percentiles[i];

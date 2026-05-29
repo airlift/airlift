@@ -29,7 +29,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.format;
 
 public class HttpServerInfo
 {
@@ -133,7 +132,7 @@ public class HttpServerInfo
             return channel;
         }
         catch (IOException e) {
-            throw new UncheckedIOException(format("Failed to bind to %s:%s", address, port), e);
+            throw new UncheckedIOException("Failed to bind to %s:%s".formatted(address, port), e);
         }
     }
 }

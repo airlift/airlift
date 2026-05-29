@@ -811,7 +811,7 @@ public class TestConfigurationMetadata
         else {
             try {
                 configClass.getDeclaredConstructor();
-                fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
+                fail("Expected configClass [%s] not to have a constructor".formatted(configClass.getName()));
             }
             catch (NoSuchMethodException expected) {
             }

@@ -49,7 +49,6 @@ import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class HttpDiscoveryLookupClient
@@ -124,7 +123,7 @@ public class HttpDiscoveryLookupClient
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(ETAG, serviceDescriptors.getETag());
         }
-        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<>(format("Lookup of %s", type), uri)
+        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<>("Lookup of %s".formatted(type), uri)
         {
             @Override
             public ServiceDescriptors handle(Request request, Response response)
@@ -137,7 +136,7 @@ public class HttpDiscoveryLookupClient
                 }
 
                 if (OK.code() != response.getStatusCode()) {
-                    throw new DiscoveryException(format("Lookup of %s failed with status code %s", type, response.getStatusCode()));
+                    throw new DiscoveryException("Lookup of %s failed with status code %s".formatted(type, response.getStatusCode()));
                 }
 
                 ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
@@ -145,11 +144,11 @@ public class HttpDiscoveryLookupClient
                     serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(stream);
                 }
                 catch (IOException e) {
-                    throw new DiscoveryException(format("Lookup of %s failed", type), e);
+                    throw new DiscoveryException("Lookup of %s failed".formatted(type), e);
                 }
 
                 if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
-                    throw new DiscoveryException(format("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment()));
+                    throw new DiscoveryException("Expected environment to be %s, but was %s".formatted(environment, serviceDescriptorsRepresentation.getEnvironment()));
                 }
 
                 return new ServiceDescriptors(

@@ -3,7 +3,6 @@ package io.airlift.api.openapi.models;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ public class SecurityRequirement
 
     public SecurityRequirement addList(String name, String item)
     {
-        map.put(name, Collections.singletonList(item));
+        map.put(name, List.of(item));
         return this;
     }
 
