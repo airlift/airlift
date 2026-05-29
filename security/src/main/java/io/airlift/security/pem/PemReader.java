@@ -58,7 +58,6 @@ import static io.airlift.security.der.DerUtils.encodeBitString;
 import static io.airlift.security.der.DerUtils.encodeOctetString;
 import static io.airlift.security.der.DerUtils.encodeOid;
 import static io.airlift.security.der.DerUtils.encodeSequence;
-import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Base64.getMimeDecoder;
 import static java.util.Locale.US;
@@ -277,7 +276,7 @@ public final class PemReader
             return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(pkcs8Key));
         }
         catch (InvalidKeySpecException e) {
-            throw new InvalidKeySpecException(format("Invalid %s private key in PKCS 1 format", pkcs1KeyType), e);
+            throw new InvalidKeySpecException("Invalid %s private key in PKCS 1 format".formatted(pkcs1KeyType), e);
         }
     }
 
@@ -348,7 +347,7 @@ public final class PemReader
         }
 
         if (!"RSA".equals(keyType)) {
-            throw new InvalidKeySpecException(format("%s public key in PKCS 1 format is not supported", keyType));
+            throw new InvalidKeySpecException("%s public key in PKCS 1 format is not supported".formatted(keyType));
         }
         try {
             byte[] pkcs8Key = rsaPublicKeyPkcs1ToPkcs8(encodedKey);
@@ -356,7 +355,7 @@ public final class PemReader
             return keyFactory.generatePublic(new X509EncodedKeySpec(pkcs8Key));
         }
         catch (InvalidKeySpecException e) {
-            throw new InvalidKeySpecException(format("Invalid %s private key in PKCS 1 format", keyType), e);
+            throw new InvalidKeySpecException("Invalid %s private key in PKCS 1 format".formatted(keyType), e);
         }
     }
 

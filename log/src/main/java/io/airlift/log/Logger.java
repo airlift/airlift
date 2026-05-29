@@ -335,11 +335,11 @@ public class Logger
     private String formatMessage(String format, String level, Object[] args)
     {
         try {
-            return format(format, args);
+            return format.formatted(args);
         }
         catch (IllegalFormatException e) {
-            logger.log(SEVERE, format("Invalid format string while trying to log: %s '%s' %s", level, format, asList(args)), e);
-            return format("'%s' %s", format, asList(args));
+            logger.log(SEVERE, "Invalid format string while trying to log: %s '%s' %s".formatted(level, format, asList(args)), e);
+            return "'%s' %s".formatted(format, asList(args));
         }
     }
 }

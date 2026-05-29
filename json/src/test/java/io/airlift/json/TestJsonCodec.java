@@ -17,7 +17,6 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
 
@@ -216,7 +215,7 @@ public class TestJsonCodec
     public void testToJsonWithLengthLimitSimple()
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
-        ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", 1000), false);
+        ImmutablePerson person = new ImmutablePerson("a".repeat(1000), false);
 
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 0)).isNotPresent();
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 1000)).isNotPresent();
@@ -228,7 +227,7 @@ public class TestJsonCodec
     public void testToJsonExceedingDefaultStringLimit()
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
-        ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", DEFAULT_MAX_STRING_LEN + 1), false);
+        ImmutablePerson person = new ImmutablePerson("a".repeat(DEFAULT_MAX_STRING_LEN + 1), false);
 
         String json = jsonCodec.toJson(person);
         assertThat(jsonCodec.fromJson(json)).isEqualTo(person);
@@ -245,7 +244,7 @@ public class TestJsonCodec
     public void testToJsonWithLengthLimitNonAscii()
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
-        ImmutablePerson person = new ImmutablePerson(Strings.repeat("\u0158", 1000), false);
+        ImmutablePerson person = new ImmutablePerson("\u0158".repeat(1000), false);
 
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 0)).isNotPresent();
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 1000)).isNotPresent();
@@ -257,7 +256,7 @@ public class TestJsonCodec
     public void testToJsonWithLengthLimitComplex()
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(jsonCodec(ImmutablePerson.class));
-        ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", 1000), false);
+        ImmutablePerson person = new ImmutablePerson("a".repeat(1000), false);
         List<ImmutablePerson> people = Collections.nCopies(10, person);
 
         assertThat(jsonCodec.toJsonWithLengthLimit(people, 0)).isNotPresent();

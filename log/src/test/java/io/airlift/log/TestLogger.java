@@ -208,7 +208,7 @@ public class TestLogger
         logger.debug(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "DEBUG", format, param), IllegalArgumentException.class);
-        assertLog(Level.FINE, String.format("'%s' [%s]", format, param));
+        assertLog(Level.FINE, "'%s' [%s]".formatted(format, param));
     }
 
     @Test
@@ -219,7 +219,7 @@ public class TestLogger
         logger.info(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "INFO", format, param), IllegalArgumentException.class);
-        assertLog(Level.INFO, String.format("'%s' [%s]", format, param));
+        assertLog(Level.INFO, "'%s' [%s]".formatted(format, param));
     }
 
     @Test
@@ -230,7 +230,7 @@ public class TestLogger
         logger.warn(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
-        assertLog(Level.WARNING, String.format("'%s' [%s]", format, param));
+        assertLog(Level.WARNING, "'%s' [%s]".formatted(format, param));
     }
 
     @Test
@@ -241,7 +241,7 @@ public class TestLogger
         logger.error(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
-        assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param));
+        assertLog(Level.SEVERE, "'%s' [%s]".formatted(format, param));
     }
 
     @Test
@@ -253,7 +253,7 @@ public class TestLogger
         logger.warn(exception, format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
-        assertLog(Level.WARNING, String.format("'%s' [%s]", format, param), exception);
+        assertLog(Level.WARNING, "'%s' [%s]".formatted(format, param), exception);
     }
 
     @Test
@@ -265,7 +265,7 @@ public class TestLogger
         logger.error(exception, format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
-        assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param), exception);
+        assertLog(Level.SEVERE, "'%s' [%s]".formatted(format, param), exception);
     }
 
     @Test

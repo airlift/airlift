@@ -120,7 +120,7 @@ final class DenseHll
             }
         }
         else {
-            throw new IllegalArgumentException(String.format("Invalid format tag: %d", formatTag));
+            throw new IllegalArgumentException("Invalid format tag: %d".formatted(formatTag));
         }
 
         baselineCount = 0;
@@ -419,8 +419,7 @@ final class DenseHll
     public DenseHll mergeWith(DenseHll other)
     {
         if (indexBitLength != other.indexBitLength) {
-            throw new IllegalArgumentException(String.format(
-                    "Cannot merge HLLs with different number of buckets: %s vs %s",
+            throw new IllegalArgumentException("Cannot merge HLLs with different number of buckets: %s vs %s".formatted(
                     numberOfBuckets(indexBitLength),
                     numberOfBuckets(other.indexBitLength)));
         }
@@ -487,8 +486,7 @@ final class DenseHll
     public DenseHll mergeWith(SparseHll other)
     {
         if (indexBitLength != other.getIndexBitLength()) {
-            throw new IllegalArgumentException(String.format(
-                    "Cannot merge HLLs with different number of buckets: %s vs %s",
+            throw new IllegalArgumentException("Cannot merge HLLs with different number of buckets: %s vs %s".formatted(
                     numberOfBuckets(indexBitLength),
                     numberOfBuckets(other.getIndexBitLength())));
         }

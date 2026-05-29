@@ -63,8 +63,7 @@ public class TestHyperLogLog
 
             for (Map.Entry<Integer, Stats> entry : errors.entrySet()) {
                 // Give an extra error margin. This is mostly a sanity check to catch egregious errors
-                assertThat(entry.getValue().stdev() <= expectedStandardError * 1.1).as(String.format(
-                        "Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
+                assertThat(entry.getValue().stdev() <= expectedStandardError * 1.1).as("Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s".formatted(
                         indexBits,
                         entry.getKey(),
                         expectedStandardError,

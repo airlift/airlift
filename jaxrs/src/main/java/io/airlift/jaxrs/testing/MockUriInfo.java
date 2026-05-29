@@ -15,7 +15,6 @@
  */
 package io.airlift.jaxrs.testing;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
@@ -37,7 +36,6 @@ public class MockUriInfo
     private static final Splitter PATH_SPLITTER = Splitter.on('/');
     private static final Splitter QUERY_STRING_SPLITTER = Splitter.on('&').trimResults().omitEmptyStrings();
     private static final Splitter QUERY_PARAM_SPLITTER = Splitter.on('=');
-    private static final Joiner QUERY_PARAM_VALUE_JOINER = Joiner.on("");
 
     private final URI requestUri;
     private final URI baseUri;
@@ -171,7 +169,7 @@ public class MockUriInfo
             String key = urlDecode(pair.getFirst());
             String value = null;
             if (pair.size() != 1) {
-                value = QUERY_PARAM_VALUE_JOINER.join(pair.subList(1, pair.size()));
+                value = String.join("", pair.subList(1, pair.size()));
                 if (decode) {
                     value = urlDecode(value);
                 }

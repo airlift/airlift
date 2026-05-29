@@ -93,7 +93,6 @@ import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJEC
 import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static io.airlift.testing.Closeables.closeAll;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
-import static java.lang.String.format;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -334,7 +333,7 @@ public class TestHttpServerProvider
 
     private void verifyHttps(JettyHttpClient httpClient, String name)
     {
-        URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
+        URI uri = URI.create("https://%s:%s".formatted(name, httpServerInfo.getHttpsUri().getPort()));
         StatusResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStatusResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
@@ -490,7 +489,7 @@ public class TestHttpServerProvider
     private void assertClientCertificateRequest(HttpClientConfig clientConfig, String name)
     {
         try (JettyHttpClient httpClient = createJettyClient(clientConfig)) {
-            URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
+            URI uri = URI.create("https://%s:%s".formatted(name, httpServerInfo.getHttpsUri().getPort()));
             StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);

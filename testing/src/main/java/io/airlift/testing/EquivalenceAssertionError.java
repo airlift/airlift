@@ -15,11 +15,13 @@
  */
 package io.airlift.testing;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
+
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 public class EquivalenceAssertionError
         extends AssertionError
@@ -28,7 +30,9 @@ public class EquivalenceAssertionError
 
     public EquivalenceAssertionError(Iterable<ElementCheckFailure> failures)
     {
-        super("Equivalence failed:\n      " + Joiner.on("\n      ").join(failures));
+        super("Equivalence failed:\n      " + String.join("\n      ", StreamSupport.stream(failures.spliterator(), false)
+                .map(ElementCheckFailure::toString).
+                collect(toImmutableList())));
         this.failures = ImmutableList.copyOf(failures);
     }
 

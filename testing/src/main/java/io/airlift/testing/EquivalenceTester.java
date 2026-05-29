@@ -44,7 +44,6 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQ
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -470,7 +469,7 @@ public final class EquivalenceTester
         @Override
         public String toString()
         {
-            return format(type.getMessage(), primaryClassNumber, primaryElementNumber, primaryObject);
+            return type.getMessage().formatted(primaryClassNumber, primaryElementNumber, primaryObject);
         }
 
         @SuppressWarnings("RedundantIfStatement")
@@ -542,7 +541,7 @@ public final class EquivalenceTester
         @Override
         public String toString()
         {
-            return format(type.getMessage(), primaryClassNumber, primaryElementNumber, primaryObject, secondaryClassNumber, secondaryElementNumber, secondaryObject);
+            return type.getMessage().formatted(primaryClassNumber, primaryElementNumber, primaryObject, secondaryClassNumber, secondaryElementNumber, secondaryObject);
         }
 
         @SuppressWarnings("RedundantIfStatement")

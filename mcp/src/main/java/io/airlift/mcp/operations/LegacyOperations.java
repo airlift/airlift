@@ -387,7 +387,7 @@ public class LegacyOperations
 
         while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
             if (!sessionController.validateSession(sessionId)) {
-                log.warn(String.format("Session validation failed for %s", sessionId));
+                log.warn("Session validation failed for %s".formatted(sessionId));
                 break;
             }
 

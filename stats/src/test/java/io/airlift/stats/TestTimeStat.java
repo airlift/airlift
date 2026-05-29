@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static io.airlift.stats.TimeDistribution.MERGE_THRESHOLD_NANOS;
 import static java.lang.Math.min;
+import static java.util.Comparator.naturalOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -62,7 +63,7 @@ public class TestTimeStat
         for (Long value : values) {
             stat.add(value, TimeUnit.MILLISECONDS);
         }
-        Collections.sort(values);
+        values.sort(naturalOrder());
 
         ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         TimeDistribution allTime = stat.getAllTime();
@@ -231,6 +232,6 @@ public class TestTimeStat
             return;
         }
 
-        fail(String.format("%s expected:<%s> to be between <%s> and <%s>", name, value, minValue, maxValue));
+        fail("%s expected:<%s> to be between <%s> and <%s>".formatted(name, value, minValue, maxValue));
     }
 }

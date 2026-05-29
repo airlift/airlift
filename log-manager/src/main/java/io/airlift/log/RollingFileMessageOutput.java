@@ -13,7 +13,6 @@
  */
 package io.airlift.log;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -44,7 +43,6 @@ import java.util.zip.GZIPOutputStream;
 
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
@@ -266,7 +264,7 @@ final class RollingFileMessageOutput
 
         // The new file is open, so we will always switch to this new output stream
         // If any error occurs, with the cleanup steps, we add them to this exception as suppressed and throw at the end
-        IOException exception = new IOException(format("Unable to %s log file", currentOutputStream == null ? "setup initial" : "roll"));
+        IOException exception = new IOException("Unable to %s log file".formatted(currentOutputStream == null ? "setup initial" : "roll"));
 
         // close and optionally compress the currently open log (there is no open log during initial setup)
         if (currentOutputStream != null) {
@@ -303,7 +301,7 @@ final class RollingFileMessageOutput
             Files.createSymbolicLink(symlink, newFile.getFileName());
         }
         catch (IOException e) {
-            exception.addSuppressed(new IOException(format("Unable to update symlink %s to %s", symlink, newFile), e));
+            exception.addSuppressed(new IOException("Unable to update symlink %s to %s".formatted(symlink, newFile), e));
         }
 
         if (exception.getSuppressed().length > 0) {
@@ -452,11 +450,11 @@ final class RollingFileMessageOutput
             File newFile = Path.of(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
 
             if (!tempFile.renameTo(newFile)) {
-                errorMessages.add(format("Could not rename temp file [%s] to [%s]", tempFile, newFile));
+                errorMessages.add("Could not rename temp file [%s] to [%s]".formatted(tempFile, newFile));
             }
         }
         if (!errorMessages.isEmpty()) {
-            throw new IOException("Error recovering temp files\n" + Joiner.on("\n").join(errorMessages));
+            throw new IOException("Error recovering temp files\n" + String.join("\n", errorMessages));
         }
     }
 }

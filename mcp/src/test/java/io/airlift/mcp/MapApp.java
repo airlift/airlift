@@ -58,10 +58,10 @@ public class MapApp
             @McpDefaultValue("38.7968") @McpDescription("Northern latitude (-90 to 90)") double north)
     {
         String content = "Displaying globe at: W:%s, S:%s, E:%s, N:%s %s".formatted(
-                String.format("%.4f", west),
-                String.format("%.4f", south),
-                String.format("%.4f", east),
-                String.format("%.4f", north),
+                "%.4f".formatted(west),
+                "%.4f".formatted(south),
+                "%.4f".formatted(east),
+                "%.4f".formatted(north),
                 label.orElse(""));
         return new CallToolResult(new TextContent(content))
                 .withMeta(ImmutableMap.of("viewUUID", UUID.randomUUID()));
@@ -75,12 +75,12 @@ public class MapApp
                 .stream()
                 .map(result -> "%s\n   Coordinates: %s, %s\n   Bounding box: W:%s, S:%s, E:%s, N:%s".formatted(
                         result.displayName,
-                        String.format("%.6f", result.lat),
-                        String.format("%.6f", result.lon),
-                        String.format("%.4f", Double.parseDouble(result.boundingBox[2])),
-                        String.format("%.4f", Double.parseDouble(result.boundingBox[0])),
-                        String.format("%.4f", Double.parseDouble(result.boundingBox[3])),
-                        String.format("%.4f", Double.parseDouble(result.boundingBox[1]))))
+                        "%.6f".formatted(result.lat),
+                        "%.6f".formatted(result.lon),
+                        "%.4f".formatted(Double.parseDouble(result.boundingBox[2])),
+                        "%.4f".formatted(Double.parseDouble(result.boundingBox[0])),
+                        "%.4f".formatted(Double.parseDouble(result.boundingBox[3])),
+                        "%.4f".formatted(Double.parseDouble(result.boundingBox[1]))))
                 .collect(Collectors.joining("\n\n"));
     }
 
@@ -111,8 +111,7 @@ public class MapApp
         }
         lastNominatimRequest = System.currentTimeMillis();
 
-        String params = String.format(
-                "q=%s&format=json&limit=5",
+        String params = "q=%s&format=json&limit=5".formatted(
                 URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8));
         URL url = URI.create("https://nominatim.openstreetmap.org/search?" + params).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();

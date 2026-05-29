@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkState;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -258,10 +257,10 @@ public final class LifeCycleManager
             }
             catch (Exception e) {
                 LifeCycleStartException failure = new LifeCycleStartException(
-                        format("Exception in PostConstruct method %s::%s()", obj.getClass().getName(), postConstruct.getName()),
+                        "Exception in PostConstruct method %s::%s()".formatted(obj.getClass().getName(), postConstruct.getName()),
                         unwrapInvocationTargetException(e));
                 stopInstance(obj, (Class<?> klass, Method method, Exception exception) -> {
-                    String message = format("Exception in PreDestroy method %1$s::%2$s() after PostConstruct failure in %1$s::%3$s()", klass.getName(), method.getName(), postConstruct.getName());
+                    String message = "Exception in PreDestroy method %1$s::%2$s() after PostConstruct failure in %1$s::%3$s()".formatted(klass.getName(), method.getName(), postConstruct.getName());
                     failure.addSuppressed(new RuntimeException(message, exception));
                 });
                 throw failure;

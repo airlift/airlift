@@ -3,7 +3,6 @@ package io.airlift.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.base.Strings;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -31,9 +30,9 @@ public class TestLimits
             throws IOException
     {
         JsonMapper jsonMapper = jsonMapperProvider.get();
-        String longName = Strings.repeat("a", 100000);
+        String longName = "a".repeat(100000);
 
-        String content = String.format("{ \"%s\" : \"value\" }", longName);
+        String content = "{ \"%s\" : \"value\" }".formatted(longName);
         JsonNode jsonNode = jsonMapper.readTree(content);
         assertThat(jsonNode.has(longName)).isTrue();
         assertThat(jsonNode.findValue(longName).asText()).isEqualTo("value");
@@ -58,9 +57,9 @@ public class TestLimits
             throws IOException
     {
         JsonMapper jsonMapper = jsonMapperProvider.get();
-        String longValue = Strings.repeat("a", 100000);
+        String longValue = "a".repeat(100000);
 
-        String content = String.format("{ \"key\" : \"%s\" }", longValue);
+        String content = "{ \"key\" : \"%s\" }".formatted(longValue);
         JsonNode jsonNode = jsonMapper.readTree(content);
         assertThat(jsonNode.findValue("key").asText()).isEqualTo(longValue);
     }

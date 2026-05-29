@@ -43,7 +43,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +57,6 @@ import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
 import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -254,7 +252,7 @@ public class Bootstrap
             // initialize configuration
             log.info("Loading configuration");
 
-            requiredProperties = Collections.emptyMap();
+            requiredProperties = Map.of();
             String configFile = System.getProperty("config");
             if (configFile != null) {
                 try {
@@ -314,7 +312,7 @@ public class Bootstrap
         unusedProperties.keySet().removeAll(usedProperties);
 
         for (String key : unusedProperties.keySet()) {
-            errors.add(new Message(format("Configuration property '%s' was not used" + suggest(key, configurationFactory.getAllSeenProperties()), key)));
+            errors.add(new Message(("Configuration property '%s' was not used" + suggest(key, configurationFactory.getAllSeenProperties())).formatted(key)));
         }
 
         // If there are configuration errors, fail-fast to keep output clean
@@ -334,7 +332,7 @@ public class Bootstrap
             message.append("==========\n\n");
             message.append("Configuration should be updated:\n\n");
             for (int index = 0; index < warnings.size(); index++) {
-                message.append(format("%s) %s\n", index + 1, warnings.get(index)));
+                message.append("%s) %s\n".formatted(index + 1, warnings.get(index)));
             }
             message.append("\n");
             message.append("==========");

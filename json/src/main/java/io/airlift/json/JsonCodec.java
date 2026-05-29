@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -150,7 +149,7 @@ public class JsonCodec<T>
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON string for %s", type), e);
+            throw new IllegalArgumentException("Invalid JSON string for %s".formatted(type), e);
         }
     }
 
@@ -168,7 +167,7 @@ public class JsonCodec<T>
             return writer.get().writeValueAsString(instance);
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
         }
     }
 
@@ -191,7 +190,7 @@ public class JsonCodec<T>
             return Optional.empty();
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
         }
     }
 
@@ -212,7 +211,7 @@ public class JsonCodec<T>
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
+            throw new IllegalArgumentException("Invalid JSON bytes for " + type, e);
         }
     }
 
@@ -230,7 +229,7 @@ public class JsonCodec<T>
             return writer.get().writeValueAsBytes(instance);
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
         }
     }
 
@@ -251,7 +250,7 @@ public class JsonCodec<T>
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
+            throw new IllegalArgumentException("Invalid JSON bytes for " + type, e);
         }
     }
 
@@ -272,7 +271,7 @@ public class JsonCodec<T>
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON characters for %s", type), e);
+            throw new IllegalArgumentException("Invalid JSON characters for " + type, e);
         }
     }
 

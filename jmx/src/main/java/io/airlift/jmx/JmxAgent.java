@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Properties;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class JmxAgent
@@ -47,15 +46,13 @@ public class JmxAgent
 
         if (existingRegistryPort != null) {
             if (existingRegistryPort != registryPort) {
-                throw new RuntimeException(format(
-                        "System property '%s=%s' does match configured RMI registry port %s",
+                throw new RuntimeException("System property '%s=%s' does match configured RMI registry port %s".formatted(
                         JMX_REGISTRY_PORT,
                         existingRegistryPort,
                         registryPort));
             }
             if (existingRegistryPort.equals(0)) {
-                throw new RuntimeException(format(
-                        "JMX agent already running on an unknown port (system property '%s' is 0)",
+                throw new RuntimeException("JMX agent already running on an unknown port (system property '%s' is 0)".formatted(
                         JMX_REGISTRY_PORT));
             }
         }
@@ -64,8 +61,7 @@ public class JmxAgent
         Integer existingServerPort = Integer.getInteger(JMX_SERVER_PORT);
         Integer configuredServerPort = config.getRmiServerPort();
         if (!Objects.equals(existingServerPort, configuredServerPort)) {
-            throw new RuntimeException(format(
-                    "System property '%s=%s' does match configured RMI server port %s",
+            throw new RuntimeException("System property '%s=%s' does match configured RMI server port %s".formatted(
                     JMX_SERVER_PORT,
                     existingServerPort,
                     configuredServerPort));
@@ -86,7 +82,7 @@ public class JmxAgent
             log.info("JMX agent already running and listening on %s", address);
         }
 
-        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
+        this.url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi".formatted(address.getHost(), address.getPort()));
     }
 
     public JMXServiceURL getUrl()
@@ -118,7 +114,7 @@ public class JmxAgent
         }
         catch (IOException e) {
             if (!Boolean.getBoolean(ALLOW_SELF_ATTACH)) {
-                throw new IOException(format("%s (try adding '-D%s=true' to the JVM config)", e, ALLOW_SELF_ATTACH));
+                throw new IOException("%s (try adding '-D%s=true' to the JVM config)".formatted(e, ALLOW_SELF_ATTACH));
             }
             throw e;
         }

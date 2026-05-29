@@ -35,7 +35,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.google.common.collect.Sets.newConcurrentHashSet;
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public final class ConfigAssertions
@@ -397,6 +396,6 @@ public final class ConfigAssertions
 
     private static String notEquals(String message, Object actual, Object expected)
     {
-        return format("%s expected [%s] but found [%s]", message, expected, actual);
+        return "%s expected [%s] but found [%s]".formatted(message, expected, actual);
     }
 }

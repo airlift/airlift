@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.Math.min;
+import static java.util.Comparator.naturalOrder;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -46,7 +47,7 @@ public class TimedStatTest
         for (Double value : values) {
             stat.addValue(value, TimeUnit.MILLISECONDS);
         }
-        Collections.sort(values);
+        values.sort(naturalOrder());
 
         assertThat(stat.getCount()).isEqualTo(values.size());
         assertThat(stat.getMax()).isEqualTo(values.getLast());
@@ -123,6 +124,6 @@ public class TimedStatTest
             return;
         }
 
-        fail(String.format("%s expected:<%s> to be between <%s> and <%s>", name, value, minValue, maxValue));
+        fail("%s expected:<%s> to be between <%s> and <%s>".formatted(name, value, minValue, maxValue));
     }
 }
