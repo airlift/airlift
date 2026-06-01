@@ -34,6 +34,11 @@ public interface Generics
         throw new ValidatorException("Expected %s to be parameterized type".formatted(type));
     }
 
+    static Class<?> rawClass(Type type)
+    {
+        return TypeToken.of(typeResolver.resolveType(type)).getRawType();
+    }
+
     static void validateMap(Type type)
     {
         TypeToken<?> typeToken = TypeToken.of(typeResolver.resolveType(type));

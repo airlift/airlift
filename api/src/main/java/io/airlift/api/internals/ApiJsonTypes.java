@@ -3,7 +3,6 @@ package io.airlift.api.internals;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiJson;
 import io.airlift.api.ApiJsonList;
 import io.airlift.api.ApiJsonNode;
@@ -11,7 +10,7 @@ import io.airlift.api.ApiJsonObject;
 
 import java.lang.reflect.Type;
 
-import static io.airlift.api.internals.Generics.typeResolver;
+import static io.airlift.api.internals.Generics.rawClass;
 
 public final class ApiJsonTypes
 {
@@ -71,10 +70,5 @@ public final class ApiJsonTypes
     private static IllegalArgumentException unsupportedType(Class<?> clazz)
     {
         return new IllegalArgumentException("Unsupported ApiJson type: " + clazz.getName());
-    }
-
-    private static Class<?> rawClass(Type type)
-    {
-        return TypeToken.of(typeResolver.resolveType(type)).getRawType();
     }
 }

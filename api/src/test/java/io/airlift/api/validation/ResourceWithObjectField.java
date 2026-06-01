@@ -10,4 +10,5 @@ import java.util.Map;
 public record ResourceWithObjectField(
         @ApiDescription("A name") String name,
         @ApiDescription("Free-form list") List<Object> payloads,
+        @ApiDescription("Free-form rows") List<List<Object>> rows,
         @ApiDescription("Free-form map") Map<String, Object> attributes) {}
