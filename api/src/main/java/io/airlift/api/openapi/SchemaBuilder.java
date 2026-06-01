@@ -307,8 +307,39 @@ class SchemaBuilder
         // prime the cache early to handle recursive references to themselves - Issue 1689
         typeToResourceCache.putIfAbsent(modelResource.type(), modelResource);
 
+        if (modelResource.jsonValueResource().isPresent()) {
+            return buildJsonValueResourceSchema(modelResource, modelResource.jsonValueResource().orElseThrow(), mode);
+        }
+
         Schema<?> schema = newNamedSchema(schemaName(modelResource, mode, Optional.empty())).description(adjustedDescription(modelResource));
         return buildResourceSchema(schema, modelResource, mode);
+    }
+
+    private Schema<?> buildJsonValueResourceSchema(ModelResource modelResource, ModelResource jsonValueResource, BuildSchemaMode mode)
+    {
+        Schema<?> valueSchema = buildSchema(jsonValueResource, mode);
+        Schema<?> schema = asNamedJsonValueSchema(valueSchema, schemaName(modelResource, mode, Optional.empty()), adjustedDescription(modelResource));
+
+        if (mode.isOf()) {
+            ofSchemas.put(schema.getName(), schema);
+            return schema;
+        }
+
+        schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), mode), schema);
+        return asRef(schema);
+    }
+
+    private Schema<?> asNamedJsonValueSchema(Schema<?> valueSchema, String name, String description)
+    {
+        if (valueSchema.get$ref() != null) {
+            return newNamedSchema(name)
+                    .description(description)
+                    .addAllOfItem(valueSchema);
+        }
+        return valueSchema
+                .name(name)
+                .tags(ImmutableList.of(schemaTag))
+                .description(description);
     }
 
     private Schema<?> buildResourceSchema(Schema<?> schema, ModelResource modelResource, BuildSchemaMode mode)
