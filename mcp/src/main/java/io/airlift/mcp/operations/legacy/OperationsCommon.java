@@ -1,8 +1,6 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
@@ -16,7 +14,6 @@ import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
-import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
@@ -32,6 +29,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.PaginationUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,13 +48,11 @@ public class OperationsCommon
 {
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
-    private final JsonMapper jsonMapper;
 
     @Inject
-    public OperationsCommon(McpEntities entities, McpConfig mcpConfig, JsonMapper jsonMapper)
+    OperationsCommon(McpEntities entities, McpConfig mcpConfig)
     {
         this.entities = requireNonNull(entities, "entities is null");
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
     }
@@ -66,13 +62,7 @@ public class OperationsCommon
         return protocol != PROTOCOL_MCP_2025_06_18;
     }
 
-    <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
-    {
-        Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
-        return jsonMapper.convertValue(value, clazz);
-    }
-
-    ListToolsResult listTools(RequestContextImpl requestContext, ListRequest listRequest)
+    ListToolsResult listTools(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Tool> localTools = entities.tools(requestContext)
                 .stream()
@@ -81,7 +71,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    CallToolResult callTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
+    CallToolResult callTool(LegacyRequestContextImpl requestContext, CallToolRequest callToolRequest)
     {
         entities.validateToolAllowed(requestContext, callToolRequest.name());
 
@@ -96,7 +86,7 @@ public class OperationsCommon
         }
     }
 
-    ListPromptsResult listPrompts(RequestContextImpl requestContext, ListRequest listRequest)
+    ListPromptsResult listPrompts(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Prompt> localPrompts = entities.prompts(requestContext)
                 .stream()
@@ -105,7 +95,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    GetPromptResult getPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
+    GetPromptResult getPrompt(LegacyRequestContextImpl requestContext, GetPromptRequest getPromptRequest)
     {
         entities.validatePromptAllowed(requestContext, getPromptRequest.name());
 
@@ -115,7 +105,7 @@ public class OperationsCommon
         return promptEntry.promptHandler().getPrompt(requestContext.withProgressToken(progressToken(getPromptRequest)), getPromptRequest);
     }
 
-    ListResourcesResult listResources(RequestContextImpl requestContext, ListRequest listRequest)
+    ListResourcesResult listResources(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Resource> localResources = entities.resources(requestContext)
                 .stream()
@@ -124,7 +114,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates(RequestContextImpl requestContext, ListRequest listRequest)
+    ListResourceTemplatesResult listResourceTemplates(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext)
                 .stream()
@@ -133,7 +123,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
-    Object readResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
+    Object readResources(LegacyRequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
@@ -143,7 +133,7 @@ public class OperationsCommon
         return new ReadResourceResult(resourceContents);
     }
 
-    CompleteResult completionComplete(RequestContextImpl requestContext, CompleteRequest completeRequest)
+    CompleteResult completionComplete(LegacyRequestContextImpl requestContext, CompleteRequest completeRequest)
     {
         return entities.completionEntry(requestContext, completeRequest.ref())
                 .map(completionEntry -> completionEntry.handler().complete(requestContext.withProgressToken(progressToken(completeRequest)), completeRequest))

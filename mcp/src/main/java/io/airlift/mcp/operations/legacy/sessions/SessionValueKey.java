@@ -1,4 +1,4 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import io.airlift.mcp.messages.SentMessages;
 import io.airlift.mcp.model.CancelledNotification;
@@ -7,8 +7,8 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Protocol;
-import io.airlift.mcp.operations.ResourceVersions;
-import io.airlift.mcp.operations.SystemListVersions;
+import io.airlift.mcp.operations.legacy.ResourceVersions;
+import io.airlift.mcp.operations.legacy.SystemListVersions;
 import io.airlift.mcp.storage.StorageKeyId;
 
 import static com.google.common.base.Preconditions.checkArgument;

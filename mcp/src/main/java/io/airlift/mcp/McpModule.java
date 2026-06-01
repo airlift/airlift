@@ -38,10 +38,13 @@ import io.airlift.mcp.model.JsonRpcMessageDeserializer;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.JsonSchemaBuilder.DefaultSchemaBuilderProvider;
 import io.airlift.mcp.model.JsonSchemaBuilder.SchemaBuilder;
-import io.airlift.mcp.operations.LegacyOperations;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
-import io.airlift.mcp.operations.SessionlessOperations;
+import io.airlift.mcp.operations.legacy.LegacySessionOperations;
+import io.airlift.mcp.operations.legacy.SessionlessOperations;
+import io.airlift.mcp.operations.legacy.sessions.CachingSessionController;
+import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
 import io.airlift.mcp.reflection.AppContent;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
@@ -51,9 +54,6 @@ import io.airlift.mcp.reflection.ReflectionHelper;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
-import io.airlift.mcp.sessions.CachingSessionController;
-import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.storage.StorageController;
 
 import java.lang.annotation.Annotation;
@@ -164,6 +164,11 @@ public class McpModule
                 .build();
     }
 
+    public interface LegacyBuilder
+    {
+        Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding);
+    }
+
     public static class Builder
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
@@ -203,14 +208,16 @@ public class McpModule
             return this;
         }
 
-        public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
+        public LegacyBuilder withLegacyBindings()
         {
-            checkState(storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
-            checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
+            return sessionControllerBinding -> {
+                checkState(Builder.this.storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
+                checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
-            this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-            operationsBinding = binding -> binding.to(LegacyOperations.class).in(SINGLETON);
-            return this;
+                Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+                Builder.this.operationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
+                return Builder.this;
+            };
         }
 
         public Builder withCapabilityFilter(Consumer<LinkedBindingBuilder<McpCapabilityFilter>> filterBinding)

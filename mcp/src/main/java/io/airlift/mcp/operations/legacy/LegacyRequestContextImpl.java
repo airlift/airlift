@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
@@ -13,12 +13,12 @@ import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
 import io.airlift.mcp.model.Protocol;
-import io.airlift.mcp.sessions.BlockingResult;
-import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
-import io.airlift.mcp.sessions.Session;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult.Fulfilled;
+import io.airlift.mcp.operations.legacy.sessions.Session;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -37,13 +37,13 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
-import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
-import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.PROTOCOL;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.serverToClientResponseKey;
 import static java.util.Objects.requireNonNull;
 
-class RequestContextImpl
+class LegacyRequestContextImpl
         implements McpRequestContext
 {
     private final JsonMapper jsonMapper;
@@ -56,7 +56,7 @@ class RequestContextImpl
     private final Session session;
     private final Authenticated<?> identity;
 
-    RequestContextImpl(
+    LegacyRequestContextImpl(
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
             HttpServletRequest request,
@@ -85,7 +85,7 @@ class RequestContextImpl
         });
     }
 
-    private RequestContextImpl(
+    private LegacyRequestContextImpl(
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
             HttpServletRequest request,
@@ -107,9 +107,9 @@ class RequestContextImpl
         this.identity = requireNonNull(identity, "identity is null");
     }
 
-    RequestContextImpl withProgressToken(Optional<Object> progressToken)
+    LegacyRequestContextImpl withProgressToken(Optional<Object> progressToken)
     {
-        return new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, session, identity);
+        return new LegacyRequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, session, identity);
     }
 
     Protocol protocol()
@@ -124,9 +124,9 @@ class RequestContextImpl
         return response;
     }
 
-    RequestContextImpl withSessionId(SessionId sessionId)
+    LegacyRequestContextImpl withSessionId(SessionId sessionId)
     {
-        return new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, new SessionImpl(sessionController, sessionId), identity);
+        return new LegacyRequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, new SessionImpl(sessionController, sessionId), identity);
     }
 
     @Override

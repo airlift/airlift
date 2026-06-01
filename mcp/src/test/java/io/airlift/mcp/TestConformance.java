@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
 import com.google.inject.Scopes;
 import io.airlift.http.server.testing.TestingHttpServer;
-import io.airlift.mcp.sessions.StandardSessionController;
+import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
@@ -63,7 +63,7 @@ public class TestConformance
         TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
+                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
                 .withAllInClass(ConformanceEndpoints.class)
                 .build()));
 

@@ -20,11 +20,11 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
-import io.airlift.mcp.operations.LegacyCancellationController;
-import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.StandardSessionController;
+import io.airlift.mcp.operations.legacy.LegacyCancellationController;
+import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
 import io.airlift.mcp.storage.StorageController;
 import io.modelcontextprotocol.client.transport.McpHttpClientTransportAuthorizationException;
@@ -160,7 +160,7 @@ public abstract class TestMcp
                     .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                     .withAllInClass(TestingEndpoints.class);
             if (mode != Mode.SESSIONLESS) {
-                builder = builder.withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
+                builder = builder.withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
             }
             return builder.build();
         };

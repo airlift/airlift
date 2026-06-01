@@ -1,11 +1,11 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import java.time.Duration;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
-import static io.airlift.mcp.sessions.BlockingResult.EmptyFulfilled.EMPTY_FULFILLED;
+import static io.airlift.mcp.operations.legacy.sessions.BlockingResult.EmptyFulfilled.EMPTY_FULFILLED;
 import static java.util.Objects.requireNonNull;
 
 public sealed interface BlockingResult<T>

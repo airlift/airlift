@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -41,10 +41,10 @@ import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 import io.airlift.mcp.reflection.IconHelper;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
@@ -82,14 +82,15 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
-import static io.airlift.mcp.operations.OperationsCommon.supportsIcons;
-import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
-import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
-import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
-import static io.airlift.mcp.sessions.SessionValueKey.SENT_MESSAGES;
-import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
-import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
+import static io.airlift.mcp.operations.Operations.convertParams;
+import static io.airlift.mcp.operations.legacy.OperationsCommon.supportsIcons;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.PROTOCOL;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.ROOTS;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.SENT_MESSAGES;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.cancellationKey;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.serverToClientResponseKey;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_METHOD_NAME;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_PROTOCOL_VERSION;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_RESOURCE_URI;
@@ -99,10 +100,10 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
-public class LegacyOperations
-        implements Operations
+public class LegacySessionOperations
+        implements LegacyOperations
 {
-    private static final Logger log = Logger.get(LegacyOperations.class);
+    private static final Logger log = Logger.get(LegacySessionOperations.class);
 
     private static final Duration EVENT_STREAMING_SLEEP = Duration.ofSeconds(15);
 
@@ -121,7 +122,7 @@ public class LegacyOperations
     private final McpEntities entities;
 
     @Inject
-    public LegacyOperations(
+    public LegacySessionOperations(
             McpMetadataMapper metadata,
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
@@ -165,21 +166,21 @@ public class LegacyOperations
         ResumableMessageWriter messageWriter = newResumableMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
-        RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
+        LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
 
         Object result = switch (method) {
-            case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
-            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
-            case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, operationsCommon.convertParams(rpcRequest, SetLevelRequest.class));
-            case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
-            case METHOD_RESOURCES_UNSUBSCRIBE -> handleResourcesUnsubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_INITIALIZE -> handleInitialize(requestContext, convertParams(jsonMapper, rpcRequest, InitializeRequest.class));
+            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, convertParams(jsonMapper, rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, convertParams(jsonMapper, rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class)));
+            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
+            case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, convertParams(jsonMapper, rpcRequest, SetLevelRequest.class));
+            case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, convertParams(jsonMapper, rpcRequest, SubscribeRequest.class));
+            case METHOD_RESOURCES_UNSUBSCRIBE -> handleResourcesUnsubscribe(requestContext, convertParams(jsonMapper, rpcRequest, SubscribeRequest.class));
             case METHOD_PING -> ImmutableMap.of();
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
@@ -206,7 +207,7 @@ public class LegacyOperations
 
         switch (rpcRequest.method()) {
             case NOTIFICATION_INITIALIZED -> {} // ignore
-            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, operationsCommon.convertParams(rpcRequest, CancelledNotification.class));
+            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, convertParams(jsonMapper, rpcRequest, CancelledNotification.class));
             case NOTIFICATION_ROOTS_LIST_CHANGED -> handleRpcRootsChanged(request);
             default -> log.warn("Unknown MCP notification method: %s", rpcRequest.method());
         }
@@ -262,7 +263,7 @@ public class LegacyOperations
                 .map(SessionId::new);
     }
 
-    private InitializeResult handleInitialize(RequestContextImpl requestContext, InitializeRequest initializeRequest)
+    private InitializeResult handleInitialize(LegacyRequestContextImpl requestContext, InitializeRequest initializeRequest)
     {
         Protocol protocol = Protocol.of(initializeRequest.protocolVersion())
                 .orElse(LATEST_PROTOCOL);
@@ -271,7 +272,7 @@ public class LegacyOperations
 
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(requestContext.identity(), Optional.of(sessionTimeout));
-            RequestContextImpl localRequestContext = requestContext.withSessionId(sessionId);
+            LegacyRequestContextImpl localRequestContext = requestContext.withSessionId(sessionId);
 
             localRequestContext.response().addHeader(MCP_SESSION_ID, sessionId.id());
 
@@ -309,13 +310,13 @@ public class LegacyOperations
         return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.instructions());
     }
 
-    private Object handleSetLoggingLevel(RequestContextImpl requestContext, SetLevelRequest setLevelRequest)
+    private Object handleSetLoggingLevel(LegacyRequestContextImpl requestContext, SetLevelRequest setLevelRequest)
     {
         requestContext.session().setValue(LOGGING_LEVEL, setLevelRequest.level());
         return ImmutableMap.of();
     }
 
-    private Object handleResourcesSubscribe(RequestContextImpl requestContext, SubscribeRequest subscribeRequest)
+    private Object handleResourcesSubscribe(LegacyRequestContextImpl requestContext, SubscribeRequest subscribeRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
 
@@ -328,7 +329,7 @@ public class LegacyOperations
         return ImmutableMap.of();
     }
 
-    private Object handleResourcesUnsubscribe(RequestContextImpl requestContext, SubscribeRequest subscribeRequest)
+    private Object handleResourcesUnsubscribe(LegacyRequestContextImpl requestContext, SubscribeRequest subscribeRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
 
@@ -360,7 +361,7 @@ public class LegacyOperations
         });
     }
 
-    private Object withManagement(RequestContextImpl requestContext, Object requestId, Supplier<Object> supplier)
+    private Object withManagement(LegacyRequestContextImpl requestContext, Object requestId, Supplier<Object> supplier)
     {
         if (sessionController.isEmpty()) {
             return supplier.get();
@@ -386,7 +387,7 @@ public class LegacyOperations
         Stopwatch timeoutStopwatch = Stopwatch.createStarted();
 
         ResumableMessageWriter messageWriter = newResumableMessageWriter(response);
-        RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
+        LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
 
         Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
                 .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));

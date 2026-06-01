@@ -11,10 +11,10 @@ import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.messages.SentMessages;
 import io.airlift.mcp.messages.SentMessages.SentMessage;
 import io.airlift.mcp.model.Icon;
-import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.StandardSessionController;
+import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import org.junit.jupiter.api.AfterAll;
@@ -60,7 +60,7 @@ public class TestSentMessages
         testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());

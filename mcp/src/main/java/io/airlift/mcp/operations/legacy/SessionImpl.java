@@ -1,11 +1,11 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import io.airlift.mcp.McpException;
-import io.airlift.mcp.sessions.BlockingResult;
-import io.airlift.mcp.sessions.Session;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult;
+import io.airlift.mcp.operations.legacy.sessions.Session;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 
 import java.time.Duration;
 import java.util.Optional;
