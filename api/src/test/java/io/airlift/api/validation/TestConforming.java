@@ -207,18 +207,25 @@ public class TestConforming
     @Test
     public void testAllowedObjectContainers()
     {
-        // service whose type carries ALLOW_OBJECT_ELEMENTS may declare List<Object> / Map<String, Object> fields
+        // service whose type carries ALLOW_OBJECT_ELEMENTS may declare List<Object>, nested List<Object>, and Map<String, Object> fields
         ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithObjectField.class).build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
         Module module = ApiModule.builder().addApi(modelApi).build();
         Guice.createInjector(module, new JsonModule());
     }
 
     @Test
-    public void testObjectContainerWithoutTrait()
+    public void testObjectListWithoutTrait()
     {
-        // service whose type lacks ALLOW_OBJECT_ELEMENTS must reject List<Object> / Map<String, Object>
-        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithObjectFieldNoTrait.class).build().modelServices();
-        assertThat(services.errors()).anyMatch(s -> s.contains("ALLOW_OBJECT_ELEMENTS"));
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithObjectListFieldNoTrait.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(s -> s.contains("java.util.List<java.lang.Object> requires service trait ALLOW_OBJECT_ELEMENTS"));
+    }
+
+    @Test
+    public void testObjectMapWithoutTrait()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithObjectMapFieldNoTrait.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(s -> s.contains("java.util.Map<java.lang.String, java.lang.Object> requires service trait ALLOW_OBJECT_ELEMENTS"));
     }
 
     @Test
