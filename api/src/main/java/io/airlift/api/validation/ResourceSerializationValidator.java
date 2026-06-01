@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+import static io.airlift.api.internals.Generics.rawClass;
 import static java.util.Objects.requireNonNull;
 
 public class ResourceSerializationValidator
@@ -183,28 +184,22 @@ public class ResourceSerializationValidator
             if (validationContext.isActiveValidatingResource(typeArgument)) {
                 return ImmutableList.of();
             }
-            return ImmutableList.of(getDefaultValue(validationContext, (Class<?>) typeArgument, typeArgument));
+            return ImmutableList.of(getDefaultValue(validationContext, rawClass(typeArgument), typeArgument));
         }
         if (Collection.class.isAssignableFrom(clazz) && (type instanceof ParameterizedType parameterizedType)) {
             Type typeArgument = parameterizedType.getActualTypeArguments()[0];
             if (validationContext.isActiveValidatingResource(typeArgument)) {
                 return ImmutableSet.of();
             }
-            return ImmutableSet.of(getDefaultValue(validationContext, (Class<?>) typeArgument, typeArgument));
+            return ImmutableSet.of(getDefaultValue(validationContext, rawClass(typeArgument), typeArgument));
         }
         if (Map.class.isAssignableFrom(clazz) && (type instanceof ParameterizedType parameterizedType)) {
             Type typeArgument = parameterizedType.getActualTypeArguments()[1];
-            return ImmutableMap.of("dummy", getDefaultValue(validationContext, (Class<?>) typeArgument, typeArgument));
+            return ImmutableMap.of("dummy", getDefaultValue(validationContext, rawClass(typeArgument), typeArgument));
         }
         if (Optional.class.isAssignableFrom(clazz) && (type instanceof ParameterizedType parameterizedType)) {
             Type typeArgument = parameterizedType.getActualTypeArguments()[0];
-            Class<?> classArgument;
-            if (typeArgument instanceof ParameterizedType parameterizedTypeArgument) {
-                classArgument = (Class<?>) parameterizedTypeArgument.getRawType();
-            }
-            else {
-                classArgument = (Class<?>) typeArgument;
-            }
+            Class<?> classArgument = rawClass(typeArgument);
             if (validationContext.isActiveValidatingResource(typeArgument)) {
                 return Optional.empty();
             }

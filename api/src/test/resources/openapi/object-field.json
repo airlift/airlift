@@ -123,7 +123,7 @@
         "x-tags" : [ "Responses" ]
       },
       "ObjectField" : {
-        "required" : [ "attributes", "name", "payloads" ],
+        "required" : [ "attributes", "name", "payloads", "rows" ],
         "properties" : {
           "name" : {
             "type" : "string",
@@ -132,16 +132,20 @@
           "payloads" : {
             "type" : "array",
             "description" : "Free-form list",
+            "items" : { }
+          },
+          "rows" : {
+            "type" : "array",
+            "description" : "Free-form rows",
             "items" : {
-              "description" : "Free-form list"
+              "type" : "array",
+              "items" : { }
             }
           },
           "attributes" : {
             "type" : "object",
             "description" : "Free-form map",
-            "additionalProperties" : {
-              "description" : "Free-form map"
-            }
+            "additionalProperties" : { }
           }
         },
         "description" : "Resource with Object container fields",

@@ -40,6 +40,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.ApiJsonTypes.jacksonJsonType;
+import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Strings.capitalize;
 import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
@@ -152,8 +153,12 @@ class SchemaBuilder
         Schema<?> schema = schemas.get(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), mode));
         if (schema == null) {
             schema = switch (modelResource.resourceType()) {
-                case LIST -> asList(modelResource, buildSchema(asResource(removeContainer(modelResource)), mode));
-                case MAP -> new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(asResource(removeContainer(modelResource)), mode));
+                case LIST -> modelResource.modifiers().contains(IS_ANY_OBJECT)
+                        ? buildAnyObjectContainerSchema(modelResource)
+                        : asList(modelResource, buildSchema(asResource(removeContainer(modelResource)), mode));
+                case MAP -> modelResource.modifiers().contains(IS_ANY_OBJECT)
+                        ? buildAnyObjectContainerSchema(modelResource)
+                        : new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(asResource(removeContainer(modelResource)), mode));
                 case PAGINATED_RESULT -> buildPaginatedSchema(modelResource);
                 case JSON -> buildApiJsonSchema(modelResource);
                 default -> modelResource.modifiers().contains(IS_ANY_OBJECT)
@@ -171,6 +176,24 @@ class SchemaBuilder
     private Schema<?> asList(ModelResource modelResource, Schema<?> schema)
     {
         return new ArraySchema().description(adjustedDescription(modelResource)).items(schema);
+    }
+
+    private Schema<?> buildAnyObjectContainerSchema(ModelResource modelResource)
+    {
+        return buildAnyObjectContainerSchema(modelResource.containerType())
+                .description(adjustedDescription(modelResource));
+    }
+
+    private Schema<?> buildAnyObjectContainerSchema(Type type)
+    {
+        TypeToken<?> typeToken = TypeToken.of(type);
+        if (typeToken.isSubtypeOf(Collection.class)) {
+            return new ArraySchema().items(buildAnyObjectContainerSchema(extractGenericParameter(typeToken.getType(), 0)));
+        }
+        if (typeToken.isSubtypeOf(Map.class)) {
+            return new MapSchema().additionalProperties(buildAnyObjectContainerSchema(extractGenericParameter(typeToken.getType(), 1)));
+        }
+        return new Schema<>();
     }
 
     Optional<Schema<?>> buildBasicSchema(Class<?> clazz)
