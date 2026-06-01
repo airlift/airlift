@@ -1,12 +1,13 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.model.CacheableResult;
 import io.airlift.mcp.model.Implementation;
 
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions)
+public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, CacheableResult cacheableResultValues)
 {
     public static final McpMetadata DEFAULT = new McpMetadata("/mcp");
 
@@ -15,20 +16,26 @@ public record McpMetadata(String uriPath, Implementation implementation, Optiona
         requireNonNull(uriPath, "uriPath is null");
         requireNonNull(implementation, "implementation is null");
         requireNonNull(instructions, "instructions is null");
+        requireNonNull(cacheableResultValues, "cacheableResultValues is null");
     }
 
     public McpMetadata(String uriPath)
     {
-        this(uriPath, new Implementation("mcp", "1.0.0"), Optional.empty());
+        this(uriPath, new Implementation("mcp", "1.0.0"), Optional.empty(), CacheableResult.DEFAULT);
     }
 
     public McpMetadata withImplementation(Implementation implementation)
     {
-        return new McpMetadata(uriPath, implementation, instructions);
+        return new McpMetadata(uriPath, implementation, instructions, cacheableResultValues);
     }
 
     public McpMetadata withInstructions(String instructions)
     {
-        return new McpMetadata(uriPath, implementation, Optional.ofNullable(instructions));
+        return new McpMetadata(uriPath, implementation, Optional.ofNullable(instructions), cacheableResultValues);
+    }
+
+    public McpMetadata withCacheableResultValues(CacheableResult cacheableResultValues)
+    {
+        return new McpMetadata(uriPath, implementation, instructions, cacheableResultValues);
     }
 }

@@ -4,8 +4,8 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import io.airlift.mcp.ErrorHandler;
 import io.airlift.mcp.operations.legacy.LegacyCancellationController;
-import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 import io.airlift.mcp.operations.legacy.LegacyVersionsController;
+import io.airlift.mcp.operations.legacy.MrtrEmulator;
 import io.airlift.mcp.operations.legacy.OperationsCommon;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -19,7 +19,8 @@ public class OperationsModule
     {
         binder.bind(LegacyVersionsController.class).in(SINGLETON);
         binder.bind(OperationsCommon.class).in(SINGLETON);
-        binder.bind(LegacyServerToClientRequest.class).in(SINGLETON);
+        binder.bind(OperationsImpl.class).in(SINGLETON);
+        binder.bind(MrtrEmulator.class).in(SINGLETON);
         newOptionalBinder(binder, ErrorHandler.class).setDefault().to(ErrorHandlerImpl.class);
 
         binder.bind(LegacyCancellationController.class).in(SINGLETON);
