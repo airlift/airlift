@@ -8,12 +8,12 @@ import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
 import static java.util.Objects.requireNonNull;
 
@@ -31,7 +31,8 @@ public record ModelResource(
         Optional<ModelSupportsIdLookup> supportsIdLookup,
         Optional<ModelPolyResource> polyResource,
         Optional<ModelResource> streamingEventResource,
-        Optional<Map<String, String>> enumDescriptions)
+        Optional<Map<String, String>> enumDescriptions,
+        Optional<ModelResource> jsonValueResource)
 {
     public ModelResource
     {
@@ -43,6 +44,8 @@ public record ModelResource(
         requireNonNull(containerType, "containerType is null");
         requireNonNull(polyResource, "polyResource is null");
         requireNonNull(streamingEventResource, "streamingEventResource is null");
+        requireNonNull(enumDescriptions, "enumDescriptions is null");
+        requireNonNull(jsonValueResource, "jsonValueResource is null");
 
         components = ImmutableList.copyOf(components);
         modifiers = ImmutableSet.copyOf(modifiers);
@@ -99,15 +102,23 @@ public record ModelResource(
     @VisibleForTesting
     public ModelResource asResourceWithoutUnwrappedComponents()
     {
-        List<ModelResource> components = components().stream()
-                .map(component -> builder(component)
-                        .withModifierRemoved(IS_UNWRAPPED)
-                        .build())
-                .collect(toImmutableList());
+        ImmutableList.Builder<ModelResource> components = ImmutableList.builder();
+        IdentityHashMap<ModelResource, ModelResource> updatedComponents = new IdentityHashMap<>();
 
-        return builder(this)
-                .withComponents(components)
-                .build();
+        for (ModelResource component : components()) {
+            ModelResource updatedComponent = builder(component)
+                    .withModifierRemoved(IS_UNWRAPPED)
+                    .build();
+            components.add(updatedComponent);
+            updatedComponents.put(component, updatedComponent);
+        }
+
+        Optional<ModelResource> updatedJsonValueResource = jsonValueResource()
+                .map(updatedComponents::get);
+        Builder builder = builder(this)
+                .withComponents(components.build());
+        updatedJsonValueResource.ifPresent(builder::withJsonValueResource);
+        return builder.build();
     }
 
     private static Set<ModelResourceModifier> modifiersWith(Collection<ModelResourceModifier> modifiers, ModelResourceModifier modifier)
@@ -140,6 +151,7 @@ public record ModelResource(
         private Optional<ModelPolyResource> polyResource;
         private Optional<ModelResource> streamingEventResource;
         private Optional<Map<String, String>> enumDescriptions;
+        private Optional<ModelResource> jsonValueResource;
 
         private Builder(Type type, String name, String description, ModelResourceType resourceType)
         {
@@ -153,6 +165,7 @@ public record ModelResource(
                     ImmutableSet.of(),
                     ImmutableSet.of(),
                     ImmutableSet.of(),
+                    Optional.empty(),
                     Optional.empty(),
                     Optional.empty(),
                     Optional.empty(),
@@ -174,7 +187,8 @@ public record ModelResource(
                     resource.supportsIdLookup(),
                     resource.polyResource(),
                     resource.streamingEventResource(),
-                    resource.enumDescriptions());
+                    resource.enumDescriptions(),
+                    resource.jsonValueResource());
         }
 
         private Builder(
@@ -191,7 +205,8 @@ public record ModelResource(
                 Optional<ModelSupportsIdLookup> supportsIdLookup,
                 Optional<ModelPolyResource> polyResource,
                 Optional<ModelResource> streamingEventResource,
-                Optional<Map<String, String>> enumDescriptions)
+                Optional<Map<String, String>> enumDescriptions,
+                Optional<ModelResource> jsonValueResource)
         {
             this.type = requireNonNull(type, "type is null");
             this.name = requireNonNull(name, "name is null");
@@ -207,6 +222,7 @@ public record ModelResource(
             this.polyResource = requireNonNull(polyResource, "polyResource is null");
             this.streamingEventResource = requireNonNull(streamingEventResource, "streamingEventResource is null");
             this.enumDescriptions = requireNonNull(enumDescriptions, "enumDescriptions is null").map(ImmutableMap::copyOf);
+            this.jsonValueResource = requireNonNull(jsonValueResource, "jsonValueResource is null");
         }
 
         public Builder withNameAndDescription(String name, Optional<String> openApiName, String description)
@@ -295,6 +311,12 @@ public record ModelResource(
             return this;
         }
 
+        public Builder withJsonValueResource(ModelResource jsonValueResource)
+        {
+            this.jsonValueResource = Optional.of(requireNonNull(jsonValueResource, "jsonValueResource is null"));
+            return this;
+        }
+
         public ModelResource build()
         {
             return new ModelResource(
@@ -311,7 +333,8 @@ public record ModelResource(
                     supportsIdLookup,
                     polyResource,
                     streamingEventResource,
-                    enumDescriptions);
+                    enumDescriptions,
+                    jsonValueResource);
         }
     }
 }

@@ -184,7 +184,7 @@ public interface ResourceValidator
         }
         modelResource.streamingEventResource().ifPresent(streamingEventResource ->
                 context.inContext("Streaming event resource %s".formatted(streamingEventResource.type().getTypeName()),
-                        subContext -> internalValidate(subContext, service, Optional.empty(), streamingEventResource, ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE))));
+                        subContext -> internalValidate(subContext, service, Optional.empty(), streamingEventResource, ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE), enumValueResolver)));
 
         if (modelResource.modifiers().contains(IS_MULTIPART_FORM)) {
             if (state.contains(IS_RESULT_RESOURCE)) {
@@ -196,6 +196,24 @@ public interface ResourceValidator
         }
 
         modelResource.polyResource().ifPresent(polyResource -> validatePolyResource(context, service, modelResource, polyResource, state, enumValueResolver));
+
+        modelResource.jsonValueResource().ifPresent(jsonValueResource -> {
+            modelResource.components().forEach(component -> {
+                if (component.modifiers().contains(IS_UNWRAPPED)) {
+                    throw new ValidatorException("@JsonValue resources cannot have @%s components. At: %s".formatted(ApiUnwrapped.class.getSimpleName(), modelResource.type()));
+                }
+            });
+
+            ResourceValidationState nextState = state.withOptions(ALLOW_BASIC_RESOURCES, ALLOW_POLY_RESOURCES);
+            if (jsonValueResource.modifiers().contains(READ_ONLY)) {
+                nextState = nextState.withOptions(PARENT_IS_READ_ONLY);
+            }
+            internalValidate(context, service, Optional.of(jsonValueResource.name()), jsonValueResource, nextState, enumValueResolver);
+        });
+
+        if (modelResource.jsonValueResource().isPresent()) {
+            return;
+        }
 
         modelResource.components().forEach(component -> {
             boolean hasDescription = !component.description().isBlank();

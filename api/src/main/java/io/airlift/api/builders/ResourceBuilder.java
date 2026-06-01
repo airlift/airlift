@@ -1,5 +1,6 @@
 package io.airlift.api.builders;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
@@ -302,6 +303,7 @@ public class ResourceBuilder
 
         List<ModelResource> components = new ArrayList<>();
         Collection<ModelResourceModifier> modifiers = new HashSet<>();
+        Optional<ModelResource> jsonValueResource = Optional.empty();
         if (clazz.getAnnotation(ApiReadOnly.class) != null) {
             modifiers.add(TOP_LEVEL_READ_ONLY);
         }
@@ -342,7 +344,16 @@ public class ResourceBuilder
                 if (isUnwrapped) {
                     componentBuilder.withModifier(IS_UNWRAPPED);
                 }
-                components.add(componentBuilder.build());
+                ModelResource component = componentBuilder.build();
+
+                components.add(component);
+
+                if (isJsonValue(recordComponent, clazz)) {
+                    if (jsonValueResource.isPresent()) {
+                        throw new ValidatorException("%s has more than one @%s record component".formatted(clazz, JsonValue.class.getSimpleName()));
+                    }
+                    jsonValueResource = Optional.of(component);
+                }
             }
         }
         finally {
@@ -350,12 +361,34 @@ public class ResourceBuilder
             recursionChecker.popRecursionAllowed();
         }
 
-        return ModelResource.builder(clazz, name, description, RESOURCE)
+        ModelResource.Builder modelResourceBuilder = ModelResource.builder(clazz, name, description, RESOURCE)
                 .withOpenApiName(openApiName)
                 .withComponents(components)
                 .withModifiers(modifiers)
-                .withQuotas(quotas)
-                .build();
+                .withQuotas(quotas);
+        if (jsonValueResource.isPresent()) {
+            modelResourceBuilder.withJsonValueResource(jsonValueResource.orElseThrow());
+        }
+        return modelResourceBuilder.build();
+    }
+
+    private boolean isJsonValue(RecordComponent recordComponent, Class<?> clazz)
+    {
+        if (isActiveJsonValue(recordComponent.getAccessor().getAnnotation(JsonValue.class))) {
+            return true;
+        }
+
+        try {
+            return isActiveJsonValue(clazz.getDeclaredField(recordComponent.getName()).getAnnotation(JsonValue.class));
+        }
+        catch (NoSuchFieldException e) {
+            throw new ValidatorException("Could not find field for record component %s in %s".formatted(recordComponent.getName(), clazz));
+        }
+    }
+
+    private boolean isActiveJsonValue(JsonValue jsonValue)
+    {
+        return (jsonValue != null) && jsonValue.value();
     }
 
     private ModelResource buildPolyResource(Optional<String> componentName, ApiPolyResource apiPolyResource, Class<?> clazz)
