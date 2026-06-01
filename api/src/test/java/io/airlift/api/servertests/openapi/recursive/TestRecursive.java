@@ -17,9 +17,11 @@ import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.json.JsonCodec;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
 
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.servertests.openapi.TestOpenApi.validateOpenApiJson;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -38,7 +40,7 @@ public class TestRecursive
         super(builder -> builder
                 .addApi(apiBuilder -> apiBuilder.add(ComplexRecursiveService.class))
                 .addApi(apiBuilder -> apiBuilder.add(SimpleRecursiveService.class))
-                .withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of())));
+                .withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1)));
 
         openApiProvider = injector.getInstance(OpenApiProvider.class);
         modelServiceTypes = injector.getInstance(Key.get(new TypeLiteral<>() {}));

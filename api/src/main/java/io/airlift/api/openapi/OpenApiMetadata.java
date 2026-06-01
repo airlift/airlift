@@ -8,18 +8,15 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public record OpenApiMetadata(Optional<SecurityScheme> security, List<ServiceDetail> serviceDetails, String basePath, Duration cacheDuration)
+public record OpenApiMetadata(Optional<SecurityScheme> security, List<ServiceDetail> serviceDetails, String basePath, Duration cacheDuration, OpenApiVersion openApiVersion)
 {
     public OpenApiMetadata
     {
         requireNonNull(security, "security is null");
         requireNonNull(basePath, "basePath is null");
+        requireNonNull(cacheDuration, "cacheDuration is null");
+        requireNonNull(openApiVersion, "openApiVersion is null");
         serviceDetails = ImmutableList.copyOf(serviceDetails);
-    }
-
-    public OpenApiMetadata(Optional<SecurityScheme> security, List<ServiceDetail> serviceDetails)
-    {
-        this(security, serviceDetails, "/", Duration.ofMinutes(5));
     }
 
     public enum SecurityScheme
@@ -27,6 +24,24 @@ public record OpenApiMetadata(Optional<SecurityScheme> security, List<ServiceDet
         BEARER_ACCESS_TOKEN,
         BEARER_JWT,
         BASIC,
+    }
+
+    public enum OpenApiVersion
+    {
+        OPENAPI_3_0_1("3.0.1"),
+        OPENAPI_3_2_0("3.2.0");
+
+        private final String value;
+
+        public String value()
+        {
+            return value;
+        }
+
+        OpenApiVersion(String value)
+        {
+            this.value = value;
+        }
     }
 
     public static final String SECTION_HELP = "Help";

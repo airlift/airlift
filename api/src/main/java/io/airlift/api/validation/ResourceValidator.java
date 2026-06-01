@@ -182,6 +182,9 @@ public interface ResourceValidator
         if (modelResource.modifiers().contains(IS_STREAMING_RESPONSE) && !state.contains(IS_RESULT_RESOURCE)) {
             throw new ValidatorException("%s cannot be a parameter".formatted(ApiStreamResponse.class.getSimpleName()));
         }
+        modelResource.streamingEventResource().ifPresent(streamingEventResource ->
+                context.inContext("Streaming event resource %s".formatted(streamingEventResource.type().getTypeName()),
+                        subContext -> internalValidate(subContext, service, Optional.empty(), streamingEventResource, ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE))));
 
         if (modelResource.modifiers().contains(IS_MULTIPART_FORM)) {
             if (state.contains(IS_RESULT_RESOURCE)) {

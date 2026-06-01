@@ -131,6 +131,7 @@ class OpenApiBuilder
     OpenAPI build()
     {
         OpenAPI openAPI = new OpenAPI();
+        openAPI.openapi(metadata.openApiVersion().value());
 
         Info info = new Info()
                 .title(serviceType.title())
@@ -268,7 +269,7 @@ class OpenApiBuilder
         }
         else if (modelMethod.returnType().modifiers().contains(IS_STREAMING_RESPONSE)) {
             ValidationContext tempValidationContext = new ValidationContext();
-            MediaType item = new MediaType().schema(new StringSchema());
+            MediaType item = buildStreamingResponseMediaType(modelMethod.returnType());
             apiResponse.description("Success").setContent(new Content().addMediaType(tempValidationContext.streamingResponseMediaType(modelMethod.returnType()).toString(), item));
             apiResponses.addApiResponse(SUCCESS, apiResponse);
         }
@@ -296,6 +297,39 @@ class OpenApiBuilder
         operation.parameters(buildParameters(modelMethod));
 
         return extensionFilter.apply(modelService, modelMethod, operation);
+    }
+
+    private MediaType buildStreamingResponseMediaType(ModelResource returnType)
+    {
+        Optional<ModelResource> streamingEventResource = returnType.streamingEventResource();
+        if (streamingEventResource.isEmpty()) {
+            return new MediaType().schema(new StringSchema());
+        }
+
+        Schema<?> eventSchema = schemaBuilder.buildSchema(streamingEventResource.orElseThrow(), BuildSchemaMode.STANDARD);
+        return switch (metadata.openApiVersion()) {
+            case OPENAPI_3_0_1 -> buildOpenApi301StreamingResponseMediaType(eventSchema);
+            case OPENAPI_3_2_0 -> buildOpenApi320StreamingResponseMediaType(eventSchema);
+        };
+    }
+
+    private MediaType buildOpenApi301StreamingResponseMediaType(Schema<?> eventSchema)
+    {
+        return new MediaType()
+                .schema(new StringSchema())
+                .airliftEventSchema(eventSchema);
+    }
+
+    private static MediaType buildOpenApi320StreamingResponseMediaType(Schema<?> eventSchema)
+    {
+        Schema<?> dataSchema = new StringSchema()
+                .contentMediaType(APPLICATION_JSON)
+                .contentSchema(eventSchema);
+        Schema<?> itemSchema = new Schema<>()
+                .type("object")
+                .addProperty("data", dataSchema)
+                .addRequiredItem("data");
+        return new MediaType().itemSchema(itemSchema);
     }
 
     private String buildMethodName(ModelMethod modelMethod)

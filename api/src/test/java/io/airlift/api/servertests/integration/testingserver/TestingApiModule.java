@@ -9,10 +9,12 @@ import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiMetadata.ServiceDetail;
 import io.airlift.api.servertests.integration.testingserver.external.PublicWidgetApi;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static io.airlift.api.compatability.ApiCompatibilityTester.basePathFromClass;
 import static io.airlift.api.compatability.ApiCompatibilityTester.newDefaultInstance;
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.openapi.OpenApiMetadata.SECTION_HELP;
 import static io.airlift.api.openapi.OpenApiMetadata.SecurityScheme.BEARER_ACCESS_TOKEN;
 
@@ -31,7 +33,7 @@ public class TestingApiModule
                 ```
                 """);
 
-        OpenApiMetadata openApiMetadata = new OpenApiMetadata(Optional.of(BEARER_ACCESS_TOKEN), ImmutableList.of(serviceDetail));
+        OpenApiMetadata openApiMetadata = new OpenApiMetadata(Optional.of(BEARER_ACCESS_TOKEN), ImmutableList.of(serviceDetail), "/", Duration.ofMinutes(5), OPENAPI_3_0_1);
 
         Module apiModule = ApiModule.builder()
                 .addApi(apiBuilder -> apiBuilder.add(PublicWidgetApi.class))
