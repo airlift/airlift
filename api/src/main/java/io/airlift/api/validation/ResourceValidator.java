@@ -194,6 +194,20 @@ public interface ResourceValidator
 
         modelResource.polyResource().ifPresent(polyResource -> validatePolyResource(context, service, modelResource, polyResource, state));
 
+        modelResource.jsonValueResource().ifPresent(jsonValueResource -> {
+            modelResource.components().forEach(component -> {
+                if (component.modifiers().contains(IS_UNWRAPPED)) {
+                    throw new ValidatorException("@JsonValue resources cannot have @%s components. At: %s".formatted(ApiUnwrapped.class.getSimpleName(), modelResource.type()));
+                }
+            });
+
+            internalValidate(context, service, Optional.of(jsonValueResource.name()), jsonValueResource, state.withOptions(ALLOW_BASIC_RESOURCES, ALLOW_POLY_RESOURCES));
+        });
+
+        if (modelResource.jsonValueResource().isPresent()) {
+            return;
+        }
+
         modelResource.components().forEach(component -> {
             boolean hasDescription = !component.description().isBlank();
 
