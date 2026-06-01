@@ -3,6 +3,7 @@ package io.airlift.api.binding;
 import io.airlift.api.ApiStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiByteStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiOutputStreamResponse;
+import io.airlift.api.ApiStreamResponse.ApiServerSentEventStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.validation.ValidationContext;
 import jakarta.ws.rs.WebApplicationException;
@@ -50,6 +51,8 @@ public class ApiStreamResponseWriter
             case ApiByteStreamResponse<?> byteStreamResponse -> byteStreamResponse.stream().transferTo(entityStream);
 
             case ApiOutputStreamResponse<?> outputStreamResponse -> outputStreamResponse.stream().accept(entityStream);
+
+            case ApiServerSentEventStreamResponse<?, ?> eventStreamResponse -> eventStreamResponse.stream().accept(entityStream);
         }
     }
 }

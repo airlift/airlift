@@ -278,6 +278,26 @@ class OpenApiGenerationTest
     }
 
     @MavenPluginTest
+    void testOpenApiVersionCanBeConfigured()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("full-service");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.openApiVersion=3.2.0")
+                .execute("clean", "compile", "process-classes")
+                .assertErrorFreeLog();
+
+        File openapiFile = new File(basedir, "target/openapi.json");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode openapi = mapper.readTree(openapiFile);
+
+        assertThat(openapi.get("openapi").asText())
+                .describedAs("OpenAPI version should match the configured version")
+                .isEqualTo("3.2.0");
+    }
+
+    @MavenPluginTest
     void testInvalidSecuritySchemeFailsBuild()
             throws Exception
     {
@@ -292,6 +312,24 @@ class OpenApiGenerationTest
 
         assertThat(openapiFile)
                 .describedAs("OpenAPI spec should not be written when security scheme is invalid")
+                .doesNotExist();
+    }
+
+    @MavenPluginTest
+    void testInvalidOpenApiVersionFailsBuild()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("full-service");
+        File openapiFile = new File(basedir, "target/openapi.json");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.openApiVersion=3.1.0")
+                .execute("clean", "compile", "process-classes")
+                .assertLogText("Invalid OpenAPI version")
+                .assertNoLogText("BUILD SUCCESS");
+
+        assertThat(openapiFile)
+                .describedAs("OpenAPI spec should not be written when OpenAPI version is invalid")
                 .doesNotExist();
     }
 

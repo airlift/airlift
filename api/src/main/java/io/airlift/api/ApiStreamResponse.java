@@ -49,4 +49,14 @@ public sealed interface ApiStreamResponse
             requireNonNull(stream, "stream is null");
         }
     }
+
+    @SuppressWarnings("unused")
+    record ApiServerSentEventStreamResponse<RESOURCE, EVENT>(Consumer<OutputStream> stream)
+            implements ApiStreamResponse
+    {
+        public ApiServerSentEventStreamResponse
+        {
+            requireNonNull(stream, "stream is null");
+        }
+    }
 }

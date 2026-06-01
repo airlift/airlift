@@ -27,6 +27,7 @@ public record ModelResource(
         Set<String> limitedValues,
         Optional<ModelSupportsIdLookup> supportsIdLookup,
         Optional<ModelPolyResource> polyResource,
+        Optional<ModelResource> streamingEventResource,
         Optional<Map<String, String>> enumDescriptions)
 {
     public ModelResource
@@ -38,6 +39,7 @@ public record ModelResource(
         requireNonNull(resourceType, "resourceType is null");
         requireNonNull(containerType, "containerType is null");
         requireNonNull(polyResource, "polyResource is null");
+        requireNonNull(streamingEventResource, "streamingEventResource is null");
 
         components = ImmutableList.copyOf(components);
         modifiers = ImmutableSet.copyOf(modifiers);
@@ -48,65 +50,88 @@ public record ModelResource(
 
     public ModelResource(Type type, String name, String description, List<ModelResource> components, ModelResourceType resourceType)
     {
-        this(type, name, Optional.empty(), description, components, resourceType, type, ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of(), Optional.empty(), Optional.empty(), Optional.empty());
+        this(type, name, Optional.empty(), description, components, resourceType, type, ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public ModelResource(Type type, String name, Optional<String> openApiName, String description, List<ModelResource> components, ModelResourceType resourceType, Collection<ModelResourceModifier> modifiers, Set<String> quotas)
     {
-        this(type, name, openApiName, description, components, resourceType, type, modifiers, quotas, ImmutableSet.of(), Optional.empty(), Optional.empty(), Optional.empty());
+        this(type, name, openApiName, description, components, resourceType, type, modifiers, quotas, ImmutableSet.of(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    public ModelResource(
+            Type type,
+            String name,
+            Optional<String> openApiName,
+            String description,
+            List<ModelResource> components,
+            ModelResourceType resourceType,
+            Type containerType,
+            Collection<ModelResourceModifier> modifiers,
+            Set<String> quotas,
+            Set<String> limitedValues,
+            Optional<ModelSupportsIdLookup> supportsIdLookup,
+            Optional<ModelPolyResource> polyResource,
+            Optional<Map<String, String>> enumDescriptions)
+    {
+        this(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, Optional.empty(), enumDescriptions);
     }
 
     public ModelResource withNameAndDescription(String name, Optional<String> openApiName, String description)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource asResourceType(ModelResourceType resourceType)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource withModifier(ModelResourceModifier modifier)
     {
         Set<ModelResourceModifier> newModifiers = new HashSet<>(modifiers);
         newModifiers.add(modifier);
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, newModifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, newModifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource withModifierRemoved(ModelResourceModifier modifier)
     {
         Set<ModelResourceModifier> newModifiers = new HashSet<>(modifiers);
         newModifiers.remove(modifier);
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, newModifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, newModifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource withContainerType(Type containerType)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource withLimitedValues(Set<String> limitedValues)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource withSupportsIdLookup(ModelSupportsIdLookup supportsIdLookup)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, Optional.of(supportsIdLookup), polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, Optional.of(supportsIdLookup), polyResource, streamingEventResource, enumDescriptions);
     }
 
     public ModelResource withPolyResource(ModelPolyResource polyResource)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, Optional.of(polyResource), enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, Optional.of(polyResource), streamingEventResource, enumDescriptions);
+    }
+
+    public ModelResource withStreamingEventResource(ModelResource streamingEventResource)
+    {
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, Optional.of(streamingEventResource), enumDescriptions);
     }
 
     public ModelResource withEnumDescriptions(Map<String, String> enumDescriptions)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, Optional.of(enumDescriptions));
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, Optional.of(enumDescriptions));
     }
 
     public ModelResource withComponents(List<ModelResource> components)
     {
-        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, streamingEventResource, enumDescriptions);
     }
 }

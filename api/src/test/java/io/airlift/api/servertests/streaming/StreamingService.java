@@ -9,6 +9,7 @@ import io.airlift.api.ApiResponseHeaders;
 import io.airlift.api.ApiService;
 import io.airlift.api.ApiStreamResponse.ApiByteStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiOutputStreamResponse;
+import io.airlift.api.ApiStreamResponse.ApiServerSentEventStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.ServiceType;
 import io.airlift.api.responses.ApiException;
@@ -69,6 +70,33 @@ public class StreamingService
     {
         quotaController.recordQuotaUsage(request, "STREAMING");
         return new ApiTextStreamResponse<>("This is streaming post: " + streamingRequest.something());
+    }
+
+    @ApiCustom(type = GET, verb = "events", description = "server-sent events")
+    public ApiServerSentEventStreamResponse<StreamingResource, StreamingEvent> streamEvents()
+    {
+        return new ApiServerSentEventStreamResponse<>(outputStream -> {
+            try {
+                outputStream.write("data: {\"type\":\"message\",\"message\":\"hello\"}\n\n".getBytes(StandardCharsets.UTF_8));
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @ApiCustom(type = CREATE, verb = "postEvents", description = "server-sent events over post", quotas = "postEvents")
+    public ApiServerSentEventStreamResponse<StreamingResource, StreamingEvent> createEvents(@Context Request request)
+    {
+        quotaController.recordQuotaUsage(request, "postEvents");
+        return new ApiServerSentEventStreamResponse<>(outputStream -> {
+            try {
+                outputStream.write("data: {\"type\":\"message\",\"message\":\"posted\"}\n\n".getBytes(StandardCharsets.UTF_8));
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @ApiCustom(type = LIST, verb = "bad", description = "bad")

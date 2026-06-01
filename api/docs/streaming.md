@@ -2,8 +2,9 @@
 
 # API Builder: Streaming Responses
 
-`@ApiGet` and `@ApiCreate` methods can stream responses by returning an `ApiTextStreamResponse`, `ApiByteStreamResponse`, or `ApiOutputStreamResponse` instance. The instance must be
-parameterized with a [resource](resources.md) that it represents. `@ApiCustom` methods can also stream responses when their `type` is `GET` or `CREATE`.
+`@ApiGet` and `@ApiCreate` methods can stream responses by returning an `ApiTextStreamResponse`, `ApiByteStreamResponse`, `ApiOutputStreamResponse`, or
+`ApiServerSentEventStreamResponse` instance. The instance must be parameterized with a [resource](resources.md) that it represents. `@ApiCustom` methods can
+also stream responses when their `type` is `GET` or `CREATE`.
 
 E.g.
 
@@ -40,4 +41,28 @@ public ApiByteStreamResponse<MyResource> myPostCustomStreamedResponse(MyCreateRe
 {
     return new ApiByteStreamResponse<>(myByteStream);
 }
+
+@ApiGet(...)
+public ApiServerSentEventStreamResponse<MyResource, MyEvent> myStreamedResponse(...)
+{
+    Consumer<OutputStream> consumer = outputStream -> {
+        // write server-sent event frames such as: data: <json>\n\n
+    };
+    return new ApiServerSentEventStreamResponse<>(consumer);
+}
+
+@ApiCreate(...)
+public ApiServerSentEventStreamResponse<MyResource, MyEvent> myPostStreamedResponse(MyCreateRequest request)
+{
+    Consumer<OutputStream> consumer = outputStream -> {
+        // write server-sent event frames such as: data: <json>\n\n
+    };
+    return new ApiServerSentEventStreamResponse<>(consumer);
+}
 ```
+
+`ApiTextStreamResponse` produces `text/plain`, while `ApiByteStreamResponse` and `ApiOutputStreamResponse` produce `application/octet-stream`.
+
+`ApiServerSentEventStreamResponse<RESOURCE, EVENT>` produces `text/event-stream`. `RESOURCE` keeps the API Builder resource and path semantics. `EVENT`
+describes the JSON payload the application writes in each SSE `data:` frame. API Builder sets the response content type and documents the event payload type,
+but the application still owns writing valid SSE frames.
