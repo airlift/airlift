@@ -53,6 +53,7 @@ import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
 import static io.airlift.api.model.ModelResourceModifier.IS_STREAMING_RESPONSE;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
+import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED_LIST;
 import static io.airlift.api.model.ModelResourceModifier.MULTIPART_RESOURCE_IS_FIRST_ITEM;
 import static io.airlift.api.model.ModelResourceModifier.OPTIONAL;
 import static io.airlift.api.model.ModelResourceModifier.READ_ONLY;
@@ -324,7 +325,12 @@ public class ResourceBuilder
                     component = component.withModifier(READ_ONLY);
                 }
                 if (isUnwrapped) {
-                    component = component.withModifier(IS_UNWRAPPED);
+                    if (component.resourceType() == ModelResourceType.LIST) {
+                        component = component.withModifier(IS_UNWRAPPED_LIST);
+                    }
+                    else {
+                        component = component.withModifier(IS_UNWRAPPED);
+                    }
                 }
 
                 components.add(component);

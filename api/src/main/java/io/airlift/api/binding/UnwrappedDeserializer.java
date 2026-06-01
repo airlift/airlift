@@ -11,6 +11,8 @@ import io.airlift.api.ApiUnwrapped;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -45,7 +47,10 @@ class UnwrappedDeserializer
             JavaType javaType = context.constructType(recordComponent.getGenericType());
 
             Object value;
-            if (recordComponent.isAnnotationPresent(ApiUnwrapped.class)) {
+            if (recordComponent.isAnnotationPresent(ApiUnwrapped.class) && List.class.isAssignableFrom(recordComponent.getType())) {
+                value = deserializeUnwrappedList(context, tree, recordComponent);
+            }
+            else if (recordComponent.isAnnotationPresent(ApiUnwrapped.class)) {
                 value = context.readTreeAsValue(tree, javaType);
             }
             else {
@@ -72,6 +77,62 @@ class UnwrappedDeserializer
         catch (Exception e) {
             throw new JsonParseException(parser, "Could not create instance");
         }
+    }
+
+    private static Object deserializeUnwrappedList(DeserializationContext context, JsonNode tree, RecordComponent recordComponent)
+            throws IOException
+    {
+        // @ApiUnwrapped List<T> where T is a record — each inner component is flattened as a parallel array.
+        // Wire format: each inner component name maps to an array where element[i] corresponds to list[i].component
+        Class<?> elementClass = getListElementClass(recordComponent);
+        RecordComponent[] innerComponents = elementClass.getRecordComponents();
+
+        // Determine list size from the first present array
+        int size = 0;
+        for (RecordComponent inner : innerComponents) {
+            JsonNode arrayNode = tree.get(inner.getName());
+            if (arrayNode != null && arrayNode.isArray()) {
+                size = arrayNode.size();
+                break;
+            }
+        }
+
+        if (size == 0) {
+            return List.of();
+        }
+
+        Constructor<?> elementConstructor = getDefaultRecordConstructor(elementClass);
+        List<Object> result = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            Object[] arguments = new Object[innerComponents.length];
+            for (int j = 0; j < innerComponents.length; j++) {
+                RecordComponent inner = innerComponents[j];
+                JsonNode arrayNode = tree.get(inner.getName());
+                JavaType innerType = context.constructType(inner.getGenericType());
+                if (arrayNode != null && arrayNode.isArray() && i < arrayNode.size() && !arrayNode.get(i).isNull()) {
+                    arguments[j] = context.readTreeAsValue(arrayNode.get(i), innerType);
+                }
+                else if (Optional.class.isAssignableFrom(inner.getType())) {
+                    arguments[j] = Optional.empty();
+                }
+                else {
+                    arguments[j] = null;
+                }
+            }
+            try {
+                result.add(elementConstructor.newInstance(arguments));
+            }
+            catch (Exception e) {
+                throw new IOException("Could not create instance of " + elementClass, e);
+            }
+        }
+        return result;
+    }
+
+    private static Class<?> getListElementClass(RecordComponent recordComponent)
+    {
+        java.lang.reflect.ParameterizedType paramType = (java.lang.reflect.ParameterizedType) recordComponent.getGenericType();
+        return (Class<?>) paramType.getActualTypeArguments()[0];
     }
 
     private static Constructor<?> getDefaultRecordConstructor(Class<?> clazz)

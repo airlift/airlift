@@ -38,6 +38,7 @@ import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
 import static io.airlift.api.model.ModelResourceModifier.IS_STREAMING_RESPONSE;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
+import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED_LIST;
 import static io.airlift.api.model.ModelResourceModifier.OPTIONAL;
 import static io.airlift.api.model.ModelResourceModifier.PATCH;
 import static io.airlift.api.model.ModelResourceModifier.READ_ONLY;
@@ -223,7 +224,7 @@ public interface ResourceValidator
                 throw new ValidatorException("%s fields cannot be read only in %s".formatted(component.type(), modelResource.type()));
             }
 
-            if (isUnwrapped) {
+            if (isUnwrapped || component.modifiers().contains(IS_UNWRAPPED_LIST)) {
                 context.registerResourcesWithUnwrappedComponents(TypeToken.of(modelResource.type()).getRawType());
             }
         });

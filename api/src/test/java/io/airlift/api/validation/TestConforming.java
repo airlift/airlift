@@ -35,6 +35,10 @@ import io.airlift.api.model.ModelResourceType;
 import io.airlift.api.model.ModelServiceMetadata;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.model.ModelServices;
+import io.airlift.api.openapi.OpenApiMetadata;
+import io.airlift.api.openapi.OpenApiProvider;
+import io.airlift.api.openapi.models.OpenAPI;
+import io.airlift.api.openapi.models.Schema;
 import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.json.JsonModule;
 import jakarta.ws.rs.WebApplicationException;
@@ -211,6 +215,54 @@ public class TestConforming
         ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithObjectField.class).build();
         Module module = ApiModule.builder().addApi(modelApi).build();
         Guice.createInjector(module, new JsonModule());
+    }
+
+    @Test
+    public void testUnwrappedObjectValues()
+    {
+        ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithObjectField.class).build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
+
+        OpenApiMetadata metadata = new OpenApiMetadata(Optional.empty(), ImmutableList.of());
+        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
+        OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata);
+        OpenAPI openAPI = openApiProvider.build(serviceType, _ -> true);
+
+        Schema<?> objectFieldSchema = openAPI.getComponents().getSchemas().get("ObjectField");
+        assertThat(objectFieldSchema).isNotNull();
+        assertThat(objectFieldSchema.getProperties()).containsKey("values");
+
+        // values should be Object[][] — outer array from @ApiUnwrapped List<>, inner array from List<Object>
+        Schema<?> valuesSchema = objectFieldSchema.getProperties().get("values");
+        assertThat(valuesSchema.getType()).isEqualTo("array");
+        assertThat(valuesSchema.getItems()).isNotNull();
+        assertThat(valuesSchema.getItems().getType()).isEqualTo("array");
+        assertThat(valuesSchema.getItems().getItems()).isNotNull();
+        assertThat(valuesSchema.getItems().getItems().getType()).isNull();
+    }
+
+    @Test
+    public void testUnwrappedListWithoutObjectTrait()
+    {
+        // @ApiUnwrapped on List with non-Object inner fields works without ALLOW_OBJECT_ELEMENTS
+        ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithUnwrappedList.class).build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
+
+        Module module = ApiModule.builder().addApi(modelApi).build();
+        Guice.createInjector(module, new JsonModule());
+
+        // Verify schema: required fields (names, priority) are marked required, optional field (description) is not
+        OpenApiMetadata metadata = new OpenApiMetadata(Optional.empty(), ImmutableList.of());
+        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
+        OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata);
+        OpenAPI openAPI = openApiProvider.build(serviceType, _ -> true);
+
+        Schema<?> unwrappedListSchema = openAPI.getComponents().getSchemas().get("UnwrappedList");
+        assertThat(unwrappedListSchema).isNotNull();
+        assertThat(unwrappedListSchema.getProperties()).containsKeys("names", "priority", "description");
+
+        assertThat(unwrappedListSchema.getRequired()).contains("names", "priority");
+        assertThat(unwrappedListSchema.getRequired()).doesNotContain("description");
     }
 
     @Test
