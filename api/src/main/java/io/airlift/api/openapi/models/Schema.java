@@ -32,6 +32,8 @@ public class Schema<T>
     private List<Schema> oneOf;
     private Discriminator discriminator;
     private List<String> tags;
+    private String contentMediaType;
+    private Schema<?> contentSchema;
 
     public Schema() {}
 
@@ -389,5 +391,39 @@ public class Schema<T>
             this._enum = new ArrayList<>();
         }
         this._enum.add(_enumItem);
+    }
+
+    @JsonProperty
+    public String getContentMediaType()
+    {
+        return contentMediaType;
+    }
+
+    public void setContentMediaType(String contentMediaType)
+    {
+        this.contentMediaType = contentMediaType;
+    }
+
+    public Schema contentMediaType(String contentMediaType)
+    {
+        this.contentMediaType = contentMediaType;
+        return this;
+    }
+
+    @JsonProperty
+    public Schema<?> getContentSchema()
+    {
+        return contentSchema;
+    }
+
+    public void setContentSchema(Schema<?> contentSchema)
+    {
+        this.contentSchema = contentSchema;
+    }
+
+    public Schema contentSchema(Schema<?> contentSchema)
+    {
+        this.contentSchema = contentSchema;
+        return this;
     }
 }

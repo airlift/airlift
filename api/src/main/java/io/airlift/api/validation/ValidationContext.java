@@ -12,6 +12,7 @@ import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.ApiStreamResponse.ApiByteStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiOutputStreamResponse;
+import io.airlift.api.ApiStreamResponse.ApiServerSentEventStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.ApiStringId;
 import io.airlift.api.ApiUuidId;
@@ -63,6 +64,7 @@ public class ValidationContext
     private static final Pattern ID_NAMING = Pattern.compile("^[a-z0-9][a-zA-Z0-9]*$");  // same as STANDARD_NAMING but first letter may be a number
 
     private static final Set<Type> forcedReadOnly = ImmutableSet.of(ApiResourceVersion.class);
+    public static final MediaType TEXT_EVENT_STREAM_TYPE = MediaType.valueOf("text/event-stream");
 
     public ValidationContext()
     {
@@ -104,6 +106,9 @@ public class ValidationContext
     public MediaType streamingResponseMediaType(Type type)
     {
         TypeToken<?> typeToken = TypeToken.of(typeResolver.resolveType(type));
+        if (typeToken.isSubtypeOf(ApiServerSentEventStreamResponse.class)) {
+            return TEXT_EVENT_STREAM_TYPE;
+        }
         if (typeToken.isSubtypeOf(ApiByteStreamResponse.class) || typeToken.isSubtypeOf(ApiOutputStreamResponse.class)) {
             return APPLICATION_OCTET_STREAM_TYPE;
         }

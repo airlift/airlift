@@ -12,8 +12,10 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Optional;
 
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.openapi.OpenApiMetadata.SecurityScheme.BEARER_ACCESS_TOKEN;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -23,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestOpenApi
         extends ServerTestBase
 {
-    private static final OpenApiMetadata OPEN_API_METADATA = new OpenApiMetadata(Optional.of(BEARER_ACCESS_TOKEN), ImmutableList.of());
+    private static final OpenApiMetadata OPEN_API_METADATA = new OpenApiMetadata(Optional.of(BEARER_ACCESS_TOKEN), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1);
 
     public TestOpenApi()
     {

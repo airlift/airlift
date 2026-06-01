@@ -21,6 +21,7 @@ import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.openapi.OpenApiMetadata;
+import io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion;
 import io.airlift.api.openapi.OpenApiMetadata.SecurityScheme;
 import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.openapi.models.OpenAPI;
@@ -77,6 +78,9 @@ public class GenerateOpenApiMojo
 
     @Parameter(property = "api.securityScheme")
     private String securityScheme;
+
+    @Parameter(property = "api.openApiVersion", defaultValue = "3.0.1")
+    private String openApiVersion;
 
     @Parameter(property = "api.prettyPrint", defaultValue = "true")
     private boolean prettyPrint;
@@ -244,7 +248,7 @@ public class GenerateOpenApiMojo
         }
 
         Optional<SecurityScheme> security = parseSecurityScheme();
-        OpenApiMetadata metadata = new OpenApiMetadata(security, ImmutableList.of(), basePath, Duration.ofMinutes(5));
+        OpenApiMetadata metadata = new OpenApiMetadata(security, ImmutableList.of(), basePath, Duration.ofMinutes(5), parseOpenApiVersion());
 
         OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata, config);
         ModelServiceType modelServiceType = ModelServiceType.map(serviceType);
@@ -261,6 +265,24 @@ public class GenerateOpenApiMojo
         catch (IOException e) {
             throw new MojoExecutionException("Failed to serialize OpenAPI spec to JSON", e);
         }
+    }
+
+    private OpenApiVersion parseOpenApiVersion()
+            throws MojoExecutionException
+    {
+        if (openApiVersion == null || openApiVersion.isBlank()) {
+            return OpenApiVersion.OPENAPI_3_0_1;
+        }
+
+        String configuredOpenApiVersion = openApiVersion.trim();
+        for (OpenApiVersion version : OpenApiVersion.values()) {
+            if (version.value().equals(configuredOpenApiVersion) || version.name().equals(configuredOpenApiVersion)) {
+                return version;
+            }
+        }
+        throw new MojoExecutionException(
+                "Invalid OpenAPI version: %s. Valid values are: %s"
+                        .formatted(configuredOpenApiVersion, Arrays.stream(OpenApiVersion.values()).map(version -> version.value() + " or " + version.name()).toList()));
     }
 
     private Optional<SecurityScheme> parseSecurityScheme()

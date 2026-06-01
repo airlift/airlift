@@ -15,6 +15,7 @@ import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.ApiResponse;
 import io.airlift.api.ApiStreamResponse;
+import io.airlift.api.ApiStreamResponse.ApiServerSentEventStreamResponse;
 import io.airlift.api.ApiUnwrapped;
 import io.airlift.api.internals.Mappers;
 import io.airlift.api.model.ModelPolyResource;
@@ -213,12 +214,16 @@ public class ResourceBuilder
         }
 
         if (typeToken.isSubtypeOf(ApiStreamResponse.class)) {
-            return internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 0))
+            ModelResource streamResource = internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 0))
                     .withContainerType(typeToken.getType())
                     .withModifier(IS_STREAMING_RESPONSE)
                     .withModifier(HAS_RESOURCE_ID)
                     .withModifier(READ_ONLY)
                     .withModifier(HAS_VERSION);
+            if (typeToken.isSubtypeOf(ApiServerSentEventStreamResponse.class)) {
+                streamResource = streamResource.withStreamingEventResource(internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 1)));
+            }
+            return streamResource;
         }
 
         if (typeToken.isSubtypeOf(ApiMultiPart.class)) {
