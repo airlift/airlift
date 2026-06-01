@@ -2,6 +2,7 @@ package io.airlift.api.openapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiIdSupportsLookup;
 import io.airlift.api.ApiTrait;
 import io.airlift.api.model.ModelDeprecation;
@@ -98,9 +99,10 @@ class OpenApiBuilder
             Collection<ModelDeprecation> deprecations,
             OpenApiMetadata metadata,
             Predicate<Method> methodFilter,
-            OpenApiExtensionFilter extensionFilter)
+            OpenApiExtensionFilter extensionFilter,
+            ApiEnumValueResolver enumValueResolver)
     {
-        return new OpenApiBuilder(serviceType, deprecations, metadata, methodFilter, extensionFilter);
+        return new OpenApiBuilder(serviceType, deprecations, metadata, methodFilter, extensionFilter, enumValueResolver);
     }
 
     enum JsonUriMode
@@ -422,13 +424,13 @@ class OpenApiBuilder
         });
     }
 
-    private OpenApiBuilder(ModelServiceType serviceType, Collection<ModelDeprecation> deprecations, OpenApiMetadata metadata, Predicate<Method> methodFilter, OpenApiExtensionFilter extensionFilter)
+    private OpenApiBuilder(ModelServiceType serviceType, Collection<ModelDeprecation> deprecations, OpenApiMetadata metadata, Predicate<Method> methodFilter, OpenApiExtensionFilter extensionFilter, ApiEnumValueResolver enumValueResolver)
     {
         this.serviceType = requireNonNull(serviceType, "serviceType is null");
         this.deprecations = deprecations.stream().collect(toImmutableMap(ModelDeprecation::method, identity()));
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.methodFilter = requireNonNull(methodFilter, "methodFilter is null");
-        this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS));
+        this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver);
         this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
     }
 }

@@ -1,6 +1,7 @@
 package io.airlift.api.builders;
 
 import com.google.common.collect.ImmutableSet;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.model.ModelDeprecation;
 import io.airlift.api.model.ModelResponse;
 import io.airlift.api.model.ModelService;
@@ -31,10 +32,12 @@ public class ServicesBuilder
         services = ImmutableSet.builder();
     }
 
-    public static ServicesBuilder servicesBuilder()
+    public static ServicesBuilder servicesBuilder(ApiEnumValueResolver enumValueResolver)
     {
-        Function<Type, ResourceBuilder> resourceBuilder = createThunk(ResourceBuilder::resourceBuilder, ((type, builder) -> builder.toBuilder(type)));
-        Function<Method, MethodBuilder> methodBuilder = createThunk(method -> methodBuilder(method, resourceBuilder), ((method, builder) -> builder.toBuilder(method)));
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
+
+        Function<Type, ResourceBuilder> configuredResourceBuilder = createThunk(type -> ResourceBuilder.resourceBuilder(type, enumValueResolver), ((type, builder) -> builder.toBuilder(type)));
+        Function<Method, MethodBuilder> methodBuilder = createThunk(method -> methodBuilder(method, configuredResourceBuilder), ((method, builder) -> builder.toBuilder(method)));
         Function<Class<?>, ServiceBuilder> serviceBuilder = createThunk(clazz -> ServiceBuilder.serviceBuilder(clazz, methodBuilder), (serviceClass, builder) -> builder.toBuilder(serviceClass));
 
         return new ServicesBuilder(serviceBuilder);

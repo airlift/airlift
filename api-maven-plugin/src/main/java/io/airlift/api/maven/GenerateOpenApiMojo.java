@@ -15,6 +15,7 @@ package io.airlift.api.maven;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
+import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiServiceType;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
@@ -228,7 +229,8 @@ public class GenerateOpenApiMojo
     private String generateOpenApi(List<Class<?>> serviceClassList, ApiServiceType serviceType)
             throws MojoExecutionException
     {
-        ApiBuilder apiBuilder = apiBuilder();
+        ApiBuilderConfig config = ApiBuilderConfig.jackson();
+        ApiBuilder apiBuilder = apiBuilder(config);
         for (Class<?> serviceClass : serviceClassList) {
             apiBuilder.add(serviceClass);
         }
@@ -244,7 +246,7 @@ public class GenerateOpenApiMojo
         Optional<SecurityScheme> security = parseSecurityScheme();
         OpenApiMetadata metadata = new OpenApiMetadata(security, ImmutableList.of(), basePath, Duration.ofMinutes(5));
 
-        OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata);
+        OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata, config);
         ModelServiceType modelServiceType = ModelServiceType.map(serviceType);
         OpenAPI openAPI = openApiProvider.build(modelServiceType, _ -> true);
 

@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiEnumId;
+import io.airlift.api.ApiEnumNamingFormat;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
@@ -59,7 +60,6 @@ public class ValidationContext
         - $: Asserts the end of the string.
      */
     private static final Pattern STANDARD_NAMING = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
-    private static final Pattern ENUM_NAMING = Pattern.compile("^[A-Z][a-zA-Z0-9]*$");   // same as STANDARD_NAMING but first letter must be uppercase
     private static final Pattern ID_NAMING = Pattern.compile("^[a-z0-9][a-zA-Z0-9]*$");  // same as STANDARD_NAMING but first letter may be a number
 
     private static final Set<Type> forcedReadOnly = ImmutableSet.of(ApiResourceVersion.class);
@@ -154,7 +154,9 @@ public class ValidationContext
     public enum NameType
     {
         STANDARD(STANDARD_NAMING),
-        ENUM(ENUM_NAMING),
+        // Preserved for external source compatibility; new enum validation should use validateEnumName.
+        @Deprecated
+        ENUM(null),
         ID(ID_NAMING);
 
         private final Pattern pattern;
@@ -167,8 +169,20 @@ public class ValidationContext
 
     public void validateName(String name, NameType nameType)
     {
+        if (nameType == NameType.ENUM) {
+            validateEnumName(name, ApiEnumNamingFormat.PASCAL_CASE);
+            return;
+        }
+
         if ((name == null) || !nameType.pattern.matcher(name).matches()) {
             throw new ValidatorException("\"%s\" is not a valid name".formatted(name));
+        }
+    }
+
+    public void validateEnumName(String name, ApiEnumNamingFormat enumNamingFormat)
+    {
+        if ((name == null) || !enumNamingFormat.isValid(name)) {
+            throw new ValidatorException("\"%s\" is not a valid enum name for format %s".formatted(name, enumNamingFormat));
         }
     }
 

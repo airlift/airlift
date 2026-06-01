@@ -2,6 +2,7 @@ package io.airlift.api.binding;
 
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -13,6 +14,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
+import io.airlift.api.ApiBuilderConfig;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiIdLookup;
 import io.airlift.api.ApiIdSupportsLookup;
@@ -68,6 +71,7 @@ public class ApiModule
     private final Optional<ApiCompatibilityTester> compatibilityTester;
     private final boolean withApiLogging;
     private final ApiMode apiMode;
+    private final ApiEnumValueResolver enumValueResolver;
 
     private ApiModule(
             ModelApi modelApi,
@@ -79,7 +83,8 @@ public class ApiModule
             OpenApiExtensionFilter extensionFilter,
             Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
-            ApiMode apiMode)
+            ApiMode apiMode,
+            ApiEnumValueResolver enumValueResolver)
     {
         this.modelApi = requireNonNull(modelApi, "api is null");
         this.requestFilters = ImmutableSet.copyOf(requestFilters);
@@ -91,6 +96,7 @@ public class ApiModule
         this.compatibilityTester = requireNonNull(compatibilityTester, "compatibilityTester is null");
         this.withApiLogging = withApiLogging;
         this.apiMode = requireNonNull(apiMode, "apiMode is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
     }
 
     public static Builder builder()
@@ -101,6 +107,7 @@ public class ApiModule
     public static final class Builder
     {
         private final ImmutableSet.Builder<ModelApi> modelApis = ImmutableSet.builder();
+        private final ImmutableList.Builder<Consumer<ApiBuilder>> apiConsumers = ImmutableList.builder();
         private final ImmutableSet.Builder<RequestFilter> requestFilters = ImmutableSet.builder();
         private final ImmutableSet.Builder<ResponseFilter> responseFilters = ImmutableSet.builder();
         private final ImmutableMap.Builder<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings = ImmutableMap.builder();
@@ -110,6 +117,7 @@ public class ApiModule
         private Optional<ApiCompatibilityTester> compatibilityTester = Optional.empty();
         private boolean withApiLogging;
         private ApiMode apiMode = ApiMode.DEBUG;
+        private ApiEnumValueResolver enumValueResolver = ApiBuilderConfig.jackson().enumValueResolver();
 
         private Builder() {}
 
@@ -139,10 +147,13 @@ public class ApiModule
 
         public Builder addApi(Consumer<ApiBuilder> consumer)
         {
-            ApiBuilder apiBuilder = ApiBuilder.apiBuilder();
-            consumer.accept(apiBuilder);
+            apiConsumers.add(requireNonNull(consumer, "consumer is null"));
+            return this;
+        }
 
-            modelApis.add(apiBuilder.build());
+        public Builder withApiBuilderConfig(ApiBuilderConfig config)
+        {
+            this.enumValueResolver = requireNonNull(config, "config is null").enumValueResolver();
             return this;
         }
 
@@ -223,12 +234,23 @@ public class ApiModule
                     localExtensionFilter,
                     compatibilityTester,
                     withApiLogging,
-                    apiMode);
+                    apiMode,
+                    enumValueResolver);
         }
 
         private ModelApi mergeApis()
         {
-            return modelApis.build()
+            ImmutableSet.Builder<ModelApi> apis = ImmutableSet.builder();
+            apis.addAll(modelApis.build());
+            apiConsumers.build().stream()
+                    .map(consumer -> {
+                        ApiBuilder apiBuilder = ApiBuilder.apiBuilder(enumValueResolver);
+                        consumer.accept(apiBuilder);
+                        return apiBuilder.build();
+                    })
+                    .forEach(apis::add);
+
+            return apis.build()
                     .stream()
                     .reduce(ModelApi::mergeWith)
                     .orElseGet(() -> new ModelApi(new ModelServices(ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of()), ImmutableSet.of(), ImmutableSet.of(), ImmutableSet.of()));
@@ -273,7 +295,7 @@ public class ApiModule
         modelApi.modelServices().services().forEach(jaxrsResourceBuilder::bindService);
         jaxrsResourceBuilder.bindFeatures();
 
-        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), openApi, openApiFilterBinding, extensionFilter)));
+        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
 
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 
