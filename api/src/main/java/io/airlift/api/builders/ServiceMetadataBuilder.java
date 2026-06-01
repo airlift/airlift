@@ -42,15 +42,10 @@ public class ServiceMetadataBuilder
 
         return new ModelServiceMetadata(
                 apiService.name(),
-                map(apiServiceType),
+                ModelServiceType.map(apiServiceType),
                 apiService.description(),
                 Arrays.stream(apiService.documentationLinks())
                         .map(URI::create)
                         .collect(toImmutableList()));
-    }
-
-    private static ModelServiceType map(ApiServiceType apiServiceType)
-    {
-        return new ModelServiceType(apiServiceType.id(), apiServiceType.version(), apiServiceType.title(), apiServiceType.description(), apiServiceType.traits());
     }
 }

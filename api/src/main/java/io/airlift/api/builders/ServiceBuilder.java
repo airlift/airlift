@@ -30,11 +30,6 @@ public class ServiceBuilder
         this.methodBuilder = requireNonNull(methodBuilder, "methodBuilder is null");
     }
 
-    public static ServiceBuilder serviceBuilder(Class<?> serviceClass)
-    {
-        return new ServiceBuilder(serviceClass, new LinkedHashMap<>(), MethodBuilder::methodBuilder);
-    }
-
     public static ServiceBuilder serviceBuilder(Class<?> serviceClass, Function<Method, MethodBuilder> methodSupplier)
     {
         return new ServiceBuilder(serviceClass, new LinkedHashMap<>(), methodSupplier);

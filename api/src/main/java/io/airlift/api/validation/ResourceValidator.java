@@ -2,6 +2,7 @@ package io.airlift.api.validation;
 
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiDescription;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiMultiPart.ApiMultiPartForm;
 import io.airlift.api.ApiPagination;
@@ -51,42 +52,41 @@ import static io.airlift.api.validation.ResourceValidationState.Option.ALLOW_BOX
 import static io.airlift.api.validation.ResourceValidationState.Option.ALLOW_POLY_RESOURCES;
 import static io.airlift.api.validation.ResourceValidationState.Option.IS_RESULT_RESOURCE;
 import static io.airlift.api.validation.ResourceValidationState.Option.PARENT_IS_READ_ONLY;
-import static io.airlift.api.validation.ValidationContext.NameType.ENUM;
 import static io.airlift.api.validation.ValidationContext.NameType.STANDARD;
 import static io.airlift.api.validation.ValidationContext.isForcedReadOnly;
 
 public interface ResourceValidator
 {
-    static void validateResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource)
+    static void validateResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ApiEnumValueResolver enumValueResolver)
     {
         context.inContext("Resource %s".formatted(modelResource.type().getTypeName()),
-                subContext -> internalValidate(subContext, service, Optional.empty(), modelResource, ResourceValidationState.create()));
+                subContext -> internalValidate(subContext, service, Optional.empty(), modelResource, ResourceValidationState.create(), enumValueResolver));
     }
 
-    static void validateRequestBody(ValidationContext context, ModelServiceMetadata service, ModelMethod modelMethod, ModelResource modelResource)
+    static void validateRequestBody(ValidationContext context, ModelServiceMetadata service, ModelMethod modelMethod, ModelResource modelResource, ApiEnumValueResolver enumValueResolver)
     {
         context.inContext("Method: %s, request body %s".formatted(modelMethod.method(), modelResource.type().getTypeName()),
                 subContext -> {
                     if (modelResource.modifiers().contains(PATCH)) {
                         validatePatch(modelMethod.method(), modelResource);
                     }
-                    internalValidate(subContext, service, Optional.empty(), modelResource, ResourceValidationState.create());
+                    internalValidate(subContext, service, Optional.empty(), modelResource, ResourceValidationState.create(), enumValueResolver);
                 });
     }
 
-    static void validateParameter(ValidationContext context, ModelServiceMetadata service, ModelMethod modelMethod, String name, ModelResource modelResource)
+    static void validateParameter(ValidationContext context, ModelServiceMetadata service, ModelMethod modelMethod, String name, ModelResource modelResource, ApiEnumValueResolver enumValueResolver)
     {
         context.inContext("Method: %s, parameter %s, resource: %s".formatted(modelMethod.method(), name, modelResource.type().getTypeName()),
-                subContext -> internalValidate(subContext, service, Optional.of(name), modelResource, ResourceValidationState.create().withOptions(ALLOW_BASIC_RESOURCES)));
+                subContext -> internalValidate(subContext, service, Optional.of(name), modelResource, ResourceValidationState.create().withOptions(ALLOW_BASIC_RESOURCES), enumValueResolver));
     }
 
-    static void validateResult(ValidationContext context, ModelServiceMetadata service, ModelMethod modelMethod)
+    static void validateResult(ValidationContext context, ModelServiceMetadata service, ModelMethod modelMethod, ApiEnumValueResolver enumValueResolver)
     {
         context.inContext("Resource %s".formatted(modelMethod.returnType().type().getTypeName()),
-                subContext -> internalValidate(subContext, service, Optional.empty(), modelMethod.returnType(), ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE)));
+                subContext -> internalValidate(subContext, service, Optional.empty(), modelMethod.returnType(), ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE), enumValueResolver));
     }
 
-    private static void internalValidate(ValidationContext context, ModelServiceMetadata service, Optional<String> componentName, ModelResource modelResource, ResourceValidationState state)
+    private static void internalValidate(ValidationContext context, ModelServiceMetadata service, Optional<String> componentName, ModelResource modelResource, ResourceValidationState state, ApiEnumValueResolver enumValueResolver)
     {
         if (context.resourceHasBeenValidated(modelResource.type())) {
             return;
@@ -121,7 +121,7 @@ public interface ResourceValidator
                 }
 
                 if (isApiResource(modelResource.type())) {
-                    validateDeclaredResource(context, service, modelResource, state);
+                    validateDeclaredResource(context, service, modelResource, state, enumValueResolver);
                 }
             }
 
@@ -150,11 +150,11 @@ public interface ResourceValidator
                 }
 
                 if (isApiResource(modelResource.type())) {
-                    validateDeclaredResource(context, service, modelResource, state);
+                    validateDeclaredResource(context, service, modelResource, state, enumValueResolver);
                 }
             }
 
-            case RESOURCE -> validateDeclaredResource(context, service, modelResource, state);
+            case RESOURCE -> validateDeclaredResource(context, service, modelResource, state, enumValueResolver);
         }
     }
 
@@ -172,7 +172,7 @@ public interface ResourceValidator
                 isApiJsonType(clazz);
     }
 
-    private static void validateDeclaredResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ResourceValidationState state)
+    private static void validateDeclaredResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ResourceValidationState state, ApiEnumValueResolver enumValueResolver)
     {
         if (!modelResource.modifiers().contains(VOID)) {
             context.validateName(modelResource.name(), STANDARD);
@@ -192,7 +192,7 @@ public interface ResourceValidator
             }
         }
 
-        modelResource.polyResource().ifPresent(polyResource -> validatePolyResource(context, service, modelResource, polyResource, state));
+        modelResource.polyResource().ifPresent(polyResource -> validatePolyResource(context, service, modelResource, polyResource, state, enumValueResolver));
 
         modelResource.components().forEach(component -> {
             boolean hasDescription = !component.description().isBlank();
@@ -206,14 +206,14 @@ public interface ResourceValidator
                 throw new ValidatorException("%s component %s is missing %s annotation.".formatted(modelResource.type(), component.name(), ApiDescription.class.getSimpleName()));
             }
 
-            validateRecordComponentNaming(context, modelResource, component);
+            validateRecordComponentNaming(context, service, modelResource, component, enumValueResolver);
 
             ResourceValidationState nextState = state.withOptions(ALLOW_BASIC_RESOURCES, ALLOW_POLY_RESOURCES);
             if (component.modifiers().contains(READ_ONLY)) {
                 nextState = nextState.withOptions(PARENT_IS_READ_ONLY);
             }
 
-            internalValidate(context, service, Optional.of(component.name()), component, nextState);
+            internalValidate(context, service, Optional.of(component.name()), component, nextState, enumValueResolver);
 
             boolean isForcedReadOnly = isForcedReadOnly(component.type());
             boolean hasReadOnly = component.modifiers().contains(READ_ONLY);
@@ -269,7 +269,7 @@ TODO why this?
         return false;
     }
 
-    private static void validateRecordComponentNaming(ValidationContext context, ModelResource modelResource, ModelResource component)
+    private static void validateRecordComponentNaming(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ModelResource component, ApiEnumValueResolver enumValueResolver)
     {
         boolean isCollection = component.resourceType() == LIST;
         boolean isOptional = component.modifiers().contains(OPTIONAL);
@@ -280,7 +280,7 @@ TODO why this?
 
         if (rawType.isEnum()) {
             context.inContext("For enumeration: " + rawType.getSimpleName(), subContext ->
-                    Stream.of(rawType.getEnumConstants()).forEach(e -> subContext.validateName(e.toString(), ENUM)));
+                    enumValueResolver.values(rawType).forEach(value -> subContext.validateEnumName(value, service.type().enumNamingFormat())));
         }
 
         if (ApiResourceVersion.class.isAssignableFrom(rawType)) {
@@ -315,7 +315,7 @@ TODO why this?
         }
     }
 
-    private static void validatePolyResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ModelPolyResource polyResource, ResourceValidationState state)
+    private static void validatePolyResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ModelPolyResource polyResource, ResourceValidationState state, ApiEnumValueResolver enumValueResolver)
     {
         if (modelResource.type() instanceof Class<?> clazz) {
             context.registerPolyResource(clazz);
@@ -331,7 +331,7 @@ TODO why this?
                                 throw new ValidatorException("%s is a sub-resource of %s and has a component that is the same as the %s key: %s".formatted(subResource.type(), ApiPolyResource.class.getSimpleName(), ApiPolyResource.class.getSimpleName(), polyResource.key()));
                             }
                             if (component.resourceType() != BASIC) {
-                                internalValidate(context, service, Optional.of(component.name()), component, state);
+                                internalValidate(context, service, Optional.of(component.name()), component, state, enumValueResolver);
                             }
                         }));
     }

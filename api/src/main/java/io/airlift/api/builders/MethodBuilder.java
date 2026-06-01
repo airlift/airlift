@@ -130,11 +130,6 @@ public class MethodBuilder
         this.responses = requireNonNull(responses, "responses is null");    // do not copy
     }
 
-    public static MethodBuilder methodBuilder(Method method)
-    {
-        return new MethodBuilder(method, new LinkedHashMap<>(), ResourceBuilder::resourceBuilder, new LinkedHashMap<>());
-    }
-
     public static MethodBuilder methodBuilder(Method method, Function<Type, ResourceBuilder> resourceBuilderSupplier)
     {
         return new MethodBuilder(method, new LinkedHashMap<>(), resourceBuilderSupplier, new LinkedHashMap<>());

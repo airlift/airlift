@@ -1,6 +1,7 @@
 package io.airlift.api.openapi;
 
 import com.google.common.reflect.TypeToken;
+import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiJsonList;
 import io.airlift.api.ApiJsonNode;
 import io.airlift.api.ApiJsonObject;
@@ -16,6 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestApiJsonSchemas
 {
+    private static final ApiBuilderConfig CONFIG = ApiBuilderConfig.jackson();
+
     @Test
     public void testJsonNodeIsUnconstrained()
     {
@@ -46,9 +49,9 @@ public class TestApiJsonSchemas
     @Test
     public void testMapWithJsonNodeAllowsArbitraryJsonValues()
     {
-        ModelResource modelResource = resourceBuilder(new TypeToken<Map<String, ApiJsonNode>>() {}.getType()).build();
+        ModelResource modelResource = resourceBuilder(new TypeToken<Map<String, ApiJsonNode>>() {}.getType(), CONFIG.enumValueResolver()).build();
 
-        Schema<?> schema = new SchemaBuilder(false).buildSchema(modelResource, STANDARD);
+        Schema<?> schema = new SchemaBuilder(false, CONFIG.enumValueResolver()).buildSchema(modelResource, STANDARD);
 
         assertThat(schema.getType()).isEqualTo("object");
         assertThat(schema.getAdditionalProperties()).isInstanceOfSatisfying(Schema.class, additionalProperties -> {
@@ -59,6 +62,6 @@ public class TestApiJsonSchemas
 
     private static Schema<?> buildSchema(Class<?> clazz)
     {
-        return new SchemaBuilder(false).buildSchema(resourceBuilder(clazz).build(), STANDARD);
+        return new SchemaBuilder(false, CONFIG.enumValueResolver()).buildSchema(resourceBuilder(clazz, CONFIG.enumValueResolver()).build(), STANDARD);
     }
 }

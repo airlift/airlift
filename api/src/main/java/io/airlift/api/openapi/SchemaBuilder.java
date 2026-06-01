@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.model.ModelPolyResource;
@@ -34,7 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
@@ -54,21 +54,23 @@ class SchemaBuilder
 {
     private final Map<SchemaKey, Schema<?>> schemas;
     private final boolean enumsAsStrings;
+    private final ApiEnumValueResolver enumValueResolver;
     private final String schemaTag;
     private final Map<Type, ModelResource> typeToResourceCache;
     private final Map<String, Schema<?>> ofSchemas;
 
-    SchemaBuilder(boolean enumsAsStrings)
+    SchemaBuilder(boolean enumsAsStrings, ApiEnumValueResolver enumValueResolver)
     {
-        this(TAG_MODEL_DEFINITIONS, new LinkedHashMap<>(), enumsAsStrings, new LinkedHashMap<>(), new LinkedHashMap<>());
+        this(TAG_MODEL_DEFINITIONS, new LinkedHashMap<>(), enumsAsStrings, enumValueResolver, new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
-    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> ofSchemas)
+    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, ApiEnumValueResolver enumValueResolver, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> ofSchemas)
     {
         this.schemaTag = requireNonNull(schemaTag, "schemaTag is null");
         // don't copy
         this.schemas = requireNonNull(schemas, "schemas is null");
         this.enumsAsStrings = enumsAsStrings;
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
         this.typeToResourceCache = requireNonNull(typeToResourceCache, "typeToResourceCache is null");  // don't copy
         this.ofSchemas = requireNonNull(ofSchemas, "ofSchemas is null");  // don't copy
     }
@@ -76,7 +78,7 @@ class SchemaBuilder
     @SuppressWarnings("SameParameterValue")
     SchemaBuilder withSchemaTag(String schemaTag)
     {
-        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, typeToResourceCache, ofSchemas);
+        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, enumValueResolver, typeToResourceCache, ofSchemas);
     }
 
     private record SchemaKey(Optional<String> parent, Type containerType, ModelResourceType resourceType, BuildSchemaMode mode)
@@ -250,7 +252,7 @@ class SchemaBuilder
     {
         StringSchema stringSchema = new StringSchema();
         if (!enumsAsStrings) {
-            Stream.of(clazz.getEnumConstants()).forEach(o -> stringSchema.addEnumItem(o.toString()));
+            enumValueResolver.values(clazz).forEach(stringSchema::addEnumItem);
         }
         return stringSchema;
     }

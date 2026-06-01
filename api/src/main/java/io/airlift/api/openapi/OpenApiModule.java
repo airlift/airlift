@@ -5,6 +5,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.AnnotatedBindingBuilder;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.model.ModelService;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.model.ModelServices;
@@ -30,13 +31,15 @@ public class OpenApiModule
     private final OpenApiMetadata metadata;
     private final Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding;
     private final OpenApiExtensionFilter extensionFilter;
+    private final ApiEnumValueResolver enumValueResolver;
 
-    public OpenApiModule(ModelServices modelServices, OpenApiMetadata metadata, Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding, OpenApiExtensionFilter extensionFilter)
+    public OpenApiModule(ModelServices modelServices, OpenApiMetadata metadata, Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding, OpenApiExtensionFilter extensionFilter, ApiEnumValueResolver enumValueResolver)
     {
         this.modelServices = requireNonNull(modelServices, "modelServices is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.openApiFilterProviderBinding = requireNonNull(openApiFilterProviderBinding, "openApiFilterProviderBinding is null");
         this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
     }
 
     @Override
@@ -47,7 +50,7 @@ public class OpenApiModule
         binder.bind(new TypeLiteral<Collection<ModelServiceType>>() {}).toInstance(servicesByType.keySet());
 
         newOptionalBinder(binder, OpenApiProvider.class).setBinding().toInstance((serviceType, methodFilter) -> {
-            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, methodFilter, extensionFilter);
+            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, methodFilter, extensionFilter, enumValueResolver);
             servicesByType.getOrDefault(serviceType, ImmutableList.of()).forEach(builder::addService);
             return builder.build();
         });
