@@ -157,7 +157,7 @@ class SchemaBuilder
                 case PAGINATED_RESULT -> buildPaginatedSchema(modelResource);
                 case JSON -> buildApiJsonSchema(modelResource);
                 default -> modelResource.modifiers().contains(IS_ANY_OBJECT)
-                        ? new Schema<>().type("object").description(adjustedDescription(modelResource))
+                        ? new Schema<>().description(adjustedDescription(modelResource))
                         : buildBasicOrResourceSchema(modelResource, mode);
             };
         }

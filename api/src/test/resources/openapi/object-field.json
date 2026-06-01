@@ -1,0 +1,172 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "test",
+    "version" : "v1"
+  },
+  "tags" : [ {
+    "name" : "ObjectFieldService Service",
+    "description" : "Service with an Object field"
+  }, {
+    "name" : "About",
+    "description" : "test\n\n<a href=\"/public/openapi/v1/json\" style=\"text-decoration: none !important\" download=\"openApi.json\">⬇️ Download OpenAPI specification</a>\n"
+  }, {
+    "name" : "Model Definitions",
+    "description" : ""
+  }, {
+    "name" : "Responses",
+    "description" : ""
+  } ],
+  "paths" : {
+    "/public/api/v1/objectField" : {
+      "post" : {
+        "tags" : [ "ObjectFieldService Service" ],
+        "description" : "create something with an Object field",
+        "operationId" : "createObjectField",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ObjectField"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Success"
+          },
+          "400" : {
+            "description" : "ApiBadRequest",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "ApiUnauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "ApiForbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "ApiAlreadyExists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exists"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "BadRequest" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : "Description of the error"
+          },
+          "fields" : {
+            "type" : "array",
+            "description" : "Any fields/values that are invalid or incorrect",
+            "items" : {
+              "type" : "string",
+              "description" : "Any fields/values that are invalid or incorrect"
+            }
+          }
+        },
+        "description" : "Invalid request",
+        "x-tags" : [ "Responses" ]
+      },
+      "Exists" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Already exists",
+        "x-tags" : [ "Responses" ]
+      },
+      "Forbidden" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "ObjectField" : {
+        "required" : [ "attributes", "name", "payloads" ],
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "A name"
+          },
+          "payloads" : {
+            "type" : "array",
+            "description" : "Free-form list",
+            "items" : {
+              "description" : "Free-form list"
+            }
+          },
+          "attributes" : {
+            "type" : "object",
+            "description" : "Free-form map",
+            "additionalProperties" : {
+              "description" : "Free-form map"
+            }
+          }
+        },
+        "description" : "Resource with Object container fields",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Unauthorized" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      }
+    }
+  },
+  "x-tagGroups" : [ {
+    "name" : "Help",
+    "tags" : [ "About" ]
+  }, {
+    "name" : "Services",
+    "tags" : [ "ObjectFieldService Service" ]
+  }, {
+    "name" : "Models",
+    "tags" : [ "Model Definitions", "Responses" ]
+  } ]
+}
