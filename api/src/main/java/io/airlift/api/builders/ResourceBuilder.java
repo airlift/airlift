@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiDescription;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiMultiPart;
 import io.airlift.api.ApiMultiPart.ApiMultiPartFormWithResource;
@@ -94,27 +95,29 @@ public class ResourceBuilder
     private final Type resource;
     private final Map<Type, ModelResource> builtResources;
     private final RecursionChecker recursionChecker;
+    private final ApiEnumValueResolver enumValueResolver;
 
-    private ResourceBuilder(Type resource, Map<Type, ModelResource> builtResources, RecursionChecker recursionChecker)
+    private ResourceBuilder(Type resource, Map<Type, ModelResource> builtResources, RecursionChecker recursionChecker, ApiEnumValueResolver enumValueResolver)
     {
         this.resource = requireNonNull(resource, "resource is null");
         this.builtResources = requireNonNull(builtResources, "validatedResources is null"); // do not copy
         this.recursionChecker = requireNonNull(recursionChecker, "recursionChecker is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
     }
 
-    public static ResourceBuilder resourceBuilder(Type resource)
+    public static ResourceBuilder resourceBuilder(Type resource, ApiEnumValueResolver enumValueResolver)
     {
-        return new ResourceBuilder(resource, new LinkedHashMap<>(), new RecursionChecker());
+        return new ResourceBuilder(resource, new LinkedHashMap<>(), new RecursionChecker(), enumValueResolver);
     }
 
     public static ResourceBuilder resourceBuilder(Type resource, ResourceBuilder from)
     {
-        return new ResourceBuilder(resource, from.builtResources, from.recursionChecker);
+        return new ResourceBuilder(resource, from.builtResources, from.recursionChecker, from.enumValueResolver);
     }
 
     public ResourceBuilder toBuilder(Type resource)
     {
-        return new ResourceBuilder(resource, builtResources, recursionChecker);
+        return new ResourceBuilder(resource, builtResources, recursionChecker, enumValueResolver);
     }
 
     public ModelResource build()
@@ -362,9 +365,19 @@ public class ResourceBuilder
                 .filter(Field::isEnumConstant)
                 .flatMap(field -> {
                     ApiDescription descriptionAnnotation = field.getAnnotation(ApiDescription.class);
-                    return Optional.ofNullable(descriptionAnnotation).map(description -> Map.entry(field.getName(), description.value())).stream();
+                    return Optional.ofNullable(descriptionAnnotation).map(description -> Map.entry(enumValue(field), description.value())).stream();
                 })
                 .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private String enumValue(Field field)
+    {
+        try {
+            return enumValueResolver.value((Enum<?>) field.get(null));
+        }
+        catch (IllegalAccessException | IllegalArgumentException e) {
+            throw new ValidatorException("Could not read enum constant: %s".formatted(field.getName()), e);
+        }
     }
 
     private Class<?> unboxIfNeeded(Class<?> clazz)

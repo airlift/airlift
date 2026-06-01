@@ -1,6 +1,8 @@
 package io.airlift.api.builders;
 
 import com.google.common.collect.ImmutableSet;
+import io.airlift.api.ApiBuilderConfig;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServices;
 import io.airlift.api.validation.ValidationContext;
@@ -22,16 +24,28 @@ public class ApiBuilder
 {
     private final ValidationContext validationContext;
     private final ServicesBuilder servicesBuilder;
+    private final ApiEnumValueResolver enumValueResolver;
 
-    private ApiBuilder(ValidationContext validationContext, ServicesBuilder servicesBuilder)
+    private ApiBuilder(ValidationContext validationContext, ServicesBuilder servicesBuilder, ApiEnumValueResolver enumValueResolver)
     {
         this.validationContext = requireNonNull(validationContext, "validationContext is null");
         this.servicesBuilder = requireNonNull(servicesBuilder, "servicesBuilder is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
     }
 
     public static ApiBuilder apiBuilder()
     {
-        return new ApiBuilder(new ValidationContext(), ServicesBuilder.servicesBuilder());
+        return apiBuilder(ApiBuilderConfig.jackson());
+    }
+
+    public static ApiBuilder apiBuilder(ApiBuilderConfig config)
+    {
+        return apiBuilder(requireNonNull(config, "config is null").enumValueResolver());
+    }
+
+    public static ApiBuilder apiBuilder(ApiEnumValueResolver enumValueResolver)
+    {
+        return new ApiBuilder(new ValidationContext(), ServicesBuilder.servicesBuilder(enumValueResolver), enumValueResolver);
     }
 
     public ApiBuilder add(Class<?> serviceClass)
@@ -65,15 +79,15 @@ public class ApiBuilder
 
             modelService.methods().forEach(modelMethod -> {
                 validateMethod(context, modelMethod, modelService.service().type().serviceTraits());
-                validateResult(context, modelService.service(), modelMethod);
+                validateResult(context, modelService.service(), modelMethod, enumValueResolver);
 
-                modelMethod.responses().forEach(modelResponse -> validateResource(context, modelService.service(), modelResponse.resource()));
+                modelMethod.responses().forEach(modelResponse -> validateResource(context, modelService.service(), modelResponse.resource(), enumValueResolver));
 
                 modelMethod.parameters().stream()
                         .flatMap(parameter -> parameter.components().stream())
-                        .forEach(component -> validateParameter(context, modelService.service(), modelMethod, component.name(), component));
+                        .forEach(component -> validateParameter(context, modelService.service(), modelMethod, component.name(), component, enumValueResolver));
 
-                modelMethod.requestBody().ifPresent(requestBody -> validateRequestBody(context, modelService.service(), modelMethod, requestBody));
+                modelMethod.requestBody().ifPresent(requestBody -> validateRequestBody(context, modelService.service(), modelMethod, requestBody, enumValueResolver));
             });
         });
 

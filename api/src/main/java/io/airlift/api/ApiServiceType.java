@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
+import static io.airlift.api.ApiEnumNamingFormat.PASCAL_CASE;
 import static io.airlift.api.ApiServiceTrait.DESCRIPTIONS_REQUIRED;
 import static io.airlift.api.ApiServiceTrait.QUOTAS_REQUIRED;
 import static io.airlift.api.ApiServiceTrait.REQUIRES_RESOURCE_IDS;
@@ -22,5 +23,10 @@ public interface ApiServiceType
     default Set<ApiServiceTrait> traits()
     {
         return ImmutableSet.of(USES_VERSIONED_RESOURCES, REQUIRES_RESOURCE_IDS, QUOTAS_REQUIRED, DESCRIPTIONS_REQUIRED);
+    }
+
+    default ApiEnumNamingFormat enumNamingFormat()
+    {
+        return PASCAL_CASE;
     }
 }

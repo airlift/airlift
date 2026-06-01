@@ -19,9 +19,20 @@ public class ValidatorException
         this(ImmutableList.of(message));
     }
 
+    public ValidatorException(String message, Throwable cause)
+    {
+        this(ImmutableList.of(message), cause);
+    }
+
     public ValidatorException(List<String> messages)
     {
         super(messages.toString());
+        this.messages = ImmutableList.copyOf(messages);
+    }
+
+    public ValidatorException(List<String> messages, Throwable cause)
+    {
+        super(messages.toString(), cause);
         this.messages = ImmutableList.copyOf(messages);
     }
 
