@@ -374,7 +374,12 @@ class SchemaBuilder
     private void buildComponentSchema(BuildSchemaMode mode, Schema<?> schema, ModelResource component)
     {
         if (component.modifiers().contains(IS_UNWRAPPED)) {
-            buildResourceSchema(schema, component, ofMode(mode));
+            if ((component.resourceType() == ModelResourceType.LIST) && component.jsonValueResource().isPresent()) {
+                buildUnwrappedJsonValueListComponentSchema(mode, schema, component);
+            }
+            else {
+                buildResourceSchema(schema, component, ofMode(mode));
+            }
         }
         else {
             Schema<?> componentSchema = buildSchema(component, mode);
@@ -382,6 +387,16 @@ class SchemaBuilder
             if (!mode.isPartialPatch() && !component.modifiers().contains(ModelResourceModifier.OPTIONAL)) {
                 schema.addRequiredItem(component.name());
             }
+        }
+    }
+
+    private void buildUnwrappedJsonValueListComponentSchema(BuildSchemaMode mode, Schema<?> schema, ModelResource component)
+    {
+        ModelResource jsonValueResource = component.jsonValueResource().orElseThrow();
+        Schema<?> componentSchema = asList(jsonValueResource, buildSchema(jsonValueResource, mode));
+        schema.addProperty(jsonValueResource.name(), componentSchema);
+        if (!mode.isPartialPatch() && !component.modifiers().contains(ModelResourceModifier.OPTIONAL)) {
+            schema.addRequiredItem(jsonValueResource.name());
         }
     }
 

@@ -5,6 +5,7 @@ import com.google.inject.Guice;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiCreate;
 import io.airlift.api.ApiCustom;
+import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiGet;
 import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiReadOnly;
@@ -85,6 +86,33 @@ public class TestJsonValueOpenApi
         Schema<?> schema = schema(openAPI, "KqlQueryResponse");
         assertThat(schema.getType()).isEqualTo("array");
         assertThat(schema.getItems().get$ref()).isEqualTo("#/components/schemas/SimpleValue");
+    }
+
+    @Test
+    public void testUnwrappedJsonValueObjectListSchema()
+    {
+        OpenAPI openAPI = buildOpenApi(JsonValueService.class);
+
+        Schema<?> objectField = schema(openAPI, "JsonValueObjectField");
+        assertThat(objectField).isNotNull();
+
+        Schema<?> payloads = objectField.getProperties().get("payloads");
+        assertThat(payloads.getType()).isEqualTo("array");
+        assertThat(payloads.getDescription()).isEqualTo("Free-form payloads");
+        Schema<?> payload = payloads.getItems();
+        assertThat(payload.getType()).isEqualTo("array");
+        assertUnconstrainedSchema(payload.getItems());
+        assertThat(objectField.getRequired()).contains("payloads");
+    }
+
+    @Test
+    public void testUnwrappedJsonValueOptionalValueIsRequiredWhenOuterListIsRequired()
+    {
+        OpenAPI openAPI = buildOpenApi(JsonValueService.class);
+
+        Schema<?> objectField = schema(openAPI, "JsonValueOptionalField");
+        assertThat(objectField).isNotNull();
+        assertThat(objectField.getRequired()).contains("payloads");
     }
 
     @Test
@@ -224,6 +252,18 @@ public class TestJsonValueOpenApi
         return openAPI.getComponents().getSchemas().get(name);
     }
 
+    private static void assertUnconstrainedSchema(Schema<?> schema)
+    {
+        assertThat(schema.getType()).isNull();
+        assertThat(schema.get$ref()).isNull();
+        assertThat(schema.getProperties()).isNull();
+        assertThat(schema.getItems()).isNull();
+        assertThat(schema.getAdditionalProperties()).isNull();
+        assertThat(schema.getAllOf()).isNull();
+        assertThat(schema.getOneOf()).isNull();
+        assertThat(schema.getDescription()).isNull();
+    }
+
     private static Schema<?> successResponseSchema(OpenAPI openAPI, String path)
     {
         return openAPI.getPaths()
@@ -279,6 +319,18 @@ public class TestJsonValueOpenApi
 
         @ApiGet(description = "Get inactive JsonValue")
         public InactiveJsonValue inactiveJsonValue()
+        {
+            return null;
+        }
+
+        @ApiGet(description = "Get unwrapped JsonValue Object list")
+        public JsonValueObjectField objectField()
+        {
+            return null;
+        }
+
+        @ApiGet(description = "Get unwrapped optional JsonValue")
+        public JsonValueOptionalField optionalField()
         {
             return null;
         }
@@ -369,6 +421,18 @@ public class TestJsonValueOpenApi
 
     @ApiResource(name = "readOnlyJsonValue", description = "Read-only JsonValue resource")
     public record ReadOnlyJsonValue(@ApiReadOnly @JsonValue List<Boolean> values) {}
+
+    @ApiResource(name = "jsonValueObjectField", description = "Resource with an unwrapped JsonValue Object list")
+    public record JsonValueObjectField(@ApiUnwrapped List<JsonValueObjectList> data) {}
+
+    @ApiResource(name = "jsonValueObjectList", description = "JsonValue Object list resource")
+    public record JsonValueObjectList(@ApiDescription("Free-form payloads") @JsonValue List<Object> payloads) {}
+
+    @ApiResource(name = "jsonValueOptionalField", description = "Resource with an unwrapped optional JsonValue list")
+    public record JsonValueOptionalField(@ApiUnwrapped List<JsonValueOptionalValue> data) {}
+
+    @ApiResource(name = "jsonValueOptionalValue", description = "JsonValue optional resource")
+    public record JsonValueOptionalValue(@ApiDescription("Optional payloads") @JsonValue Optional<String> payloads) {}
 
     @ApiResource(name = "simpleValue", description = "Simple value resource")
     public record SimpleValue(String name) {}
