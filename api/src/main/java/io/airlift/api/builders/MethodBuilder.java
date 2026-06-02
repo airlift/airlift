@@ -1,6 +1,5 @@
 package io.airlift.api.builders;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.api.ApiCreate;
@@ -31,7 +30,6 @@ import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
 import io.airlift.api.model.ModelOptionalParameter.ExternalParameter;
 import io.airlift.api.model.ModelResource;
-import io.airlift.api.model.ModelResourceModifier;
 import io.airlift.api.model.ModelResourceType;
 import io.airlift.api.model.ModelResponse;
 import io.airlift.api.model.ModelSupportsIdLookup;
@@ -237,9 +235,7 @@ public class MethodBuilder
 
             return modelMethod.map(model -> {
                 if (isPatch) {
-                    ModelResource modifiedModelResource = requestBodyResource.withModifier(ModelResourceModifier.PATCH);
-                    ModelMethod modifiedModelMethod = model.withRequestBody(modifiedModelResource);
-                    return addPatchHelpToDescription(modifiedModelMethod);
+                    return addPatchHelpToDescription(model.withRequestBody(requestBodyResource.asPatchRequestBody()));
                 }
                 return model.withRequestBody(requestBodyResource);
             });
@@ -329,18 +325,10 @@ public class MethodBuilder
                         throw new ValidatorException("ApiJson types cannot be used as API path parameters");
                     }
 
-                    ModelResource modelResource = resourceBuilder.apply(resourceType).build();
-
-                    if (apiParameter.allowedValues().length > 0) {
-                        modelResource = modelResource.withLimitedValues(ImmutableSet.copyOf(apiParameter.allowedValues()));
-                    }
-
-                    ApiIdSupportsLookup supportsIdLookup = parameter.getType().getAnnotation(ApiIdSupportsLookup.class);
-                    if (supportsIdLookup != null) {
-                        modelResource = modelResource.withSupportsIdLookup(new ModelSupportsIdLookup((Class<? extends ApiId<?, ?>>) parameter.getType(), supportsIdLookup.value()));
-                    }
-
-                    parameters.add(modelResource);
+                    Optional<ModelSupportsIdLookup> supportsIdLookup = Optional.ofNullable(parameter.getType().getAnnotation(ApiIdSupportsLookup.class))
+                            .map(annotation -> new ModelSupportsIdLookup((Class<? extends ApiId<?, ?>>) parameter.getType(), annotation.value()));
+                    parameters.add(resourceBuilder.apply(resourceType).build()
+                            .asIdPathParameter(ImmutableSet.copyOf(apiParameter.allowedValues()), supportsIdLookup));
                 }
                 else if (!ApiResponseHeaders.class.isAssignableFrom(parameter.getType())) {
                     buildOptionalParameter(parameter, apiParameter).ifPresent(optionalParameters::add);
@@ -428,8 +416,9 @@ public class MethodBuilder
 
         if (resource == void.class) {
             if (allowVoidResult) {
-                return new ModelResource(resource, "", "", ImmutableList.of(), ModelResourceType.RESOURCE)
-                        .withModifier(VOID);
+                return ModelResource.builder(resource, "", "", ModelResourceType.RESOURCE)
+                        .withModifier(VOID)
+                        .build();
             }
             else {
                 throw new ValidatorException("Method cannot have void result");
@@ -444,7 +433,7 @@ public class MethodBuilder
         ModelResource validatedResource = resourceBuilder.apply(resource).build();
 
         if (isPaginated) {
-            return validatedResource.asResourceType(ModelResourceType.PAGINATED_RESULT).withContainerType(method.getGenericReturnType());
+            return validatedResource.asPaginatedResult(method.getGenericReturnType());
         }
 
         if (validatedResource.modifiers().contains(IS_STREAMING_RESPONSE) && !allowStreamingResult) {

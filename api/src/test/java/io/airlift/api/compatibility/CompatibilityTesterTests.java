@@ -22,7 +22,6 @@ import java.util.Set;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.io.MoreFiles.deleteRecursively;
-import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CompatibilityTesterTests
@@ -84,7 +83,6 @@ public class CompatibilityTesterTests
 
     private ModelResource removeUnwrapped(ModelResource modelResource)
     {
-        List<ModelResource> components = modelResource.components().stream().map(resource -> resource.withModifierRemoved(IS_UNWRAPPED)).collect(toImmutableList());
-        return modelResource.withComponents(components);
+        return modelResource.asResourceWithoutUnwrappedComponents();
     }
 }
