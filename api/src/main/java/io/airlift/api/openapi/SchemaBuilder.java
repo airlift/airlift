@@ -157,10 +157,10 @@ class SchemaBuilder
             schema = switch (modelResource.resourceType()) {
                 case LIST -> modelResource.modifiers().contains(IS_ANY_OBJECT)
                         ? buildAnyObjectContainerSchema(modelResource)
-                        : asList(modelResource, buildSchema(asResource(removeContainer(modelResource)), mode));
+                        : asList(modelResource, buildSchema(modelResource.asContainedResourceType(ModelResourceType.RESOURCE), mode));
                 case MAP -> modelResource.modifiers().contains(IS_ANY_OBJECT)
                         ? buildAnyObjectContainerSchema(modelResource)
-                        : new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(asResource(removeContainer(modelResource)), mode));
+                        : new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(modelResource.asContainedResourceType(ModelResourceType.RESOURCE), mode));
                 case PAGINATED_RESULT -> buildPaginatedSchema(modelResource);
                 case JSON -> buildApiJsonSchema(modelResource);
                 default -> modelResource.modifiers().contains(IS_ANY_OBJECT)
@@ -262,26 +262,11 @@ class SchemaBuilder
         return modelResource.openApiName().orElseGet(modelResource::name);
     }
 
-    private ModelResource removeContainer(ModelResource modelResource)
-    {
-        return modelResource.withContainerType(modelResource.type());
-    }
-
-    private ModelResource asList(ModelResource modelResource)
-    {
-        return modelResource.asResourceType(ModelResourceType.LIST);
-    }
-
-    private ModelResource asResource(ModelResource modelResource)
-    {
-        // for these purposes resource and basic are interchangeable
-        return modelResource.asResourceType(ModelResourceType.RESOURCE);
-    }
-
     private Schema<?> buildPaginatedSchema(ModelResource modelResource)
     {
-        Schema<?> modelSchema = buildSchema(asList(removeContainer(modelResource)), BuildSchemaMode.STANDARD);
-        Schema<?> schema = newNamedSchema(schemaName(removeContainer(modelResource), BuildSchemaMode.STANDARD, Optional.of("Paginated")));
+        ModelResource resultResource = modelResource.asContainedResourceType(ModelResourceType.LIST);
+        Schema<?> modelSchema = buildSchema(resultResource, BuildSchemaMode.STANDARD);
+        Schema<?> schema = newNamedSchema(schemaName(resultResource, BuildSchemaMode.STANDARD, Optional.of("Paginated")));
         schema.addProperty("nextPageToken", new StringSchema().description("The next page token to use or \"\" if there are no more pages."));
         schema.addProperty("result", modelSchema.description("A page of results."));
         schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), BuildSchemaMode.STANDARD), schema);

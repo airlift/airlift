@@ -1,6 +1,5 @@
 package io.airlift.api.builders;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
@@ -151,25 +150,28 @@ public class ResourceBuilder
         TypeToken<?> typeToken = TypeToken.of(typeResolver.resolveType(resource));
 
         if (typeToken.isSubtypeOf(Optional.class)) {
-            return internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 0))
+            return ModelResource.builder(internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 0)))
                     .withModifier(OPTIONAL)
-                    .withContainerType(resource);
+                    .withContainerType(resource)
+                    .build();
         }
 
         if (typeToken.isSubtypeOf(Collection.class)) {
             Type targetType = extractGenericParameter(typeToken.getType(), 0);
 
             if (Object.class.equals(targetType)) {
-                return anyObjectLeafResource()
-                        .asResourceType(ModelResourceType.LIST)
-                        .withContainerType(resource);
+                return anyObjectLeafResourceBuilder()
+                        .withResourceType(ModelResourceType.LIST)
+                        .withContainerType(resource)
+                        .build();
             }
 
             recursionChecker.pushRecursionAllowed(true);
             try {
-                return internalBuildAndAdd(componentName, targetType)
-                        .asResourceType(ModelResourceType.LIST)
-                        .withContainerType(resource);
+                return ModelResource.builder(internalBuildAndAdd(componentName, targetType))
+                        .withResourceType(ModelResourceType.LIST)
+                        .withContainerType(resource)
+                        .build();
             }
             finally {
                 recursionChecker.popRecursionAllowed();
@@ -180,63 +182,64 @@ public class ResourceBuilder
             Type keyType = extractGenericParameter(typeToken.getType(), 0);
             Type valueType = extractGenericParameter(typeToken.getType(), 1);
             if (keyType.equals(String.class) && (valueType.equals(String.class) || isApiJsonType(valueType))) {
-                return internalBuildAndAdd(componentName, valueType)
-                        .asResourceType(ModelResourceType.MAP)
-                        .withContainerType(resource);
+                return ModelResource.builder(internalBuildAndAdd(componentName, valueType))
+                        .withResourceType(ModelResourceType.MAP)
+                        .withContainerType(resource)
+                        .build();
             }
             if (keyType.equals(String.class) && valueType.equals(Object.class)) {
-                return anyObjectLeafResource()
-                        .asResourceType(ModelResourceType.MAP)
-                        .withContainerType(resource);
+                return anyObjectLeafResourceBuilder()
+                        .withResourceType(ModelResourceType.MAP)
+                        .withContainerType(resource)
+                        .build();
             }
-            return new ModelResource(String.class, String.class.getSimpleName(), "n/a", ImmutableList.of(), ModelResourceType.MAP).withContainerType(resource);
+            return ModelResource.builder(String.class, String.class.getSimpleName(), "n/a", ModelResourceType.MAP)
+                    .withContainerType(resource)
+                    .build();
         }
 
         if ((typeToken.getType() instanceof Class<?> clazz) && isBasic(clazz, true)) {
             Class<?> unboxed = unboxIfNeeded(clazz);
-            ModelResource modelResource = new ModelResource(unboxed, unboxed.getSimpleName(), "n/a", ImmutableList.of(), ModelResourceType.BASIC);
+            ModelResource.Builder modelResourceBuilder = ModelResource.builder(unboxed, unboxed.getSimpleName(), "n/a", ModelResourceType.BASIC);
             if (unboxed.isEnum()) {
                 Map<String, String> descriptions = enumDescriptions(unboxed);
                 if (!descriptions.isEmpty()) {
-                    modelResource = modelResource.withEnumDescriptions(descriptions);
+                    modelResourceBuilder.withEnumDescriptions(descriptions);
                 }
             }
-            return modelResource;
+            return modelResourceBuilder.build();
         }
 
         if (isApiJsonType(typeToken.getType())) {
-            return new ModelResource(
-                    typeToken.getRawType(),
-                    apiJsonResourceName(typeToken.getType()),
-                    apiJsonResourceDescription(typeToken.getType()),
-                    ImmutableList.of(),
-                    ModelResourceType.JSON);
+            return ModelResource.builder(typeToken.getRawType(), apiJsonResourceName(typeToken.getType()), apiJsonResourceDescription(typeToken.getType()), ModelResourceType.JSON)
+                    .build();
         }
 
         if (typeToken.isSubtypeOf(ApiStreamResponse.class)) {
-            ModelResource streamResource = internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 0))
+            ModelResource.Builder streamResourceBuilder = ModelResource.builder(internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 0)))
                     .withContainerType(typeToken.getType())
                     .withModifier(IS_STREAMING_RESPONSE)
                     .withModifier(HAS_RESOURCE_ID)
                     .withModifier(READ_ONLY)
                     .withModifier(HAS_VERSION);
             if (typeToken.isSubtypeOf(ApiServerSentEventStreamResponse.class)) {
-                streamResource = streamResource.withStreamingEventResource(internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 1)));
+                streamResourceBuilder.withStreamingEventResource(internalBuildAndAdd(componentName, extractGenericParameter(typeToken.getType(), 1)));
             }
-            return streamResource;
+            return streamResourceBuilder.build();
         }
 
         if (typeToken.isSubtypeOf(ApiMultiPart.class)) {
             Type multiPartResourceType = extractGenericParameter(typeToken.getType(), 0);
 
-            ModelResource modelResource = internalBuildAndAdd(componentName, multiPartResourceType);
+            ModelResource.Builder modelResourceBuilder = ModelResource.builder(internalBuildAndAdd(componentName, multiPartResourceType));
             if (typeToken.isSubtypeOf(ApiMultiPartFormWithResource.class)) {
-                modelResource = modelResource.withModifier(MULTIPART_RESOURCE_IS_FIRST_ITEM);
+                modelResourceBuilder.withModifier(MULTIPART_RESOURCE_IS_FIRST_ITEM);
             }
 
-            return modelResource
+            return modelResourceBuilder
                     .withModifier(IS_MULTIPART_FORM)
-                    .withContainerType(resource);
+                    .withContainerType(resource)
+                    .build();
         }
 
         if ((typeToken.getType() instanceof Class<?> clazz) && clazz.isRecord()) {
@@ -290,7 +293,11 @@ public class ResourceBuilder
             if (!recursionChecker.recursionAllowed()) {
                 throw new ValidatorException("Recursive resources are only allowed in collections");
             }
-            return new ModelResource(type, name, openApiName, description, ImmutableList.of(), RESOURCE, ImmutableSet.of(RECURSIVE_REFERENCE), quotas);
+            return ModelResource.builder(type, name, description, RESOURCE)
+                    .withOpenApiName(openApiName)
+                    .withModifiers(ImmutableSet.of(RECURSIVE_REFERENCE))
+                    .withQuotas(quotas)
+                    .build();
         }
 
         List<ModelResource> components = new ArrayList<>();
@@ -324,18 +331,18 @@ public class ResourceBuilder
                 ModelResource componentModelResource = internalBuildAndAdd(Optional.of(recordComponent.getName()), recordComponent.getGenericType());
                 // the component resource name will not be accurate as it gets set to this record's component name, so set the openApiName appropriately
                 String componentOpenApiName = componentModelResource.openApiName().orElseGet(componentModelResource::name);
-                ModelResource component = componentModelResource.withNameAndDescription(recordComponent.getName(), Optional.of(componentOpenApiName), appliedDescription);
+                ModelResource.Builder componentBuilder = ModelResource.builder(componentModelResource)
+                        .withNameAndDescription(recordComponent.getName(), Optional.of(componentOpenApiName), appliedDescription);
 
                 boolean isForcedReadOnly = isForcedReadOnly(recordComponent.getType());
                 boolean hasReadOnly = (recordComponent.getAnnotation(ApiReadOnly.class) != null);
                 if (hasReadOnly || isForcedReadOnly) {
-                    component = component.withModifier(READ_ONLY);
+                    componentBuilder.withModifier(READ_ONLY);
                 }
                 if (isUnwrapped) {
-                    component = component.withModifier(IS_UNWRAPPED);
+                    componentBuilder.withModifier(IS_UNWRAPPED);
                 }
-
-                components.add(component);
+                components.add(componentBuilder.build());
             }
         }
         finally {
@@ -343,7 +350,12 @@ public class ResourceBuilder
             recursionChecker.popRecursionAllowed();
         }
 
-        return new ModelResource(clazz, name, openApiName, description, components, RESOURCE, modifiers, quotas);
+        return ModelResource.builder(clazz, name, description, RESOURCE)
+                .withOpenApiName(openApiName)
+                .withComponents(components)
+                .withModifiers(modifiers)
+                .withQuotas(quotas)
+                .build();
     }
 
     private ModelResource buildPolyResource(Optional<String> componentName, ApiPolyResource apiPolyResource, Class<?> clazz)
@@ -352,8 +364,11 @@ public class ResourceBuilder
                 .map(subResourceClass -> internalBuildAndAdd(componentName, subResourceClass))
                 .collect(toImmutableList());
 
-        return new ModelResource(clazz, apiPolyResource.name(), openApiName(apiPolyResource.openApiAlternateName()), apiPolyResource.description(), ImmutableList.of(), RESOURCE, ImmutableSet.of(), ImmutableSet.copyOf(apiPolyResource.quotas()))
-                .withPolyResource(new ModelPolyResource(apiPolyResource.key(), subResources, ImmutableSet.copyOf(apiPolyResource.openApiTraits())));
+        return ModelResource.builder(clazz, apiPolyResource.name(), apiPolyResource.description(), RESOURCE)
+                .withOpenApiName(openApiName(apiPolyResource.openApiAlternateName()))
+                .withQuotas(ImmutableSet.copyOf(apiPolyResource.quotas()))
+                .withPolyResource(new ModelPolyResource(apiPolyResource.key(), subResources, ImmutableSet.copyOf(apiPolyResource.openApiTraits())))
+                .build();
     }
 
     private ModelResource throwInvalid(Type type, Optional<String> name)
@@ -390,8 +405,9 @@ public class ResourceBuilder
         return supportedBoxedResourceTypes.getOrDefault(clazz, clazz);
     }
 
-    private static ModelResource anyObjectLeafResource()
+    private static ModelResource.Builder anyObjectLeafResourceBuilder()
     {
-        return new ModelResource(Object.class, Object.class.getSimpleName(), "n/a", ImmutableList.of(), ModelResourceType.BASIC).withModifier(IS_ANY_OBJECT);
+        return ModelResource.builder(Object.class, Object.class.getSimpleName(), "n/a", ModelResourceType.BASIC)
+                .withModifier(IS_ANY_OBJECT);
     }
 }
