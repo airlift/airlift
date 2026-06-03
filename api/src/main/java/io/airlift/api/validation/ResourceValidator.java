@@ -184,7 +184,7 @@ public interface ResourceValidator
         }
         modelResource.streamingEventResource().ifPresent(streamingEventResource ->
                 context.inContext("Streaming event resource %s".formatted(streamingEventResource.type().getTypeName()),
-                        subContext -> internalValidate(subContext, service, Optional.empty(), streamingEventResource, ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE))));
+                        subContext -> internalValidate(subContext, service, Optional.empty(), streamingEventResource, ResourceValidationState.create().withOptions(IS_RESULT_RESOURCE), enumValueResolver)));
 
         if (modelResource.modifiers().contains(IS_MULTIPART_FORM)) {
             if (state.contains(IS_RESULT_RESOURCE)) {
