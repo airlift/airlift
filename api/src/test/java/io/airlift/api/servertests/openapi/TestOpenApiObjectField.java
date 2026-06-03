@@ -2,6 +2,7 @@ package io.airlift.api.servertests.openapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
@@ -12,8 +13,10 @@ import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.validation.ServiceWithObjectField;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Optional;
 
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.servertests.openapi.TestOpenApi.validateOpenApiJson;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -32,7 +35,7 @@ public class TestOpenApiObjectField
                 .findFirst()
                 .orElseThrow();
 
-        OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), ImmutableList.of()));
+        OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1), ApiBuilderConfig.jackson());
         OpenAPI openAPI = provider.build(serviceType, _ -> true);
         String actual = jsonCodec(OpenAPI.class).toJson(openAPI);
 

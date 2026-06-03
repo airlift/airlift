@@ -1,6 +1,7 @@
 package io.airlift.api.openapi;
 
 import com.google.common.collect.ImmutableList;
+import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.openapi.models.OpenAPI;
@@ -9,10 +10,12 @@ import io.airlift.api.validation.ServiceWithObjectField;
 import io.airlift.json.JsonCodec;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.api.builders.ApiBuilder.apiBuilder;
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.servertests.openapi.TestOpenApi.validateOpenApiJson;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +31,7 @@ public class TestObjectElementOpenApi
         assertThat(modelApi.modelServices().errors()).isEmpty();
 
         ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
-        OpenAPI openAPI = OpenApiProvider.create(modelApi.modelServices(), new OpenApiMetadata(Optional.empty(), ImmutableList.of()))
+        OpenAPI openAPI = OpenApiProvider.create(modelApi.modelServices(), new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1), ApiBuilderConfig.jackson())
                 .build(serviceType, _ -> true);
 
         validateOpenApiJson(OPEN_API_CODEC.toJson(openAPI));
