@@ -1,6 +1,7 @@
 package io.airlift.api.servertests.streaming;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelService;
 import io.airlift.api.model.ModelServices;
@@ -97,7 +98,7 @@ public class TestStreaming
         ModelServices modelServices = ApiBuilder.apiBuilder().add(StreamingService.class).build().modelServices();
         assertThat(modelServices.errors()).isEmpty();
         ModelService service = modelServices.services().iterator().next();
-        OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_2_0));
+        OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_2_0), ApiBuilderConfig.jackson());
         JsonNode openApi = jsonMapper.readTree(jsonMapper.writeValueAsString(provider.build(service.service().type(), _ -> true)));
 
         assertThat(openApi.at("/openapi").asText()).isEqualTo("3.2.0");

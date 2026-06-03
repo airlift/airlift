@@ -52,6 +52,7 @@ import jakarta.ws.rs.WebApplicationException;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -65,6 +66,7 @@ import static io.airlift.api.model.ModelResourceModifier.OPTIONAL;
 import static io.airlift.api.model.ModelResourceModifier.RECURSIVE_REFERENCE;
 import static io.airlift.api.model.ModelResourceType.BASIC;
 import static io.airlift.api.model.ModelResourceType.LIST;
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.validation.ResourceValidator.validateResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -641,7 +643,7 @@ public class TestConforming
         assertThat(modelApi.modelServices().errors()).isEmpty();
 
         ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
-        OpenAPI openAPI = OpenApiProvider.create(modelApi.modelServices(), new OpenApiMetadata(Optional.empty(), ImmutableList.of()), config).build(serviceType, _ -> true);
+        OpenAPI openAPI = OpenApiProvider.create(modelApi.modelServices(), new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1), config).build(serviceType, _ -> true);
         Map<String, Schema> schemas = openAPI.getComponents().getSchemas();
         Schema<?> schema = schemas.get(schemaName);
         assertThat(schema).withFailMessage("Schema not found: %s. Found: %s", schemaName, schemas.keySet()).isNotNull();
