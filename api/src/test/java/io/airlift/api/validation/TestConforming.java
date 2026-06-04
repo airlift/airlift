@@ -11,9 +11,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.BindingAnnotation;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiCreate;
 import io.airlift.api.ApiDescription;
@@ -44,13 +47,16 @@ import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.model.ModelServices;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiProvider;
+import io.airlift.api.openapi.OpenApiResource;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.openapi.models.Schema;
 import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.json.JsonModule;
 import jakarta.ws.rs.WebApplicationException;
+import org.glassfish.jersey.server.model.Resource;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.Retention;
 import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.List;
@@ -68,6 +74,7 @@ import static io.airlift.api.model.ModelResourceType.BASIC;
 import static io.airlift.api.model.ModelResourceType.LIST;
 import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.validation.ResourceValidator.validateResource;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -291,6 +298,25 @@ public class TestConforming
                 .build();
 
         Guice.createInjector(module, new JsonModule());
+    }
+
+    @Test
+    public void testApiModuleBindsJaxrsResourcesWithConfiguredQualifier()
+    {
+        Module module = ApiModule.builder()
+                .addApi(api -> api.add(PascalCaseEnumService.class))
+                .withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1))
+                .withJaxrsQualifier(ForTestJaxrs.class)
+                .build();
+
+        Injector injector = Guice.createInjector(module, new JsonModule());
+        Key<Set<Object>> defaultJaxrsResources = Key.get(new TypeLiteral<>() {});
+        Key<Set<Object>> qualifiedJaxrsResources = Key.get(new TypeLiteral<>() {}, ForTestJaxrs.class);
+
+        assertThat(injector.getExistingBinding(defaultJaxrsResources)).isNull();
+        assertThat(injector.getInstance(qualifiedJaxrsResources))
+                .anySatisfy(resource -> assertThat(resource).isInstanceOf(Resource.class))
+                .anySatisfy(resource -> assertThat(resource).isInstanceOf(OpenApiResource.class));
     }
 
     @Test
@@ -681,6 +707,10 @@ public class TestConforming
             return builder.toString();
         }
     }
+
+    @BindingAnnotation
+    @Retention(RUNTIME)
+    private @interface ForTestJaxrs {}
 
     public static class EnumServiceType
             implements ApiServiceType

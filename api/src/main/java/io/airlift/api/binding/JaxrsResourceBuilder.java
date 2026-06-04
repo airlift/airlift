@@ -20,7 +20,9 @@ import jakarta.ws.rs.core.MediaType;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,14 +48,16 @@ class JaxrsResourceBuilder
     private final JaxrsBinder jaxrsBinder;
     private final MapBinder<ModelService, Object> servicesBinder;
 
-    static JaxrsResourceBuilder jaxrsResourceBuilder(Binder binder, boolean withApiLogging)
+    static JaxrsResourceBuilder jaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> jaxrsQualifier)
     {
-        return new JaxrsResourceBuilder(binder, withApiLogging);
+        return new JaxrsResourceBuilder(binder, withApiLogging, jaxrsQualifier);
     }
 
-    private JaxrsResourceBuilder(Binder binder, boolean withApiLogging)
+    private JaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> jaxrsQualifier)
     {
-        jaxrsBinder = jaxrsBinder(binder);
+        jaxrsBinder = requireNonNull(jaxrsQualifier, "jaxrsQualifier is null")
+                .map(qualifier -> jaxrsBinder(binder, qualifier))
+                .orElseGet(() -> jaxrsBinder(binder));
         this.binder = requireNonNull(binder, "binder is null");
 
         servicesBinder = MapBinder.newMapBinder(binder, new TypeLiteral<ModelService>() {}, new TypeLiteral<>() {}).permitDuplicates();

@@ -12,9 +12,11 @@ import io.airlift.api.model.ModelServices;
 import io.airlift.jaxrs.JaxrsBinder;
 import org.glassfish.jersey.server.model.Resource;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -32,14 +34,26 @@ public class OpenApiModule
     private final Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding;
     private final OpenApiExtensionFilter extensionFilter;
     private final ApiEnumValueResolver enumValueResolver;
+    private final Optional<Class<? extends Annotation>> jaxrsQualifier;
 
     public OpenApiModule(ModelServices modelServices, OpenApiMetadata metadata, Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding, OpenApiExtensionFilter extensionFilter, ApiEnumValueResolver enumValueResolver)
+    {
+        this(modelServices, metadata, openApiFilterProviderBinding, extensionFilter, enumValueResolver, Optional.empty());
+    }
+
+    public OpenApiModule(ModelServices modelServices, OpenApiMetadata metadata, Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding, OpenApiExtensionFilter extensionFilter, ApiEnumValueResolver enumValueResolver, Class<? extends Annotation> jaxrsQualifier)
+    {
+        this(modelServices, metadata, openApiFilterProviderBinding, extensionFilter, enumValueResolver, Optional.of(requireNonNull(jaxrsQualifier, "jaxrsQualifier is null")));
+    }
+
+    private OpenApiModule(ModelServices modelServices, OpenApiMetadata metadata, Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding, OpenApiExtensionFilter extensionFilter, ApiEnumValueResolver enumValueResolver, Optional<Class<? extends Annotation>> jaxrsQualifier)
     {
         this.modelServices = requireNonNull(modelServices, "modelServices is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.openApiFilterProviderBinding = requireNonNull(openApiFilterProviderBinding, "openApiFilterProviderBinding is null");
         this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
+        this.jaxrsQualifier = requireNonNull(jaxrsQualifier, "jaxrsQualifier is null");
     }
 
     @Override
@@ -59,7 +73,9 @@ public class OpenApiModule
 
         binder.bind(OpenApiMetadata.class).toInstance(metadata);
 
-        JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+        JaxrsBinder jaxrsBinder = jaxrsQualifier
+                .map(qualifier -> jaxrsBinder(binder, qualifier))
+                .orElseGet(() -> jaxrsBinder(binder));
         jaxrsBinder.bindInstance(buildOpenApiResource(metadata));
         jaxrsBinder.bind(OpenApiResource.class);
     }

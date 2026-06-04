@@ -42,6 +42,7 @@ import io.airlift.api.validation.ValidatorException;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,7 @@ public class ApiModule
     private final boolean withApiLogging;
     private final ApiMode apiMode;
     private final ApiEnumValueResolver enumValueResolver;
+    private final Optional<Class<? extends Annotation>> jaxrsQualifier;
 
     private ApiModule(
             ModelApi modelApi,
@@ -84,7 +86,8 @@ public class ApiModule
             Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
             ApiMode apiMode,
-            ApiEnumValueResolver enumValueResolver)
+            ApiEnumValueResolver enumValueResolver,
+            Optional<Class<? extends Annotation>> jaxrsQualifier)
     {
         this.modelApi = requireNonNull(modelApi, "api is null");
         this.requestFilters = ImmutableSet.copyOf(requestFilters);
@@ -97,6 +100,7 @@ public class ApiModule
         this.withApiLogging = withApiLogging;
         this.apiMode = requireNonNull(apiMode, "apiMode is null");
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
+        this.jaxrsQualifier = requireNonNull(jaxrsQualifier, "jaxrsQualifier is null");
     }
 
     public static Builder builder()
@@ -118,6 +122,7 @@ public class ApiModule
         private boolean withApiLogging;
         private ApiMode apiMode = ApiMode.DEBUG;
         private ApiEnumValueResolver enumValueResolver = ApiBuilderConfig.jackson().enumValueResolver();
+        private Optional<Class<? extends Annotation>> jaxrsQualifier = Optional.empty();
 
         private Builder() {}
 
@@ -213,6 +218,14 @@ public class ApiModule
             return this;
         }
 
+        public Builder withJaxrsQualifier(Class<? extends Annotation> jaxrsQualifier)
+        {
+            checkArgument(this.jaxrsQualifier.isEmpty(), "jaxrsQualifier is already set");
+
+            this.jaxrsQualifier = Optional.of(requireNonNull(jaxrsQualifier, "jaxrsQualifier is null"));
+            return this;
+        }
+
         public Builder forProduction()
         {
             this.apiMode = ApiMode.PRODUCTION;
@@ -235,7 +248,8 @@ public class ApiModule
                     compatibilityTester,
                     withApiLogging,
                     apiMode,
-                    enumValueResolver);
+                    enumValueResolver,
+                    jaxrsQualifier);
         }
 
         private ModelApi mergeApis()
@@ -287,7 +301,7 @@ public class ApiModule
         Map<ModelServiceType, List<ModelService>> servicesByType = modelApi.modelServices().services().stream().collect(Collectors.groupingBy(modelService -> modelService.service().type()));
         binder.bind(new TypeLiteral<Set<ModelServiceType>>() {}).toInstance(servicesByType.keySet());
 
-        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging);
+        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, jaxrsQualifier);
         MapBinder<Method, ModelDeprecation> deprecationBinder = MapBinder.newMapBinder(binder, Method.class, ModelDeprecation.class);
 
         binder.bind(ModelServices.class).toInstance(modelApi.modelServices());
@@ -295,7 +309,9 @@ public class ApiModule
         modelApi.modelServices().services().forEach(jaxrsResourceBuilder::bindService);
         jaxrsResourceBuilder.bindFeatures();
 
-        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
+        openApiMetadata.ifPresent(openApi -> binder.install(jaxrsQualifier
+                .<Module>map(qualifier -> new OpenApiModule(modelApi.modelServices(), openApi, openApiFilterBinding, extensionFilter, enumValueResolver, qualifier))
+                .orElseGet(() -> new OpenApiModule(modelApi.modelServices(), openApi, openApiFilterBinding, extensionFilter, enumValueResolver))));
 
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 
