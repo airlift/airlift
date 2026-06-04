@@ -39,7 +39,7 @@ public class JaxrsBinder
         return jaxrsBinder(binder, Optional.ofNullable(qualifier));
     }
 
-    static JaxrsBinder jaxrsBinder(Binder binder, Optional<Class<? extends Annotation>> qualifier)
+    public static JaxrsBinder jaxrsBinder(Binder binder, Optional<Class<? extends Annotation>> qualifier)
     {
         return new JaxrsBinder(binder, qualifier);
     }
@@ -74,7 +74,7 @@ public class JaxrsBinder
 
     public <T> void bind(TypeLiteral<T> implementation)
     {
-        newOptionalBinder(binder, implementation).setBinding().to(implementation);
+        newOptionalBinder(binder, qualifiedKey(qualifier, implementation)).setBinding().to(implementation);
         resourceBinder.addBinding().to(implementation).in(SINGLETON);
     }
 
