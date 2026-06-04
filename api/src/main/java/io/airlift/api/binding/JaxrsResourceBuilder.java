@@ -1,30 +1,47 @@
 package io.airlift.api.binding;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
+import com.google.inject.Key;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
+import io.airlift.api.ApiId;
+import io.airlift.api.ApiIdLookup;
 import io.airlift.api.ApiService;
+import io.airlift.api.model.ModelDeprecation;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelService;
 import io.airlift.api.model.ModelServiceMetadata;
+import io.airlift.api.model.ModelServiceType;
+import io.airlift.api.model.ModelServices;
 import io.airlift.api.openapi.OpenApiFilter;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.validation.ValidationContext;
 import io.airlift.jaxrs.JaxrsBinder;
 import io.airlift.log.Logger;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MediaType;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
+import static io.airlift.api.binding.ApiMapBinders.newMapBinder;
 import static io.airlift.api.internals.Mappers.MethodPathMode.FOR_BINDING;
 import static io.airlift.api.internals.Mappers.MethodPathMode.FOR_DISPLAY;
 import static io.airlift.api.internals.Mappers.buildFullPath;
@@ -43,48 +60,70 @@ class JaxrsResourceBuilder
     private static final Set<ModelMethod> alreadyLogged = ConcurrentHashMap.newKeySet();
 
     private final Binder binder;
+    private final ApiBindingProvider bindingProvider;
     private final JaxrsBinder jaxrsBinder;
     private final MapBinder<ModelService, Object> servicesBinder;
+    private final Optional<Class<? extends Annotation>> bindingAnnotation;
 
-    static JaxrsResourceBuilder jaxrsResourceBuilder(Binder binder, boolean withApiLogging)
+    static JaxrsResourceBuilder jaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> bindingAnnotation)
     {
-        return new JaxrsResourceBuilder(binder, withApiLogging);
+        return new JaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation);
     }
 
-    private JaxrsResourceBuilder(Binder binder, boolean withApiLogging)
+    private JaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> bindingAnnotation)
     {
-        jaxrsBinder = jaxrsBinder(binder);
+        this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
+        jaxrsBinder = jaxrsBinder(binder, bindingAnnotation);
         this.binder = requireNonNull(binder, "binder is null");
+        this.bindingProvider = new ApiBindingProvider(binder, bindingAnnotation);
 
-        servicesBinder = MapBinder.newMapBinder(binder, new TypeLiteral<ModelService>() {}, new TypeLiteral<>() {}).permitDuplicates();
+        servicesBinder = newMapBinder(
+                binder,
+                new TypeLiteral<ModelService>() {},
+                new TypeLiteral<Object>() {},
+                bindingAnnotation)
+                .permitDuplicates();
 
-        jaxrsBinder.bind(JaxrsMethodFilter.class);
-        jaxrsBinder.bind(JaxrsQuotaFilter.class);
+        jaxrsBinder.bind(JaxrsMethodFilter.class, jaxrsMethodFilterProvider());
+        jaxrsBinder.bind(JaxrsQuotaFilter.class, jaxrsQuotaFilterProvider());
         if (withApiLogging) {
-            jaxrsBinder.bind(JaxrsApiUsageLogFilter.class);
+            jaxrsBinder.bind(JaxrsApiUsageLogFilter.class, jaxrsApiUsageLogFilterProvider());
         }
     }
 
     void bindFeatures()
     {
-        newOptionalBinder(binder, OpenApiProvider.class);
-        newOptionalBinder(binder, OpenApiFilter.class);
-        newOptionalBinder(binder, OpenApiMetadata.class);
+        newOptionalBinder(binder, annotatedKey(OpenApiProvider.class, bindingAnnotation));
+        newOptionalBinder(binder, annotatedKey(OpenApiFilter.class, bindingAnnotation));
+        newOptionalBinder(binder, annotatedKey(OpenApiMetadata.class, bindingAnnotation));
 
-        binder.bind(PatchFieldsBuilder.class);
-        jaxrsBinder.bind(SpecialApiTypeValueParamProvider.class);
+        bindAnnotated(PatchFieldsBuilder.class);
+        jaxrsBinder.bind(SpecialApiTypeValueParamProvider.class, specialApiTypeValueParamProvider());
         jaxrsBinder.bind(PaginationValueParamProvider.class);
-        jaxrsBinder.bind(JaxrsBindingBridge.class);
-        jaxrsBinder.bind(JaxrsMapper.class);
+        jaxrsBinder.bind(JaxrsBindingBridge.class, jaxrsBindingBridgeProvider());
+        jaxrsBinder.bind(JaxrsMapper.class, jaxrsMapperProvider());
         jaxrsBinder.bind(ApiStreamResponseWriter.class);
-        jaxrsBinder.bind(JaxrsStatusValidator.class);
+        jaxrsBinder.bind(JaxrsStatusValidator.class, jaxrsStatusValidatorProvider());
     }
 
     void bindService(ModelService service)
     {
-        binder.bind(service.serviceClass()).in(Scopes.SINGLETON);
-        servicesBinder.addBinding(service).to(service.serviceClass()).in(Scopes.SINGLETON);
+        bindServiceClass(service);
         jaxrsBinder.bindInstance(buildService(service));
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void bindServiceClass(ModelService service)
+    {
+        if (bindingAnnotation.isEmpty()) {
+            binder.bind(service.serviceClass()).in(Scopes.SINGLETON);
+            servicesBinder.addBinding(service).to(service.serviceClass()).in(Scopes.SINGLETON);
+            return;
+        }
+
+        Key serviceKey = annotatedKey(service.serviceClass(), bindingAnnotation);
+        binder.bind(serviceKey).to(service.serviceClass()).in(Scopes.SINGLETON);
+        servicesBinder.addBinding(service).to(serviceKey).in(Scopes.SINGLETON);
     }
 
     private Resource buildService(ModelService service)
@@ -124,5 +163,66 @@ class JaxrsResourceBuilder
             return ImmutableList.of(APPLICATION_JSON_TYPE, tempValidationContext.streamingResponseMediaType(returnType));
         }
         return ImmutableList.of(APPLICATION_JSON_TYPE);
+    }
+
+    private Provider<JaxrsMethodFilter> jaxrsMethodFilterProvider()
+    {
+        Provider<ModelServices> modelServices = bindingProvider.get(ModelServices.class);
+        Provider<Map<Method, ModelDeprecation>> deprecations = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<Map<Predicate<ModelMethod>, ContainerRequestFilter>> requestFilters = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<Map<Predicate<ModelMethod>, ContainerResponseFilter>> responseFilters = bindingProvider.get(new TypeLiteral<>() {});
+        return () -> new JaxrsMethodFilter(modelServices.get(), deprecations.get(), requestFilters.get(), responseFilters.get());
+    }
+
+    private Provider<JaxrsQuotaFilter> jaxrsQuotaFilterProvider()
+    {
+        Provider<ModelServices> modelServices = bindingProvider.get(ModelServices.class);
+        return () -> new JaxrsQuotaFilter(modelServices.get());
+    }
+
+    private Provider<JaxrsApiUsageLogFilter> jaxrsApiUsageLogFilterProvider()
+    {
+        Provider<ModelServices> modelServices = bindingProvider.get(ModelServices.class);
+        return () -> new JaxrsApiUsageLogFilter(modelServices.get());
+    }
+
+    private Provider<SpecialApiTypeValueParamProvider> specialApiTypeValueParamProvider()
+    {
+        Provider<Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>>> idLookups = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<JsonMapper> jsonMapper = bindingProvider.getUnqualified(JsonMapper.class);
+        return () -> new SpecialApiTypeValueParamProvider(idLookups.get(), jsonMapper.get());
+    }
+
+    private Provider<JaxrsBindingBridge> jaxrsBindingBridgeProvider()
+    {
+        Provider<Map<ModelService, Object>> services = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<Set<ModelServiceType>> serviceTypes = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<Optional<OpenApiProvider>> openApiProvider = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<Optional<OpenApiFilter>> openApiFilter = bindingProvider.get(new TypeLiteral<>() {});
+        Provider<Optional<OpenApiMetadata>> openApiMetadata = bindingProvider.get(new TypeLiteral<>() {});
+        return () -> new JaxrsBindingBridge(services.get(), serviceTypes.get(), openApiProvider.get(), openApiFilter.get(), openApiMetadata.get());
+    }
+
+    private Provider<JaxrsMapper> jaxrsMapperProvider()
+    {
+        Provider<JsonMapper> jsonMapper = bindingProvider.getUnqualified(JsonMapper.class);
+        Provider<PatchFieldsBuilder> patchFieldsBuilder = bindingProvider.get(PatchFieldsBuilder.class);
+        return () -> new JaxrsMapper(jsonMapper.get(), patchFieldsBuilder.get());
+    }
+
+    private Provider<JaxrsStatusValidator> jaxrsStatusValidatorProvider()
+    {
+        Provider<ApiMode> apiMode = bindingProvider.get(ApiMode.class);
+        Provider<ModelServices> modelServices = bindingProvider.get(ModelServices.class);
+        return () -> new JaxrsStatusValidator(apiMode.get(), modelServices.get());
+    }
+
+    private <T> void bindAnnotated(Class<T> implementation)
+    {
+        if (bindingAnnotation.isPresent()) {
+            binder.bind(implementation).annotatedWith(bindingAnnotation.orElseThrow()).to(implementation).in(Scopes.SINGLETON);
+            return;
+        }
+        binder.bind(implementation).in(Scopes.SINGLETON);
     }
 }

@@ -7,11 +7,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;
-import com.google.inject.Inject;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import io.airlift.api.ApiBuilderConfig;
@@ -42,6 +41,7 @@ import io.airlift.api.validation.ValidatorException;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +55,8 @@ import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_UNWRAP
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
+import static io.airlift.api.binding.ApiMapBinders.newMapBinder;
 import static io.airlift.api.binding.JaxrsResourceBuilder.jaxrsResourceBuilder;
 import static java.util.Objects.requireNonNull;
 
@@ -62,11 +64,12 @@ public class ApiModule
         implements Module
 {
     private final ModelApi modelApi;
+    private final Optional<Class<? extends Annotation>> bindingAnnotation;
     private final Set<Builder.RequestFilter> requestFilters;
     private final Set<Builder.ResponseFilter> responseFilters;
     private final Map<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings;
     private final Optional<OpenApiMetadata> openApiMetadata;
-    private final Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
+    private final Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
     private final OpenApiExtensionFilter extensionFilter;
     private final Optional<ApiCompatibilityTester> compatibilityTester;
     private final boolean withApiLogging;
@@ -75,11 +78,12 @@ public class ApiModule
 
     private ApiModule(
             ModelApi modelApi,
+            Optional<Class<? extends Annotation>> bindingAnnotation,
             Set<Builder.RequestFilter> requestFilters,
             Set<Builder.ResponseFilter> responseFilters,
             Map<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings,
             Optional<OpenApiMetadata> openApiMetadata,
-            Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding,
+            Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding,
             OpenApiExtensionFilter extensionFilter,
             Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
@@ -87,6 +91,7 @@ public class ApiModule
             ApiEnumValueResolver enumValueResolver)
     {
         this.modelApi = requireNonNull(modelApi, "api is null");
+        this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
         this.requestFilters = ImmutableSet.copyOf(requestFilters);
         this.responseFilters = ImmutableSet.copyOf(responseFilters);
         this.idLookupBindings = ImmutableMap.copyOf(idLookupBindings);
@@ -107,13 +112,14 @@ public class ApiModule
     public static final class Builder
     {
         private final ImmutableSet.Builder<ModelApi> modelApis = ImmutableSet.builder();
+        private Optional<Class<? extends Annotation>> bindingAnnotation = Optional.empty();
         private final ImmutableList.Builder<Consumer<ApiBuilder>> apiConsumers = ImmutableList.builder();
         private final ImmutableSet.Builder<RequestFilter> requestFilters = ImmutableSet.builder();
         private final ImmutableSet.Builder<ResponseFilter> responseFilters = ImmutableSet.builder();
         private final ImmutableMap.Builder<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings = ImmutableMap.builder();
         private Optional<OpenApiMetadata> openApiMetadata = Optional.empty();
         private OpenApiExtensionFilter extensionFilter;
-        private Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
+        private Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
         private Optional<ApiCompatibilityTester> compatibilityTester = Optional.empty();
         private boolean withApiLogging;
         private ApiMode apiMode = ApiMode.DEBUG;
@@ -177,7 +183,7 @@ public class ApiModule
             return this;
         }
 
-        public Builder withOpenApiFilterBinding(Consumer<AnnotatedBindingBuilder<OpenApiFilter>> binding)
+        public Builder withOpenApiFilterBinding(Consumer<LinkedBindingBuilder<OpenApiFilter>> binding)
         {
             checkArgument(this.openApiFilterBinding == null, "openApiFilterBinding is already set");
 
@@ -219,13 +225,22 @@ public class ApiModule
             return this;
         }
 
+        public Builder annotatedWith(Class<? extends Annotation> annotationType)
+        {
+            checkArgument(this.bindingAnnotation.isEmpty(), "annotation is already set");
+
+            this.bindingAnnotation = Optional.of(requireNonNull(annotationType, "annotationType is null"));
+            return this;
+        }
+
         public Module build()
         {
-            Consumer<AnnotatedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(_ -> _ -> true);
+            Consumer<LinkedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(_ -> _ -> true);
             OpenApiExtensionFilter localExtensionFilter = (extensionFilter != null) ? extensionFilter : (_, _, operation) -> operation;
 
             return new ApiModule(
                     mergeApis(),
+                    bindingAnnotation,
                     requestFilters.build(),
                     responseFilters.build(),
                     idLookupBindings.build(),
@@ -262,40 +277,48 @@ public class ApiModule
     {
         bindApi(binder);
 
-        newOptionalBinder(binder, ApiQuotaController.class).setBinding().toInstance(new ApiQuotaControllerProxy());
+        newOptionalBinder(binder, annotatedKey(ApiQuotaController.class, bindingAnnotation)).setBinding().toInstance(new ApiQuotaControllerProxy());
 
         validateIdLookups(idLookupBindings.keySet());
 
-        MapBinder<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookupBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        MapBinder<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookupBinder = newMapBinder(
+                binder,
+                new TypeLiteral<>() {},
+                new TypeLiteral<>() {},
+                bindingAnnotation);
         idLookupBindings.forEach((idClass, binding) -> binding.accept(idLookupBinder.addBinding(idClass)));
 
-        binder.bind(ResourceSerializationValidator.class).toInstance(new ResourceSerializationValidator(modelApi.needsSerializationValidation()));
-        binder.bind(SerializationValidator.class).asEagerSingleton();
-        binder.bind(ApiMode.class).toInstance(apiMode);
+        binder.bind(annotatedKey(ResourceSerializationValidator.class, bindingAnnotation)).toInstance(new ResourceSerializationValidator(modelApi.needsSerializationValidation()));
+        binder.bind(annotatedKey(SerializationValidator.class, bindingAnnotation)).toProvider(serializationValidatorProvider(binder)).asEagerSingleton();
+        binder.bind(annotatedKey(ApiMode.class, bindingAnnotation)).toInstance(apiMode);
 
         bindUnwrapped(binder, modelApi.unwrappedResources());
         bindPolyResources(binder, modelApi.polyResources());
 
         compatibilityTester.ifPresent(tester -> {
-            binder.bind(ApiCompatibilityTester.class).toInstance(tester);
-            binder.bind(ApiCompatibility.class).asEagerSingleton();
+            binder.bind(annotatedKey(ApiCompatibilityTester.class, bindingAnnotation)).toInstance(tester);
+            binder.bind(annotatedKey(ApiCompatibility.class, bindingAnnotation)).toProvider(apiCompatibilityProvider(binder)).asEagerSingleton();
         });
     }
 
     private void bindApi(Binder binder)
     {
         Map<ModelServiceType, List<ModelService>> servicesByType = modelApi.modelServices().services().stream().collect(Collectors.groupingBy(modelService -> modelService.service().type()));
-        binder.bind(new TypeLiteral<Set<ModelServiceType>>() {}).toInstance(servicesByType.keySet());
+        binder.bind(annotatedKey(new TypeLiteral<Set<ModelServiceType>>() {}, bindingAnnotation)).toInstance(servicesByType.keySet());
 
-        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging);
-        MapBinder<Method, ModelDeprecation> deprecationBinder = MapBinder.newMapBinder(binder, Method.class, ModelDeprecation.class);
+        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation);
+        MapBinder<Method, ModelDeprecation> deprecationBinder = newMapBinder(
+                binder,
+                new TypeLiteral<>() {},
+                new TypeLiteral<>() {},
+                bindingAnnotation);
 
-        binder.bind(ModelServices.class).toInstance(modelApi.modelServices());
+        binder.bind(annotatedKey(ModelServices.class, bindingAnnotation)).toInstance(modelApi.modelServices());
         modelApi.modelServices().errors().forEach(binder::addError);
         modelApi.modelServices().services().forEach(jaxrsResourceBuilder::bindService);
         jaxrsResourceBuilder.bindFeatures();
 
-        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
+        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), bindingAnnotation, openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
 
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 
@@ -304,8 +327,16 @@ public class ApiModule
 
     private void bindContainerFilters(Binder binder)
     {
-        MapBinder<Predicate<ModelMethod>, ContainerRequestFilter> requestFilterBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
-        MapBinder<Predicate<ModelMethod>, ContainerResponseFilter> responseFilterBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        MapBinder<Predicate<ModelMethod>, ContainerRequestFilter> requestFilterBinder = newMapBinder(
+                binder,
+                new TypeLiteral<>() {},
+                new TypeLiteral<>() {},
+                bindingAnnotation);
+        MapBinder<Predicate<ModelMethod>, ContainerResponseFilter> responseFilterBinder = newMapBinder(
+                binder,
+                new TypeLiteral<>() {},
+                new TypeLiteral<>() {},
+                bindingAnnotation);
 
         modelApi.modelServices().services().forEach(modelService -> modelService.methods().forEach(modelMethod -> {
             ApiRequestFilter requestFilter = modelMethod.method().getAnnotation(ApiRequestFilter.class);
@@ -326,7 +357,6 @@ public class ApiModule
     @SuppressWarnings("unused")
     static class SerializationValidator
     {
-        @Inject
         SerializationValidator(ResourceSerializationValidator validator, JsonMapper jsonMapper)
         {
             requireNonNull(validator, "validator is null");
@@ -336,6 +366,22 @@ public class ApiModule
                     .build();
             validator.validateSerialization(jsonMapper);
         }
+    }
+
+    private Provider<SerializationValidator> serializationValidatorProvider(Binder binder)
+    {
+        ApiBindingProvider bindingProvider = new ApiBindingProvider(binder, bindingAnnotation);
+        Provider<ResourceSerializationValidator> validator = bindingProvider.get(ResourceSerializationValidator.class);
+        Provider<JsonMapper> jsonMapper = bindingProvider.getUnqualified(JsonMapper.class);
+        return () -> new SerializationValidator(validator.get(), jsonMapper.get());
+    }
+
+    private Provider<ApiCompatibility> apiCompatibilityProvider(Binder binder)
+    {
+        ApiBindingProvider bindingProvider = new ApiBindingProvider(binder, bindingAnnotation);
+        Provider<ApiCompatibilityTester> tester = bindingProvider.get(ApiCompatibilityTester.class);
+        Provider<ModelServices> modelServices = bindingProvider.get(ModelServices.class);
+        return () -> new ApiCompatibility(tester.get(), modelServices.get());
     }
 
     private void bindUnwrapped(Binder binder, Set<Class<?>> resourcesWithUnwrappedComponents)

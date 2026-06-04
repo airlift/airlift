@@ -20,6 +20,7 @@ import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClientConfig;
@@ -33,6 +34,8 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.jaxrs.JsonError;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
@@ -58,6 +61,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestProgrammaticResource
 {
+    private static final TypeLiteral<TypeLiteralResource> TYPE_LITERAL_RESOURCE = new TypeLiteral<>() {};
+
     public String getResult()
     {
         return "dummy";
@@ -94,6 +99,29 @@ public class TestProgrammaticResource
 
         ResourceConfig secondaryConfig = injector.getInstance(Key.get(ResourceConfig.class, Secondary.class));
         assertThat(secondaryConfig.getResources()).isEmpty();
+    }
+
+    @Test
+    public void testTypeLiteralResourceBindingCanBeQualified()
+    {
+        Injector injector = new Bootstrap(
+                binder -> {
+                    jaxrsBinder(binder, Primary.class).bind(TYPE_LITERAL_RESOURCE);
+                    jaxrsBinder(binder, Secondary.class).bind(TYPE_LITERAL_RESOURCE);
+                },
+                new JaxrsModule(Primary.class),
+                new JaxrsModule(Secondary.class),
+                new JsonModule())
+                .quiet()
+                .initialize();
+
+        try {
+            assertThat(injector.getInstance(Key.get(ResourceConfig.class, Primary.class)).getClasses()).contains(TypeLiteralResource.class);
+            assertThat(injector.getInstance(Key.get(ResourceConfig.class, Secondary.class)).getClasses()).contains(TypeLiteralResource.class);
+        }
+        finally {
+            injector.getInstance(LifeCycleManager.class).stop();
+        }
     }
 
     @ParameterizedTest
@@ -140,6 +168,20 @@ public class TestProgrammaticResource
 
         injector.getInstance(LifeCycleManager.class).stop();
     }
+
+    @Path("/typeLiteral")
+    public static class TypeLiteralResource
+    {
+        @GET
+        public String get()
+        {
+            return "ok";
+        }
+    }
+
+    @BindingAnnotation
+    @Retention(RUNTIME)
+    private @interface Primary {}
 
     @BindingAnnotation
     @Retention(RUNTIME)
