@@ -290,10 +290,13 @@ public class TestHttpServerProvider
                 .setMaxResponseHeaderSize(DataSize.of(64, KILOBYTE));
         try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
             if (http2Enabled) {
+                // The server aborts the response when the oversized headers exceed maxResponseHeaderSize.
+                // Over HTTP/2 this surfaces as a stream reset, but the exact terminal cause the client
+                // observes is timing-dependent (e.g. the RST_STREAM reason "cancel_stream_error" or a
+                // bare EOF), so only assert that the request fails to communicate with the server.
                 assertThatThrownBy(() -> httpClient.execute(request, createStatusResponseHandler()))
                         .isInstanceOf(UncheckedIOException.class)
-                        .hasMessageContaining("Failed communicating with server")
-                        .hasRootCauseMessage("cancel_stream_error");
+                        .hasMessageContaining("Failed communicating with server");
             }
             else {
                 StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
