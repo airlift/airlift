@@ -193,7 +193,7 @@ public class JsonSubType
                     .map(entry -> new NamedType(entry.getKey(), entry.getValue()))
                     .collect(toImmutableList());
 
-            value = Value.construct(NAME, EXISTING_PROPERTY, propertyName, null, true, true);
+            value = Value.construct(NAME, EXISTING_PROPERTY, propertyName, null, true, true, null);
         }
 
         @Override
