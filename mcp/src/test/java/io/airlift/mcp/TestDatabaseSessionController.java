@@ -1,11 +1,11 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 

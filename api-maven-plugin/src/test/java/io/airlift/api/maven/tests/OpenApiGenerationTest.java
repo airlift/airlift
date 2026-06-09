@@ -13,14 +13,14 @@
  */
 package io.airlift.api.maven.tests;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.takari.maven.testing.TestResources5;
 import io.takari.maven.testing.executor.MavenRuntime;
 import io.takari.maven.testing.executor.MavenRuntime.MavenRuntimeBuilder;
 import io.takari.maven.testing.executor.MavenVersions;
 import io.takari.maven.testing.executor.junit.MavenPluginTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -66,20 +66,20 @@ class OpenApiGenerationTest
                 .exists()
                 .isFile();
 
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
 
         assertThat(openapi.has("openapi"))
                 .describedAs("OpenAPI spec should have 'openapi' field")
                 .isTrue();
-        assertThat(openapi.get("openapi").asText())
+        assertThat(openapi.get("openapi").asString())
                 .describedAs("OpenAPI version should be 3.0.x")
                 .startsWith("3.0");
 
         assertThat(openapi.has("info"))
                 .describedAs("OpenAPI spec should have 'info' section")
                 .isTrue();
-        assertThat(openapi.get("info").get("title").asText())
+        assertThat(openapi.get("info").get("title").asString())
                 .describedAs("API title should be 'Test API'")
                 .isEqualTo("Test API");
 
@@ -106,7 +106,7 @@ class OpenApiGenerationTest
                 .assertErrorFreeLog();
 
         File openapiFile = new File(basedir, "target/openapi.json");
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
         JsonNode paths = openapi.get("paths");
 
@@ -157,7 +157,7 @@ class OpenApiGenerationTest
                 .assertErrorFreeLog();
 
         File openapiFile = new File(basedir, "target/openapi.json");
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
         JsonNode schemas = openapi.get("components").get("schemas");
 
@@ -181,7 +181,7 @@ class OpenApiGenerationTest
                 .assertErrorFreeLog();
 
         File openapiFile = new File(basedir, "target/openapi.json");
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
         JsonNode paths = openapi.get("paths");
 
@@ -209,7 +209,7 @@ class OpenApiGenerationTest
                 .assertErrorFreeLog();
 
         File openapiFile = new File(basedir, "target/openapi.json");
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
         JsonNode schemas = openapi.get("components").get("schemas");
 
@@ -289,10 +289,10 @@ class OpenApiGenerationTest
                 .assertErrorFreeLog();
 
         File openapiFile = new File(basedir, "target/openapi.json");
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
 
-        assertThat(openapi.get("openapi").asText())
+        assertThat(openapi.get("openapi").asString())
                 .describedAs("OpenAPI version should match the configured version")
                 .isEqualTo("3.2.0");
     }
@@ -395,7 +395,7 @@ class OpenApiGenerationTest
                 .exists()
                 .isFile();
 
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = new JsonMapper();
         JsonNode openapi = mapper.readTree(openapiFile);
 
         assertThat(openapi.has("paths"))

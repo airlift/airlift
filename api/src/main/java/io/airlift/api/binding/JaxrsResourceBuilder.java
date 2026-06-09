@@ -1,6 +1,5 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Key;
@@ -29,6 +28,7 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MediaType;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

@@ -2,13 +2,6 @@ package io.airlift.api.validation;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
@@ -50,6 +43,13 @@ import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.json.JsonModule;
 import jakarta.ws.rs.WebApplicationException;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.IntNode;
+import tools.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 import java.lang.reflect.Type;
 import java.time.Duration;
@@ -504,7 +504,7 @@ public class TestConforming
     public record ResourceWithArrayNodeField(@ApiDescription("array") ArrayNode array) {}
 
     @ApiResource(name = "textNodeField", description = "text node field")
-    public record ResourceWithTextNodeField(@ApiDescription("text") TextNode text) {}
+    public record ResourceWithTextNodeField(@ApiDescription("text") StringNode text) {}
 
     @ApiResource(name = "intNodeField", description = "int node field")
     public record ResourceWithIntNodeField(@ApiDescription("int") IntNode integer) {}

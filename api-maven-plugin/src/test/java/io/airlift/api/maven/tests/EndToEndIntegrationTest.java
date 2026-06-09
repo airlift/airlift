@@ -13,8 +13,6 @@
  */
 package io.airlift.api.maven.tests;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.takari.maven.testing.TestResources5;
@@ -23,6 +21,8 @@ import io.takari.maven.testing.executor.MavenRuntime.MavenRuntimeBuilder;
 import io.takari.maven.testing.executor.MavenVersions;
 import io.takari.maven.testing.executor.junit.MavenPluginTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -68,7 +68,7 @@ class EndToEndIntegrationTest
                 .exists()
                 .isFile();
 
-        JsonNode openapi = new ObjectMapper().readTree(openApiSpec);
+        JsonNode openapi = new JsonMapper().readTree(openApiSpec);
         assertThat(openapi.has("openapi")).isTrue();
         assertThat(openapi.has("info")).isTrue();
         assertThat(openapi.has("paths")).isTrue();

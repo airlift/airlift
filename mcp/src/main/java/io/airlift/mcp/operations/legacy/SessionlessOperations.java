@@ -1,7 +1,5 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -32,8 +30,8 @@ import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -129,14 +127,9 @@ public class SessionlessOperations
 
         response.setStatus(SC_OK);
 
-        try {
-            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
-            messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flush();
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
+        messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
+        messageWriter.flush();
     }
 
     private InitializeResult handleInitialize(LegacyRequestContextImpl requestContext, InitializeRequest initializeRequest)

@@ -1,6 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -15,6 +14,7 @@ import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Method;
 import java.util.List;

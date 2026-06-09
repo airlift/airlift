@@ -15,16 +15,16 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,10 +36,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
-@ThreadSafe
 public class JsonCodec<T>
 {
     private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get()
@@ -162,7 +161,7 @@ public class JsonCodec<T>
         try {
             return writer.get().writeValueAsString(instance);
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
         }
     }
@@ -182,8 +181,11 @@ public class JsonCodec<T>
             writer.get().writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
         }
-        catch (LengthLimitExceededException e) {
-            return Optional.empty();
+        catch (JacksonException e) {
+            if (e.getCause() instanceof LengthLimitExceededException) {
+                return Optional.empty();
+            }
+            throw e;
         }
         catch (IOException e) {
             throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
@@ -221,7 +223,7 @@ public class JsonCodec<T>
         try {
             return writer.get().writeValueAsBytes(instance);
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
         }
     }

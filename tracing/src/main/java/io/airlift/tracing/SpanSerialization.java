@@ -1,21 +1,20 @@
 package io.airlift.tracing;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.databind.type.MapType;
+import tools.jackson.databind.type.TypeFactory;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -39,35 +38,33 @@ public final class SpanSerialization
 
         @SuppressWarnings("DataFlowIssue")
         @Override
-        public void serialize(Span span, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                throws IOException
+        public void serialize(Span span, JsonGenerator jsonGenerator, SerializationContext serializationContext)
         {
             Context context = Context.root().with(span);
             Map<String, String> map = new LinkedHashMap<>();
             propagator.inject(context, map, Map::put);
-            jsonGenerator.writeObject(map);
+            jsonGenerator.writePOJO(map);
         }
     }
 
     public static class SpanDeserializer
             extends StdDeserializer<Span>
     {
+        private static final MapType MAP_TYPE = TypeFactory.createDefaultInstance().constructMapType(Map.class, String.class, String.class);
+
         private final TextMapPropagator propagator;
-        private final MapType type;
 
         @Inject
         public SpanDeserializer(OpenTelemetry openTelemetry)
         {
             super(Span.class);
-            this.type = TypeFactory.defaultInstance().constructMapType(Map.class, String.class, String.class);
             this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         }
 
         @Override
         public Span deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException
         {
-            Map<String, String> map = deserializationContext.readValue(jsonParser, type);
+            Map<String, String> map = deserializationContext.readValue(jsonParser, MAP_TYPE);
             Context context = propagator.extract(Context.root(), map, MapTextMapGetter.INSTANCE);
             return Span.fromContext(context);
         }

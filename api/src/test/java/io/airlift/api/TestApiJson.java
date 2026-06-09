@@ -1,9 +1,9 @@
 package io.airlift.api;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,7 +24,7 @@ public class TestApiJson
     public void testApiJsonNodeDeserializesArbitraryJsonValue()
             throws Exception
     {
-        assertThat(JSON_MAPPER.readValue("\"value\"", ApiJsonNode.class).value().asText()).isEqualTo("value");
+        assertThat(JSON_MAPPER.readValue("\"value\"", ApiJsonNode.class).value().asString()).isEqualTo("value");
     }
 
     @Test

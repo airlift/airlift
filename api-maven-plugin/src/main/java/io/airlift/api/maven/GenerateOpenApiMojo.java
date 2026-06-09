@@ -13,7 +13,6 @@
  */
 package io.airlift.api.maven;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiServiceType;
@@ -35,6 +34,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -262,7 +263,7 @@ public class GenerateOpenApiMojo
             }
             return jsonMapper.writeValueAsString(openAPI);
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw new MojoExecutionException("Failed to serialize OpenAPI spec to JSON", e);
         }
     }

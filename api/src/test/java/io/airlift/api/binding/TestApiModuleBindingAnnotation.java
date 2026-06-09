@@ -1,8 +1,6 @@
 package io.airlift.api.binding;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
@@ -53,6 +51,8 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -382,7 +382,7 @@ public class TestApiModuleBindingAnnotation
             throws IOException
     {
         Set<String> schemas = new LinkedHashSet<>();
-        Iterator<String> names = JsonMapper.builder().build().readTree(openApi).get("components").get("schemas").fieldNames();
+        Iterator<String> names = JsonMapper.builder().build().readTree(openApi).get("components").get("schemas").propertyNames().iterator();
         while (names.hasNext()) {
             schemas.add(names.next());
         }
@@ -403,7 +403,7 @@ public class TestApiModuleBindingAnnotation
             throws IOException
     {
         JsonNode paths = JsonMapper.builder().build().readTree(openApi).get("paths");
-        Iterator<String> names = paths.fieldNames();
+        Iterator<String> names = paths.propertyNames().iterator();
         while (names.hasNext()) {
             String path = names.next();
             if (path.contains(":" + verb)) {
@@ -417,7 +417,7 @@ public class TestApiModuleBindingAnnotation
             throws IOException
     {
         JsonNode paths = JsonMapper.builder().build().readTree(openApi).get("paths");
-        Iterator<String> names = paths.fieldNames();
+        Iterator<String> names = paths.propertyNames().iterator();
         while (names.hasNext()) {
             if (names.next().contains(":" + verb)) {
                 return true;
@@ -430,7 +430,7 @@ public class TestApiModuleBindingAnnotation
             throws IOException
     {
         JsonNode paths = JsonMapper.builder().build().readTree(openApi).get("paths");
-        Iterator<String> names = paths.fieldNames();
+        Iterator<String> names = paths.propertyNames().iterator();
         while (names.hasNext()) {
             String path = names.next();
             if (path.contains(":" + verb)) {

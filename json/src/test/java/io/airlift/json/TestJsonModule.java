@@ -18,14 +18,6 @@ package io.airlift.json;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -36,8 +28,15 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdScalarDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +85,6 @@ public class TestJsonModule
 
     @Test
     public void testSetup()
-            throws Exception
     {
         assertThat(CAR).isEqualTo(CAR);
         String json = jsonMapper.writeValueAsString(CAR);
@@ -96,7 +94,6 @@ public class TestJsonModule
 
     @Test
     public void testFieldDetection()
-            throws Exception
     {
         Map<String, Object> actual = createCarMap();
 
@@ -107,7 +104,6 @@ public class TestJsonModule
 
     @Test
     public void testDateTimeRendered()
-            throws Exception
     {
         Map<String, Object> actual = createCarMap();
 
@@ -116,7 +112,6 @@ public class TestJsonModule
 
     @Test
     public void testGuavaRoundTrip()
-            throws Exception
     {
         ImmutableList<Integer> list = ImmutableList.of(3, 5, 8);
 
@@ -128,7 +123,6 @@ public class TestJsonModule
 
     @Test
     public void testIgnoreUnknownFields()
-            throws Exception
     {
         Map<String, Object> data = new HashMap<>(createCarMap());
 
@@ -141,7 +135,6 @@ public class TestJsonModule
 
     @Test
     public void testPropertyNamesFromParameterNames()
-            throws Exception
     {
         NoJsonPropertiesInJsonCreator value = new NoJsonPropertiesInJsonCreator("first value", "second value");
         NoJsonPropertiesInJsonCreator mapped = jsonMapper.readValue(jsonMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
@@ -151,7 +144,6 @@ public class TestJsonModule
 
     @Test
     public void testJsonValueAndStaticFactoryMethod()
-            throws Exception
     {
         JsonValueAndStaticFactoryMethod value = JsonValueAndStaticFactoryMethod.valueOf("some value");
         JsonValueAndStaticFactoryMethod mapped = jsonMapper.readValue(jsonMapper.writeValueAsString(value), JsonValueAndStaticFactoryMethod.class);
@@ -159,7 +151,6 @@ public class TestJsonModule
     }
 
     private Map<String, Object> createCarMap()
-            throws IOException
     {
         return jsonMapper.readValue(jsonMapper.writeValueAsString(CAR), new TypeReference<>() {});
     }
@@ -436,14 +427,13 @@ public class TestJsonModule
 
         @Override
         public SuperDuperNameList deserialize(JsonParser jp, DeserializationContext context)
-                throws IOException
         {
-            JsonToken token = jp.getCurrentToken();
+            JsonToken token = jp.currentToken();
             if (token == JsonToken.VALUE_STRING) {
-                return new SuperDuperNameList(jp.getText(), null);
+                return new SuperDuperNameList(jp.getString(), null);
             }
             context.handleUnexpectedToken(handledType(), jp);
-            throw JsonMappingException.from(jp, null);
+            throw DatabindException.from(jp, "not a string");
         }
     }
 
