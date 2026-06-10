@@ -37,6 +37,37 @@ import static org.assertj.core.api.Assertions.within;
 public class TestTDigest
 {
     @Test
+    public void testValueAtMatchesValuesAt()
+    {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int count : new int[] {0, 1, 2, 3, 10, 100, 10_000}) {
+            TDigest digest = new TDigest();
+            for (int i = 0; i < count; i++) {
+                digest.add(random.nextGaussian() * 100, random.nextInt(1, 10));
+            }
+            for (int i = 0; i <= 1000; i++) {
+                double quantile = i / 1000.0;
+                // boxed comparison, so that NaN compares equal to NaN
+                assertThat(Double.valueOf(digest.valueAt(quantile))).isEqualTo(Double.valueOf(digest.valuesAt(quantile)[0]));
+            }
+        }
+    }
+
+    @Test
+    public void testValueAtRejectsInvalidQuantile()
+    {
+        TDigest digest = new TDigest();
+        digest.add(1);
+
+        assertThatThrownBy(() -> digest.valueAt(-0.1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("quantiles should be in [0, 1] range");
+        assertThatThrownBy(() -> digest.valueAt(1.1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("quantiles should be in [0, 1] range");
+    }
+
+    @Test
     public void testEmpty()
     {
         TDigest digest = new TDigest();

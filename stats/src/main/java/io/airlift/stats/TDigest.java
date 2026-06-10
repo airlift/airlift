@@ -234,9 +234,84 @@ public class TDigest
         needsMerge = true;
     }
 
+    // scalar specialization of valuesAt() that avoids the array allocations; the two
+    // implementations follow the same steps and must be kept in sync
     public double valueAt(double quantile)
     {
-        return valuesAt(quantile)[0];
+        if (quantile < 0 || quantile > 1) {
+            throw new IllegalArgumentException("quantiles should be in [0, 1] range");
+        }
+
+        if (centroidCount == 0) {
+            return Double.NaN;
+        }
+
+        mergeIfNeeded(internalCompressionFactor(compression));
+
+        if (centroidCount == 1) {
+            return means[0];
+        }
+
+        // offset into the theoretical sequence of all values
+        double offset = quantile * totalWeight;
+
+        // lowest value
+        if (offset < 1) {
+            return min;
+        }
+        // between bottom and first centroid
+        if (offset < weights[0] / 2) {
+            return min + interpolate(offset, 1, min, weights[0] / 2, means[0]);
+        }
+        // between last centroid and top, but not the greatest value
+        if (offset <= totalWeight - 1 && totalWeight - offset <= weights[centroidCount - 1] / 2 && weights[centroidCount - 1] / 2 > 1) {
+            // we interpolate back from the end, so the value is negative
+            return max + interpolate(totalWeight - offset, 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]);
+        }
+        // greatest value
+        if (offset >= totalWeight - 1) {
+            return max;
+        }
+
+        double weightSoFar = weights[0] / 2;
+        int currentCentroid = 0;
+        double delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+        while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= offset) {
+            weightSoFar += delta;
+            currentCentroid++;
+            if (currentCentroid < centroidCount - 1) {
+                delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+            }
+        }
+        // past the last centroid
+        if (currentCentroid == centroidCount - 1) {
+            // between last centroid and top, but not the greatest value
+            if (offset <= totalWeight - 1 && weights[centroidCount - 1] / 2 > 1) {
+                // we interpolate back from the end, so the value is negative
+                return max + interpolate(totalWeight - offset, 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]);
+            }
+            // greatest value
+            return max;
+        }
+        // single-sample cluster on the left (current centroid) and the quantile falls within that cluster
+        if (weights[currentCentroid] == 1 && offset - weightSoFar < weights[currentCentroid] / 2) {
+            return means[currentCentroid];
+        }
+        // single-sample cluster on the right (next centroid) and the quantile falls within that cluster
+        if (weights[currentCentroid + 1] == 1 && offset - weightSoFar >= weights[currentCentroid] / 2) {
+            return means[currentCentroid + 1];
+        }
+        // the quantile falls within a multi-sample cluster. If the other cluster is single-sample, we can exclude it from interpolation
+        double interpolationOffset = offset - weightSoFar;
+        double interpolationSectionLength = delta;
+        if (weights[currentCentroid] == 1) {
+            interpolationOffset -= weights[currentCentroid] / 2;
+            interpolationSectionLength = weights[currentCentroid + 1] / 2;
+        }
+        else if (weights[currentCentroid + 1] == 1) {
+            interpolationSectionLength = weights[currentCentroid] / 2;
+        }
+        return means[currentCentroid] + interpolate(interpolationOffset, 0, means[currentCentroid], interpolationSectionLength, means[currentCentroid + 1]);
     }
 
     public List<Double> valuesAt(List<Double> quantiles)
