@@ -174,7 +174,7 @@ public final class PemReader
             throw new KeyStoreException("Private key does not match the public key of any certificate");
         }
 
-        char[] password = keyPassword.filter(_ -> storeKeyWithPassword).orElse("").toCharArray();
+        char[] password = storeKeyWithPassword ? keyPassword.orElse("").toCharArray() : new char[0];
         keyStore.setKeyEntry("key", key, password, certificates);
         return keyStore;
     }
