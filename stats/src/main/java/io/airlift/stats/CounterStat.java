@@ -43,9 +43,11 @@ public final class CounterStat
 
     public void update(long count)
     {
-        oneMinute.add(count);
-        fiveMinute.add(count);
-        fifteenMinute.add(count);
+        // all three counters use the system ticker, so the tick can be read once and shared
+        long nowInSeconds = oneMinute.getTickInSeconds();
+        oneMinute.add(count, nowInSeconds);
+        fiveMinute.add(count, nowInSeconds);
+        fifteenMinute.add(count, nowInSeconds);
         this.count.add(count);
     }
 
