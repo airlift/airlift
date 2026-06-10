@@ -9,6 +9,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiFilter;
 import io.airlift.api.ApiFilterList;
 import io.airlift.api.ApiHeader;
@@ -42,8 +43,12 @@ import static io.airlift.api.internals.Mappers.buildHeaderName;
 import static io.airlift.api.internals.Mappers.buildModifier;
 import static io.airlift.api.internals.Mappers.buildOrderBy;
 import static io.airlift.api.internals.Mappers.buildResourceId;
+import static io.airlift.api.internals.Mappers.buildTypedFilter;
+import static io.airlift.api.internals.Mappers.buildTypedFilterList;
 import static io.airlift.api.internals.Mappers.buildValidateOnly;
+import static io.airlift.api.internals.Mappers.isTypedFilterType;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
+import static io.airlift.api.internals.Mappers.typedFilterValueType;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static io.airlift.api.responses.ApiException.internalError;
 import static io.airlift.api.responses.ApiException.notFound;
@@ -54,6 +59,7 @@ class SpecialApiTypeValueParamProvider
 {
     private final Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups;
     private final JsonMapper jsonMapper;
+    private final ApiEnumValueResolver enumValueResolver;
     // The name of a Jersey Parameter is fixed for the life of the resource model, but resolving it
     // requires the matched resource method that is only available per request. Resolve it once on the
     // first request and reuse it thereafter, keyed on the (stable) Parameter instance. The key must be
@@ -62,10 +68,11 @@ class SpecialApiTypeValueParamProvider
     private final Map<Parameter, String> parameterNameCache = new MapMaker().weakKeys().makeMap();
 
     @Inject
-    SpecialApiTypeValueParamProvider(Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups, JsonMapper jsonMapper)
+    SpecialApiTypeValueParamProvider(Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups, JsonMapper jsonMapper, ApiEnumValueResolver enumValueResolver)
     {
         this.idLookups = ImmutableMap.copyOf(idLookups);
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
     }
 
     @Override
@@ -75,9 +82,17 @@ class SpecialApiTypeValueParamProvider
             return containerRequest -> buildValidateOnly(containerRequest.getUriInfo());
         }
         if (ApiFilter.class.isAssignableFrom(parameter.getRawType())) {
+            if (isTypedFilterType(parameter.getType(), ApiFilter.class)) {
+                Class<?> type = typedFilterValueType(parameter.getType());
+                return containerRequest -> buildTypedFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), type, enumValueResolver);
+            }
             return containerRequest -> buildFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
         }
         if (ApiFilterList.class.isAssignableFrom(parameter.getRawType())) {
+            if (isTypedFilterType(parameter.getType(), ApiFilterList.class)) {
+                Class<?> type = typedFilterValueType(parameter.getType());
+                return containerRequest -> buildTypedFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), type, enumValueResolver);
+            }
             return containerRequest -> buildFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
         }
         if (ApiOrderBy.class.isAssignableFrom(parameter.getRawType())) {
