@@ -62,7 +62,7 @@ public final class Request
         requireNonNull(uri, "uri is null");
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
         checkArgument(uri.getScheme() != null, "uri does not have a scheme: %s", uri);
-        String scheme = uri.getScheme().toLowerCase();
+        String scheme = uri.getScheme().toLowerCase(ENGLISH);
         checkArgument("http".equals(scheme) || "https".equals(scheme), "uri scheme must be http or https: %s", uri);
         requireNonNull(method, "method is null");
 

@@ -45,6 +45,7 @@ import static io.airlift.http.client.HeaderNames.USER_AGENT;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.nio.file.Files.newBufferedReader;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.stream.Collectors.toList;
@@ -85,7 +86,7 @@ public class ServiceInventory
         this.httpClient = httpClient;
 
         if (serviceInventoryUri != null) {
-            String scheme = serviceInventoryUri.getScheme().toLowerCase();
+            String scheme = serviceInventoryUri.getScheme().toLowerCase(ENGLISH);
             checkArgument(scheme.equals("http") || scheme.equals("https") || scheme.equals("file"), "Service inventory uri must have a http, https, or file scheme");
 
             try {
@@ -151,7 +152,7 @@ public class ServiceInventory
 
         try {
             ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
-            if (serviceInventoryUri.getScheme().toLowerCase().startsWith("http")) {
+            if (serviceInventoryUri.getScheme().toLowerCase(ENGLISH).startsWith("http")) {
                 Builder requestBuilder = prepareGet()
                         .setUri(serviceInventoryUri)
                         .setHeader(USER_AGENT, nodeInfo.getNodeId());

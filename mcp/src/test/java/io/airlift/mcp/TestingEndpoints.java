@@ -44,6 +44,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpSkillBuilder.mcpSkillBuilder;
 import static io.airlift.mcp.model.ElicitResult.Action.ACCEPT;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,7 +133,7 @@ public class TestingEndpoints
         if (argument.name().equals("name")) {
             return ImmutableList.of("Jordan", "Rita", "Bobby", "Oliver", "Olive", "Steve")
                     .stream()
-                    .filter(name -> name.toLowerCase().startsWith(argument.value().toLowerCase()))
+                    .filter(name -> name.toLowerCase(ENGLISH).startsWith(argument.value().toLowerCase(ENGLISH)))
                     .collect(toImmutableList());
         }
         return ImmutableList.of();
@@ -179,7 +180,7 @@ public class TestingEndpoints
         if (argument.name().equals("id")) {
             return ImmutableList.of("manny", "moe", "jack")
                     .stream()
-                    .filter(uri -> uri.toLowerCase().startsWith(argument.value().toLowerCase()))
+                    .filter(uri -> uri.toLowerCase(ENGLISH).startsWith(argument.value().toLowerCase(ENGLISH)))
                     .collect(toImmutableList());
         }
         return ImmutableList.of();

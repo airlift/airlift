@@ -72,6 +72,7 @@ import static io.airlift.api.openapi.OpenApiMetadata.TAG_MODEL_DEFINITIONS;
 import static io.airlift.api.openapi.OpenApiMetadata.TAG_RESPONSE_DEFINITIONS;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -339,7 +340,9 @@ class OpenApiBuilder
     {
         StringBuilder name = new StringBuilder();
 
-        String methodName = modelMethod.customVerb().map(String::toLowerCase).orElseGet(() -> modelMethod.methodType().name().toLowerCase());
+        String methodName = modelMethod.customVerb()
+                .orElseGet(() -> modelMethod.methodType().name())
+                .toLowerCase(ENGLISH);
 
         if (modelMethod.isPatch()) {
             name.append("patch").append(capitalize(methodName));
