@@ -4,11 +4,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
-import com.google.common.primitives.Bytes;
 
 import java.net.URI;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -38,8 +36,9 @@ public class HttpUriBuilder
     };
 
     private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
-    private static final byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
-    private static final byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
+
+    private static final boolean[] ALLOWED_PATH_CHARS = buildAllowedTable(new byte[] {'/', '&'});
+    private static final boolean[] ALLOWED_QUERY_CHARS = buildAllowedTable(new byte[] {'/', '?'});
 
     private HttpUriBuilder() {}
 
@@ -258,15 +257,18 @@ public class HttpUriBuilder
         return result;
     }
 
-    private String encode(String input, byte... allowed)
+    private static String encode(String input, boolean[] allowed)
     {
-        StringBuilder builder = new StringBuilder();
+        byte[] bytes = input.getBytes(UTF_8);
+        int encodedLength = encodedLength(bytes, allowed);
+        if (encodedLength == input.length()) {
+            return input;
+        }
+        StringBuilder builder = new StringBuilder(encodedLength);
 
-        ByteBuffer buffer = UTF_8.encode(input);
-        while (buffer.remaining() > 0) {
-            byte b = buffer.get();
-
-            if (Bytes.contains(allowed, b)) {
+        for (byte b : bytes) {
+            // non-ASCII bytes are negative and always percent-encoded
+            if (b >= 0 && allowed[b]) {
                 builder.append((char) b); // b is ASCII
             }
             else {
@@ -277,6 +279,18 @@ public class HttpUriBuilder
         }
 
         return builder.toString();
+    }
+
+    private static int encodedLength(byte[] input, boolean[] allowed)
+    {
+        int length = input.length;
+        for (byte b : input) {
+            if (b >= 0 && allowed[b]) {
+                continue;
+            }
+            length += 2; // two extra bytes per encoded octet
+        }
+        return length;
     }
 
     /**
@@ -295,5 +309,17 @@ public class HttpUriBuilder
             return "[" + host + "]";
         }
         return host;
+    }
+
+    private static boolean[] buildAllowedTable(byte[] extra)
+    {
+        boolean[] allowed = new boolean[128];
+        for (byte b : PCHAR) {
+            allowed[b] = true;
+        }
+        for (byte c : extra) {
+            allowed[c] = true;
+        }
+        return allowed;
     }
 }
