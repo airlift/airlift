@@ -15,6 +15,7 @@ package io.airlift.openmetrics.types;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.TimeDistribution;
+import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 
 import java.util.Map;
 
@@ -25,17 +26,20 @@ public record Summary(String metricName, Long count, Double sum, Double created,
 {
     public static Summary from(String metricName, TimeDistribution timeDistribution, Map<String, String> labels, String help)
     {
+        // a single snapshot takes the distribution lock once and yields mutually consistent values,
+        // unlike calling the individually synchronized getters
+        TimeDistributionSnapshot snapshot = timeDistribution.snapshot();
         return new Summary(
                 metricName,
-                (long) timeDistribution.getCount(),
-                timeDistribution.getAvg() * timeDistribution.getCount(),
+                (long) snapshot.count(),
+                snapshot.avg() * snapshot.count(),
                 null,
                 ImmutableMap.<Double, Double>builder()
-                        .put(0.5, timeDistribution.getP50())
-                        .put(0.75, timeDistribution.getP75())
-                        .put(0.9, timeDistribution.getP90())
-                        .put(0.95, timeDistribution.getP95())
-                        .put(0.99, timeDistribution.getP99())
+                        .put(0.5, snapshot.p50())
+                        .put(0.75, snapshot.p75())
+                        .put(0.9, snapshot.p90())
+                        .put(0.95, snapshot.p95())
+                        .put(0.99, snapshot.p99())
                         .build(),
                 labels,
                 help);
