@@ -9,6 +9,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
@@ -49,12 +50,19 @@ public final class TracingServletFilter
 
     private final TextMapPropagator propagator;
     private final Tracer tracer;
+    private final boolean tracingDisabled;
 
     @Inject
     public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer)
     {
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
+        // A noop tracer combined with a propagator that carries no fields cannot produce spans,
+        // attributes, or extracted contexts, so all per-request work can be skipped. The noop
+        // TracerProvider returns a singleton tracer, which is how both OpenTelemetry.noop() and
+        // io.airlift.tracing.Tracing.noopTracer() create tracers; if a different noop
+        // implementation is bound, the filter simply stays active.
+        this.tracingDisabled = tracer == TracerProvider.noop().get("noop") && propagator.fields().isEmpty();
     }
 
     public static void updateRequestSpan(HttpServletRequest request, Consumer<Span> spanConsumer)
@@ -68,6 +76,11 @@ public final class TracingServletFilter
     public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
+        if (tracingDisabled) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         Context parent = propagator.extract(Context.root(), request, ServletTextMapGetter.INSTANCE);
         String method = request.getMethod().toUpperCase(ENGLISH);
 
@@ -113,7 +126,9 @@ public final class TracingServletFilter
         request.setAttribute(REQUEST_SPAN, span);
 
         try (Scope ignored = span.makeCurrent()) {
-            chain.doFilter(request, new TracingHttpServletResponse(response, span));
+            // a non-recording span drops all attributes, so the response wrapper that exists
+            // only to record response attributes is not needed
+            chain.doFilter(request, span.isRecording() ? new TracingHttpServletResponse(response, span) : response);
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
