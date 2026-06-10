@@ -123,7 +123,8 @@
           "description" : "Sort/ordering in standard SQL ORDER BY format. Allowed values: id, name, size",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "type" : "string",
+            "enum" : [ "id", "name", "size" ]
           }
         }, {
           "in" : "query",
