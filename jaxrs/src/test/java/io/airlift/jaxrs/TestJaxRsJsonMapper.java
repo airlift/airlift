@@ -98,7 +98,7 @@ public class TestJaxRsJsonMapper
         try {
             ByteArrayOutputStream stream = new ByteArrayOutputStream(1);
             jsonMapper.writeTo(new OtherExamplePojo("nah", "bro"), List.class, new TypeToken<List<String>>() {}.getType(), null, null, new GuavaMultivaluedMap<>(), stream);
-            System.out.println("stream: " + stream.toString());
+            System.out.println("stream: " + stream.toString(UTF_8));
             fail("Should have thrown an Exception");
         }
         catch (JsonParsingException e) {

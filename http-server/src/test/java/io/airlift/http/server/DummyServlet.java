@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 
 import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 class DummyServlet
         extends HttpServlet
@@ -37,7 +38,7 @@ class DummyServlet
     {
         response.setStatus(SC_OK);
         if (request.getUserPrincipal() != null) {
-            response.getOutputStream().write(request.getUserPrincipal().getName().getBytes());
+            response.getOutputStream().write(request.getUserPrincipal().getName().getBytes(UTF_8));
         }
         response.setHeader("X-Protocol", request.getProtocol());
 

@@ -141,7 +141,7 @@ class TestAutomaticMtls
                     X509Certificate localCertificates = (X509Certificate) httpsExchange.getSSLSession().getLocalCertificates()[0];
                     String response = "Hello, client serial: " + peerCertificates.getSerialNumber() + ", server serial " + localCertificates.getSerialNumber() + ", san dns: " + peerCertificates.getSubjectAlternativeNames();
                     exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
+                    exchange.getResponseBody().write(response.getBytes(UTF_8));
                     exchange.close();
                     return;
                 }

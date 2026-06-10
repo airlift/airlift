@@ -43,6 +43,7 @@ import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -174,7 +175,7 @@ public class TestSentMessages
         Request request = builder.build();
 
         try (StreamingResponse streamingResponse = testingServer.httpClient().executeStreaming(request)) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(streamingResponse.getInputStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(streamingResponse.getInputStream(), UTF_8));
 
             while (!Thread.currentThread().isInterrupted()) {
                 String idLine = reader.readLine();

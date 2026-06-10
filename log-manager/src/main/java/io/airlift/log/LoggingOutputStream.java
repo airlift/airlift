@@ -18,6 +18,8 @@ package io.airlift.log;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 /**
  * An OutputStream that writes contents to a Logger upon each call to flush()
  */
@@ -39,7 +41,7 @@ class LoggingOutputStream
             throws IOException
     {
         super.flush();
-        String record = this.toString();
+        String record = this.toString(UTF_8);
         reset();
 
         // Strip trailing new line typically added when this class is used via System.out.println
