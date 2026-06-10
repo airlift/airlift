@@ -81,7 +81,7 @@ public class TestingHttpServer
         }
 
         connector.setIdleTimeout(30000);
-        connector.setName(keystore.map(_ -> "https").orElse("http"));
+        connector.setName(keystore.isPresent() ? "https" : "http");
 
         server.addConnector(connector);
 

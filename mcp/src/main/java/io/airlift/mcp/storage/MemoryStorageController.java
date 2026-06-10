@@ -120,9 +120,9 @@ public class MemoryStorageController
     {
         clean();
 
-        cursor.ifPresent(_ -> {
+        if (cursor.isPresent()) {
             throw new UnsupportedOperationException("listGroups with cursor is not supported");
-        });
+        }
 
         return ImmutableList.copyOf(groups.keySet());
     }
