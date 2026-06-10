@@ -191,7 +191,7 @@ public final class LifeCycleManager
             }
         }
 
-        log.debug("Lifecycle stopping...", name);
+        log.debug("Lifecycle '%s' stopping...", name);
 
         for (Object obj : new ArrayList<>(preDestroyInstances).reversed()) {
             stopInstance(obj, handler);
@@ -199,7 +199,7 @@ public final class LifeCycleManager
 
         state.set(State.STOPPED);
         if (!preDestroyInstances.isEmpty()) {
-            log.debug("Lifecycle stopped with %d managed instance(s)", preDestroyInstances.size());
+            log.debug("Lifecycle '%s' stopped with %d managed instance(s)", name, preDestroyInstances.size());
         }
     }
 

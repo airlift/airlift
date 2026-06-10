@@ -533,7 +533,7 @@ public class HttpServer
                 .map(GracefulHandler::getCurrentRequestCount)
                 .orElse(0L);
 
-        log.debug("Server %s stopping in %s, %d active requests to complete", Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
+        log.debug("Server %s stopping in %s, %d active requests to complete", server.getName(), Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
 
         server.stop();
 
