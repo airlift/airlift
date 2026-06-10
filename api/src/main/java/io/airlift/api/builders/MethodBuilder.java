@@ -26,6 +26,8 @@ import io.airlift.api.ApiTrait;
 import io.airlift.api.ApiType;
 import io.airlift.api.ApiUpdate;
 import io.airlift.api.ApiValidateOnly;
+import io.airlift.api.TypedApiFilter;
+import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
 import io.airlift.api.model.ModelOptionalParameter.ExternalParameter;
@@ -43,6 +45,7 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.Context;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
@@ -72,6 +75,7 @@ import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
 import static io.airlift.api.internals.Mappers.openApiName;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
+import static io.airlift.api.internals.Mappers.typedFilterValueType;
 import static io.airlift.api.model.ModelOptionalParameter.Location.HEADER;
 import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
@@ -101,7 +105,9 @@ public class MethodBuilder
             ApiHeader.class, new ModelOptionalParameter(HEADER, ApiHeader.class, HEADER_EXTERNAL).withMetadata(MULTIPLE_ALLOWED),
             ApiModifier.class, new ModelOptionalParameter(QUERY, ApiModifier.class, MODIFIER_EXTERNAL).withMetadata(MULTIPLE_ALLOWED),
             ApiPagination.class, new ModelOptionalParameter(QUERY, ApiPagination.class, PAGINATION_EXTERNAL).withMetadata(VALIDATES_ARGUMENT),
-            ApiValidateOnly.class, new ModelOptionalParameter(QUERY, ApiValidateOnly.class, VALIDATE_ONLY_EXTERNAL));
+            ApiValidateOnly.class, new ModelOptionalParameter(QUERY, ApiValidateOnly.class, VALIDATE_ONLY_EXTERNAL),
+            TypedApiFilter.class, new ModelOptionalParameter(QUERY, TypedApiFilter.class, FILTER_EXTERNAL).withMetadata(MULTIPLE_ALLOWED),
+            TypedApiFilterList.class, new ModelOptionalParameter(QUERY, TypedApiFilterList.class, FILTER_LIST_EXTERNAL).withMetadata(MULTIPLE_ALLOWED));
 
     static {
         // validate that optional parameter map doesn't have incorrect naming
@@ -367,10 +373,7 @@ public class MethodBuilder
 
     private Optional<ModelOptionalParameter> buildOptionalParameter(Parameter parameter, ApiParameter apiParameter)
     {
-        ModelOptionalParameter optionalParameter = OPTIONAL_PARAMETER_MAP.get(parameter.getType());
-        if (optionalParameter == null) {
-            throw new ValidatorException("%s parameter is not allowed".formatted(parameter.getType().getSimpleName()));
-        }
+        ModelOptionalParameter optionalParameter = optionalParameterFor(parameter);
 
         boolean hasAllowedValues = (apiParameter.allowedValues().length > 0);
 
@@ -405,6 +408,33 @@ public class MethodBuilder
         }
 
         return Optional.of(optionalParameter.withExternalParameters(adjustedExternalParameters));
+    }
+
+    public static ModelOptionalParameter optionalParameterFor(Parameter parameter)
+    {
+        if (TypedApiFilter.class.isAssignableFrom(parameter.getType())) {
+            Class<?> valueType = typedFilterValueType(parameter.getParameterizedType());
+            return new ModelOptionalParameter(
+                    QUERY,
+                    parameter.getParameterizedType(),
+                    ImmutableSet.of(new ExternalParameter("", "Query filter", valueType)))
+                    .withMetadata(MULTIPLE_ALLOWED);
+        }
+        if (TypedApiFilterList.class.isAssignableFrom(parameter.getType())) {
+            Class<?> valueType = typedFilterValueType(parameter.getParameterizedType());
+            Class<?> arrayType = Array.newInstance(valueType, 0).getClass();
+            return new ModelOptionalParameter(
+                    QUERY,
+                    parameter.getParameterizedType(),
+                    ImmutableSet.of(new ExternalParameter("", "Query filter", arrayType)))
+                    .withMetadata(MULTIPLE_ALLOWED);
+        }
+
+        ModelOptionalParameter optionalParameter = OPTIONAL_PARAMETER_MAP.get(parameter.getType());
+        if (optionalParameter == null) {
+            throw new ValidatorException("%s parameter is not allowed".formatted(parameter.getType().getSimpleName()));
+        }
+        return optionalParameter;
     }
 
     private ModelResource buildResultResource(Method method, ApiType apiType)

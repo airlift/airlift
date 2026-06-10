@@ -16,6 +16,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiCreate;
+import io.airlift.api.ApiDelete;
 import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiEnumNamingFormat;
 import io.airlift.api.ApiEnumValueResolver;
@@ -31,7 +32,10 @@ import io.airlift.api.ApiService;
 import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.ApiServiceType;
 import io.airlift.api.ApiStringId;
+import io.airlift.api.ApiUpdate;
 import io.airlift.api.ServiceType;
+import io.airlift.api.TypedApiFilter;
+import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.binding.ApiModule;
 import io.airlift.api.binding.PolyResourceModule;
 import io.airlift.api.builders.ApiBuilder;
@@ -52,7 +56,9 @@ import jakarta.ws.rs.WebApplicationException;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -380,6 +386,46 @@ public class TestConforming
     }
 
     @Test
+    public void testTypedApiFiltersAllowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithTypedApiFilters.class).build().modelServices();
+        assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).isEmpty();
+    }
+
+    @Test
+    public void testRawTypedApiFilterDisallowed()
+    {
+        assertTypedFilterRejected(ServiceWithRawTypedApiFilter.class, "Expected class io.airlift.api.TypedApiFilter to be parameterized type");
+        assertTypedFilterRejected(ServiceWithRawTypedApiFilterList.class, "Expected class io.airlift.api.TypedApiFilterList to be parameterized type");
+    }
+
+    @Test
+    public void testWildcardTypedApiFilterDisallowed()
+    {
+        assertTypedFilterRejected(ServiceWithWildcardTypedApiFilter.class, "Typed API filter type parameter must be a concrete class");
+    }
+
+    @Test
+    public void testTypeVariableTypedApiFilterDisallowed()
+    {
+        assertTypedFilterRejected(ServiceWithTypeVariableTypedApiFilter.class, "Typed API filter type parameter must be a concrete class");
+    }
+
+    @Test
+    public void testUnsupportedTypedApiFilterDisallowed()
+    {
+        assertTypedFilterRejected(ServiceWithBigDecimalTypedApiFilter.class, "java.math.BigDecimal");
+        assertTypedFilterRejected(ServiceWithCollectionTypedApiFilter.class, "java.util.List");
+        assertTypedFilterRejected(ServiceWithResourceTypedApiFilter.class, "io.airlift.api.validation.Thing");
+    }
+
+    @Test
+    public void testNonConcreteEnumTypedApiFilterDisallowed()
+    {
+        assertTypedFilterRejected(ServiceWithNonConcreteEnumTypedApiFilter.class, "java.lang.Enum");
+    }
+
+    @Test
     public void testRawJacksonNodeFieldsDisallowed()
     {
         assertJacksonNodeResourceTypeDisallowed(ResourceWithJacksonJsonNodeField.class);
@@ -395,6 +441,12 @@ public class TestConforming
         assertThatThrownBy(() -> resourceBuilder(resourceType).build())
                 .isInstanceOf(ValidatorException.class)
                 .hasMessageContaining("not a valid resource type");
+    }
+
+    private static void assertTypedFilterRejected(Class<?> serviceType, String message)
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(serviceType).build().modelServices();
+        assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).anyMatch(error -> error.contains(message));
     }
 
     @Test
@@ -478,6 +530,140 @@ public class TestConforming
     {
         @ApiList(description = "poly json node filter")
         public List<PolyResourceWithJsonNodeField> list(@ApiParameter ApiFilter json)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "typed filter service", description = "typed filters")
+    public static class ServiceWithTypedApiFilters
+    {
+        @ApiGet(description = "typed filters")
+        public Thing get(
+                @ApiParameter ThingId thingId,
+                @ApiParameter TypedApiFilter<Boolean> booleanFilter)
+        {
+            return null;
+        }
+
+        @ApiList(description = "typed filters")
+        public List<Thing> list(
+                @ApiParameter TypedApiFilter<Boolean> booleanFilter,
+                @ApiParameter TypedApiFilter<Integer> integerFilter,
+                @ApiParameter TypedApiFilter<Long> longFilter,
+                @ApiParameter TypedApiFilter<Double> doubleFilter,
+                @ApiParameter TypedApiFilter<String> stringFilter,
+                @ApiParameter TypedApiFilter<Instant> instantFilter,
+                @ApiParameter TypedApiFilter<UUID> uuidFilter,
+                @ApiParameter TypedApiFilter<PascalCaseEnum> enumFilter,
+                @ApiParameter TypedApiFilterList<Boolean> booleanFilters,
+                @ApiParameter TypedApiFilterList<Integer> integerFilters,
+                @ApiParameter TypedApiFilterList<Long> longFilters,
+                @ApiParameter TypedApiFilterList<Double> doubleFilters,
+                @ApiParameter TypedApiFilterList<String> stringFilters,
+                @ApiParameter TypedApiFilterList<Instant> instantFilters,
+                @ApiParameter TypedApiFilterList<UUID> uuidFilters,
+                @ApiParameter TypedApiFilterList<PascalCaseEnum> enumFilters)
+        {
+            return null;
+        }
+
+        @ApiUpdate(description = "typed filters")
+        public Thing update(
+                @ApiParameter ThingId thingId,
+                @ApiParameter TypedApiFilter<Integer> integerFilter,
+                Thing thing)
+        {
+            return null;
+        }
+
+        @ApiDelete(description = "typed filters")
+        public Thing delete(
+                @ApiParameter ThingId thingId,
+                @ApiParameter TypedApiFilterList<String> stringFilters)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "raw typed filter service", description = "raw typed filters")
+    public static class ServiceWithRawTypedApiFilter
+    {
+        @SuppressWarnings("rawtypes")
+        @ApiList(description = "raw typed filters")
+        public List<Thing> list(@ApiParameter TypedApiFilter rawFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "raw typed filter list service", description = "raw typed filter lists")
+    public static class ServiceWithRawTypedApiFilterList
+    {
+        @SuppressWarnings("rawtypes")
+        @ApiList(description = "raw typed filter lists")
+        public List<Thing> list(@ApiParameter TypedApiFilterList rawFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "wildcard typed filter service", description = "wildcard typed filters")
+    public static class ServiceWithWildcardTypedApiFilter
+    {
+        @ApiList(description = "wildcard typed filters")
+        public List<Thing> list(@ApiParameter TypedApiFilter<? extends String> wildcardFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "type variable typed filter service", description = "type variable typed filters")
+    public static class ServiceWithTypeVariableTypedApiFilter
+    {
+        @ApiList(description = "type variable typed filters")
+        public <T> List<Thing> list(@ApiParameter TypedApiFilter<T> typeVariableFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "big decimal typed filter service", description = "big decimal typed filters")
+    public static class ServiceWithBigDecimalTypedApiFilter
+    {
+        @ApiList(description = "big decimal typed filters")
+        public List<Thing> list(@ApiParameter TypedApiFilter<BigDecimal> unsupportedFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "collection typed filter service", description = "collection typed filters")
+    public static class ServiceWithCollectionTypedApiFilter
+    {
+        @SuppressWarnings("rawtypes")
+        @ApiList(description = "collection typed filters")
+        public List<Thing> list(@ApiParameter TypedApiFilter<List> unsupportedFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "resource typed filter service", description = "resource typed filters")
+    public static class ServiceWithResourceTypedApiFilter
+    {
+        @ApiList(description = "resource typed filters")
+        public List<Thing> list(@ApiParameter TypedApiFilter<Thing> unsupportedFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "non concrete enum typed filter service", description = "non concrete enum typed filters")
+    public static class ServiceWithNonConcreteEnumTypedApiFilter
+    {
+        @ApiList(description = "non concrete enum typed filters")
+        public List<Thing> list(@ApiParameter TypedApiFilter<Enum> enumFilter)
         {
             return null;
         }

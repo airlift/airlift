@@ -4,6 +4,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiFilter;
 import io.airlift.api.ApiFilterList;
 import io.airlift.api.ApiHeader;
@@ -17,6 +18,8 @@ import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResponse;
 import io.airlift.api.ApiValidateOnly;
+import io.airlift.api.TypedApiFilter;
+import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelServiceMetadata;
@@ -27,11 +30,13 @@ import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -40,6 +45,7 @@ import static io.airlift.api.ApiOrderBy.ORDER_BY_PARAMETER_NAME;
 import static io.airlift.api.ApiPagination.PAGE_SIZE_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiPagination.PAGE_TOKEN_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiValidateOnly.VALIDATE_ONLY_PARAMETER_NAME;
+import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static java.util.Objects.requireNonNull;
 
@@ -221,6 +227,100 @@ public interface Mappers
     static ApiFilterList buildFilterList(List<Object> values)
     {
         return new ApiFilterList(values);
+    }
+
+    static TypedApiFilter<?> buildTypedFilter(UriInfo uriInfo, String name, Class<?> type, ApiEnumValueResolver enumValueResolver)
+    {
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
+        Optional<?> value = Optional.ofNullable(uriInfo.getQueryParameters().getFirst(name))
+                .map(queryParameter -> parseTypedFilterValue(type, queryParameter, enumValueResolver));
+        return new TypedApiFilter<>(value);
+    }
+
+    static TypedApiFilterList<?> buildTypedFilterList(UriInfo uriInfo, String name, Class<?> type, ApiEnumValueResolver enumValueResolver)
+    {
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
+        List<String> strings = uriInfo.getQueryParameters().get(name);
+        if (strings == null) {
+            return new TypedApiFilterList<>(ImmutableList.of());
+        }
+        return new TypedApiFilterList<>(strings.stream()
+                .map(value -> parseTypedFilterValue(type, value, enumValueResolver))
+                .collect(toImmutableList()));
+    }
+
+    static Class<?> typedFilterValueType(Type type)
+    {
+        Type valueType = extractGenericParameter(type, 0);
+        if (!(valueType instanceof Class<?> valueClass)) {
+            throw new ValidatorException("Typed API filter type parameter must be a concrete class: %s".formatted(valueType));
+        }
+        if (!isSupportedTypedFilterValueType(valueClass)) {
+            throw new ValidatorException(
+                    "Typed API filter type parameter must be Boolean, Integer, Long, Double, String, Instant, UUID, or a concrete enum: %s"
+                            .formatted(valueClass.getTypeName()));
+        }
+        return valueClass;
+    }
+
+    static boolean isSupportedTypedFilterValueType(Class<?> type)
+    {
+        return type.equals(Boolean.class) ||
+                type.equals(Integer.class) ||
+                type.equals(Long.class) ||
+                type.equals(Double.class) ||
+                type.equals(String.class) ||
+                type.equals(Instant.class) ||
+                type.equals(UUID.class) ||
+                type.isEnum();
+    }
+
+    private static Object parseTypedFilterValue(Class<?> type, String value, ApiEnumValueResolver enumValueResolver)
+    {
+        try {
+            if (type.equals(Boolean.class)) {
+                if (value.equalsIgnoreCase("true")) {
+                    return true;
+                }
+                if (value.equalsIgnoreCase("false")) {
+                    return false;
+                }
+                throw new IllegalArgumentException();
+            }
+            if (type.equals(Integer.class)) {
+                return Integer.valueOf(value);
+            }
+            if (type.equals(Long.class)) {
+                return Long.valueOf(value);
+            }
+            if (type.equals(Double.class)) {
+                double result = Double.parseDouble(value);
+                if (!Double.isFinite(result)) {
+                    throw new IllegalArgumentException();
+                }
+                return result;
+            }
+            if (type.equals(String.class)) {
+                return value;
+            }
+            if (type.equals(Instant.class)) {
+                return Instant.parse(value);
+            }
+            if (type.equals(UUID.class)) {
+                return UUID.fromString(value);
+            }
+            if (type.isEnum()) {
+                for (Object enumConstant : type.getEnumConstants()) {
+                    if (enumValueResolver.value((Enum<?>) enumConstant).equals(value)) {
+                        return enumConstant;
+                    }
+                }
+            }
+        }
+        catch (RuntimeException _) {
+            throw badRequest("Invalid filter: " + value);
+        }
+        throw badRequest("Invalid filter: " + value);
     }
 
     static ApiOrderBy buildOrderBy(UriInfo uriInfo)
