@@ -24,6 +24,7 @@ import static io.airlift.api.ApiOrderByDirection.ASCENDING;
 import static io.airlift.api.ApiOrderByDirection.DESCENDING;
 import static io.airlift.api.ApiPaginatedResult.EMPTY_PAGE_TOKEN;
 import static java.util.Comparator.comparing;
+import static java.util.Comparator.comparingInt;
 import static java.util.Objects.requireNonNull;
 
 public class InternalController
@@ -45,7 +46,7 @@ public class InternalController
 
         Comparator<InternalWidget> sortComparator = switch (ordering.field().toLowerCase(Locale.ROOT)) {
             case "name" -> comparing(InternalWidget::name).thenComparing(idComparator);
-            case "size" -> comparing(InternalWidget::size).thenComparing(idComparator);
+            case "size" -> comparingInt(InternalWidget::size).thenComparing(idComparator);
             default -> idComparator;
         };
         if (ordering.direction() == DESCENDING) {
