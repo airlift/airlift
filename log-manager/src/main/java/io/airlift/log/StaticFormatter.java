@@ -83,7 +83,7 @@ class StaticFormatter
         ZonedDateTime timestamp = ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getMillis()), SYSTEM_ZONE);
         Level level = Level.fromJulLevel(record.getLevel());
 
-        StringWriter stringWriter = new StringWriter()
+        StringBuilder builder = new StringBuilder(256)
                 .append(colors.colored(TIMESTAMP_FORMATTER.format(timestamp), BRIGHT_BLACK))
                 .append('\t')
                 .append(colors.colored(level.name(), level))
@@ -93,24 +93,26 @@ class StaticFormatter
                 .append(colors.colored(record.getLoggerName(), PURPLE));
 
         if (!annotations.isEmpty()) {
-            stringWriter.append('\t')
+            builder.append('\t')
                     .append(colors.colored(annotations, level));
         }
 
-        stringWriter.append('\t')
+        builder.append('\t')
                 .append(colors.colored(record.getMessage(), WHITE));
 
         if (record.getParameters() != null && record.getParameters().length != 0) {
-            stringWriter.append(" parameters=").append(deepToString(record.getParameters()));
+            builder.append(" parameters=").append(deepToString(record.getParameters()));
         }
 
         if (record.getThrown() != null) {
-            stringWriter.append('\n');
-            record.getThrown().printStackTrace(coloredWriter(new PrintWriter(stringWriter), GREEN));
-            stringWriter.append('\n');
+            StringWriter stackTrace = new StringWriter();
+            record.getThrown().printStackTrace(coloredWriter(new PrintWriter(stackTrace), GREEN));
+            builder.append('\n');
+            builder.append(stackTrace.getBuffer());
+            builder.append('\n');
         }
 
-        stringWriter.append('\n');
-        return stringWriter.toString();
+        builder.append('\n');
+        return builder.toString();
     }
 }
