@@ -241,11 +241,11 @@ The framework handles:
 @ApiList(description = "...")
 public ApiPaginatedResult<Role> listRoles(
         @ApiParameter ApiPagination pagination,
-        @ApiParameter ApiFilter nameFilter,
-        @ApiParameter ApiFilter createdAfter,
+        @ApiParameter ApiFilter<String> nameFilter,
+        @ApiParameter ApiFilter<Instant> createdAfter,
         @ApiParameter ApiOrderBy orderBy)
 {
-    return roleApi.list(nameFilter, createdAfter.map(Instant::new), orderBy);
+    return roleApi.list(nameFilter.value(), createdAfter.value(), orderBy);
 }
 ```
 

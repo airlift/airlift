@@ -2,21 +2,71 @@
 
 # API Builder: Filtering
 
-An `ApiFilter`/`ApiFilterList` parameter is used to receive each filter request. It contains the value specified
-for the filter. The parameter name is used for the filter name (and should signal to users what field is being filtered on).
-
-E.g.
+Use `ApiFilter<T>` for a single filter value and `ApiFilterList<T>` for multiple values.
+The Java parameter name defines the query parameter name.
 
 ```java
-@ApiGet(...)
-public MyResource myFilteredGet(@ApiParameter ApiFilter name, @ApiParameter ApiFilter group)
+@ApiList(description = "List resources")
+public List<MyResource> list(
+        @ApiParameter ApiFilter<String> name,
+        @ApiParameter ApiFilter<Instant> createdAfter,
+        @ApiParameter ApiFilterList<Integer> group)
 {
-    ...
+    return controller.list(name.value(), createdAfter.value(), group.values());
 }
 ```
 
-Filtering supports single values or multiple values. For multiple values, multiple query parameters
-with the filter name will be made into a list. Use `ApiFilterList` as the parameter.
+`ApiFilter<T>.value()` returns `Optional<T>`. A missing query parameter produces `Optional.empty()`.
+If the query parameter occurs more than once, request validation returns HTTP 400.
+Use `ApiFilterList<T>` to accept multiple values.
 
-A single-value `ApiFilter` parameter must occur at most once. Request validation returns HTTP 400
-if it occurs more than once. Use `ApiFilterList` to accept repeated values.
+`ApiFilterList<T>.values()` returns an immutable `List<T>`. A missing query parameter produces an empty list.
+Repeat the query parameter to provide multiple values. For example, `?group=1&group=2` produces
+`List.of(1, 2)`. Values keep their query order. Commas do not split values.
+
+Use `@ApiParameter(allowedValues = {"Active"})` to restrict string filter values.
+Request validation matches the query strings exactly, including case. Every list value must be allowed.
+Missing filters remain optional. An empty `allowedValues` array adds no value restriction.
+
+The supported type arguments are `Boolean`, `Integer`, `Long`, `Double`, `String`, `Instant`, `UUID`,
+and concrete enums. Binding converts each query value before the API method runs. Invalid values return
+HTTP 400. Boolean values must be `true` or `false`, ignoring case. Double values must be finite.
+
+`Instant` filter values must be ISO-8601 strings accepted by `Instant.parse`, such as
+`2026-06-10T12:13:14Z`. OpenAPI describes `ApiFilter<Instant>` as `type: string` with
+`format: date-time`. For `ApiFilterList<Instant>`, each array item has this schema.
+For the `createdAfter` parameter above, a valid query is `?createdAfter=2026-06-10T12:13:14Z`.
+
+Use an enum to define the filter values:
+
+```java
+public enum Status
+{
+    Active,
+    Inactive,
+}
+
+@ApiList(description = "List resources by status")
+public List<MyResource> listByStatus(@ApiParameter ApiFilterList<Status> status)
+{
+    return controller.listByStatus(status.values());
+}
+```
+
+Both `ApiFilter<Status>` and `ApiFilterList<Status>` use the configured `ApiEnumValueResolver`
+to match query values to enum constants. OpenAPI describes filter values and list items using `T`.
+Enum values also use the configured resolver.
+
+Enum filters derive their allowed values from the enum type. Startup validation rejects a nonempty
+`@ApiParameter.allowedValues` for `ApiFilter<E>` and `ApiFilterList<E>` when `E` is an enum.
+
+When building the API model, resolved enum wire values must satisfy the service's
+`enumNamingFormat()`, just as enums in body resources do. The default resolver also rejects invalid
+`@JsonValue` definitions and duplicate wire values. These checks run even when OpenAPI is disabled
+or `ENUMS_AS_STRINGS` is enabled. Requests must match the resolved wire values exactly.
+The naming format validates values; it does not convert their case.
+
+Raw `ApiFilter` and `ApiFilterList` declarations, and declarations with `<Object>`, retain string binding
+for compatibility. The `map` method and the `mapAsString`, `mapAsInt`, `mapAsDouble`, `mapAsInstant`,
+and `mapAsBoolean` helpers remain available. Use supported concrete types for automatic conversion.
+Other type arguments, wildcards, and type variables are rejected when the API model is built.
