@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -432,11 +433,14 @@ class OpenApiBuilder
             Parameter parameter = (optionalParameter.location() == ModelOptionalParameter.Location.QUERY) ? new QueryParameter() : new HeaderParameter();
             Optional<Schema<?>> schema;
             if (externalParameter.externalType().isArray()) {
-                schema = schemaBuilder.buildBasicSchema(externalParameter.externalType().getComponentType()).map(s -> new ArraySchema().items(s));
+                schema = schemaBuilder.buildBasicSchema(externalParameter.externalType().getComponentType())
+                        .map(withEnumValues(optionalParameter.limitedValues()))
+                        .map(new ArraySchema()::items);
                 parameter.setExplode(true);
             }
             else {
-                schema = schemaBuilder.buildBasicSchema(externalParameter.externalType());
+                schema = schemaBuilder.buildBasicSchema(externalParameter.externalType())
+                        .map(withEnumValues(optionalParameter.limitedValues()));
             }
             if (schema.isEmpty()) {
                 throw new RuntimeException("Unsupported external type: " + externalParameter.externalType());
@@ -444,6 +448,16 @@ class OpenApiBuilder
             parameter.name(externalParameter.name()).description(externalParameter.description()).schema(schema.orElseThrow()).required(false);
             return parameter;
         });
+    }
+
+    private static Function<Schema<?>, Schema<?>> withEnumValues(Set<String> limitedValues)
+    {
+        return schema -> {
+            if (!limitedValues.isEmpty() && schema instanceof StringSchema stringSchema) {
+                limitedValues.forEach(stringSchema::addEnumItem);
+            }
+            return schema;
+        };
     }
 
     private Optional<Map.Entry<String, SecurityScheme>> buildSecurity()
