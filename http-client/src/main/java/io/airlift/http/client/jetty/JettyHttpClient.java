@@ -968,6 +968,10 @@ public class JettyHttpClient
     @SuppressWarnings("DataFlowIssue")
     private Request injectTracing(Request request, Span span)
     {
+        // a propagator that injects no headers (e.g. noop telemetry) does not need the request rebuilt
+        if (propagator.fields().isEmpty()) {
+            return request;
+        }
         Context context = Context.current().with(span);
         Request.Builder builder = Request.Builder.fromRequest(request);
         propagator.inject(context, builder, (carrier, headerName, value) -> carrier.addHeader(HeaderName.of(headerName), value));
