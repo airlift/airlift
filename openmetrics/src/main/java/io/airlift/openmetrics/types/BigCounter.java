@@ -15,9 +15,13 @@ package io.airlift.openmetrics.types;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.math.BigInteger;
 import java.util.Map;
 
+import static io.airlift.openmetrics.MetricsUtils.writeSingleMetricDescriptor;
+import static io.airlift.openmetrics.MetricsUtils.writeSingleValuedMetric;
 import static java.util.Objects.requireNonNull;
 
 public record BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
@@ -31,14 +35,16 @@ public record BigCounter(String metricName, BigInteger value, Map<String, String
     }
 
     @Override
-    public String getMetricExposition()
+    public void writeMetricExposition(Writer writer)
+            throws IOException
     {
-        return Metric.formatSingleValuedMetric(metricName, labels, value.toString());
+        writeSingleValuedMetric(writer, metricName, labels, value.toString());
     }
 
     @Override
-    public String getMetricDescriptor()
+    public void writeMetricDescriptor(Writer writer)
+            throws IOException
     {
-        return Metric.formatMetricDescriptor(metricName, "counter", help);
+        writeSingleMetricDescriptor(writer, metricName, "counter", help);
     }
 }

@@ -15,8 +15,12 @@ package io.airlift.openmetrics.types;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.Map;
 
+import static io.airlift.openmetrics.MetricsUtils.writeSingleMetricDescriptor;
+import static io.airlift.openmetrics.MetricsUtils.writeSingleValuedMetric;
 import static java.util.Objects.requireNonNull;
 
 public record Info(String metricName, String value, Map<String, String> labels, String help)
@@ -30,14 +34,16 @@ public record Info(String metricName, String value, Map<String, String> labels, 
     }
 
     @Override
-    public String getMetricExposition()
+    public void writeMetricExposition(Writer writer)
+            throws IOException
     {
-        return Metric.formatSingleValuedMetric(metricName, labels, value);
+        writeSingleValuedMetric(writer, metricName, labels, value);
     }
 
     @Override
-    public String getMetricDescriptor()
+    public void writeMetricDescriptor(Writer writer)
+            throws IOException
     {
-        return Metric.formatMetricDescriptor(metricName, "info", help);
+        writeSingleMetricDescriptor(writer, metricName, "info", help);
     }
 }

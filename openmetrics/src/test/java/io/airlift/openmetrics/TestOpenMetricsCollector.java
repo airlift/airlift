@@ -26,11 +26,17 @@ import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.node.NodeConfig.AddressSource.IP;
+import static io.airlift.openmetrics.MetricsUtils.renderMetricsExpositions;
+import static io.airlift.openmetrics.MetricsUtils.writeMetricsExpositions;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -135,11 +141,11 @@ public class TestOpenMetricsCollector
         OpenMetricsCollector collector = createTestingCollector();
         MetricsResource resource = new MetricsResource(collector);
 
-        StringBuilder expected = new StringBuilder();
-        MetricsResource.metricExpositions(expected, collector.collect());
-        expected.append("# EOF\n");
+        StringWriter writer = new StringWriter();
+        writeMetricsExpositions(writer, collector.collect());
+        writer.append("# EOF\n");
 
-        assertThat(resource.getMetrics(ImmutableList.of())).isEqualTo(expected.toString());
+        assertThat(getMetrics(resource, ImmutableList.of())).isEqualTo(writer.toString());
     }
 
     @Test
@@ -158,21 +164,21 @@ public class TestOpenMetricsCollector
         assertThat(collector.collect(ImmutableList.of(managedMetricName)))
                 .extracting(Metric::metricName)
                 .containsExactly(managedMetricName);
-        assertThat(resource.getMetrics(ImmutableList.of(managedMetricName)))
-                .isEqualTo(renderWithEof(collector.collect(ImmutableList.of(managedMetricName))));
+        assertThat(getMetrics(resource, ImmutableList.of(managedMetricName)))
+                .isEqualTo(renderMetricsExpositions(collector.collect(ImmutableList.of(managedMetricName)), true));
 
         Metric filteredJmxMetric = collector.findMetric(jmxMetricName).orElseThrow();
         assertThat(filteredJmxMetric.metricName()).isEqualTo("io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Count");
-        assertThat(resource.getMetrics(ImmutableList.of(jmxMetricName)))
-                .isEqualTo(renderWithEof(collector.collect(ImmutableList.of(jmxMetricName))));
+        assertThat(getMetrics(resource, ImmutableList.of(jmxMetricName)))
+                .isEqualTo(renderMetricsExpositions(collector.collect(ImmutableList.of(jmxMetricName)), true));
     }
 
-    private static String renderWithEof(List<Metric> metrics)
+    private static String getMetrics(MetricsResource resource, List<String> filter)
+            throws IOException
     {
-        StringBuilder builder = new StringBuilder();
-        MetricsResource.metricExpositions(builder, metrics);
-        builder.append("# EOF\n");
-        return builder.toString();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        resource.getMetrics(filter).write(output);
+        return output.toString(UTF_8);
     }
 
     private static OpenMetricsCollector createTestingCollector()

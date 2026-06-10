@@ -23,6 +23,7 @@ import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,14 +83,14 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
     }
 
     @Override
-    public String getMetricExposition()
+    public void writeMetricExposition(Writer writer)
     {
-        throw new UnsupportedOperationException("CompositeMetric container does not support metric exposition, use getMetricExposition on subMetrics instead");
+        throw new UnsupportedOperationException("CompositeMetric container does not support metric exposition, use writeMetricExposition on subMetrics instead");
     }
 
     @Override
-    public String getMetricDescriptor()
+    public void writeMetricDescriptor(Writer writer)
     {
-        throw new UnsupportedOperationException("CompositeMetric container does not support metric descriptor, use getMetricDescriptor on subMetrics instead");
+        throw new UnsupportedOperationException("CompositeMetric container does not support metric descriptor, use writeMetricDescription on subMetrics instead");
     }
 }

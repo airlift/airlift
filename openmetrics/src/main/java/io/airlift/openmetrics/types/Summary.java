@@ -17,8 +17,12 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.TimeDistribution;
 import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.Map;
 
+import static io.airlift.openmetrics.MetricsUtils.renderLabels;
+import static io.airlift.openmetrics.MetricsUtils.writeSingleMetricDescriptor;
 import static java.util.Objects.requireNonNull;
 
 public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
@@ -52,51 +56,59 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     }
 
     @Override
-    public String getMetricExposition()
+    public void writeMetricExposition(Writer writer)
+            throws IOException
     {
-        StringBuilder stringBuilder = new StringBuilder();
+        String renderedLabels = renderLabels(labels);
+
         if (count != null) {
-            stringBuilder
-                    .append(Metric.formatNameWithLabels(metricName + "_count", labels))
-                    .append(' ')
-                    .append(count)
-                    .append('\n');
+            writeValue(writer, "_count", renderedLabels, count.toString());
         }
 
         if (sum != null) {
-            stringBuilder
-                    .append(Metric.formatNameWithLabels(metricName + "_sum", labels))
-                    .append(' ')
-                    .append(sum)
-                    .append('\n');
+            writeValue(writer, "_sum", renderedLabels, sum.toString());
         }
 
         if (created != null) {
-            stringBuilder
-                    .append(Metric.formatNameWithLabels(metricName + "_created", labels))
-                    .append(' ')
-                    .append(created)
-                    .append('\n');
+            writeValue(writer, "_created", renderedLabels, created.toString());
         }
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
-                Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels)
-                        .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
-                stringBuilder
-                        .append(Metric.formatNameWithLabels(metricName, quantileLabels))
-                        .append(' ')
-                        .append(quantile.getValue())
-                        .append('\n');
+                writer.write(metricName);
+                if (renderedLabels.isEmpty()) {
+                    writer.write("{quantile=\"");
+                }
+                else {
+                    // splice the quantile label into the rendered labels, before the closing brace
+                    writer.write(renderedLabels, 0, renderedLabels.length() - 1);
+                    writer.write(",quantile=\"");
+                }
+                writer.write(quantile.getKey().toString());
+                writer.write("\"} ");
+                writer.write(quantile.getValue().toString());
+                writer.write('\n');
             }
         }
+    }
 
-        return stringBuilder.toString();
+    private void writeValue(Writer writer, String suffix, String renderedLabels, String value)
+            throws IOException
+    {
+        writer.write(metricName);
+        writer.write(suffix);
+        if (!renderedLabels.isEmpty()) {
+            writer.write(renderedLabels);
+        }
+        writer.write(' ');
+        writer.write(value);
+        writer.write('\n');
     }
 
     @Override
-    public String getMetricDescriptor()
+    public void writeMetricDescriptor(Writer writer)
+            throws IOException
     {
-        return Metric.formatMetricDescriptor(metricName, "summary", help);
+        writeSingleMetricDescriptor(writer, metricName, "summary", help);
     }
 }

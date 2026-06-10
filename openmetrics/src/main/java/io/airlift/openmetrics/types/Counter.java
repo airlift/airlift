@@ -16,8 +16,12 @@ package io.airlift.openmetrics.types;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.CounterStat;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.Map;
 
+import static io.airlift.openmetrics.MetricsUtils.writeSingleMetricDescriptor;
+import static io.airlift.openmetrics.MetricsUtils.writeSingleValuedMetric;
 import static java.util.Objects.requireNonNull;
 
 public record Counter(String metricName, long value, Map<String, String> labels, String help)
@@ -35,14 +39,16 @@ public record Counter(String metricName, long value, Map<String, String> labels,
     }
 
     @Override
-    public String getMetricExposition()
+    public void writeMetricExposition(Writer writer)
+            throws IOException
     {
-        return Metric.formatSingleValuedMetric(metricName, labels, Long.toString(value));
+        writeSingleValuedMetric(writer, metricName, labels, Long.toString(value));
     }
 
     @Override
-    public String getMetricDescriptor()
+    public void writeMetricDescriptor(Writer writer)
+            throws IOException
     {
-        return Metric.formatMetricDescriptor(metricName, "counter", help);
+        writeSingleMetricDescriptor(writer, metricName, "counter", help);
     }
 }
