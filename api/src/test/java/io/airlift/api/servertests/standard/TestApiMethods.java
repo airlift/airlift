@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -35,6 +34,7 @@ import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerat
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -93,7 +93,7 @@ public class TestApiMethods
         Request request = preparePut()
                 .setUri(uri)
                 .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .setBodyGenerator(createStaticBodyGenerator(invalidJson.getBytes()))
+                .setBodyGenerator(createStaticBodyGenerator(invalidJson.getBytes(UTF_8)))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(400);
@@ -118,7 +118,7 @@ public class TestApiMethods
         Request request = preparePut()
                 .setUri(uri)
                 .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes()))
+                .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes(UTF_8)))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(400);
@@ -143,7 +143,7 @@ public class TestApiMethods
         Request request = preparePut()
                 .setUri(uri)
                 .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes()))
+                .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes(UTF_8)))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(400);
@@ -313,7 +313,7 @@ public class TestApiMethods
         Request request = preparePost()
                 .setUri(uri)
                 .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .setBodyGenerator(createStaticBodyGenerator(badJson, StandardCharsets.UTF_8))
+                .setBodyGenerator(createStaticBodyGenerator(badJson, UTF_8))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(BAD_REQUEST.code());

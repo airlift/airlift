@@ -799,7 +799,7 @@ public abstract class AbstractHttpClientTest
     public void testConnectReadRequestWriteJunkHangup()
             throws Exception
     {
-        try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 10, "THIS\nIS\nJUNK\n\n".getBytes(), false)) {
+        try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 10, "THIS\nIS\nJUNK\n\n".getBytes(UTF_8), false)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));

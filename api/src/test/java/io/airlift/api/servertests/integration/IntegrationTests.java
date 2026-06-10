@@ -245,7 +245,7 @@ public class IntegrationTests
             Request request = prepareGet().setUri(uri).build();
             try (StreamingResponse streamingResponse = httpClient.executeStreaming(request)) {
                 assertThat(streamingResponse.getStatusCode()).isEqualTo(200);
-                String text = new String(streamingResponse.getInputStream().readAllBytes());
+                String text = new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
                 assertThat(text).isEqualTo("This is a test");
             }
         }
