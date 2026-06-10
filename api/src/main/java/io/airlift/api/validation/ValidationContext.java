@@ -4,6 +4,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.reflect.TypeToken;
+import com.google.errorprone.annotations.FormatMethod;
 import io.airlift.api.ApiEnumId;
 import io.airlift.api.ApiEnumNamingFormat;
 import io.airlift.api.ApiId;
@@ -149,6 +150,7 @@ public class ValidationContext
                 .collect(toImmutableSet());
     }
 
+    @FormatMethod
     public void error(String message, Object... args)
     {
         String formattedMessage = message.formatted(args);
@@ -323,12 +325,12 @@ public class ValidationContext
         }
         catch (Throwable t) {
             switch (getRootCause(t)) {
-                case ValidatorException e -> e.messages().forEach(subValidationContext::error);
+                case ValidatorException e -> e.messages().forEach(message -> subValidationContext.error("%s", message));
                 case InterruptedException _ -> {
                     Thread.currentThread().interrupt();
                     subValidationContext.error("Interrupted:");
                 }
-                default -> subValidationContext.error(t.getMessage() + "\n" + getStackTraceAsString(t));
+                default -> subValidationContext.error("%s", t.getMessage() + "\n" + getStackTraceAsString(t));
             }
         }
 

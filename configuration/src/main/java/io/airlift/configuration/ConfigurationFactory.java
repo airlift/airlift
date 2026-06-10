@@ -403,7 +403,7 @@ public class ConfigurationFactory
                 setConfigProperty(instance, attribute, prefix, attributeProblems);
             }
             catch (InvalidConfigurationException e) {
-                attributeProblems.addError(e.getCause(), e.getMessage());
+                attributeProblems.addError(e.getCause(), "%s", e.getMessage());
             }
             problems.record(attributeProblems);
         }
@@ -494,7 +494,7 @@ public class ConfigurationFactory
         }
 
         if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-            problems.addWarning(describeDeprecation(prefix, injectionPoint));
+            problems.addWarning("%s", describeDeprecation(prefix, injectionPoint));
         }
 
         Object value = getInjectedValue(attribute, injectionPoint, prefix);
@@ -547,7 +547,7 @@ public class ConfigurationFactory
                 if (attribute.getInjectionPoint() != null) {
                     replacement = "replaced. Use '%s' instead.".formatted(prefix + attribute.getInjectionPoint().getProperty());
                 }
-                problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
+                problems.addWarning("Configuration property '%s' has been %s", fullName, replacement);
 
                 if (operativeValue == null) {
                     operativeInjectionPoint = injectionPoint;

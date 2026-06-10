@@ -16,6 +16,7 @@
 package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.FormatMethod;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 
@@ -51,12 +52,14 @@ class Problems
         warnings.addAll(problems.warnings);
     }
 
+    @FormatMethod
     public void addError(String format, Object... params)
     {
         Message message = new Message(format(format, params));
         errors.add(message);
     }
 
+    @FormatMethod
     public void addError(Throwable e, String format, Object... params)
     {
         Message message = new Message(List.of(), format(format, params), e);
@@ -68,6 +71,7 @@ class Problems
         return ImmutableList.copyOf(warnings);
     }
 
+    @FormatMethod
     public void addWarning(String format, Object... params)
     {
         Message message = new Message(format(format, params));
@@ -98,6 +102,7 @@ class Problems
         return new ConfigurationException(messages);
     }
 
+    @FormatMethod
     public static ConfigurationException exceptionFor(String format, Object... params)
     {
         Problems problems = new Problems();
@@ -105,6 +110,7 @@ class Problems
         return problems.getException();
     }
 
+    @FormatMethod
     public static ConfigurationException exceptionFor(Throwable e, String format, Object... params)
     {
         Problems problems = new Problems();
@@ -112,6 +118,7 @@ class Problems
         return problems.getException();
     }
 
+    @FormatMethod
     private static String format(String format, Object... params)
     {
         if (format == null || params.length == 0) {
