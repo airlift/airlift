@@ -36,6 +36,7 @@ public class BoundedExecutor
     private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
     private final AtomicBoolean failed = new AtomicBoolean();
+    private final Runnable drainQueueTask = this::drainQueue;
 
     private final Executor coreExecutor;
     private final int maxThreads;
@@ -61,7 +62,7 @@ public class BoundedExecutor
         if (size <= maxThreads) {
             // If able to grab a permit, then we are short exactly one draining thread
             try {
-                coreExecutor.execute(this::drainQueue);
+                coreExecutor.execute(drainQueueTask);
             }
             catch (Throwable e) {
                 failed.set(true);
