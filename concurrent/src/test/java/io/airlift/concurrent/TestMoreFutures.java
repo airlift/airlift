@@ -812,7 +812,7 @@ public class TestMoreFutures
         return e -> {
             assertThat(e).as("exception is null").isNotNull();
             if (!expectedClass.isInstance(e) || !nullToEmpty(e.getMessage()).matches(expectedMessagePattern)) {
-                fail("Expected %s with message '%s', got: %s".formatted(expectedClass, expectedMessagePattern), e);
+                fail("Expected %s with message '%s', got: %s".formatted(expectedClass, expectedMessagePattern, e), e);
             }
             causeVerifier.accept(e.getCause());
         };
