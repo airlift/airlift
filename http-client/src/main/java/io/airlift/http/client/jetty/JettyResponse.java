@@ -1,5 +1,7 @@
 package io.airlift.http.client.jetty;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import io.airlift.http.client.HeaderName;
@@ -20,7 +22,7 @@ class JettyResponse
     private final Content content;
     private final InputStream inputStream;
     private final LongSupplier bytesRead;
-    private final ListMultimap<HeaderName, String> headers;
+    private final Supplier<ListMultimap<HeaderName, String>> headers;
 
     public JettyResponse(Response response, byte[] content)
     {
@@ -28,7 +30,7 @@ class JettyResponse
         this.content = new BytesContent(content);
         this.inputStream = new ByteArrayInputStream(content);
         this.bytesRead = () -> content.length;
-        this.headers = toHeadersMap(response.getHeaders());
+        this.headers = Suppliers.memoize(() -> toHeadersMap(response.getHeaders()));
     }
 
     public JettyResponse(Response response, InputStream inputStream)
@@ -38,7 +40,7 @@ class JettyResponse
         this.content = new InputStreamContent(countingInputStream);
         this.inputStream = countingInputStream;
         this.bytesRead = countingInputStream::getCount;
-        this.headers = toHeadersMap(response.getHeaders());
+        this.headers = Suppliers.memoize(() -> toHeadersMap(response.getHeaders()));
     }
 
     @Override
@@ -60,7 +62,7 @@ class JettyResponse
     @Override
     public ListMultimap<HeaderName, String> getHeaders()
     {
-        return headers;
+        return headers.get();
     }
 
     @Override
