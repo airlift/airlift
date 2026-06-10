@@ -36,7 +36,7 @@ class StaticFormatter
         extends Formatter
 {
     private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault().normalized();
-    private final Map<String, String> logAnnotations;
+    private final String annotations;
     private final TerminalColors colors;
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = new DateTimeFormatterBuilder()
@@ -64,7 +64,9 @@ class StaticFormatter
 
     public StaticFormatter(Map<String, String> logAnnotations, boolean interactive)
     {
-        this.logAnnotations = ImmutableMap.copyOf(requireNonNull(logAnnotations, "logAnnotations is null"));
+        requireNonNull(logAnnotations, "logAnnotations is null");
+        // annotations are fixed for the lifetime of the formatter, so join them once instead of on every record
+        this.annotations = Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations);
         this.colors = new TerminalColors(interactive);
     }
 
@@ -90,9 +92,9 @@ class StaticFormatter
                 .append('\t')
                 .append(colors.colored(record.getLoggerName(), PURPLE));
 
-        if (!logAnnotations.isEmpty()) {
+        if (!annotations.isEmpty()) {
             stringWriter.append('\t')
-                    .append(colors.colored(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations), level));
+                    .append(colors.colored(annotations, level));
         }
 
         stringWriter.append('\t')
