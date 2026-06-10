@@ -49,7 +49,7 @@ public class JaxrsStatusValidator
 
         if (modelMethod.responses().stream().noneMatch(modelResponse -> modelResponse.status().code() == statusCode)) {
             String message = "Request using non-specified status. Add the response to the \"responses\" attribute of the @ApiXXX annotation. URI: %s, HTTP Method: %s, Status type: %s".formatted(uri, httpMethod, statusCode);
-            log.warn(message, uri, httpMethod, statusCode);
+            log.warn("%s", message);
             if (mode == ApiMode.DEBUG) {
                 throw new IllegalArgumentException(message);
             }
