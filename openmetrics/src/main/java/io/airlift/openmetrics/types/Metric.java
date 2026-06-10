@@ -13,10 +13,8 @@
  */
 package io.airlift.openmetrics.types;
 
-import com.google.common.base.Strings;
-
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.io.IOException;
+import java.io.Writer;
 
 public sealed interface Metric
         permits BigCounter,
@@ -28,56 +26,28 @@ public sealed interface Metric
 {
     String metricName();
 
-    String getMetricExposition();
+    /**
+     * Writes this metric's sample lines in the OpenMetrics text exposition format,
+     * e.g. {@code name{label="value"} 42\n}. The type and help descriptor lines are
+     * not written here; they come from {@link #writeMetricDescriptor(Writer writer)} and are emitted
+     * once per metric family by the caller.
+     * <p>
+     * The output goes to the response stream verbatim — the caller performs no
+     * sanitization or validation. Since the format is line-oriented, implementations
+     * are responsible for keeping the stream well-formed: every sample line must end
+     * with exactly one {@code \n}, and no other line break may reach the writer.
+     * Free-form text such as label values must have {@code \\}, {@code "} and
+     * {@code \n} escaped per the OpenMetrics escaping rules (see {@link io.airlift.openmetrics.MetricsUtils#renderLabels}),
+     * and {@code \r} must never be written as it is not permitted by the format in any
+     * form, escaped or raw. A stray {@code \n} or {@code \r} corrupts not just this
+     * metric but the parse of every line that follows.
+     *
+     * @param writer destination for the exposition; buffered by the caller, so
+     *         implementations may issue many small writes
+     */
+    void writeMetricExposition(Writer writer)
+            throws IOException;
 
-    String getMetricDescriptor();
-
-    static String formatSingleValuedMetric(String name, Map<String, String> labels, String value)
-    {
-        return formatNameWithLabels(name, labels) + ' ' + value + '\n';
-    }
-
-    static String formatMetricDescriptor(String metricName, String type, String help)
-    {
-        StringBuilder output = new StringBuilder();
-        output.append("# TYPE ")
-                .append(metricName)
-                .append(' ')
-                .append(type)
-                .append('\n');
-        if (!Strings.isNullOrEmpty(help)) {
-            output.append("# HELP ")
-                    .append(metricName)
-                    .append(' ')
-                    .append(escape(help))
-                    .append('\n');
-        }
-        return output.toString();
-    }
-
-    static String formatNameWithLabels(String name, Map<String, String> labels)
-    {
-        if (labels.isEmpty()) {
-            return name;
-        }
-        return name + labels.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + "=\"" + escape(e.getValue()) + "\"")
-                .collect(Collectors.joining(",", "{", "}"));
-    }
-
-    private static String escape(String value)
-    {
-        StringBuilder builder = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            switch (c) {
-                case '\\' -> builder.append("\\\\");
-                case '\"' -> builder.append("\\\"");
-                case '\n' -> builder.append("\\n");
-                default -> builder.append(c);
-            }
-        }
-        return builder.toString();
-    }
+    void writeMetricDescriptor(Writer writer)
+            throws IOException;
 }

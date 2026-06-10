@@ -15,25 +15,23 @@ package io.airlift.openmetrics;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
-import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Metric;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.StreamingOutput;
 
-import java.util.LinkedHashMap;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.openmetrics.MetricsUtils.groupMetricFamilies;
+import static io.airlift.openmetrics.MetricsUtils.writeMetricFamilies;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 
 @Path("/metrics")
 public class MetricsResource
@@ -50,50 +48,22 @@ public class MetricsResource
 
     @GET
     @Produces(OPENMETRICS_CONTENT_TYPE)
-    public String getMetrics(@QueryParam("name[]") List<String> filter)
+    public StreamingOutput getMetrics(@QueryParam("name[]") List<String> filter)
     {
-        List<Metric> metrics = collector.collect(filter);
-        StringBuilder body = new StringBuilder();
-        metricExpositions(body, metrics);
-        body.append("# EOF\n");
-        return body.toString();
+        // collect, group, and validate eagerly so errors surface before the response is committed
+        Map<String, List<Metric>> metricFamilies = groupMetricFamilies(collector.collect(filter));
+        // metrics write directly to the response stream, so the exposition is never held in memory
+        return output -> {
+            Writer writer = new BufferedWriter(new OutputStreamWriter(output, UTF_8));
+            writeMetricFamilies(writer, metricFamilies);
+            writer.write("# EOF\n");
+            writer.flush();
+        };
     }
 
     @VisibleForTesting
     static String sanitizeMetricName(String name)
     {
         return OpenMetricsCollector.sanitizeMetricName(name);
-    }
-
-    /**
-     * Only include metric descriptor once per metric family per openmetrics spec:
-     * <a href="https://prometheus.io/docs/specs/om/open_metrics_spec_2_0/#abnf">...</a>
-     */
-    @VisibleForTesting
-    static void metricExpositions(StringBuilder builder, List<Metric> metrics)
-    {
-        // CompositeMetric should have at most one level of nesting, see CompositeMetric#from
-        List<Metric> flattenedMetrics = metrics.stream()
-                .flatMap(metric -> metric instanceof CompositeMetric compositeMetric ?
-                        compositeMetric.subMetrics().stream() :
-                        Stream.of(metric))
-                .collect(toImmutableList());
-        Map<String, List<Metric>> metricFamilies = flattenedMetrics.stream()
-                .collect(groupingBy(
-                        Metric::metricName,
-                        LinkedHashMap::new,
-                        toList()));
-
-        metricFamilies.forEach((metricName, metricFamily) -> {
-            Set<Class<?>> metricTypes = metricFamily.stream()
-                    .map(Metric::getClass)
-                    .collect(toImmutableSet());
-            checkState(metricTypes.size() == 1, "Metric family %s contains mixed metric types: %s", metricName, metricTypes);
-
-            builder.append(metricFamily.getFirst().getMetricDescriptor());
-            for (Metric metric : metricFamily) {
-                builder.append(metric.getMetricExposition());
-            }
-        });
     }
 }

@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
-import io.airlift.openmetrics.types.Metric;
 import org.junit.jupiter.api.Test;
 
 import javax.management.openmbean.CompositeData;
@@ -15,10 +14,10 @@ import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static io.airlift.openmetrics.MetricsResource.sanitizeMetricName;
+import static io.airlift.openmetrics.MetricsUtils.renderMetricsExpositions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -53,8 +52,8 @@ public class TestMetricsResource
 
         CompositeData topLevel = createNestedCompositeData(10, 1, 1, 1);
         CompositeMetric compositeMetric = CompositeMetric.from("metric_name", topLevel, ImmutableMap.of(), "metric_help");
-        assertThat(metricExpositions(ImmutableList.of(compositeMetric))).isEqualTo(expected);
-        assertThat(metricExpositions(compositeMetric.subMetrics())).isEqualToIgnoringWhitespace(expected);
+        assertThat(renderMetricsExpositions(ImmutableList.of(compositeMetric))).isEqualTo(expected);
+        assertThat(renderMetricsExpositions(compositeMetric.subMetrics())).isEqualToIgnoringWhitespace(expected);
     }
 
     @Test
@@ -64,7 +63,7 @@ public class TestMetricsResource
         Gauge gauge = new Gauge("another_metric", 1, ImmutableMap.of("a", "456", "b", "789"), "Help text");
         Counter counterTwo = new Counter("test_metric", 12, ImmutableMap.of("a", "456", "b", "789"), "Help text two");
 
-        String metricExpositions = metricExpositions(ImmutableList.of(counterOne, gauge, counterTwo));
+        String metricExpositions = renderMetricsExpositions(ImmutableList.of(counterOne, gauge, counterTwo));
         assertThat(metricExpositions).isEqualTo(
                 """
                 # TYPE test_metric counter
@@ -85,7 +84,7 @@ public class TestMetricsResource
         CompositeMetric compositeMetricOne = CompositeMetric.from("metric_name", compositeDataOne, ImmutableMap.of("a", "1"), "metric_help");
         CompositeMetric compositeMetricTwo = CompositeMetric.from("metric_name", compositeDataTwo, ImmutableMap.of("a", "2"), "metric_help");
 
-        String metricExpositions = metricExpositions(ImmutableList.of(compositeMetricOne, compositeMetricTwo));
+        String metricExpositions = renderMetricsExpositions(ImmutableList.of(compositeMetricOne, compositeMetricTwo));
         assertThat(metricExpositions).isEqualTo(
                 """
                 # TYPE metric_name_committed gauge
@@ -111,7 +110,7 @@ public class TestMetricsResource
         Counter counter = new Counter("test_metric.abc", 42, ImmutableMap.of(), "Help counter");
         Gauge gauge = new Gauge("test_metric.abc", 12, ImmutableMap.of(), "Help gauge");
 
-        assertThatThrownBy(() -> metricExpositions(ImmutableList.of(counter, gauge)))
+        assertThatThrownBy(() -> renderMetricsExpositions(ImmutableList.of(counter, gauge)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Metric family test_metric.abc contains mixed metric types: [class io.airlift.openmetrics.types.Counter, class io.airlift.openmetrics.types.Gauge]");
     }
@@ -126,7 +125,7 @@ public class TestMetricsResource
         Counter subMetric = new Counter("test_metric.abc", 12, ImmutableMap.of(), "Help text");
         CompositeMetric compositeMetric = new CompositeMetric("test_metric", ImmutableMap.of(), "Help text", ImmutableList.of(subMetric));
 
-        String metricExpositions = metricExpositions(ImmutableList.of(counter, compositeMetric));
+        String metricExpositions = renderMetricsExpositions(ImmutableList.of(counter, compositeMetric));
         assertThat(metricExpositions).isEqualToIgnoringWhitespace(
                 """
                 # TYPE test_metric.abc counter
@@ -134,13 +133,6 @@ public class TestMetricsResource
                 test_metric.abc 42
                 test_metric.abc 12
                 """);
-    }
-
-    private String metricExpositions(List<Metric> metrics)
-    {
-        StringBuilder builder = new StringBuilder();
-        MetricsResource.metricExpositions(builder, metrics);
-        return builder.toString();
     }
 
     private CompositeData createMemoryUsageCompositeData(long used, long committed, long max)

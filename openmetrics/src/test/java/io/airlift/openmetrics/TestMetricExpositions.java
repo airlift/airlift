@@ -32,11 +32,15 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.airlift.openmetrics.MetricsUtils.renderMetricsExpositions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestMetricExpositions
@@ -74,7 +78,7 @@ public class TestMetricExpositions
                 metric_help
                 multiline""");
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of(), "metric_help");
-        assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
+        assertThat(getMetricExposition(counter)).isEqualTo(getMetricExposition(bigCounter));
         assertThat(getMetricExpositionWithDescriptor(counter)).isEqualTo(expected);
     }
 
@@ -90,7 +94,7 @@ public class TestMetricExpositions
 
         Counter counter = new Counter("metric_name", 0, ImmutableMap.of("type", "cavendish"), "metric_help");
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of("type", "cavendish"), "metric_help");
-        assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
+        assertThat(getMetricExposition(counter)).isEqualTo(getMetricExposition(bigCounter));
         assertThat(getMetricExpositionWithDescriptor(counter)).isEqualTo(expected);
     }
 
@@ -310,13 +314,23 @@ public class TestMetricExpositions
 
     private String metricExpositions(List<Metric> metrics)
     {
-        StringBuilder builder = new StringBuilder();
-        MetricsResource.metricExpositions(builder, metrics);
-        return builder.toString();
+        return renderMetricsExpositions(metrics);
+    }
+
+    private static String getMetricExposition(Metric metric)
+    {
+        StringWriter writer = new StringWriter();
+        try {
+            metric.writeMetricExposition(writer);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return writer.toString();
     }
 
     private static String getMetricExpositionWithDescriptor(Metric metric)
     {
-        return metric.getMetricDescriptor() + metric.getMetricExposition();
+        return renderMetricsExpositions(List.of(metric));
     }
 }
