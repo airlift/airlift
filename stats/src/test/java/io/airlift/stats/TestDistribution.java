@@ -8,6 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.Isolated;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static io.airlift.stats.Distribution.MERGE_THRESHOLD_NANOS;
 import static io.airlift.stats.StatsBackend.AIRLIFT;
 import static io.airlift.stats.StatsBackend.OPENTELEMETRY;
@@ -145,5 +150,54 @@ public class TestDistribution
 
         distribution.reset();
         assertThat(distribution.getCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void testConcurrentAddsWithConcurrentReader()
+            throws Exception
+    {
+        int threads = 8;
+        int addsPerThread = 200_000;
+
+        // with no decay all values are weighted 1, so count and total must be exact
+        Distribution distribution = new Distribution();
+
+        AtomicBoolean done = new AtomicBoolean();
+        CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+        List<Thread> writers = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            writers.add(Thread.ofPlatform().start(() -> {
+                await(barrier);
+                for (int j = 0; j < addsPerThread; j++) {
+                    distribution.add(3);
+                }
+            }));
+        }
+        // merges race with the writers; an add landing mid-merge must not be dropped
+        Thread reader = Thread.ofPlatform().start(() -> {
+            await(barrier);
+            while (!done.get()) {
+                distribution.getTotal();
+            }
+        });
+        for (Thread writer : writers) {
+            writer.join();
+        }
+        done.set(true);
+        reader.join();
+
+        assertThat(distribution.getCount()).isEqualTo((double) threads * addsPerThread);
+        assertThat(distribution.getTotal()).isEqualTo((double) threads * addsPerThread * 3);
+        assertThat(distribution.getAvg()).isEqualTo(3d);
+    }
+
+    private static void await(CyclicBarrier barrier)
+    {
+        try {
+            barrier.await();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
