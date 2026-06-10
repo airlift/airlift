@@ -84,17 +84,12 @@ public interface Strings
         return -1;
     }
 
-    @SuppressWarnings("StringBufferReplaceableByString")
     private static String normalizeWord(String word)
     {
-        int length = word.length();
-        if (length == 0) {
+        if (word.isEmpty()) {
             return word;
         }
-        return new StringBuilder(length)
-                .append(charToUpperCaseIfLower(word.charAt(0)))
-                .append(toLowerCase(word.substring(1)))
-                .toString();
+        return charToUpperCaseIfLower(word.charAt(0)) + toLowerCase(word.substring(1));
     }
 
     private static String toLowerCase(String string)
