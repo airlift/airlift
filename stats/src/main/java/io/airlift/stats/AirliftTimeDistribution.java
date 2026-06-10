@@ -27,14 +27,14 @@ final class AirliftTimeDistribution
     @Nullable
     private final DecayConfig config;
     private final Object[] locks = new Object[STRIPES];
-    // @GuardedBy("locks[i]") for partials[i]
+    // @GuardedBy("locks[i]") for partials[i] and partialTotals[i]; the total is kept with its digest so a merge moves both atomically
     private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
+    private final DecayCounter[] partialTotals = new DecayCounter[STRIPES];
     @GuardedBy("this")
     private DecayTDigest merged;
     @GuardedBy("this")
     private long lastMerge;
     private final DecayCounter total;
-    private final DecayCounter partialTotal;
     private final TimeUnit unit;
 
     AirliftTimeDistribution(Ticker ticker, @Nullable DecayConfig config, TimeUnit unit)
@@ -46,7 +46,6 @@ final class AirliftTimeDistribution
             locks[i] = new Object();
         }
         total = new DecayCounter(config);
-        partialTotal = new DecayCounter(config);
         this.ticker = ticker;
         this.unit = unit;
         this.lastMerge = ticker.read(); // do not merge immediately
@@ -59,10 +58,11 @@ final class AirliftTimeDistribution
         synchronized (locks[segment]) {
             if (partials[segment] == null) {
                 partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
+                partialTotals[segment] = new DecayCounter(config);
             }
             partials[segment].add(value);
+            partialTotals[segment].add(value);
         }
-        partialTotal.add(value); // Fine outside of lock as DecayCounter is thread safe
     }
 
     @Override
@@ -199,12 +199,12 @@ final class AirliftTimeDistribution
                             continue;
                         }
                         merged.merge(partials[i]);
+                        total.merge(partialTotals[i]);
                         // Reset the partial
                         partials[i] = null;
+                        partialTotals[i] = null;
                     }
                 }
-                total.merge(partialTotal);
-                partialTotal.reset();
                 lastMerge = ticker.read();
             }
         }
@@ -251,12 +251,12 @@ final class AirliftTimeDistribution
     public synchronized void reset()
     {
         total.reset();
-        partialTotal.reset();
         merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
         // Reset all partial digests (stripes) to avoid stale data
         for (int i = 0; i < partials.length; i++) {
             synchronized (locks[i]) {
                 partials[i] = null;
+                partialTotals[i] = null;
             }
         }
     }

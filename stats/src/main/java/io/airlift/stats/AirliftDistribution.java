@@ -1,5 +1,6 @@
 package io.airlift.stats;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import jakarta.annotation.Nullable;
 
@@ -9,6 +10,8 @@ import java.util.Optional;
 import static com.google.common.base.Verify.verify;
 import static io.airlift.stats.Percentiles.PERCENTILES;
 import static io.airlift.stats.Percentiles.toMap;
+import static java.lang.Math.clamp;
+import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
 
 final class AirliftDistribution
@@ -19,8 +22,15 @@ final class AirliftDistribution
     // immutable config shared by every sub-structure; null when this distribution does not decay
     @Nullable
     private final DecayConfig config;
-    private DecayTDigest digest;
+    private static final int STRIPES = clamp(Runtime.getRuntime().availableProcessors(), 2, 16);
 
+    private final Object[] locks = new Object[STRIPES];
+    // @GuardedBy("locks[i]") for partials[i] and partialTotals[i]; the total is kept with its digest so a merge moves both atomically
+    private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
+    private final DecayCounter[] partialTotals = new DecayCounter[STRIPES];
+    @GuardedBy("this")
+    private DecayTDigest digest;
+    @GuardedBy("this")
     private final DecayCounter total;
 
     AirliftDistribution(@Nullable DecayConfig config)
@@ -33,25 +43,52 @@ final class AirliftDistribution
         this.config = config;
         this.digest = requireNonNull(digest, "digest is null");
         this.total = requireNonNull(total, "total is null");
+        for (int i = 0; i < STRIPES; i++) {
+            locks[i] = new Object();
+        }
     }
 
     @Override
-    public synchronized void add(long value)
+    public void add(long value)
     {
-        digest.add(value);
-        total.add(value);
+        add(value, 1);
     }
 
     @Override
-    public synchronized void add(long value, long count)
+    public void add(long value, long count)
     {
-        digest.add(value, count);
-        total.add(value * count);
+        int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
+        synchronized (locks[segment]) {
+            if (partials[segment] == null) {
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
+                partialTotals[segment] = new DecayCounter(config);
+            }
+            partials[segment].add(value, count);
+            partialTotals[segment].add(value * count);
+        }
+    }
+
+    @GuardedBy("this")
+    private void mergePartials()
+    {
+        for (int i = 0; i < STRIPES; i++) {
+            synchronized (locks[i]) {
+                if (partials[i] == null) {
+                    continue;
+                }
+                // digest and total are folded under the same stripe lock as add(), so no update is lost
+                digest.merge(partials[i]);
+                total.merge(partialTotals[i]);
+                partials[i] = null;
+                partialTotals[i] = null;
+            }
+        }
     }
 
     @Override
     public synchronized DistributionImplementation duplicate()
     {
+        mergePartials();
         // the config is immutable and freely shared; digest/total keep their own landmark-preserving copies
         return new AirliftDistribution(config, digest.duplicate(), total.duplicate());
     }
@@ -61,89 +98,109 @@ final class AirliftDistribution
     {
         total.reset();
         digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
+        for (int i = 0; i < STRIPES; i++) {
+            synchronized (locks[i]) {
+                partials[i] = null;
+                partialTotals[i] = null;
+            }
+        }
     }
 
     @Override
     public synchronized double getCount()
     {
+        mergePartials();
         return digest.getCount();
     }
 
     @Override
     public synchronized double getTotal()
     {
+        mergePartials();
         return total.getCount();
     }
 
     @Override
     public synchronized double getP01()
     {
+        mergePartials();
         return digest.valueAt(0.01);
     }
 
     @Override
     public synchronized double getP05()
     {
+        mergePartials();
         return digest.valueAt(0.05);
     }
 
     @Override
     public synchronized double getP10()
     {
+        mergePartials();
         return digest.valueAt(0.10);
     }
 
     @Override
     public synchronized double getP25()
     {
+        mergePartials();
         return digest.valueAt(0.25);
     }
 
     @Override
     public synchronized double getP50()
     {
+        mergePartials();
         return digest.valueAt(0.5);
     }
 
     @Override
     public synchronized double getP75()
     {
+        mergePartials();
         return digest.valueAt(0.75);
     }
 
     @Override
     public synchronized double getP90()
     {
+        mergePartials();
         return digest.valueAt(0.90);
     }
 
     @Override
     public synchronized double getP95()
     {
+        mergePartials();
         return digest.valueAt(0.95);
     }
 
     @Override
     public synchronized double getP99()
     {
+        mergePartials();
         return digest.valueAt(0.99);
     }
 
     @Override
     public synchronized double getMin()
     {
+        mergePartials();
         return digest.getMin();
     }
 
     @Override
     public synchronized double getMax()
     {
+        mergePartials();
         return digest.getMax();
     }
 
     @Override
     public synchronized double getAvg()
     {
+        mergePartials();
         return getTotal() / getCount();
     }
 
@@ -152,6 +209,7 @@ final class AirliftDistribution
     {
         double[] values;
         synchronized (this) {
+            mergePartials();
             values = digest.valuesAt(PERCENTILES);
         }
 
@@ -169,6 +227,7 @@ final class AirliftDistribution
         double max;
         double[] quantiles;
         synchronized (this) {
+            mergePartials();
             totalCount = total.getCount();
             digestCount = digest.getCount();
             min = digest.getMin();
