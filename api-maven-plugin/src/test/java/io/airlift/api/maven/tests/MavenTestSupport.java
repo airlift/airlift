@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 
 final class MavenTestSupport
 {
+    private static final Pattern PARENT_VERSION_PATTERN = Pattern.compile("(?s)<parent>.*?<version>([^<]+)</version>.*?</parent>");
+
     private MavenTestSupport() {}
 
     static String resolveProjectVersion()
@@ -31,7 +33,7 @@ final class MavenTestSupport
         }
 
         String pom = Files.readString(Path.of("pom.xml"));
-        Matcher matcher = Pattern.compile("(?s)<parent>.*?<version>([^<]+)</version>.*?</parent>").matcher(pom);
+        Matcher matcher = PARENT_VERSION_PATTERN.matcher(pom);
         if (matcher.find()) {
             return matcher.group(1).trim();
         }
