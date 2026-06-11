@@ -34,6 +34,8 @@ import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.tracing.TracingModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,6 +53,7 @@ import java.lang.annotation.Target;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
@@ -63,7 +66,9 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static io.airlift.http.server.RequestCancellationServletFilter.REQUEST_CANCELLATION_ATTRIBUTE;
 import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
+import static io.airlift.http.server.ServerFeature.REQUEST_CANCELLATION;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -163,6 +168,20 @@ public class TestHttpServerModule
     }
 
     @Test
+    public void testRequestCancellationFilterIsDisabledByDefault()
+            throws Exception
+    {
+        assertRequestCancellationAttribute(false);
+    }
+
+    @Test
+    public void testRequestCancellationFilterIsEnabledByFeature()
+            throws Exception
+    {
+        assertRequestCancellationAttribute(true);
+    }
+
+    @Test
     public void testHttpServerUri()
             throws Exception
     {
@@ -195,6 +214,44 @@ public class TestHttpServerModule
             assertThat(httpServerInfo.getHttpsUri()).isNull();
         }
         catch (Exception e) {
+            server.stop();
+        }
+    }
+
+    private void assertRequestCancellationAttribute(boolean enabled)
+            throws Exception
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.port", "0")
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .build();
+
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
+                new TestingNodeModule(),
+                new TracingModule("airlift.http-server", "1.0"),
+                binder -> {
+                    binder.bind(Servlet.class).to(RequestCancellationAttributeServlet.class);
+                    if (enabled) {
+                        httpServerBinder(binder).withFeature(REQUEST_CANCELLATION);
+                    }
+                });
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .doNotInitializeLogging()
+                .initialize();
+
+        HttpServer server = injector.getInstance(HttpServer.class);
+        server.start();
+        try (HttpClient client = new JettyHttpClient()) {
+            URI httpUri = injector.getInstance(HttpServerInfo.class).getHttpUri();
+            StringResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStringResponseHandler());
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK.code());
+            assertThat(response.getBody()).isEqualTo(Boolean.toString(enabled));
+        }
+        finally {
             server.stop();
         }
     }
@@ -304,4 +361,17 @@ public class TestHttpServerModule
     @Target({FIELD, PARAMETER, METHOD})
     @BindingAnnotation
     public @interface Internal {}
+
+    public static class RequestCancellationAttributeServlet
+            extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws IOException
+        {
+            Object cancellation = request.getAttribute(REQUEST_CANCELLATION_ATTRIBUTE);
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write(Boolean.toString(cancellation instanceof CompletableFuture<?>));
+        }
+    }
 }

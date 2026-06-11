@@ -8,6 +8,7 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
+import io.airlift.api.ApiCancellation;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiIdLookup;
 import io.airlift.api.ApiService;
@@ -32,6 +33,7 @@ import org.glassfish.jersey.server.model.ResourceMethod;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,7 +100,9 @@ class JaxrsResourceBuilder
         newOptionalBinder(binder, annotatedKey(OpenApiMetadata.class, bindingAnnotation));
 
         bindAnnotated(PatchFieldsBuilder.class);
+        jaxrsBinder.bind(ApiCancellationRequestFilter.class);
         jaxrsBinder.bind(SpecialApiTypeValueParamProvider.class, specialApiTypeValueParamProvider());
+        jaxrsBinder.bind(ApiCancellationValueParamProvider.class);
         jaxrsBinder.bind(PaginationValueParamProvider.class);
         jaxrsBinder.bind(JaxrsBindingBridge.class, jaxrsBindingBridgeProvider());
         jaxrsBinder.bind(JaxrsMapper.class, jaxrsMapperProvider());
@@ -153,7 +157,20 @@ class JaxrsResourceBuilder
                 methodBuilder.consumes(isMultiPartForm ? MULTIPART_FORM_DATA_TYPE : APPLICATION_JSON_TYPE).produces(getResponseType(method.returnType()));
             }
         }
+        if (isCancellable(method)) {
+            methodBuilder.managedAsync();
+        }
         methodBuilder.handledBy(service.serviceClass(), method.method());
+    }
+
+    static boolean isCancellable(ModelMethod method)
+    {
+        for (Parameter parameter : method.method().getParameters()) {
+            if (parameter.isAnnotationPresent(jakarta.ws.rs.core.Context.class) && ApiCancellation.class.equals(parameter.getType())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<MediaType> getResponseType(ModelResource returnType)

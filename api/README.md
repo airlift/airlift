@@ -36,3 +36,4 @@ See [Introduction](docs/starting.md) for details on how API Builder enhances JAX
 | [Quotas](docs/quotas.md)                            | Managing resource quotas                                                                                 |
 | [Streaming](docs/streaming.md)                      | Streaming responses                                                                                      |
 | [Multi-part Uploads](docs/multipart.md)             | Multi-part uploads                                                                                       |
+| [Request Cancellation](docs/cancellation.md)        | Cleaning up work when an API request is cancelled                                                        |

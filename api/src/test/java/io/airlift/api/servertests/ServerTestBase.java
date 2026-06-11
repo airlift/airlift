@@ -61,7 +61,17 @@ public class ServerTestBase
         this(Optional.of(serviceClass), builderConsumer);
     }
 
+    protected ServerTestBase(Class<?> serviceClass, Consumer<ApiModule.Builder> builderConsumer, Module... additionalModules)
+    {
+        this(Optional.of(serviceClass), builderConsumer, ImmutableList.copyOf(additionalModules));
+    }
+
     private ServerTestBase(Optional<Class<?>> maybeServiceClass, Consumer<ApiModule.Builder> builderConsumer)
+    {
+        this(maybeServiceClass, builderConsumer, ImmutableList.of());
+    }
+
+    private ServerTestBase(Optional<Class<?>> maybeServiceClass, Consumer<ApiModule.Builder> builderConsumer, Iterable<Module> additionalModules)
     {
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
                 .add(new NodeModule())
@@ -75,6 +85,7 @@ public class ServerTestBase
         builderConsumer.accept(builder);
         Module apiModule = builder.build();
         modules.add(apiModule);
+        modules.addAll(additionalModules);
 
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
                 .put("node.environment", "testing");

@@ -8,7 +8,8 @@ public enum ServerFeature
 {
     VIRTUAL_THREADS,
     LEGACY_URI_COMPLIANCE,
-    CASE_SENSITIVE_HEADER_CACHE;
+    CASE_SENSITIVE_HEADER_CACHE,
+    REQUEST_CANCELLATION;
 
     public static Set<ServerFeature> defaults()
     {
@@ -25,6 +26,7 @@ public enum ServerFeature
         private boolean virtualThreads;
         private boolean legacyUriCompliance;
         private boolean caseSensitiveHeaderCache;
+        private boolean requestCancellation;
 
         private Builder() {}
 
@@ -46,6 +48,12 @@ public enum ServerFeature
             return this;
         }
 
+        public Builder withRequestCancellation(boolean requestCancellation)
+        {
+            this.requestCancellation = requestCancellation;
+            return this;
+        }
+
         public Set<ServerFeature> build()
         {
             ImmutableSet.Builder<ServerFeature> features = ImmutableSet.builder();
@@ -57,6 +65,9 @@ public enum ServerFeature
             }
             if (caseSensitiveHeaderCache) {
                 features.add(CASE_SENSITIVE_HEADER_CACHE);
+            }
+            if (requestCancellation) {
+                features.add(REQUEST_CANCELLATION);
             }
             return features.build();
         }
