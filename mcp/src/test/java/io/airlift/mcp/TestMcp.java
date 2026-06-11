@@ -259,7 +259,7 @@ public abstract class TestMcp
             return;
         }
 
-        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        CallToolResult callToolResult = client1.mcpClient().callTool(CallToolRequest.builder("log").arguments(ImmutableMap.of()).build());
         assertThat(callToolResult.isError()).isTrue();
         assertThat(callToolResult.content())
                 .hasSize(1)
@@ -279,19 +279,19 @@ public abstract class TestMcp
         client1.mcpClient().setLoggingLevel(EMERGENCY);
         client2.mcpClient().setLoggingLevel(EMERGENCY);
 
-        client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
-        client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        client1.mcpClient().callTool(CallToolRequest.builder("log").arguments(ImmutableMap.of()).build());
+        client2.mcpClient().callTool(CallToolRequest.builder("log").arguments(ImmutableMap.of()).build());
         assertThat(takeNFromQueue(client1.logs(), 1)).isEmpty();
         assertThat(takeNFromQueue(client2.logs(), 1)).isEmpty();
 
         client1.mcpClient().setLoggingLevel(ALERT);
         client2.mcpClient().setLoggingLevel(DEBUG);
 
-        client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        client1.mcpClient().callTool(CallToolRequest.builder("log").arguments(ImmutableMap.of()).build());
         assertThat(takeNFromQueue(client1.logs(), 2)).containsExactly("This is alert");
         assertThat(client2.logs()).isEmpty();
 
-        client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        client2.mcpClient().callTool(CallToolRequest.builder("log").arguments(ImmutableMap.of()).build());
         assertThat(takeNFromQueue(client1.logs(), 1)).isEmpty();
         assertThat(takeNFromQueue(client2.logs(), 2)).containsExactlyInAnyOrder("This is alert", "This is debug");
     }
@@ -303,11 +303,11 @@ public abstract class TestMcp
                 .mapToObj(i -> "Progress " + i + "%")
                 .collect(toImmutableList());
 
-        client1.mcpClient().callTool(new CallToolRequest("progress", ImmutableMap.of()));
+        client1.mcpClient().callTool(CallToolRequest.builder("progress").arguments(ImmutableMap.of()).build());
         assertThat(takeNFromQueue(client1.progress(), 101)).isEqualTo(expectedProgress);
         assertThat(takeNFromQueue(client2.progress(), 1)).isEmpty();
 
-        client2.mcpClient().callTool(new CallToolRequest("progress", ImmutableMap.of()));
+        client2.mcpClient().callTool(CallToolRequest.builder("progress").arguments(ImmutableMap.of()).build());
         assertThat(takeNFromQueue(client1.progress(), 1)).isEmpty();
         assertThat(takeNFromQueue(client2.progress(), 101)).isEqualTo(expectedProgress);
     }
@@ -315,7 +315,7 @@ public abstract class TestMcp
     @Test
     public void testCompletions()
     {
-        CompleteRequest completeRequest = new CompleteRequest(new PromptReference("greeting"), new CompleteArgument("name", "Jo"));
+        CompleteRequest completeRequest = CompleteRequest.builder(new PromptReference("greeting"), new CompleteArgument("name", "Jo")).build();
         CompleteResult completeResult = client1.mcpClient().completeCompletion(completeRequest);
         assertThat(completeResult.completion().values())
                 .hasSize(1)
@@ -323,7 +323,7 @@ public abstract class TestMcp
                 .asInstanceOf(type(String.class))
                 .isEqualTo("Jordan");
 
-        completeRequest = new CompleteRequest(new ResourceReference("file://{id}.template"), new CompleteArgument("id", "m"));
+        completeRequest = CompleteRequest.builder(new ResourceReference("file://{id}.template"), new CompleteArgument("id", "m")).build();
         completeResult = client1.mcpClient().completeCompletion(completeRequest);
         assertThat(completeResult.completion().values())
                 .hasSize(2)
@@ -339,7 +339,7 @@ public abstract class TestMcp
                 .extracting(Tool::name)
                 .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling");
 
-        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
+        CallToolResult callToolResult = client1.mcpClient().callTool(CallToolRequest.builder("add").arguments(ImmutableMap.of("a", 1, "b", 2)).build());
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -359,7 +359,7 @@ public abstract class TestMcp
                 .extracting(Tool::outputSchema)
                 .satisfies(outputSchema -> assertThat(outputSchema).isNull());
 
-        CallToolRequest callToolRequest = new CallToolRequest("addThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        CallToolRequest callToolRequest = CallToolRequest.builder("addThree").arguments(ImmutableMap.of("a", 1, "b", 2, "c", 3)).build();
         CallToolResult callToolResult = client1.mcpClient().callTool(callToolRequest);
         assertThat(callToolResult.structuredContent()).isNull();
         assertThat(callToolResult.content())
@@ -380,8 +380,11 @@ public abstract class TestMcp
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(addFirstTwoAndAllThree.inputSchema().required()).containsExactlyInAnyOrder("a", "b");
-        Map<String, Object> inputProperties = addFirstTwoAndAllThree.inputSchema().properties();
+        Map<String, Object> inputSchema = addFirstTwoAndAllThree.inputSchema();
+        assertThat(inputSchema.get("required"))
+                .asInstanceOf(type(List.class))
+                .satisfies(list -> assertThat(list).containsExactlyInAnyOrder("a", "b"));
+        Map<String, Object> inputProperties = (Map<String, Object>) inputSchema.get("properties");
         assertThat(inputProperties.keySet()).containsExactlyInAnyOrder("a", "b", "c");
 
         Map<String, Object> optionalParameterSchema = (Map<String, Object>) inputProperties.get("c");
@@ -403,7 +406,7 @@ public abstract class TestMcp
         assertThat(((Map<String, Object>) properties.get("firstTwo")).get("type")).isEqualTo("integer");
         assertThat(((Map<String, Object>) properties.get("allThree")).get("type")).isEqualTo("integer");
 
-        CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        CallToolRequest callToolRequest = CallToolRequest.builder("addFirstTwoAndAllThree").arguments(ImmutableMap.of("a", 1, "b", 2, "c", 3)).build();
         CallToolResult twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
         assertThat(twoAndThreeCallToolResult.isError()).isFalse();
         assertThat(twoAndThreeCallToolResult.structuredContent())
@@ -411,7 +414,7 @@ public abstract class TestMcp
                 .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 6));
 
         // Test not sending an optional parameter
-        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2));
+        callToolRequest = CallToolRequest.builder("addFirstTwoAndAllThree").arguments(ImmutableMap.of("a", 1, "b", 2)).build();
         twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
         assertThat(twoAndThreeCallToolResult.isError()).isFalse();
         assertThat(twoAndThreeCallToolResult.structuredContent())
@@ -419,7 +422,7 @@ public abstract class TestMcp
                 .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 3));
 
         // Test the "error" path
-        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", -1, "b", -2, "c", -3));
+        callToolRequest = CallToolRequest.builder("addFirstTwoAndAllThree").arguments(ImmutableMap.of("a", -1, "b", -2, "c", -3)).build();
         twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
         assertThat(twoAndThreeCallToolResult.isError()).isTrue();
         assertThat(twoAndThreeCallToolResult.structuredContent()).isNull();
@@ -434,7 +437,7 @@ public abstract class TestMcp
     @Test
     public void testExceptionWrapping()
     {
-        CallToolRequest callToolRequest = new CallToolRequest("throws", ImmutableMap.of());
+        CallToolRequest callToolRequest = CallToolRequest.builder("throws").arguments(ImmutableMap.of()).build();
         CallToolResult callToolResult = client1.mcpClient().callTool(callToolRequest);
         assertThat(callToolResult.isError()).isTrue();
         assertThat(callToolResult.content())
@@ -477,7 +480,7 @@ public abstract class TestMcp
                 .extracting(Prompt::name)
                 .containsExactlyInAnyOrder("greeting", "age");
 
-        GetPromptResult getPromptResult = client1.mcpClient().getPrompt(new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt")));
+        GetPromptResult getPromptResult = client1.mcpClient().getPrompt(GetPromptRequest.builder("greeting").arguments(ImmutableMap.of("name", "Galt")).build());
         assertThat(getPromptResult.messages())
                 .hasSize(1)
                 .first()
@@ -495,7 +498,7 @@ public abstract class TestMcp
                 .extracting(Resource::name)
                 .containsExactlyInAnyOrder("example1", "example2", "my-test-skill", "skill://index.json");
 
-        ReadResourceRequest readResourceRequest = new ReadResourceRequest("file://example2.txt");
+        ReadResourceRequest readResourceRequest = ReadResourceRequest.builder("file://example2.txt").build();
         ReadResourceResult readResourceResult = client1.mcpClient().readResource(readResourceRequest);
         assertThat(readResourceResult.contents())
                 .hasSize(1)
@@ -504,7 +507,7 @@ public abstract class TestMcp
                 .extracting(TextResourceContents::text)
                 .isEqualTo("This is the content of file://example2.txt");
 
-        readResourceRequest = new ReadResourceRequest("file://test.template");
+        readResourceRequest = ReadResourceRequest.builder("file://test.template").build();
         readResourceResult = client1.mcpClient().readResource(readResourceRequest);
         assertThat(readResourceResult.contents())
                 .hasSize(1)
@@ -513,7 +516,7 @@ public abstract class TestMcp
                 .extracting(TextResourceContents::text)
                 .isEqualTo("ID is: test");
 
-        ReadResourceRequest badReadResourceRequest = new ReadResourceRequest("file://not-a-template");
+        ReadResourceRequest badReadResourceRequest = ReadResourceRequest.builder("file://not-a-template").build();
         assertThatThrownBy(() -> client1.mcpClient().readResource(badReadResourceRequest))
                 .satisfies(e -> assertMcpError(e, RESOURCE_NOT_FOUND, "Resource not found: file://not-a-template"));
     }
@@ -571,7 +574,7 @@ public abstract class TestMcp
         TestingClient listChangeClient1 = buildClient(closer, baseUri, "ListChangeNotifications1");
         TestingClient listChangeClient2 = buildClient(closer, baseUri, "ListChangeNotifications2");
 
-        listChangeClient1.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
+        listChangeClient1.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "SYSTEM", "name", "tools")).build());
 
         TestingClient listChangeClient3 = buildClient(closer, baseUri, "ListChangeNotifications3");
 
@@ -595,12 +598,12 @@ public abstract class TestMcp
         assertChanges(listChangeClient2.changes(), 0).isEmpty();
         assertChanges(listChangeClient3.changes(), 0).isEmpty();
 
-        listChangeClient1.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
-        listChangeClient2.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
+        listChangeClient1.mcpClient().subscribeResource(McpSchema.SubscribeRequest.builder("file://example1.txt").build());
+        listChangeClient2.mcpClient().subscribeResource(McpSchema.SubscribeRequest.builder("file://example1.txt").build());
 
-        listChangeClient2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "RESOURCE", "name", "example1")));
-        listChangeClient2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
-        listChangeClient2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts")));
+        listChangeClient2.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "RESOURCE", "name", "example1")).build());
+        listChangeClient2.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "SYSTEM", "name", "tools")).build());
+        listChangeClient2.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "SYSTEM", "name", "prompts")).build());
 
         listChangeClient1.mcpClient().listTools();
         listChangeClient2.mcpClient().listTools();
@@ -625,7 +628,7 @@ public abstract class TestMcp
 
         // control run to make sure it exits as expected after sleep time
 
-        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("sleep", ImmutableMap.of("name", "dummy", "secondsToSleep", 3)));
+        CallToolResult callToolResult = client1.mcpClient().callTool(CallToolRequest.builder("sleep").arguments(ImmutableMap.of("name", "dummy", "secondsToSleep", 3)).build());
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -643,7 +646,7 @@ public abstract class TestMcp
             Map<String, Future<CallToolResult>> runs = IntStream.range(0, threadQty)
                     .mapToObj(index -> {
                         String name = "run-" + index;
-                        Callable<CallToolResult> callToolResultCallable = () -> client1.mcpClient().callTool(new CallToolRequest("sleep", ImmutableMap.of("name", name, "secondsToSleep", (int) TimeUnit.DAYS.toSeconds(1))));
+                        Callable<CallToolResult> callToolResultCallable = () -> client1.mcpClient().callTool(CallToolRequest.builder("sleep").arguments(ImmutableMap.of("name", name, "secondsToSleep", (int) TimeUnit.DAYS.toSeconds(1))).build());
                         Future<CallToolResult> future = executorService.submit(callToolResultCallable);
                         return Map.entry(name, future);
                     })
@@ -726,7 +729,7 @@ public abstract class TestMcp
             return;
         }
 
-        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("elicitation", ImmutableMap.of()));
+        CallToolResult callToolResult = client1.mcpClient().callTool(CallToolRequest.builder("elicitation").arguments(ImmutableMap.of()).build());
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -747,7 +750,7 @@ public abstract class TestMcp
                 "{\"$schema\":\"https://schemas.agentskills.io/discovery/0.2.0/schema.json\",\"skills\":[{\"name\":\"my-test-skill\",\"type\":\"skill-md\",\"url\":\"skill://a/b/c/my-test-skill/SKILL.md\",\"description\":\"An example skill.\"},{\"name\":\"my-test-skill-template\",\"type\":\"mcp-resource-template\",\"url\":\"skill://a/{name}/my-test-skill-template/SKILL.md\",\"description\":\"An example skill template.\"}]}",
                 null);
 
-        ReadResourceResult readResourceResult = client1.mcpClient().readResource(new Resource(SKILL_INDEX_URI, SKILL_INDEX_URI, SKILL_INDEX_URI, "", SKILL_MIME_TYPE, null, null, null));
+        ReadResourceResult readResourceResult = client1.mcpClient().readResource(Resource.builder(SKILL_INDEX_URI, SKILL_INDEX_URI).title(SKILL_INDEX_URI).description("").mimeType(SKILL_MIME_TYPE).build());
         assertThat(readResourceResult.contents())
                 .hasSize(1)
                 .first()

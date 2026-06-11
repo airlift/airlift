@@ -99,10 +99,10 @@ public class TestMcpCapabilityFiltering
                 .containsExactlyInAnyOrder("file://public/{name}", "file://admin/{name}");
 
         // Verify all tools can be invoked
-        McpSchema.CallToolResult publicToolResult = client.mcpClient().callTool(new CallToolRequest("public-tool", ImmutableMap.of()));
+        McpSchema.CallToolResult publicToolResult = client.mcpClient().callTool(CallToolRequest.builder("public-tool").arguments(ImmutableMap.of()).build());
         assertThat(publicToolResult.content()).hasSize(1);
 
-        McpSchema.CallToolResult adminToolResult = client.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of()));
+        McpSchema.CallToolResult adminToolResult = client.mcpClient().callTool(CallToolRequest.builder("admin-tool").arguments(ImmutableMap.of()).build());
         assertThat(adminToolResult.content()).hasSize(1);
     }
 
@@ -131,9 +131,9 @@ public class TestMcpCapabilityFiltering
                 .containsOnly("public-tool");
 
         // Verify public tool can be invoked, but admin cannot
-        McpSchema.CallToolResult publicToolResult = client.mcpClient().callTool(new CallToolRequest("public-tool", ImmutableMap.of()));
+        McpSchema.CallToolResult publicToolResult = client.mcpClient().callTool(CallToolRequest.builder("public-tool").arguments(ImmutableMap.of()).build());
         assertThat(publicToolResult.content()).hasSize(1);
-        assertThatThrownBy(() -> client.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of())))
+        assertThatThrownBy(() -> client.mcpClient().callTool(CallToolRequest.builder("admin-tool").arguments(ImmutableMap.of()).build()))
                 .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Tool access not allowed: admin-tool"));
 
         // Verify all tools are visible to admin
@@ -143,10 +143,10 @@ public class TestMcpCapabilityFiltering
                 .containsExactlyInAnyOrder("public-tool", "admin-tool");
 
         // Verify all tools can be invoked by admin
-        publicToolResult = adminClient.mcpClient().callTool(new CallToolRequest("public-tool", ImmutableMap.of()));
+        publicToolResult = adminClient.mcpClient().callTool(CallToolRequest.builder("public-tool").arguments(ImmutableMap.of()).build());
         assertThat(publicToolResult.content()).hasSize(1);
 
-        McpSchema.CallToolResult adminToolResult = adminClient.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of()));
+        McpSchema.CallToolResult adminToolResult = adminClient.mcpClient().callTool(CallToolRequest.builder("admin-tool").arguments(ImmutableMap.of()).build());
         assertThat(adminToolResult.content()).hasSize(1);
     }
 
@@ -175,9 +175,9 @@ public class TestMcpCapabilityFiltering
                 .containsOnly("public-prompt");
 
         // Verify public prompt can be retrieved, but admin can't
-        McpSchema.GetPromptResult publicPromptResult = client.mcpClient().getPrompt(new GetPromptRequest("public-prompt", ImmutableMap.of()));
+        McpSchema.GetPromptResult publicPromptResult = client.mcpClient().getPrompt(GetPromptRequest.builder("public-prompt").arguments(ImmutableMap.of()).build());
         assertThat(publicPromptResult.messages()).hasSize(1);
-        assertThatThrownBy(() -> client.mcpClient().getPrompt(new GetPromptRequest("admin-prompt", ImmutableMap.of())))
+        assertThatThrownBy(() -> client.mcpClient().getPrompt(GetPromptRequest.builder("admin-prompt").arguments(ImmutableMap.of()).build()))
                 .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Prompt access not allowed: admin-prompt"));
 
         // Verify all tools are visible to admin
@@ -187,10 +187,10 @@ public class TestMcpCapabilityFiltering
                 .containsExactlyInAnyOrder("public-prompt", "admin-prompt");
 
         // Verify all tools can be invoked by admin
-        publicPromptResult = adminClient.mcpClient().getPrompt(new GetPromptRequest("public-prompt", ImmutableMap.of()));
+        publicPromptResult = adminClient.mcpClient().getPrompt(GetPromptRequest.builder("public-prompt").arguments(ImmutableMap.of()).build());
         assertThat(publicPromptResult.messages()).hasSize(1);
 
-        McpSchema.GetPromptResult adminPromptResult = adminClient.mcpClient().getPrompt(new GetPromptRequest("admin-prompt", ImmutableMap.of()));
+        McpSchema.GetPromptResult adminPromptResult = adminClient.mcpClient().getPrompt(GetPromptRequest.builder("admin-prompt").arguments(ImmutableMap.of()).build());
         assertThat(adminPromptResult.messages()).hasSize(1);
     }
 
@@ -219,14 +219,14 @@ public class TestMcpCapabilityFiltering
                 .containsExactly("file://public-resource.txt");
 
         // Verify public resource can be read, but admin can't
-        ReadResourceResult publicResourceResult = client.mcpClient().readResource(new ReadResourceRequest("file://public-resource.txt"));
+        ReadResourceResult publicResourceResult = client.mcpClient().readResource(ReadResourceRequest.builder("file://public-resource.txt").build());
         assertThat(publicResourceResult.contents()).hasSize(1);
-        assertThatThrownBy(() -> client.mcpClient().readResource(new ReadResourceRequest("file://admin-resource.txt")))
+        assertThatThrownBy(() -> client.mcpClient().readResource(ReadResourceRequest.builder("file://admin-resource.txt").build()))
                 .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Resource access not allowed: file://admin-resource.txt"));
 
         // Verify public resource can be subscribed, but admin can't
-        client.mcpClient().subscribeResource(new SubscribeRequest("file://public-resource.txt"));
-        assertThatThrownBy(() -> client.mcpClient().subscribeResource(new SubscribeRequest("file://admin-resource.txt")))
+        client.mcpClient().subscribeResource(SubscribeRequest.builder("file://public-resource.txt").build());
+        assertThatThrownBy(() -> client.mcpClient().subscribeResource(SubscribeRequest.builder("file://admin-resource.txt").build()))
                 .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Resource access not allowed: file://admin-resource.txt"));
 
         // Verify all tools are visible to admin
@@ -235,15 +235,15 @@ public class TestMcpCapabilityFiltering
         assertThat(resources.resources().stream().map(McpSchema.Resource::uri).collect(toImmutableList()))
                 .containsExactlyInAnyOrder("file://public-resource.txt", "file://admin-resource.txt");
 
-        publicResourceResult = adminClient.mcpClient().readResource(new ReadResourceRequest("file://public-resource.txt"));
+        publicResourceResult = adminClient.mcpClient().readResource(ReadResourceRequest.builder("file://public-resource.txt").build());
         assertThat(publicResourceResult.contents()).hasSize(1);
 
-        McpSchema.ReadResourceResult adminResourceResult = adminClient.mcpClient().readResource(new ReadResourceRequest("file://public-resource.txt"));
+        McpSchema.ReadResourceResult adminResourceResult = adminClient.mcpClient().readResource(ReadResourceRequest.builder("file://public-resource.txt").build());
         assertThat(adminResourceResult.contents()).hasSize(1);
 
         // Verify admin can subscribe to all
-        adminClient.mcpClient().subscribeResource(new SubscribeRequest("file://public-resource.txt"));
-        adminClient.mcpClient().subscribeResource(new SubscribeRequest("file://admin-resource.txt"));
+        adminClient.mcpClient().subscribeResource(SubscribeRequest.builder("file://public-resource.txt").build());
+        adminClient.mcpClient().subscribeResource(SubscribeRequest.builder("file://admin-resource.txt").build());
     }
 
     @Test
@@ -271,9 +271,9 @@ public class TestMcpCapabilityFiltering
                 .containsOnly("file://public/{name}");
 
         // Verify public resource template can be read, but admin cannot
-        ReadResourceResult publicTemplateResult = client.mcpClient().readResource(new ReadResourceRequest("file://public/test.txt"));
+        ReadResourceResult publicTemplateResult = client.mcpClient().readResource(ReadResourceRequest.builder("file://public/test.txt").build());
         assertThat(publicTemplateResult.contents()).hasSize(1);
-        assertThatThrownBy(() -> client.mcpClient().readResource(new ReadResourceRequest("file://admin/test.txt")))
+        assertThatThrownBy(() -> client.mcpClient().readResource(ReadResourceRequest.builder("file://admin/test.txt").build()))
                 .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Resource access not allowed: file://admin/test.txt"));
 
         // Verify all tools are visible to admin
@@ -283,10 +283,10 @@ public class TestMcpCapabilityFiltering
                 .containsExactlyInAnyOrder("file://public/{name}", "file://admin/{name}");
 
         // Verify all tools can be invoked by admin
-        publicTemplateResult = adminClient.mcpClient().readResource(new ReadResourceRequest("file://public/test.txt"));
+        publicTemplateResult = adminClient.mcpClient().readResource(ReadResourceRequest.builder("file://public/test.txt").build());
         assertThat(publicTemplateResult.contents()).hasSize(1);
 
-        ReadResourceResult adminResourceResult = adminClient.mcpClient().readResource(new ReadResourceRequest("file://admin/test.txt"));
+        ReadResourceResult adminResourceResult = adminClient.mcpClient().readResource(ReadResourceRequest.builder("file://admin/test.txt").build());
         assertThat(adminResourceResult.contents()).hasSize(1);
     }
 
@@ -310,30 +310,30 @@ public class TestMcpCapabilityFiltering
         TestingClient client = TestingClient.buildClient(closer, baseUri, ANOTHER_IDENTITY, ANOTHER_IDENTITY);
 
         // Verify non-admin can get completions for public prompt
-        CompleteRequest publicPromptCompleteRequest = new CompleteRequest(
+        CompleteRequest publicPromptCompleteRequest = CompleteRequest.builder(
                 new PromptReference("public-prompt"),
-                new McpSchema.CompleteRequest.CompleteArgument("arg", ""));
+                new McpSchema.CompleteRequest.CompleteArgument("arg", "")).build();
         CompleteResult publicPromptResult = client.mcpClient().completeCompletion(publicPromptCompleteRequest);
         assertThat(publicPromptResult.completion().values()).hasSize(2);
 
         // Verify non-admin gets empty completions for admin prompt (filtered out)
-        CompleteRequest adminPromptCompleteRequest = new CompleteRequest(
+        CompleteRequest adminPromptCompleteRequest = CompleteRequest.builder(
                 new PromptReference("admin-prompt"),
-                new McpSchema.CompleteRequest.CompleteArgument("arg", ""));
+                new McpSchema.CompleteRequest.CompleteArgument("arg", "")).build();
         CompleteResult adminPromptResult = client.mcpClient().completeCompletion(adminPromptCompleteRequest);
         assertThat(adminPromptResult.completion().values()).isEmpty();
 
         // Verify non-admin can get completions for public resource template
-        CompleteRequest publicResourceCompleteRequest = new CompleteRequest(
+        CompleteRequest publicResourceCompleteRequest = CompleteRequest.builder(
                 new ResourceReference("file://public/{name}"),
-                new McpSchema.CompleteRequest.CompleteArgument("name", ""));
+                new McpSchema.CompleteRequest.CompleteArgument("name", "")).build();
         CompleteResult publicResourceResult = client.mcpClient().completeCompletion(publicResourceCompleteRequest);
         assertThat(publicResourceResult.completion().values()).hasSize(2);
 
         // Verify non-admin gets empty completions for admin resource template (filtered out)
-        CompleteRequest adminResourceCompleteRequest = new CompleteRequest(
+        CompleteRequest adminResourceCompleteRequest = CompleteRequest.builder(
                 new ResourceReference("file://admin/{name}"),
-                new McpSchema.CompleteRequest.CompleteArgument("name", ""));
+                new McpSchema.CompleteRequest.CompleteArgument("name", "")).build();
         CompleteResult adminResourceResult = client.mcpClient().completeCompletion(adminResourceCompleteRequest);
         assertThat(adminResourceResult.completion().values()).isEmpty();
 
