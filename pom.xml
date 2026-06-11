@@ -101,7 +101,7 @@
 
         <dep.brotli4j.version>1.23.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.84</dep.bouncycastle.version>
-        <dep.mcp.sdk.version>1.1.3</dep.mcp.sdk.version>
+        <dep.mcp.sdk.version>2.0.0</dep.mcp.sdk.version>
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>

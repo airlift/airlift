@@ -116,9 +116,9 @@ public class TestSentMessages
         SessionId sessionId = sessionController.sessionIds().iterator().next();
 
         // will cause list change events on the next GET
-        client.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
-        client.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts")));
-        client.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "resources")));
+        client.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "SYSTEM", "name", "tools")).build());
+        client.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "SYSTEM", "name", "prompts")).build());
+        client.mcpClient().callTool(CallToolRequest.builder("setVersion").arguments(ImmutableMap.of("type", "SYSTEM", "name", "resources")).build());
 
         List<SentMessage> messages = new ArrayList<>();
 
