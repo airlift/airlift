@@ -6,6 +6,8 @@ import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiFilter;
 import io.airlift.api.ApiFilterList;
 import io.airlift.api.ApiList;
+import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiOrderByDirection;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
@@ -53,6 +55,7 @@ public class TestEnumQueryParameterLookup
                 .path(PATH)
                 .queryParam("filter", "ConfiguredName")
                 .queryParam("filters", "ConfiguredCreated", "ConfiguredName")
+                .queryParam("orderBy", "ConfiguredCreated DESC,ConfiguredName ASC")
                 .build();
 
         for (int request = 0; request < 2; request++) {
@@ -61,15 +64,17 @@ public class TestEnumQueryParameterLookup
             assertThat(response.getStatusCode()).isEqualTo(200);
             assertThat(response.getValue()).containsExactly(new EnumLookupResult(
                     Optional.of("Name"),
-                    List.of("Created", "Name")));
+                    List.of("Created", "Name"),
+                    List.of("Created", "Name"),
+                    List.of("DESCENDING", "ASCENDING")));
         }
 
         URI missingValues = UriBuilder.fromUri(baseUri).path(PATH).build();
         JsonResponse<EnumLookupResult[]> response = httpClient.execute(prepareGet().setUri(missingValues).build(), createFullJsonResponseHandler(RESULT_CODEC));
         assertThat(response.getStatusCode()).isEqualTo(200);
-        assertThat(response.getValue()).containsExactly(new EnumLookupResult(Optional.empty(), List.of()));
+        assertThat(response.getValue()).containsExactly(new EnumLookupResult(Optional.empty(), List.of(), List.of(), List.of()));
 
-        for (String parameter : List.of("filter", "filters")) {
+        for (String parameter : List.of("filter", "filters", "orderBy")) {
             URI invalidValue = UriBuilder.fromUri(baseUri)
                     .path(PATH)
                     .queryParam(parameter, "Name")
@@ -109,18 +114,23 @@ public class TestEnumQueryParameterLookup
         @ApiList(description = "enum lookup")
         public List<EnumLookupResult> list(
                 @ApiParameter ApiFilter<Field> filter,
-                @ApiParameter ApiFilterList<Field> filters)
+                @ApiParameter ApiFilterList<Field> filters,
+                @ApiParameter ApiOrderBy<Field> orderBy)
         {
             return List.of(new EnumLookupResult(
                     filter.value().map(Enum::name),
-                    filters.values().stream().map(Enum::name).toList()));
+                    filters.values().stream().map(Enum::name).toList(),
+                    orderBy.orderings().stream().map(ApiOrderBy.Ordering::field).map(Enum::name).toList(),
+                    orderBy.orderings().stream().map(ApiOrderBy.Ordering::direction).map(ApiOrderByDirection::name).toList()));
         }
     }
 
     @ApiResource(name = "enumLookupResult", description = "enum lookup result")
     public record EnumLookupResult(
             @ApiDescription("filter") Optional<String> filter,
-            @ApiDescription("filters") List<String> filters) {}
+            @ApiDescription("filters") List<String> filters,
+            @ApiDescription("fields") List<String> fields,
+            @ApiDescription("directions") List<String> directions) {}
 
     public enum Field
     {

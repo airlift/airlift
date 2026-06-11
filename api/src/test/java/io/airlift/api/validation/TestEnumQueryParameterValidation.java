@@ -10,6 +10,8 @@ import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiFilter;
 import io.airlift.api.ApiFilterList;
 import io.airlift.api.ApiList;
+import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiPagination;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
@@ -44,10 +46,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestEnumQueryParameterValidation
 {
-    private static final List<String> ENUM_PARAMETERS = List.of("filter", "filters");
+    private static final List<String> ENUM_PARAMETERS = List.of("filter", "filters", "orderBy", "pagination");
 
     @ParameterizedTest
-    @ValueSource(classes = {PascalQueryService.class, UpperQueryService.class})
+    @ValueSource(classes = {PascalQueryService.class, UpperQueryService.class, LegacyPaginationService.class})
     public void testValidDeclarations(Class<?> serviceClass)
     {
         assertThat(ApiBuilder.apiBuilder().add(serviceClass).build().modelServices().errors()).isEmpty();
@@ -91,6 +93,15 @@ public class TestEnumQueryParameterValidation
 
         assertThat(errors).hasSize(1);
         assertEnumErrors(errors, "list", UpperSnakeCaseEnum.class, "\"SMALL_VALUE\" is not a valid enum name for format PascalCase", ENUM_PARAMETERS);
+    }
+
+    @Test
+    public void testStandalonePaginationEnum()
+    {
+        Set<String> errors = ApiBuilder.apiBuilder().add(StandalonePaginationService.class).build().modelServices().errors();
+
+        assertThat(errors).hasSize(1);
+        assertEnumErrors(errors, "list", UpperSnakeCaseEnum.class, "not a valid enum name for format PascalCase", List.of("pagination"));
     }
 
     @Test
@@ -174,7 +185,9 @@ public class TestEnumQueryParameterValidation
         @ApiList(description = "query")
         public List<QueryResult> list(
                 @ApiParameter ApiFilter<PascalCaseEnum> filter,
-                @ApiParameter ApiFilterList<PascalCaseEnum> filters)
+                @ApiParameter ApiFilterList<PascalCaseEnum> filters,
+                @ApiParameter ApiOrderBy<PascalCaseEnum> orderBy,
+                @ApiParameter ApiPagination<PascalCaseEnum> pagination)
         {
             return null;
         }
@@ -186,7 +199,9 @@ public class TestEnumQueryParameterValidation
         @ApiList(description = "query")
         public List<QueryResult> list(
                 @ApiParameter ApiFilter<UpperSnakeCaseEnum> filter,
-                @ApiParameter ApiFilterList<UpperSnakeCaseEnum> filters)
+                @ApiParameter ApiFilterList<UpperSnakeCaseEnum> filters,
+                @ApiParameter ApiOrderBy<UpperSnakeCaseEnum> orderBy,
+                @ApiParameter ApiPagination<UpperSnakeCaseEnum> pagination)
         {
             return null;
         }
@@ -238,7 +253,9 @@ public class TestEnumQueryParameterValidation
         @ApiList(description = "query")
         public List<QueryResult> list(
                 @ApiParameter ApiFilter<UpperSnakeCaseEnum> filter,
-                @ApiParameter ApiFilterList<UpperSnakeCaseEnum> filters)
+                @ApiParameter ApiFilterList<UpperSnakeCaseEnum> filters,
+                @ApiParameter ApiOrderBy<UpperSnakeCaseEnum> orderBy,
+                @ApiParameter ApiPagination<UpperSnakeCaseEnum> pagination)
         {
             return null;
         }
@@ -250,7 +267,42 @@ public class TestEnumQueryParameterValidation
         @ApiList(description = "query")
         public List<QueryResult> list(
                 @ApiParameter ApiFilter<UpperSnakeCaseEnum> filter,
-                @ApiParameter ApiFilterList<UpperSnakeCaseEnum> filters)
+                @ApiParameter ApiFilterList<UpperSnakeCaseEnum> filters,
+                @ApiParameter ApiOrderBy<UpperSnakeCaseEnum> orderBy,
+                @ApiParameter ApiPagination<UpperSnakeCaseEnum> pagination)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = EnumServiceType.class, name = "standalone pagination", description = "standalone pagination")
+    public static class StandalonePaginationService
+    {
+        @ApiList(description = "query")
+        public List<QueryResult> list(@ApiParameter ApiPagination<UpperSnakeCaseEnum> pagination)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = EnumServiceType.class, name = "legacy pagination", description = "legacy pagination")
+    public static class LegacyPaginationService
+    {
+        @ApiList(description = "query")
+        public List<QueryResult> list(@ApiParameter ApiPagination<String> pagination)
+        {
+            return null;
+        }
+
+        @SuppressWarnings("rawtypes")
+        @ApiCustom(type = LIST, verb = "raw", description = "query")
+        public List<QueryResult> raw(@ApiParameter ApiPagination pagination)
+        {
+            return null;
+        }
+
+        @ApiCustom(type = LIST, verb = "object", description = "query")
+        public List<QueryResult> object(@ApiParameter ApiPagination<Object> pagination)
         {
             return null;
         }
@@ -262,7 +314,9 @@ public class TestEnumQueryParameterValidation
         @ApiCustom(type = LIST, verb = "nonString", description = "query")
         public List<QueryResult> nonString(
                 @ApiParameter ApiFilter<NonStringJsonValueEnum> filter,
-                @ApiParameter ApiFilterList<NonStringJsonValueEnum> filters)
+                @ApiParameter ApiFilterList<NonStringJsonValueEnum> filters,
+                @ApiParameter ApiOrderBy<NonStringJsonValueEnum> orderBy,
+                @ApiParameter ApiPagination<NonStringJsonValueEnum> pagination)
         {
             return null;
         }
@@ -270,7 +324,9 @@ public class TestEnumQueryParameterValidation
         @ApiCustom(type = LIST, verb = "nullValue", description = "query")
         public List<QueryResult> nullValue(
                 @ApiParameter ApiFilter<NullJsonValueEnum> filter,
-                @ApiParameter ApiFilterList<NullJsonValueEnum> filters)
+                @ApiParameter ApiFilterList<NullJsonValueEnum> filters,
+                @ApiParameter ApiOrderBy<NullJsonValueEnum> orderBy,
+                @ApiParameter ApiPagination<NullJsonValueEnum> pagination)
         {
             return null;
         }
@@ -278,7 +334,9 @@ public class TestEnumQueryParameterValidation
         @ApiCustom(type = LIST, verb = "duplicates", description = "query")
         public List<QueryResult> duplicates(
                 @ApiParameter ApiFilter<DuplicateJsonValueEnum> filter,
-                @ApiParameter ApiFilterList<DuplicateJsonValueEnum> filters)
+                @ApiParameter ApiFilterList<DuplicateJsonValueEnum> filters,
+                @ApiParameter ApiOrderBy<DuplicateJsonValueEnum> orderBy,
+                @ApiParameter ApiPagination<DuplicateJsonValueEnum> pagination)
         {
             return null;
         }
@@ -286,7 +344,9 @@ public class TestEnumQueryParameterValidation
         @ApiCustom(type = LIST, verb = "multiple", description = "query")
         public List<QueryResult> multiple(
                 @ApiParameter ApiFilter<MultipleJsonValueEnum> filter,
-                @ApiParameter ApiFilterList<MultipleJsonValueEnum> filters)
+                @ApiParameter ApiFilterList<MultipleJsonValueEnum> filters,
+                @ApiParameter ApiOrderBy<MultipleJsonValueEnum> orderBy,
+                @ApiParameter ApiPagination<MultipleJsonValueEnum> pagination)
         {
             return null;
         }
@@ -294,7 +354,9 @@ public class TestEnumQueryParameterValidation
         @ApiCustom(type = LIST, verb = "staticValue", description = "query")
         public List<QueryResult> staticValue(
                 @ApiParameter ApiFilter<StaticJsonValueEnum> filter,
-                @ApiParameter ApiFilterList<StaticJsonValueEnum> filters)
+                @ApiParameter ApiFilterList<StaticJsonValueEnum> filters,
+                @ApiParameter ApiOrderBy<StaticJsonValueEnum> orderBy,
+                @ApiParameter ApiPagination<StaticJsonValueEnum> pagination)
         {
             return null;
         }

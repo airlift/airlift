@@ -5,6 +5,8 @@ import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiFilter;
 import io.airlift.api.ApiFilterList;
+import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiPagination;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServices;
@@ -88,7 +90,9 @@ public class ApiBuilder
                 for (Parameter parameter : modelMethod.method().getParameters()) {
                     if (parameter.isAnnotationPresent(ApiParameter.class) &&
                             (parameter.getType().equals(ApiFilter.class) ||
-                                    parameter.getType().equals(ApiFilterList.class)) &&
+                                    parameter.getType().equals(ApiFilterList.class) ||
+                                    parameter.getType().equals(ApiOrderBy.class) ||
+                                    parameter.getType().equals(ApiPagination.class)) &&
                             parameter.getParameterizedType() instanceof ParameterizedType parameterizedType &&
                             parameterizedType.getActualTypeArguments()[0] instanceof Class<?> enumClass &&
                             enumClass.isEnum()) {

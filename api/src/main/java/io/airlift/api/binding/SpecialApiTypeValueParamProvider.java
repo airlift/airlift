@@ -45,10 +45,12 @@ import static io.airlift.api.internals.Mappers.buildOrderBy;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.buildTypedFilter;
 import static io.airlift.api.internals.Mappers.buildTypedFilterList;
+import static io.airlift.api.internals.Mappers.buildTypedOrderBy;
 import static io.airlift.api.internals.Mappers.buildValidateOnly;
 import static io.airlift.api.internals.Mappers.isTypedFilterType;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Mappers.typedFilterValueType;
+import static io.airlift.api.internals.Mappers.typedOrderByValueType;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static io.airlift.api.responses.ApiException.internalError;
 import static io.airlift.api.responses.ApiException.notFound;
@@ -102,6 +104,11 @@ class SpecialApiTypeValueParamProvider
             return containerRequest -> buildFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), allowedValues);
         }
         if (ApiOrderBy.class.isAssignableFrom(parameter.getRawType())) {
+            Class<?> type = typedOrderByValueType(parameter.getType());
+            if (type.isEnum()) {
+                Map<String, Enum<?>> enumValues = enumValues(type);
+                return containerRequest -> buildTypedOrderBy(containerRequest.getUriInfo(), enumValues);
+            }
             return containerRequest -> validate(parameter, buildOrderBy(containerRequest.getUriInfo()));
         }
         if (ApiHeader.class.isAssignableFrom(parameter.getRawType())) {
@@ -159,7 +166,7 @@ class SpecialApiTypeValueParamProvider
         return responseHeaders;
     }
 
-    private ApiOrderBy validate(Parameter parameter, ApiOrderBy orderBy)
+    private ApiOrderBy<String> validate(Parameter parameter, ApiOrderBy<String> orderBy)
     {
         ApiParameter apiParameter = requireNonNull(parameter.getAnnotation(ApiParameter.class), "ApiParameter is missing");
 
