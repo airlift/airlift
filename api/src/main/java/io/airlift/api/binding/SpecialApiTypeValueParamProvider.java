@@ -23,6 +23,7 @@ import io.airlift.api.ApiResponseHeaders;
 import io.airlift.api.ApiValidateOnly;
 import io.airlift.api.TypedApiFilter;
 import io.airlift.api.TypedApiFilterList;
+import io.airlift.api.TypedApiOrderBy;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.model.Parameter;
 import org.glassfish.jersey.server.spi.internal.ValueParamProvider;
@@ -44,9 +45,11 @@ import static io.airlift.api.internals.Mappers.buildOrderBy;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.buildTypedFilter;
 import static io.airlift.api.internals.Mappers.buildTypedFilterList;
+import static io.airlift.api.internals.Mappers.buildTypedOrderBy;
 import static io.airlift.api.internals.Mappers.buildValidateOnly;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Mappers.typedFilterValueType;
+import static io.airlift.api.internals.Mappers.typedOrderByValueType;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static io.airlift.api.responses.ApiException.internalError;
 import static io.airlift.api.responses.ApiException.notFound;
@@ -89,6 +92,10 @@ class SpecialApiTypeValueParamProvider
         }
         if (ApiOrderBy.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> validate(parameter, buildOrderBy(containerRequest.getUriInfo()));
+        }
+        if (TypedApiOrderBy.class.isAssignableFrom(parameter.getRawType())) {
+            Class<?> type = typedOrderByValueType(parameter.getType());
+            return containerRequest -> buildTypedOrderBy(containerRequest.getUriInfo(), type, enumValueResolver);
         }
         if (ApiHeader.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> buildHeader(containerRequest, buildHeaderName(getParameterName(parameter, containerRequest)));

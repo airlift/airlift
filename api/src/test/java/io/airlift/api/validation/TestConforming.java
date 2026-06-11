@@ -36,6 +36,7 @@ import io.airlift.api.ApiUpdate;
 import io.airlift.api.ServiceType;
 import io.airlift.api.TypedApiFilter;
 import io.airlift.api.TypedApiFilterList;
+import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.binding.ApiModule;
 import io.airlift.api.binding.PolyResourceModule;
 import io.airlift.api.builders.ApiBuilder;
@@ -426,6 +427,44 @@ public class TestConforming
     }
 
     @Test
+    public void testTypedApiOrderByAllowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithTypedApiOrderBy.class).build().modelServices();
+        assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).isEmpty();
+    }
+
+    @Test
+    public void testRawTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithRawTypedApiOrderBy.class, "Expected class io.airlift.api.TypedApiOrderBy to be parameterized type");
+    }
+
+    @Test
+    public void testWildcardTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithWildcardTypedApiOrderBy.class, "Typed API order by type parameter must be a concrete enum class");
+    }
+
+    @Test
+    public void testTypeVariableTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithTypeVariableTypedApiOrderBy.class, "Typed API order by type parameter must be a concrete enum class");
+    }
+
+    @Test
+    public void testUnsupportedTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithStringTypedApiOrderBy.class, "java.lang.String");
+        assertTypedOrderByRejected(ServiceWithNonConcreteEnumTypedApiOrderBy.class, "java.lang.Enum");
+    }
+
+    @Test
+    public void testTypedApiOrderByWithAllowedValuesDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithTypedApiOrderByAllowedValues.class, "TypedApiOrderBy parameter derives allowed values from its enum type");
+    }
+
+    @Test
     public void testRawJacksonNodeFieldsDisallowed()
     {
         assertJacksonNodeResourceTypeDisallowed(ResourceWithJacksonJsonNodeField.class);
@@ -444,6 +483,12 @@ public class TestConforming
     }
 
     private static void assertTypedFilterRejected(Class<?> serviceType, String message)
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(serviceType).build().modelServices();
+        assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).anyMatch(error -> error.contains(message));
+    }
+
+    private static void assertTypedOrderByRejected(Class<?> serviceType, String message)
     {
         ModelServices services = ApiBuilder.apiBuilder().add(serviceType).build().modelServices();
         assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).anyMatch(error -> error.contains(message));
@@ -664,6 +709,86 @@ public class TestConforming
     {
         @ApiList(description = "non concrete enum typed filters")
         public List<Thing> list(@ApiParameter TypedApiFilter<Enum> enumFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "typed order by service", description = "typed order by")
+    public static class ServiceWithTypedApiOrderBy
+    {
+        @ApiList(description = "typed order by")
+        public List<Thing> list(@ApiParameter TypedApiOrderBy<PascalCaseEnum> orderBy)
+        {
+            return null;
+        }
+
+        @ApiUpdate(description = "typed order by")
+        public Thing update(
+                @ApiParameter ThingId thingId,
+                @ApiParameter TypedApiOrderBy<PascalCaseEnum> orderBy,
+                Thing thing)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "raw typed order by service", description = "raw typed order by")
+    public static class ServiceWithRawTypedApiOrderBy
+    {
+        @SuppressWarnings("rawtypes")
+        @ApiList(description = "raw typed order by")
+        public List<Thing> list(@ApiParameter TypedApiOrderBy orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "wildcard typed order by service", description = "wildcard typed order by")
+    public static class ServiceWithWildcardTypedApiOrderBy
+    {
+        @ApiList(description = "wildcard typed order by")
+        public List<Thing> list(@ApiParameter TypedApiOrderBy<? extends PascalCaseEnum> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "type variable typed order by service", description = "type variable typed order by")
+    public static class ServiceWithTypeVariableTypedApiOrderBy
+    {
+        @ApiList(description = "type variable typed order by")
+        public <T> List<Thing> list(@ApiParameter TypedApiOrderBy<T> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "string typed order by service", description = "string typed order by")
+    public static class ServiceWithStringTypedApiOrderBy
+    {
+        @ApiList(description = "string typed order by")
+        public List<Thing> list(@ApiParameter TypedApiOrderBy<String> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "non concrete enum typed order by service", description = "non concrete enum typed order by")
+    public static class ServiceWithNonConcreteEnumTypedApiOrderBy
+    {
+        @ApiList(description = "non concrete enum typed order by")
+        public List<Thing> list(@ApiParameter TypedApiOrderBy<Enum> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "typed order by allowed values service", description = "typed order by allowed values")
+    public static class ServiceWithTypedApiOrderByAllowedValues
+    {
+        @ApiList(description = "typed order by allowed values")
+        public List<Thing> list(@ApiParameter(allowedValues = "Small") TypedApiOrderBy<PascalCaseEnum> orderBy)
         {
             return null;
         }

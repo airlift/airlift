@@ -28,6 +28,7 @@ import io.airlift.api.ApiUpdate;
 import io.airlift.api.ApiValidateOnly;
 import io.airlift.api.TypedApiFilter;
 import io.airlift.api.TypedApiFilterList;
+import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
 import io.airlift.api.model.ModelOptionalParameter.ExternalParameter;
@@ -76,6 +77,7 @@ import static io.airlift.api.internals.Mappers.buildHeaderName;
 import static io.airlift.api.internals.Mappers.openApiName;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Mappers.typedFilterValueType;
+import static io.airlift.api.internals.Mappers.typedOrderByValueType;
 import static io.airlift.api.model.ModelOptionalParameter.Location.HEADER;
 import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
@@ -377,6 +379,10 @@ public class MethodBuilder
 
         boolean hasAllowedValues = (apiParameter.allowedValues().length > 0);
 
+        if (TypedApiOrderBy.class.isAssignableFrom(parameter.getType()) && hasAllowedValues) {
+            throw new ValidatorException("%s parameter derives allowed values from its enum type".formatted(parameter.getType().getSimpleName()));
+        }
+
         if (optionalParameter.metadata().contains(REQUIRES_ALLOWED_VALUES) && !hasAllowedValues) {
             throw new ValidatorException("%s parameter requires allowedValues".formatted(parameter.getType().getSimpleName()));
         }
@@ -428,6 +434,14 @@ public class MethodBuilder
                     parameter.getParameterizedType(),
                     ImmutableSet.of(new ExternalParameter("", "Query filter", arrayType)))
                     .withMetadata(MULTIPLE_ALLOWED);
+        }
+        if (TypedApiOrderBy.class.isAssignableFrom(parameter.getType())) {
+            Class<?> valueType = typedOrderByValueType(parameter.getParameterizedType());
+            return new ModelOptionalParameter(
+                    QUERY,
+                    parameter.getParameterizedType(),
+                    ImmutableSet.of(new ExternalParameter(ORDER_BY_PARAMETER_NAME, "Sort/ordering in standard SQL ORDER BY format.", valueType)))
+                    .withMetadata(VALIDATES_ARGUMENT);
         }
 
         ModelOptionalParameter optionalParameter = OPTIONAL_PARAMETER_MAP.get(parameter.getType());

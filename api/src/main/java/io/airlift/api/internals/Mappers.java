@@ -20,6 +20,7 @@ import io.airlift.api.ApiResponse;
 import io.airlift.api.ApiValidateOnly;
 import io.airlift.api.TypedApiFilter;
 import io.airlift.api.TypedApiFilterList;
+import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelServiceMetadata;
@@ -347,6 +348,53 @@ public interface Mappers
                         .collect(toImmutableList()))
                 .orElseGet(ImmutableList::of);
         return new ApiOrderBy(orderings);
+    }
+
+    static TypedApiOrderBy<?> buildTypedOrderBy(UriInfo uriInfo, Class<?> type, ApiEnumValueResolver enumValueResolver)
+    {
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
+        ApiOrderBy orderBy = buildOrderBy(uriInfo);
+
+        ImmutableList.Builder<TypedApiOrderBy.Ordering<Object>> orderings = ImmutableList.builder();
+        ImmutableList.Builder<String> invalidFields = ImmutableList.builder();
+        for (Ordering ordering : orderBy.orderings()) {
+            Optional<Object> field = enumConstant(type, ordering.field(), enumValueResolver);
+            if (field.isPresent()) {
+                orderings.add(new TypedApiOrderBy.Ordering<>(field.orElseThrow(), ordering.direction()));
+            }
+            else {
+                invalidFields.add(ordering.field());
+            }
+        }
+
+        List<String> illegalValues = invalidFields.build();
+        if (!illegalValues.isEmpty()) {
+            throw badRequest("Invalid %s: %s".formatted(ORDER_BY_PARAMETER_NAME, String.join(", ", illegalValues)));
+        }
+
+        return new TypedApiOrderBy<>(orderings.build());
+    }
+
+    static Class<?> typedOrderByValueType(Type type)
+    {
+        Type valueType = extractGenericParameter(type, 0);
+        if (!(valueType instanceof Class<?> valueClass)) {
+            throw new ValidatorException("Typed API order by type parameter must be a concrete enum class: %s".formatted(valueType));
+        }
+        if (!valueClass.isEnum()) {
+            throw new ValidatorException("Typed API order by type parameter must be a concrete enum: %s".formatted(valueClass.getTypeName()));
+        }
+        return valueClass;
+    }
+
+    private static Optional<Object> enumConstant(Class<?> type, String value, ApiEnumValueResolver enumValueResolver)
+    {
+        for (Object enumConstant : type.getEnumConstants()) {
+            if (enumValueResolver.value((Enum<?>) enumConstant).equals(value)) {
+                return Optional.of(enumConstant);
+            }
+        }
+        return Optional.empty();
     }
 
     static ApiModifier buildModifier(UriInfo uriInfo, String name)

@@ -19,6 +19,7 @@ import io.airlift.api.ApiType;
 import io.airlift.api.ApiValidateOnly;
 import io.airlift.api.TypedApiFilter;
 import io.airlift.api.TypedApiFilterList;
+import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
 import io.airlift.api.model.ModelResource;
@@ -57,9 +58,9 @@ public interface MethodValidator
 
     Map<ApiType, Collection<Class<?>>> ALLOWED_PARAMETER_TYPES = ImmutableMap.of(
             ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class /*, ApiOrderBy.class*/),
-            ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),
+            ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
             ApiType.CREATE, ImmutableSet.of(ApiValidateOnly.class, ApiModifier.class, ApiHeader.class),
-            ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),
+            ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
             ApiType.DELETE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class));
 
     static void validateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits)
@@ -167,10 +168,15 @@ public interface MethodValidator
         if (isFilterType(optionalParameter.type())) {
             return optionalParameter.externalParameters().stream().map(ModelOptionalParameter.ExternalParameter::name);
         }
-        if (optionalParameter.type().equals(ApiOrderBy.class)) {
+        if (optionalParameter.type().equals(ApiOrderBy.class) || rawTypeEquals(optionalParameter.type(), TypedApiOrderBy.class)) {
             return optionalParameter.limitedValues().stream();
         }
         return Stream.empty();
+    }
+
+    private static boolean rawTypeEquals(Type type, Class<?> expectedRawType)
+    {
+        return (type instanceof ParameterizedType parameterizedType) && parameterizedType.getRawType().equals(expectedRawType);
     }
 
     private static void validateOptionalParameter(ModelMethod method, Parameter parameter, Collection<Class<?>> allowedParameterTypes, ApiParameter apiParameter)
