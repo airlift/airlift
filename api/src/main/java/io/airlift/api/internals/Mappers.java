@@ -171,12 +171,12 @@ public interface Mappers
                 .orElseGet(() -> new ApiValidateOnly(false));
     }
 
-    static ApiPagination buildPagination(UriInfo uriInfo)
+    static <T> ApiPagination<T> buildPagination(UriInfo uriInfo)
     {
         return buildPagination(key -> Optional.ofNullable(uriInfo.getQueryParameters().getFirst(key)));
     }
 
-    static ApiPagination buildPagination(Function<String, Optional<String>> queryParameterProvider)
+    static <T> ApiPagination<T> buildPagination(Function<String, Optional<String>> queryParameterProvider)
     {
         String pageSizeParameterValue = queryParameterProvider.apply(PAGE_SIZE_QUERY_PARAMETER_NAME).orElse("0");
 
@@ -189,7 +189,7 @@ public interface Mappers
         }
 
         Optional<String> pageToken = queryParameterProvider.apply(PAGE_TOKEN_QUERY_PARAMETER_NAME).filter(token -> !token.isEmpty());
-        return new ApiPagination(pageToken, pageSize, Optional.empty());
+        return new ApiPagination<>(pageToken, pageSize, Optional.empty());
     }
 
     static String buildHeaderName(String baseName)
@@ -333,30 +333,80 @@ public interface Mappers
         throw badRequest("Invalid filter %s: %s".formatted(name, value));
     }
 
-    static ApiOrderBy buildOrderBy(UriInfo uriInfo)
+    static ApiOrderBy<String> buildOrderBy(UriInfo uriInfo)
     {
         return buildOrderBy(Optional.ofNullable(uriInfo.getQueryParameters().getFirst(ORDER_BY_PARAMETER_NAME)));
     }
 
-    static ApiOrderBy buildOrderBy(Optional<String> queryParameter)
+    static ApiOrderBy<String> buildOrderBy(Optional<String> queryParameter)
     {
-        List<Ordering> orderings = queryParameter.map(spec -> Splitter.on(',').trimResults().omitEmptyStrings().splitToList(spec)
+        List<Ordering<String>> orderings = queryParameter.map(spec -> Splitter.on(',').trimResults().omitEmptyStrings().splitToList(spec)
                         .stream()
                         .map(sort -> {
                             List<String> parts = Splitter.on(' ').trimResults().omitEmptyStrings().limit(2).splitToList(sort);
                             return switch (parts.size()) {
                                 case 0 -> invalidOrderBy(sort);
-                                case 1 -> new Ordering(parts.get(0), ApiOrderByDirection.ASCENDING);
+                                case 1 -> new Ordering<>(parts.get(0), ApiOrderByDirection.ASCENDING);
                                 default -> switch (parts.get(1).toUpperCase(Locale.ROOT)) {
-                                    case "ASC" -> new Ordering(parts.getFirst(), ApiOrderByDirection.ASCENDING);
-                                    case "DESC" -> new Ordering(parts.getFirst(), ApiOrderByDirection.DESCENDING);
+                                    case "ASC" -> new Ordering<>(parts.getFirst(), ApiOrderByDirection.ASCENDING);
+                                    case "DESC" -> new Ordering<>(parts.getFirst(), ApiOrderByDirection.DESCENDING);
                                     default -> invalidOrderBy(sort);
                                 };
                             };
                         })
                         .collect(toImmutableList()))
                 .orElseGet(ImmutableList::of);
-        return new ApiOrderBy(orderings);
+        return new ApiOrderBy<>(orderings);
+    }
+
+    static ApiOrderBy<?> buildTypedOrderBy(UriInfo uriInfo, Class<?> type, ApiEnumValueResolver enumValueResolver)
+    {
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
+        ApiOrderBy<String> orderBy = buildOrderBy(uriInfo);
+
+        ImmutableList.Builder<Ordering<Object>> orderings = ImmutableList.builder();
+        ImmutableList.Builder<String> invalidFields = ImmutableList.builder();
+        for (Ordering<String> ordering : orderBy.orderings()) {
+            Optional<Object> field = enumConstant(type, ordering.field(), enumValueResolver);
+            if (field.isPresent()) {
+                orderings.add(new Ordering<>(field.orElseThrow(), ordering.direction()));
+            }
+            else {
+                invalidFields.add(ordering.field());
+            }
+        }
+
+        List<String> illegalValues = invalidFields.build();
+        if (!illegalValues.isEmpty()) {
+            throw badRequest("Invalid %s: %s".formatted(ORDER_BY_PARAMETER_NAME, String.join(", ", illegalValues)));
+        }
+
+        return new ApiOrderBy<>(orderings.build());
+    }
+
+    static Class<?> typedOrderByValueType(Type type)
+    {
+        if (type.equals(ApiOrderBy.class)) {
+            return String.class;
+        }
+        Type valueType = extractGenericParameter(type, 0);
+        if (!(valueType instanceof Class<?> valueClass)) {
+            throw new ValidatorException("API order by type parameter must be String, Object, or a concrete enum class: %s".formatted(valueType));
+        }
+        if (!valueClass.equals(String.class) && !valueClass.equals(Object.class) && !valueClass.isEnum()) {
+            throw new ValidatorException("API order by type parameter must be String, Object, or a concrete enum: %s".formatted(valueClass.getTypeName()));
+        }
+        return valueClass;
+    }
+
+    private static Optional<Object> enumConstant(Class<?> type, String value, ApiEnumValueResolver enumValueResolver)
+    {
+        for (Object enumConstant : type.getEnumConstants()) {
+            if (enumValueResolver.value((Enum<?>) enumConstant).equals(value)) {
+                return Optional.of(enumConstant);
+            }
+        }
+        return Optional.empty();
     }
 
     static ApiModifier buildModifier(UriInfo uriInfo, String name)
@@ -385,7 +435,7 @@ public interface Mappers
         }
     }
 
-    private static Ordering invalidOrderBy(String sort)
+    private static Ordering<String> invalidOrderBy(String sort)
     {
         throw badRequest("Invalid sort statement: " + sort);
     }

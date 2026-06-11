@@ -138,7 +138,7 @@ public class IntegrationTests
     {
         var pageOfResults = call(prepareGet(), UriBuilder.fromUri(testingServer.baseUri()).path(BASE_WIDGET_PATH).build(), EXTERNAL_WIDGET_LIST_CODEC);
 
-        ApiPaginatedResult<ExternalWidget> expected = internalController.list(new ApiPagination(Optional.empty(), DEFAULT_PAGE_SIZE, Optional.empty()), new ApiFilter<>(Optional.empty()), new ApiFilterList<>(ImmutableList.of()))
+        ApiPaginatedResult<ExternalWidget> expected = internalController.list(new ApiPagination<>(Optional.empty(), DEFAULT_PAGE_SIZE, Optional.empty()), new ApiFilter<>(Optional.empty()), new ApiFilterList<>(ImmutableList.of()))
                 .map(InternalWidget::map);
         assertThat(pageOfResults.getStatusCode()).isEqualTo(200);
         assertThat(pageOfResults.getValue().result()).isEqualTo(expected.result());
@@ -185,9 +185,9 @@ public class IntegrationTests
 
     @ParameterizedTest
     @MethodSource("testPaginationArguments")
-    public void testPagination(int pageSize, Ordering ordering)
+    public void testPagination(int pageSize, Ordering<String> ordering)
     {
-        ApiPagination pagination = new ApiPagination(Optional.empty(), pageSize, Optional.of(ordering));
+        ApiPagination<String> pagination = new ApiPagination<>(Optional.empty(), pageSize, Optional.of(ordering));
 
         int totalReturned = 0;
         do {
@@ -323,7 +323,7 @@ public class IntegrationTests
         return Stream.of(1, 25, DEFAULT_PAGE_SIZE, RECORD_QTY * 2)
                 .flatMap(pageSize -> Stream.of("id", "name", "size")
                         .flatMap(field -> Stream.of(ASCENDING, DESCENDING)
-                                .map(sortBy -> Arguments.of(pageSize, new Ordering(field, sortBy)))));
+                                .map(sortBy -> Arguments.of(pageSize, new Ordering<>(field, sortBy)))));
     }
 
     private <T> JsonResponse<T> call(Request.Builder requestBuilder, URI uri, JsonCodec<T> responseCodec)

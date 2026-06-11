@@ -170,10 +170,15 @@ public interface MethodValidator
         if (isFilterType(optionalParameter.type())) {
             return optionalParameter.externalParameters().stream().map(ModelOptionalParameter.ExternalParameter::name);
         }
-        if (optionalParameter.type().equals(ApiOrderBy.class)) {
+        if (optionalParameter.type().equals(ApiOrderBy.class) || rawTypeEquals(optionalParameter.type(), ApiOrderBy.class)) {
             return optionalParameter.limitedValues().stream();
         }
         return Stream.empty();
+    }
+
+    private static boolean rawTypeEquals(Type type, Class<?> expectedRawType)
+    {
+        return (type instanceof ParameterizedType parameterizedType) && parameterizedType.getRawType().equals(expectedRawType);
     }
 
     private static void validateOptionalParameter(ModelMethod method, Parameter parameter, Collection<Class<?>> allowedParameterTypes, ApiParameter apiParameter)

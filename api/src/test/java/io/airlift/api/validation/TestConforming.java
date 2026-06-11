@@ -437,6 +437,66 @@ public class TestConforming
     }
 
     @Test
+    public void testTypedApiOrderByAllowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithTypedApiOrderBy.class).build().modelServices();
+        assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).isEmpty();
+    }
+
+    @Test
+    public void testStringApiOrderByAllowed()
+    {
+        assertThat(ApiBuilder.apiBuilder().add(ServiceWithRawApiOrderBy.class).build().modelServices().errors()).isEmpty();
+        assertThat(ApiBuilder.apiBuilder().add(ServiceWithObjectApiOrderBy.class).build().modelServices().errors()).isEmpty();
+        assertThat(ApiBuilder.apiBuilder().add(ServiceWithStringApiOrderBy.class).build().modelServices().errors()).isEmpty();
+    }
+
+    @Test
+    public void testStringApiOrderByRequiresAllowedValues()
+    {
+        assertTypedOrderByRejected(ServiceWithRawApiOrderByWithoutAllowedValues.class, "ApiOrderBy parameter requires allowedValues");
+        assertTypedOrderByRejected(ServiceWithObjectApiOrderByWithoutAllowedValues.class, "ApiOrderBy parameter requires allowedValues");
+        assertTypedOrderByRejected(ServiceWithStringApiOrderByWithoutAllowedValues.class, "ApiOrderBy parameter requires allowedValues");
+    }
+
+    @Test
+    public void testDuplicateApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithDuplicateApiOrderBy.class, "Method has multiple ApiOrderBy parameters");
+    }
+
+    @Test
+    public void testApiOrderByOnGetDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithApiOrderByOnGet.class, "Method cannot have a ApiOrderBy parameter");
+    }
+
+    @Test
+    public void testWildcardTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithWildcardTypedApiOrderBy.class, "API order by type parameter must be String, Object, or a concrete enum class");
+    }
+
+    @Test
+    public void testTypeVariableTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithTypeVariableTypedApiOrderBy.class, "API order by type parameter must be String, Object, or a concrete enum class");
+    }
+
+    @Test
+    public void testUnsupportedTypedApiOrderByDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithIntegerApiOrderBy.class, "java.lang.Integer");
+        assertTypedOrderByRejected(ServiceWithNonConcreteEnumTypedApiOrderBy.class, "java.lang.Enum");
+    }
+
+    @Test
+    public void testTypedApiOrderByWithAllowedValuesDisallowed()
+    {
+        assertTypedOrderByRejected(ServiceWithTypedApiOrderByAllowedValues.class, "ApiOrderBy parameter derives allowed values from its enum type");
+    }
+
+    @Test
     public void testRawJacksonNodeFieldsDisallowed()
     {
         assertJacksonNodeResourceTypeDisallowed(ResourceWithJacksonJsonNodeField.class);
@@ -455,6 +515,12 @@ public class TestConforming
     }
 
     private static void assertTypedFilterRejected(Class<?> serviceType, String message)
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(serviceType).build().modelServices();
+        assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).anyMatch(error -> error.contains(message));
+    }
+
+    private static void assertTypedOrderByRejected(Class<?> serviceType, String message)
     {
         ModelServices services = ApiBuilder.apiBuilder().add(serviceType).build().modelServices();
         assertThat(services.errors()).withFailMessage(() -> services.errors().toString()).anyMatch(error -> error.contains(message));
@@ -530,7 +596,7 @@ public class TestConforming
     public static class ServiceWithJsonNodeOrderBy
     {
         @ApiList(description = "json node order by")
-        public List<ResourceWithJsonNodeField> list(@ApiParameter(allowedValues = "json") ApiOrderBy orderBy)
+        public List<ResourceWithJsonNodeField> list(@ApiParameter(allowedValues = "json") ApiOrderBy<String> orderBy)
         {
             return null;
         }
@@ -673,6 +739,159 @@ public class TestConforming
     {
         @ApiList(description = "non concrete enum typed filters")
         public List<Thing> list(@ApiParameter ApiFilter<Enum> enumFilter)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "typed order by service", description = "typed order by")
+    public static class ServiceWithTypedApiOrderBy
+    {
+        @ApiList(description = "typed order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy<PascalCaseEnum> orderBy)
+        {
+            return null;
+        }
+
+        @ApiUpdate(description = "typed order by")
+        public Thing update(
+                @ApiParameter ThingId thingId,
+                @ApiParameter ApiOrderBy<PascalCaseEnum> orderBy,
+                Thing thing)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "raw typed order by service", description = "raw typed order by")
+    public static class ServiceWithRawApiOrderBy
+    {
+        @SuppressWarnings("rawtypes")
+        @ApiList(description = "raw typed order by")
+        public List<Thing> list(@ApiParameter(allowedValues = "name") ApiOrderBy orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "wildcard typed order by service", description = "wildcard typed order by")
+    public static class ServiceWithWildcardTypedApiOrderBy
+    {
+        @ApiList(description = "wildcard typed order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy<? extends PascalCaseEnum> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "type variable typed order by service", description = "type variable typed order by")
+    public static class ServiceWithTypeVariableTypedApiOrderBy
+    {
+        @ApiList(description = "type variable typed order by")
+        public <T> List<Thing> list(@ApiParameter ApiOrderBy<T> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "string typed order by service", description = "string typed order by")
+    public static class ServiceWithStringApiOrderBy
+    {
+        @ApiList(description = "string typed order by")
+        public List<Thing> list(@ApiParameter(allowedValues = "name") ApiOrderBy<String> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "non concrete enum typed order by service", description = "non concrete enum typed order by")
+    public static class ServiceWithNonConcreteEnumTypedApiOrderBy
+    {
+        @ApiList(description = "non concrete enum typed order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy<Enum> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "typed order by allowed values service", description = "typed order by allowed values")
+    public static class ServiceWithTypedApiOrderByAllowedValues
+    {
+        @ApiList(description = "typed order by allowed values")
+        public List<Thing> list(@ApiParameter(allowedValues = "Small") ApiOrderBy<PascalCaseEnum> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "object order by service", description = "object order by")
+    public static class ServiceWithObjectApiOrderBy
+    {
+        @ApiList(description = "object order by")
+        public List<Thing> list(@ApiParameter(allowedValues = "name") ApiOrderBy<Object> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "raw order by without allowed values", description = "raw order by")
+    public static class ServiceWithRawApiOrderByWithoutAllowedValues
+    {
+        @SuppressWarnings("rawtypes")
+        @ApiList(description = "raw order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "object order by without allowed values", description = "object order by")
+    public static class ServiceWithObjectApiOrderByWithoutAllowedValues
+    {
+        @ApiList(description = "object order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy<Object> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "string order by without allowed values", description = "string order by")
+    public static class ServiceWithStringApiOrderByWithoutAllowedValues
+    {
+        @ApiList(description = "string order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy<String> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "integer order by service", description = "integer order by")
+    public static class ServiceWithIntegerApiOrderBy
+    {
+        @ApiList(description = "integer order by")
+        public List<Thing> list(@ApiParameter ApiOrderBy<Integer> orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "duplicate order by service", description = "duplicate order by")
+    public static class ServiceWithDuplicateApiOrderBy
+    {
+        @ApiList(description = "duplicate order by")
+        public List<Thing> list(
+                @ApiParameter(allowedValues = "name") ApiOrderBy<String> orderBy,
+                @ApiParameter ApiOrderBy<PascalCaseEnum> otherOrderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "get order by service", description = "get order by")
+    public static class ServiceWithApiOrderByOnGet
+    {
+        @ApiGet(description = "get order by")
+        public Thing get(@ApiParameter ThingId thingId, @ApiParameter ApiOrderBy<PascalCaseEnum> orderBy)
         {
             return null;
         }
