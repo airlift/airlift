@@ -43,6 +43,7 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.weakref.jmx.testing.TestingMBeanServer;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.security.auth.x500.X500Principal;
 
 import java.io.EOFException;
@@ -669,6 +672,21 @@ public class TestHttpServerProvider
     }
 
     @Test
+    public void testInjectedSslContextDaysUntilCertificateExpiration()
+            throws Exception
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true);
+        httpServerInfo = createHttpServerInfo();
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setSslContext(createSslContextFromTestKeystore());
+        createServer(new DummyServlet(), Optional.of(sslContextFactory));
+
+        assertThat(server.getDaysUntilCertificateExpiration()).isNull();
+    }
+
+    @Test
     public void testKeystoreReloading()
             throws Exception
     {
@@ -713,6 +731,11 @@ public class TestHttpServerProvider
 
     private void createServer(HttpServlet servlet)
     {
+        createServer(servlet, Optional.empty());
+    }
+
+    private void createServer(HttpServlet servlet, Optional<SslContextFactory.Server> sslContextFactoryOverride)
+    {
         try {
             server = new HttpServer(
                     "test",
@@ -726,7 +749,7 @@ public class TestHttpServerProvider
                     ServerFeature.defaults(),
                     clientCertificate,
                     Optional.of(new TestingMBeanServer()),
-                    Optional.empty());
+                    sslContextFactoryOverride);
             server.start();
         }
         catch (Exception e) {
@@ -743,6 +766,22 @@ public class TestHttpServerProvider
     private Optional<HttpsConfig> optionalHttpsConfig()
     {
         return config.isHttpsEnabled() ? Optional.of(this.httpsConfig) : Optional.empty();
+    }
+
+    private static SSLContext createSslContextFromTestKeystore()
+            throws Exception
+    {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        char[] password = "airlift".toCharArray();
+        try (InputStream inputStream = getResource("test.keystore").openStream()) {
+            keyStore.load(inputStream, password);
+        }
+
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, password);
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+        return sslContext;
     }
 
     private static void appendCertificate(File keyStoreFile, String alias)
