@@ -5,14 +5,14 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiEnumNamingFormat;
+import io.airlift.api.ApiFilter;
+import io.airlift.api.ApiFilterList;
 import io.airlift.api.ApiGet;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
 import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.ApiServiceType;
-import io.airlift.api.TypedApiFilter;
-import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
@@ -62,6 +62,15 @@ public class TestTypedApiFilterOpenApi
         assertArraySchema(parameters.get("instantFilters").getSchema(), "string", "date-time");
         assertArraySchema(parameters.get("uuidFilters").getSchema(), "string", null);
         assertArrayEnumSchema(parameters.get("enumFilters").getSchema(), "Small", "Big", "Large");
+    }
+
+    @Test
+    public void testObjectApiFilterSchemasUseLegacyStringSchemas()
+    {
+        Map<String, Parameter> parameters = parameters(TypedFilterService.class, "/typed/api/v1/objectFilterSchemaResult");
+
+        assertBasicSchema(parameters.get("objectFilter").getSchema(), "string", null);
+        assertArraySchema(parameters.get("objectFilters").getSchema(), "string", null);
     }
 
     @Test
@@ -135,22 +144,30 @@ public class TestTypedApiFilterOpenApi
     {
         @ApiGet(description = "typed filters")
         public TypedFilterSchemaResult get(
-                @ApiParameter TypedApiFilter<Boolean> booleanFilter,
-                @ApiParameter TypedApiFilter<Integer> integerFilter,
-                @ApiParameter TypedApiFilter<Long> longFilter,
-                @ApiParameter TypedApiFilter<Double> doubleFilter,
-                @ApiParameter TypedApiFilter<String> stringFilter,
-                @ApiParameter TypedApiFilter<Instant> instantFilter,
-                @ApiParameter TypedApiFilter<UUID> uuidFilter,
-                @ApiParameter TypedApiFilter<ResourceWithAllTypes.Stuff> enumFilter,
-                @ApiParameter TypedApiFilterList<Boolean> booleanFilters,
-                @ApiParameter TypedApiFilterList<Integer> integerFilters,
-                @ApiParameter TypedApiFilterList<Long> longFilters,
-                @ApiParameter TypedApiFilterList<Double> doubleFilters,
-                @ApiParameter TypedApiFilterList<String> stringFilters,
-                @ApiParameter TypedApiFilterList<Instant> instantFilters,
-                @ApiParameter TypedApiFilterList<UUID> uuidFilters,
-                @ApiParameter TypedApiFilterList<ResourceWithAllTypes.Stuff> enumFilters)
+                @ApiParameter ApiFilter<Boolean> booleanFilter,
+                @ApiParameter ApiFilter<Integer> integerFilter,
+                @ApiParameter ApiFilter<Long> longFilter,
+                @ApiParameter ApiFilter<Double> doubleFilter,
+                @ApiParameter ApiFilter<String> stringFilter,
+                @ApiParameter ApiFilter<Instant> instantFilter,
+                @ApiParameter ApiFilter<UUID> uuidFilter,
+                @ApiParameter ApiFilter<ResourceWithAllTypes.Stuff> enumFilter,
+                @ApiParameter ApiFilterList<Boolean> booleanFilters,
+                @ApiParameter ApiFilterList<Integer> integerFilters,
+                @ApiParameter ApiFilterList<Long> longFilters,
+                @ApiParameter ApiFilterList<Double> doubleFilters,
+                @ApiParameter ApiFilterList<String> stringFilters,
+                @ApiParameter ApiFilterList<Instant> instantFilters,
+                @ApiParameter ApiFilterList<UUID> uuidFilters,
+                @ApiParameter ApiFilterList<ResourceWithAllTypes.Stuff> enumFilters)
+        {
+            return null;
+        }
+
+        @ApiGet(description = "object filters")
+        public ObjectFilterSchemaResult getObjectFilters(
+                @ApiParameter ApiFilter<Object> objectFilter,
+                @ApiParameter ApiFilterList<Object> objectFilters)
         {
             return null;
         }
@@ -161,8 +178,8 @@ public class TestTypedApiFilterOpenApi
     {
         @ApiGet(description = "typed filters")
         public TypedFilterSchemaResult get(
-                @ApiParameter TypedApiFilter<UpperSnakeFilterValue> enumFilter,
-                @ApiParameter TypedApiFilterList<UpperSnakeFilterValue> enumFilters)
+                @ApiParameter ApiFilter<UpperSnakeFilterValue> enumFilter,
+                @ApiParameter ApiFilterList<UpperSnakeFilterValue> enumFilters)
         {
             return null;
         }
@@ -173,8 +190,8 @@ public class TestTypedApiFilterOpenApi
     {
         @ApiGet(description = "typed filters")
         public TypedFilterSchemaResult get(
-                @ApiParameter TypedApiFilter<ResourceWithAllTypes.Stuff> enumFilter,
-                @ApiParameter TypedApiFilterList<ResourceWithAllTypes.Stuff> enumFilters)
+                @ApiParameter ApiFilter<ResourceWithAllTypes.Stuff> enumFilter,
+                @ApiParameter ApiFilterList<ResourceWithAllTypes.Stuff> enumFilters)
         {
             return null;
         }
@@ -182,6 +199,9 @@ public class TestTypedApiFilterOpenApi
 
     @ApiResource(name = "typedFilterSchemaResult", description = "typed filter schema result")
     public record TypedFilterSchemaResult(@ApiDescription("name") String name) {}
+
+    @ApiResource(name = "objectFilterSchemaResult", description = "object filter schema result")
+    public record ObjectFilterSchemaResult(@ApiDescription("name") String name) {}
 
     public enum UpperSnakeFilterValue
     {

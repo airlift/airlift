@@ -18,8 +18,6 @@ import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResponse;
 import io.airlift.api.ApiValidateOnly;
-import io.airlift.api.TypedApiFilter;
-import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelResource;
@@ -208,44 +206,44 @@ public interface Mappers
         return new ApiHeader(Optional.ofNullable(value));
     }
 
-    static ApiFilter buildFilter(UriInfo uriInfo, String name)
+    static ApiFilter<Object> buildFilter(UriInfo uriInfo, String name)
     {
         return buildFilter(Optional.ofNullable(uriInfo.getQueryParameters().getFirst(name)));
     }
 
-    static ApiFilter buildFilter(Optional<Object> queryParameter)
+    static ApiFilter<Object> buildFilter(Optional<Object> queryParameter)
     {
-        return new ApiFilter(queryParameter);
+        return new ApiFilter<>(queryParameter);
     }
 
-    static ApiFilterList buildFilterList(UriInfo uriInfo, String name)
+    static ApiFilterList<Object> buildFilterList(UriInfo uriInfo, String name)
     {
         List<String> strings = uriInfo.getQueryParameters().get(name);
         List<Object> values = (strings != null) ? strings.stream().collect(toImmutableList()) : ImmutableList.of();
         return buildFilterList(values);
     }
 
-    static ApiFilterList buildFilterList(List<Object> values)
+    static ApiFilterList<Object> buildFilterList(List<Object> values)
     {
-        return new ApiFilterList(values);
+        return new ApiFilterList<>(values);
     }
 
-    static TypedApiFilter<?> buildTypedFilter(UriInfo uriInfo, String name, Class<?> type, ApiEnumValueResolver enumValueResolver)
+    static ApiFilter<?> buildTypedFilter(UriInfo uriInfo, String name, Class<?> type, ApiEnumValueResolver enumValueResolver)
     {
         requireNonNull(enumValueResolver, "enumValueResolver is null");
         Optional<?> value = Optional.ofNullable(uriInfo.getQueryParameters().getFirst(name))
                 .map(queryParameter -> parseTypedFilterValue(type, queryParameter, enumValueResolver));
-        return new TypedApiFilter<>(value);
+        return new ApiFilter<>(value);
     }
 
-    static TypedApiFilterList<?> buildTypedFilterList(UriInfo uriInfo, String name, Class<?> type, ApiEnumValueResolver enumValueResolver)
+    static ApiFilterList<?> buildTypedFilterList(UriInfo uriInfo, String name, Class<?> type, ApiEnumValueResolver enumValueResolver)
     {
         requireNonNull(enumValueResolver, "enumValueResolver is null");
         List<String> strings = uriInfo.getQueryParameters().get(name);
         if (strings == null) {
-            return new TypedApiFilterList<>(ImmutableList.of());
+            return new ApiFilterList<>(ImmutableList.of());
         }
-        return new TypedApiFilterList<>(strings.stream()
+        return new ApiFilterList<>(strings.stream()
                 .map(value -> parseTypedFilterValue(type, value, enumValueResolver))
                 .collect(toImmutableList()));
     }
@@ -254,14 +252,22 @@ public interface Mappers
     {
         Type valueType = extractGenericParameter(type, 0);
         if (!(valueType instanceof Class<?> valueClass)) {
-            throw new ValidatorException("Typed API filter type parameter must be a concrete class: %s".formatted(valueType));
+            throw new ValidatorException("API filter type parameter must be a concrete class: %s".formatted(valueType));
         }
         if (!isSupportedTypedFilterValueType(valueClass)) {
             throw new ValidatorException(
-                    "Typed API filter type parameter must be Boolean, Integer, Long, Double, String, Instant, UUID, or a concrete enum: %s"
+                    "API filter type parameter must be Boolean, Integer, Long, Double, String, Instant, UUID, or a concrete enum: %s"
                             .formatted(valueClass.getTypeName()));
         }
         return valueClass;
+    }
+
+    static boolean isTypedFilterType(Type type, Class<?> expectedRawType)
+    {
+        if (!(type instanceof ParameterizedType parameterizedType) || !parameterizedType.getRawType().equals(expectedRawType)) {
+            return false;
+        }
+        return !extractGenericParameter(type, 0).equals(Object.class);
     }
 
     static boolean isSupportedTypedFilterValueType(Class<?> type)

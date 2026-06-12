@@ -26,8 +26,6 @@ import io.airlift.api.ApiTrait;
 import io.airlift.api.ApiType;
 import io.airlift.api.ApiUpdate;
 import io.airlift.api.ApiValidateOnly;
-import io.airlift.api.TypedApiFilter;
-import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
@@ -74,6 +72,7 @@ import static io.airlift.api.ApiValidateOnly.VALIDATE_ONLY_PARAMETER_NAME;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
+import static io.airlift.api.internals.Mappers.isTypedFilterType;
 import static io.airlift.api.internals.Mappers.openApiName;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Mappers.typedFilterValueType;
@@ -107,9 +106,7 @@ public class MethodBuilder
             ApiHeader.class, new ModelOptionalParameter(HEADER, ApiHeader.class, HEADER_EXTERNAL).withMetadata(MULTIPLE_ALLOWED),
             ApiModifier.class, new ModelOptionalParameter(QUERY, ApiModifier.class, MODIFIER_EXTERNAL).withMetadata(MULTIPLE_ALLOWED),
             ApiPagination.class, new ModelOptionalParameter(QUERY, ApiPagination.class, PAGINATION_EXTERNAL).withMetadata(VALIDATES_ARGUMENT),
-            ApiValidateOnly.class, new ModelOptionalParameter(QUERY, ApiValidateOnly.class, VALIDATE_ONLY_EXTERNAL),
-            TypedApiFilter.class, new ModelOptionalParameter(QUERY, TypedApiFilter.class, FILTER_EXTERNAL).withMetadata(MULTIPLE_ALLOWED),
-            TypedApiFilterList.class, new ModelOptionalParameter(QUERY, TypedApiFilterList.class, FILTER_LIST_EXTERNAL).withMetadata(MULTIPLE_ALLOWED));
+            ApiValidateOnly.class, new ModelOptionalParameter(QUERY, ApiValidateOnly.class, VALIDATE_ONLY_EXTERNAL));
 
     static {
         // validate that optional parameter map doesn't have incorrect naming
@@ -418,7 +415,7 @@ public class MethodBuilder
 
     public static ModelOptionalParameter optionalParameterFor(Parameter parameter)
     {
-        if (TypedApiFilter.class.isAssignableFrom(parameter.getType())) {
+        if (ApiFilter.class.isAssignableFrom(parameter.getType()) && isTypedFilterType(parameter.getParameterizedType(), ApiFilter.class)) {
             Class<?> valueType = typedFilterValueType(parameter.getParameterizedType());
             return new ModelOptionalParameter(
                     QUERY,
@@ -426,7 +423,7 @@ public class MethodBuilder
                     ImmutableSet.of(new ExternalParameter("", "Query filter", valueType)))
                     .withMetadata(MULTIPLE_ALLOWED);
         }
-        if (TypedApiFilterList.class.isAssignableFrom(parameter.getType())) {
+        if (ApiFilterList.class.isAssignableFrom(parameter.getType()) && isTypedFilterType(parameter.getParameterizedType(), ApiFilterList.class)) {
             Class<?> valueType = typedFilterValueType(parameter.getParameterizedType());
             Class<?> arrayType = Array.newInstance(valueType, 0).getClass();
             return new ModelOptionalParameter(

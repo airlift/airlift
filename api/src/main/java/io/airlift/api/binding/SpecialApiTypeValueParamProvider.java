@@ -21,8 +21,6 @@ import io.airlift.api.ApiOrderBy;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResponseHeaders;
 import io.airlift.api.ApiValidateOnly;
-import io.airlift.api.TypedApiFilter;
-import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.TypedApiOrderBy;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.model.Parameter;
@@ -47,6 +45,7 @@ import static io.airlift.api.internals.Mappers.buildTypedFilter;
 import static io.airlift.api.internals.Mappers.buildTypedFilterList;
 import static io.airlift.api.internals.Mappers.buildTypedOrderBy;
 import static io.airlift.api.internals.Mappers.buildValidateOnly;
+import static io.airlift.api.internals.Mappers.isTypedFilterType;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Mappers.typedFilterValueType;
 import static io.airlift.api.internals.Mappers.typedOrderByValueType;
@@ -77,18 +76,18 @@ class SpecialApiTypeValueParamProvider
             return containerRequest -> buildValidateOnly(containerRequest.getUriInfo());
         }
         if (ApiFilter.class.isAssignableFrom(parameter.getRawType())) {
+            if (isTypedFilterType(parameter.getType(), ApiFilter.class)) {
+                Class<?> type = typedFilterValueType(parameter.getType());
+                return containerRequest -> buildTypedFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), type, enumValueResolver);
+            }
             return containerRequest -> buildFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
         }
         if (ApiFilterList.class.isAssignableFrom(parameter.getRawType())) {
+            if (isTypedFilterType(parameter.getType(), ApiFilterList.class)) {
+                Class<?> type = typedFilterValueType(parameter.getType());
+                return containerRequest -> buildTypedFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), type, enumValueResolver);
+            }
             return containerRequest -> buildFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
-        }
-        if (TypedApiFilter.class.isAssignableFrom(parameter.getRawType())) {
-            Class<?> type = typedFilterValueType(parameter.getType());
-            return containerRequest -> buildTypedFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), type, enumValueResolver);
-        }
-        if (TypedApiFilterList.class.isAssignableFrom(parameter.getRawType())) {
-            Class<?> type = typedFilterValueType(parameter.getType());
-            return containerRequest -> buildTypedFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), type, enumValueResolver);
         }
         if (ApiOrderBy.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> validate(parameter, buildOrderBy(containerRequest.getUriInfo()));

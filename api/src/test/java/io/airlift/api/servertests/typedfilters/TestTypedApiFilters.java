@@ -4,14 +4,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiEnumNamingFormat;
+import io.airlift.api.ApiFilter;
+import io.airlift.api.ApiFilterList;
 import io.airlift.api.ApiGet;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
 import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.ApiServiceType;
-import io.airlift.api.TypedApiFilter;
-import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -41,7 +41,9 @@ public class TestTypedApiFilters
         extends ServerTestBase
 {
     private static final String TYPED_FILTER_PATH = "/typed/api/v1/typedFilterResult";
+    private static final String OBJECT_FILTER_PATH = "/typed/api/v1/objectFilterResult";
     private static final JsonCodec<TypedFilterResult> TYPED_FILTER_RESULT_CODEC = jsonCodec(TypedFilterResult.class);
+    private static final JsonCodec<ObjectFilterResult> OBJECT_FILTER_RESULT_CODEC = jsonCodec(ObjectFilterResult.class);
     private static final Instant INSTANT_FILTER = Instant.parse("2026-06-10T12:13:14Z");
     private static final Instant INSTANT_FILTER_LIST_VALUE = Instant.parse("2026-06-11T12:13:14Z");
     private static final UUID UUID_FILTER = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -108,6 +110,36 @@ public class TestTypedApiFilters
                 ImmutableList.of()));
     }
 
+    @Test
+    public void testObjectFiltersUseLegacyBinding()
+    {
+        URI uri = UriBuilder.fromUri(baseUri)
+                .path(OBJECT_FILTER_PATH)
+                .queryParam("objectFilter", "not-a-typed-value", "second-value")
+                .queryParam("objectFilters", "not-an-integer", "NaN", "Small")
+                .build();
+
+        JsonResponse<ObjectFilterResult> response = httpClient.execute(prepareGet().setUri(uri).build(), createFullJsonResponseHandler(OBJECT_FILTER_RESULT_CODEC));
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.getValue()).isEqualTo(new ObjectFilterResult(
+                Optional.of("not-a-typed-value"),
+                ImmutableList.of("not-an-integer", "NaN", "Small")));
+    }
+
+    @Test
+    public void testMissingObjectFilters()
+    {
+        URI uri = UriBuilder.fromUri(baseUri)
+                .path(OBJECT_FILTER_PATH)
+                .build();
+
+        JsonResponse<ObjectFilterResult> response = httpClient.execute(prepareGet().setUri(uri).build(), createFullJsonResponseHandler(OBJECT_FILTER_RESULT_CODEC));
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.getValue()).isEqualTo(new ObjectFilterResult(Optional.empty(), ImmutableList.of()));
+    }
+
     @ParameterizedTest
     @MethodSource("invalidTypedFilters")
     public void testInvalidTypedFilters(String parameterName, String parameterValue)
@@ -141,16 +173,16 @@ public class TestTypedApiFilters
     {
         @ApiGet(description = "typed filters")
         public TypedFilterResult get(
-                @ApiParameter TypedApiFilter<Integer> integerFilter,
-                @ApiParameter TypedApiFilterList<Long> longFilters,
-                @ApiParameter TypedApiFilter<Boolean> booleanFilter,
-                @ApiParameter TypedApiFilter<Double> doubleFilter,
-                @ApiParameter TypedApiFilter<String> stringFilter,
-                @ApiParameter TypedApiFilter<Instant> instantFilter,
-                @ApiParameter TypedApiFilterList<Instant> instantFilters,
-                @ApiParameter TypedApiFilter<UUID> uuidFilter,
-                @ApiParameter TypedApiFilterList<UUID> uuidFilters,
-                @ApiParameter TypedApiFilterList<FilterValue> enumFilters)
+                @ApiParameter ApiFilter<Integer> integerFilter,
+                @ApiParameter ApiFilterList<Long> longFilters,
+                @ApiParameter ApiFilter<Boolean> booleanFilter,
+                @ApiParameter ApiFilter<Double> doubleFilter,
+                @ApiParameter ApiFilter<String> stringFilter,
+                @ApiParameter ApiFilter<Instant> instantFilter,
+                @ApiParameter ApiFilterList<Instant> instantFilters,
+                @ApiParameter ApiFilter<UUID> uuidFilter,
+                @ApiParameter ApiFilterList<UUID> uuidFilters,
+                @ApiParameter ApiFilterList<FilterValue> enumFilters)
         {
             return new TypedFilterResult(
                     integerFilter.value(),
@@ -163,6 +195,14 @@ public class TestTypedApiFilters
                     uuidFilter.value(),
                     uuidFilters.values(),
                     enumFilters.values());
+        }
+
+        @ApiGet(description = "object filters")
+        public ObjectFilterResult getObjectFilters(
+                @ApiParameter ApiFilter<Object> objectFilter,
+                @ApiParameter ApiFilterList<Object> objectFilters)
+        {
+            return new ObjectFilterResult(objectFilter.mapAsString(), objectFilters.mapAsString());
         }
     }
 
@@ -178,6 +218,11 @@ public class TestTypedApiFilters
             @ApiDescription("uuid") Optional<UUID> uuidFilter,
             @ApiDescription("uuids") List<UUID> uuidFilters,
             @ApiDescription("enums") List<FilterValue> enumFilters) {}
+
+    @ApiResource(name = "objectFilterResult", description = "object filter result")
+    public record ObjectFilterResult(
+            @ApiDescription("object") Optional<String> objectFilter,
+            @ApiDescription("objects") List<String> objectFilters) {}
 
     public enum FilterValue
     {

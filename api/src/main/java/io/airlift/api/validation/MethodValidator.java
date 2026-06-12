@@ -17,8 +17,6 @@ import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.ApiTrait;
 import io.airlift.api.ApiType;
 import io.airlift.api.ApiValidateOnly;
-import io.airlift.api.TypedApiFilter;
-import io.airlift.api.TypedApiFilterList;
 import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
@@ -57,11 +55,11 @@ public interface MethodValidator
     Logger log = Logger.get(MethodValidator.class);
 
     Map<ApiType, Collection<Class<?>>> ALLOWED_PARAMETER_TYPES = ImmutableMap.of(
-            ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class /*, ApiOrderBy.class*/),
-            ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
+            ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class /*, ApiOrderBy.class*/),
+            ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
             ApiType.CREATE, ImmutableSet.of(ApiValidateOnly.class, ApiModifier.class, ApiHeader.class),
-            ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
-            ApiType.DELETE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, TypedApiFilter.class, TypedApiFilterList.class, ApiModifier.class, ApiHeader.class));
+            ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
+            ApiType.DELETE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class));
 
     static void validateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits)
     {
@@ -203,9 +201,7 @@ public interface MethodValidator
         }
         return rawType != null &&
                 (rawType.equals(ApiFilter.class) ||
-                        rawType.equals(ApiFilterList.class) ||
-                        rawType.equals(TypedApiFilter.class) ||
-                        rawType.equals(TypedApiFilterList.class));
+                        rawType.equals(ApiFilterList.class));
     }
 
     private static void validateApiParameter(Method method, Parameter parameter, Collection<Class<?>> allowedParameterTypes, ApiParameter apiParameter, boolean multipleAllowed)
