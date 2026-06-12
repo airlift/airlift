@@ -458,6 +458,10 @@ public class HttpServer
         this.sslContextFactory.ifPresent(factory -> {
             try {
                 KeyStore keystore = factory.getKeyStore();
+                if (keystore == null) {
+                    // Jetty does not expose a KeyStore when configured with an injected SSLContext.
+                    return;
+                }
                 for (String alias : list(keystore.aliases())) {
                     Certificate certificate = keystore.getCertificate(alias);
                     if (certificate instanceof X509Certificate) {
