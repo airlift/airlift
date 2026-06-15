@@ -18,14 +18,11 @@ import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.ApiStringId;
 import io.airlift.api.ApiUuidId;
 import io.airlift.api.model.ModelResource;
-import io.airlift.log.Logger;
 import jakarta.ws.rs.core.MediaType;
 
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -42,8 +39,6 @@ import static java.util.Objects.requireNonNull;
 
 public class ValidationContext
 {
-    private static final Logger log = Logger.get(ValidationContext.class);
-
     private final Optional<String> contextDescription;
     private final Multimap<String, String> mutableErrors;
     private final Set<Class<?>> resourcesWithUnwrappedComponents;
@@ -190,13 +185,6 @@ public class ValidationContext
     {
         if ((name == null) || !enumNamingFormat.isValid(name)) {
             throw new ValidatorException("\"%s\" is not a valid enum name for format %s".formatted(name, enumNamingFormat));
-        }
-    }
-
-    public void validateDocumentationLinks(List<URI> documentationLinks)
-    {
-        if (documentationLinks.isEmpty()) {
-            log.warn("Documentation links for: [%s] are empty", contextDescription.orElse("n/a"));
         }
     }
 
