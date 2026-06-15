@@ -23,15 +23,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
-import static io.airlift.stats.ExponentialDecay.weight;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
@@ -58,15 +57,13 @@ public class QuantileDigest
     private static final int QUANTILE_DIGEST_SIZE = instanceSize(QuantileDigest.class);
 
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
-    static final long RESCALE_THRESHOLD_SECONDS = 50;
+    static final long RESCALE_THRESHOLD_SECONDS = DecayConfig.RESCALE_THRESHOLD_SECONDS;
     static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
 
     private static final int INITIAL_CAPACITY = 1;
 
     private final double maxError;
-    private final Ticker ticker;
-    private final double alpha;
-    private long landmarkInSeconds;
+    private final DecayState decay;
 
     private double weightedCount;
     private long max = Long.MIN_VALUE;
@@ -110,20 +107,21 @@ public class QuantileDigest
      */
     public QuantileDigest(double maxError, double alpha)
     {
-        this(maxError, alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
+        this(maxError, DecayConfig.of(alpha));
     }
 
     @VisibleForTesting
     QuantileDigest(double maxError, double alpha, Ticker ticker)
     {
+        this(maxError, DecayConfig.of(alpha, ticker));
+    }
+
+    public QuantileDigest(double maxError, DecayConfig config)
+    {
         checkArgument(maxError >= 0 && maxError <= 1, "maxError must be in range [0, 1]");
-        checkArgument(alpha >= 0 && alpha < 1, "alpha must be in range [0, 1)");
 
         this.maxError = maxError;
-        this.alpha = alpha;
-        this.ticker = ticker;
-
-        landmarkInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
+        this.decay = requireNonNull(config, "config is null").newState();
 
         counts = new double[INITIAL_CAPACITY];
         levels = new byte[INITIAL_CAPACITY];
@@ -139,10 +137,8 @@ public class QuantileDigest
     public QuantileDigest(QuantileDigest other)
     {
         this.maxError = other.maxError;
-        this.alpha = other.alpha;
-        this.ticker = alpha == 0.0 ? noOpTicker() : Ticker.systemTicker();
+        this.decay = other.decay.copy();
 
-        this.landmarkInSeconds = other.landmarkInSeconds;
         this.weightedCount = other.weightedCount;
 
         this.max = other.max;
@@ -165,15 +161,9 @@ public class QuantileDigest
         byte format = input.readByte();
         checkArgument(format == 0, "Invalid format");
         maxError = input.readDouble();
-        alpha = input.readDouble();
-
-        if (alpha == 0.0) {
-            ticker = noOpTicker();
-        }
-        else {
-            ticker = Ticker.systemTicker();
-        }
-        landmarkInSeconds = input.readLong();
+        double alpha = input.readDouble();
+        long landmarkInSeconds = input.readLong();
+        decay = DecayConfig.of(alpha).newState(landmarkInSeconds);
 
         min = input.readLong();
         max = input.readLong();
@@ -240,7 +230,7 @@ public class QuantileDigest
 
     public double getAlpha()
     {
-        return alpha;
+        return decay.getAlpha();
     }
 
     public void add(long value)
@@ -256,14 +246,14 @@ public class QuantileDigest
         checkArgument(weight > 0, "weight must be > 0");
 
         boolean needsCompression = false;
-        if (alpha > 0.0) {
-            long nowInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
-            if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
+        if (decay.isDecaying()) {
+            long nowInSeconds = decay.nowInSeconds();
+            if (decay.needsRescale(nowInSeconds)) {
                 rescale(nowInSeconds);
                 needsCompression = true; // rescale affects weights globally, so force compression
             }
 
-            weight *= weight(alpha, nowInSeconds, landmarkInSeconds);
+            weight *= decay.weightAt(nowInSeconds);
         }
 
         max = Math.max(max, value);
@@ -288,15 +278,17 @@ public class QuantileDigest
 
     public void merge(QuantileDigest other)
     {
+        // 1. rescale both digests to a common landmark so their weights are comparable; note this
+        // mutates other's landmark and weights as well
         rescaleToCommonLandmark(this, other);
 
-        // 1. merge other into this (don't modify other)
+        // 2. merge other's nodes into this; the tree traversal itself does not modify other
         root = merge(root, other, other.root);
 
         max = Math.max(max, other.max);
         min = Math.min(min, other.min);
 
-        // 2. compress to remove unnecessary nodes
+        // 3. compress to remove unnecessary nodes
         compress();
     }
 
@@ -428,7 +420,7 @@ public class QuantileDigest
      */
     public double getCount()
     {
-        return weightedCount / weight(alpha, TimeUnit.NANOSECONDS.toSeconds(ticker.read()), landmarkInSeconds);
+        return weightedCount / decay.currentWeight();
     }
 
     /*
@@ -455,7 +447,7 @@ public class QuantileDigest
 
         HistogramBuilderStateHolder holder = new HistogramBuilderStateHolder();
 
-        double normalizationFactor = weight(alpha, TimeUnit.NANOSECONDS.toSeconds(ticker.read()), landmarkInSeconds);
+        double normalizationFactor = decay.currentWeight();
 
         postOrderTraversal(root, node -> {
             while (iterator.hasNext() && iterator.peek() <= upperBound(node)) {
@@ -556,8 +548,8 @@ public class QuantileDigest
 
         output.writeByte(Flags.FORMAT);
         output.writeDouble(maxError);
-        output.writeDouble(alpha);
-        output.writeLong(landmarkInSeconds);
+        output.writeDouble(decay.getAlpha());
+        output.writeLong(decay.getLandmarkInSeconds());
         output.writeLong(min);
         output.writeLong(max);
         output.writeInt(getNodeCount());
@@ -642,12 +634,11 @@ public class QuantileDigest
     private void rescale(long newLandmarkInSeconds)
     {
         // rescale the weights based on a new landmark to avoid numerical overflow issues
-        double factor = weight(alpha, newLandmarkInSeconds, landmarkInSeconds);
+        double factor = decay.rescaleTo(newLandmarkInSeconds);
         weightedCount /= factor;
         for (int i = 0; i < nextNode; i++) {
             counts[i] /= factor;
         }
-        landmarkInSeconds = newLandmarkInSeconds;
     }
 
     private int calculateCompressionFactor()
@@ -988,25 +979,26 @@ public class QuantileDigest
                 min == other.min &&
                 max == other.max &&
                 weightedCount == other.weightedCount &&
-                alpha == other.alpha);
+                decay.getAlpha() == other.decay.getAlpha());
     }
 
-    private void rescaleToCommonLandmark(QuantileDigest one, QuantileDigest two)
+    private static void rescaleToCommonLandmark(QuantileDigest one, QuantileDigest two)
     {
-        long nowInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
+        long oneLandmark = one.decay.getLandmarkInSeconds();
+        long twoLandmark = two.decay.getLandmarkInSeconds();
+        long nowInSeconds = one.decay.nowInSeconds();
 
-        // 1. rescale this and other to common landmark
-        long targetLandmark = Math.max(one.landmarkInSeconds, two.landmarkInSeconds);
-
+        // rescale both digests to a common landmark
+        long targetLandmark = Math.max(oneLandmark, twoLandmark);
         if (nowInSeconds - targetLandmark >= RESCALE_THRESHOLD_SECONDS) {
             targetLandmark = nowInSeconds;
         }
 
-        if (targetLandmark != one.landmarkInSeconds) {
+        if (targetLandmark != oneLandmark) {
             one.rescale(targetLandmark);
         }
 
-        if (targetLandmark != two.landmarkInSeconds) {
+        if (targetLandmark != twoLandmark) {
             two.rescale(targetLandmark);
         }
     }
@@ -1206,18 +1198,6 @@ public class QuantileDigest
         }
 
         return bitsToLong(values[node] & (~mask));
-    }
-
-    private static Ticker noOpTicker()
-    {
-        return new Ticker()
-        {
-            @Override
-            public long read()
-            {
-                return 0;
-            }
-        };
     }
 
     public static class Bucket

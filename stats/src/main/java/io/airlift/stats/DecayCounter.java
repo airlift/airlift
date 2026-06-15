@@ -4,11 +4,8 @@ import com.google.common.base.Ticker;
 import com.google.errorprone.annotations.ThreadSafe;
 import org.weakref.jmx.Managed;
 
-import java.util.concurrent.TimeUnit;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
-import static io.airlift.stats.ExponentialDecay.weight;
 import static java.util.Objects.requireNonNull;
 
 /*
@@ -22,79 +19,82 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public final class DecayCounter
 {
-    // needs to be such that Math.exp(alpha * seconds) does not grow too big
-    static final long RESCALE_THRESHOLD_SECONDS = 50;
+    private final DecayState decay;
 
-    private final double alpha;
-    private final Ticker ticker;
-
-    private long landmarkInSeconds;
     private double count;
 
     public DecayCounter(double alpha)
     {
-        this(alpha, Ticker.systemTicker());
+        this(DecayConfig.of(alpha));
     }
 
     public DecayCounter(double alpha, Ticker ticker)
     {
-        this(0, alpha, ticker, TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+        this(DecayConfig.of(alpha, ticker));
     }
 
-    private DecayCounter(double count, double alpha, Ticker ticker, long landmarkInSeconds)
+    public DecayCounter(DecayConfig config)
+    {
+        this(0, requireNonNull(config, "config is null").newState());
+    }
+
+    private DecayCounter(double count, DecayState decay)
     {
         this.count = count;
-        this.alpha = alpha;
-        this.ticker = ticker;
-        this.landmarkInSeconds = landmarkInSeconds;
+        this.decay = decay;
     }
 
-    public DecayCounter duplicate()
+    public synchronized DecayCounter duplicate()
     {
-        return new DecayCounter(count, alpha, ticker, landmarkInSeconds);
+        return new DecayCounter(count, decay.copy());
     }
 
     public synchronized void add(long value)
     {
-        long nowInSeconds = getTickInSeconds();
+        long nowInSeconds = decay.nowInSeconds();
 
-        if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
-            rescaleToNewLandmark(nowInSeconds);
+        if (decay.needsRescale(nowInSeconds)) {
+            count /= decay.rescaleTo(nowInSeconds);
         }
-        count += value * weight(alpha, nowInSeconds, landmarkInSeconds);
+        count += value * decay.weightAt(nowInSeconds);
     }
 
-    public synchronized void merge(DecayCounter decayCounter)
+    public void merge(DecayCounter decayCounter)
     {
         requireNonNull(decayCounter, "decayCounter is null");
-        checkArgument(decayCounter.alpha == alpha, "Expected decayCounter to have alpha %s, but was %s", alpha, decayCounter.alpha);
 
+        // Snapshot the other counter under its own monitor, then apply the merge under ours. Holding
+        // only one monitor at a time avoids the deadlock that nested locking allows when a.merge(b)
+        // and b.merge(a) run concurrently.
+        long otherLandmarkInSeconds;
+        double otherCount;
+        double otherAlpha;
         synchronized (decayCounter) {
-            // if the landmark this counter is behind the other counter
-            if (landmarkInSeconds < decayCounter.landmarkInSeconds) {
+            otherAlpha = decayCounter.decay.getAlpha();
+            otherLandmarkInSeconds = decayCounter.decay.getLandmarkInSeconds();
+            otherCount = decayCounter.count;
+        }
+
+        checkArgument(otherAlpha == decay.getAlpha(), "Expected decayCounter to have alpha %s, but was %s", decay.getAlpha(), otherAlpha);
+
+        synchronized (this) {
+            // if this counter's landmark is behind the other counter
+            if (decay.getLandmarkInSeconds() < otherLandmarkInSeconds) {
                 // rescale this counter to the other counter, and add
-                rescaleToNewLandmark(decayCounter.landmarkInSeconds);
-                count += decayCounter.count;
+                count /= decay.rescaleTo(otherLandmarkInSeconds);
+                count += otherCount;
             }
             else {
-                // rescale the other counter and add
-                double otherRescaledCount = decayCounter.count / weight(alpha, landmarkInSeconds, decayCounter.landmarkInSeconds);
-                count += otherRescaledCount;
+                // rescale the other counter's value (without mutating it) and add
+                count += otherCount / decay.weightFromLandmark(otherLandmarkInSeconds);
             }
         }
-    }
-
-    private void rescaleToNewLandmark(long newLandMarkInSeconds)
-    {
-        // rescale the count based on a new landmark to avoid numerical overflow issues
-        count = count / weight(alpha, newLandMarkInSeconds, landmarkInSeconds);
-        landmarkInSeconds = newLandMarkInSeconds;
     }
 
     @Managed
     public synchronized void reset()
     {
-        landmarkInSeconds = getTickInSeconds();
+        decay.setLandmarkInSeconds(decay.nowInSeconds());
         count = 0;
     }
 
@@ -105,7 +105,7 @@ public final class DecayCounter
     public synchronized void resetTo(DecayCounter counter)
     {
         synchronized (counter) {
-            landmarkInSeconds = counter.landmarkInSeconds;
+            decay.setLandmarkInSeconds(counter.decay.getLandmarkInSeconds());
             count = counter.count;
         }
     }
@@ -113,8 +113,7 @@ public final class DecayCounter
     @Managed
     public synchronized double getCount()
     {
-        long nowInSeconds = getTickInSeconds();
-        return count / weight(alpha, nowInSeconds, landmarkInSeconds);
+        return count / decay.currentWeight();
     }
 
     @Managed
@@ -122,19 +121,14 @@ public final class DecayCounter
     {
         // The total time covered by this counter is equivalent to the integral of the weight function from 0 to Infinity,
         // which equals 1/alpha. The count per unit time is, therefore, count / (1/alpha)
-        return getCount() * alpha;
-    }
-
-    private long getTickInSeconds()
-    {
-        return TimeUnit.NANOSECONDS.toSeconds(ticker.read());
+        return getCount() * decay.getAlpha();
     }
 
     public DecayCounterSnapshot snapshot()
     {
         // synchronization on getCount() is sufficient
         double count = getCount();
-        return new DecayCounterSnapshot(count, count * alpha);
+        return new DecayCounterSnapshot(count, count * decay.getAlpha());
     }
 
     @Override
@@ -148,7 +142,7 @@ public final class DecayCounter
 
     public double getAlpha()
     {
-        return alpha;
+        return decay.getAlpha();
     }
 
     public record DecayCounterSnapshot(double count, double rate) {}
