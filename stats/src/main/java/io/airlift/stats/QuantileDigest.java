@@ -278,6 +278,9 @@ public class QuantileDigest
 
     public void merge(QuantileDigest other)
     {
+        requireNonNull(other, "other is null");
+        checkArgument(other.decay.getAlpha() == decay.getAlpha(), "Expected QuantileDigest to have alpha %s, but was %s", decay.getAlpha(), other.decay.getAlpha());
+
         // 1. rescale both digests to a common landmark so their weights are comparable; note this
         // mutates other's landmark and weights as well
         rescaleToCommonLandmark(this, other);
