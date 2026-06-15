@@ -23,6 +23,7 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -118,6 +119,10 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
         jsonMapper.addModule(new GuavaModule());
         jsonMapper.addModule(new ParameterNamesModule());
         jsonMapper.addModule(new RecordAutoDetectModule());
+        // Replace reflection-based bean access with runtime-generated accessors (LambdaMetafactory).
+        // Property detection is unchanged (still driven by explicit annotations above); only the
+        // get/set mechanism is faster, reducing CPU and allocation on serialization/deserialization.
+        jsonMapper.addModule(new BlackbirdModule());
 
         try {
             getClass().getClassLoader().loadClass("org.joda.time.DateTime");
