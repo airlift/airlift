@@ -47,6 +47,52 @@ public class TestDecayTDigest
     }
 
     @Test
+    public void testMergeReconcilesLandmarks()
+    {
+        double decayFactor = 0.1;
+        long deltaSeconds = 10; // below RESCALE_THRESHOLD_SECONDS, so no rescale is triggered on its own
+
+        // A value added "now" contributes a decayed count of 1; a value added deltaSeconds earlier
+        // contributes exp(-decayFactor * deltaSeconds). The merged count must equal their sum
+        // regardless of which operand holds the newer landmark.
+        double expectedCount = Math.exp(-decayFactor * deltaSeconds) + 1;
+
+        // older landmark merges in a newer one
+        {
+            TestingTicker ticker = new TestingTicker();
+            DecayTDigest older = new DecayTDigest(100, decayFactor, ticker);
+            older.add(10);
+
+            ticker.increment(deltaSeconds, TimeUnit.SECONDS);
+            DecayTDigest newer = new DecayTDigest(100, decayFactor, ticker);
+            newer.add(20);
+
+            older.merge(newer);
+
+            assertThat(older.getCount()).isCloseTo(expectedCount, Offset.offset(1e-6));
+            assertThat(older.getMin()).isEqualTo(10.0);
+            assertThat(older.getMax()).isEqualTo(20.0);
+        }
+
+        // newer landmark merges in an older one
+        {
+            TestingTicker ticker = new TestingTicker();
+            DecayTDigest older = new DecayTDigest(100, decayFactor, ticker);
+            older.add(20);
+
+            ticker.increment(deltaSeconds, TimeUnit.SECONDS);
+            DecayTDigest newer = new DecayTDigest(100, decayFactor, ticker);
+            newer.add(10);
+
+            newer.merge(older);
+
+            assertThat(newer.getCount()).isCloseTo(expectedCount, Offset.offset(1e-6));
+            assertThat(newer.getMin()).isEqualTo(10.0);
+            assertThat(newer.getMax()).isEqualTo(20.0);
+        }
+    }
+
+    @Test
     public void testDecayBeyondRescaleThreshold()
     {
         TestingTicker ticker = new TestingTicker();

@@ -194,6 +194,21 @@ public class DecayTDigest
 
     public void merge(DecayTDigest other)
     {
-        digest.mergeWith(other.digest);
+        DecayTDigest copy = other;
+        // Both digests store forward-decayed weights relative to their own landmark, so the raw
+        // centroid weights are only comparable once both share a landmark. Align to the newer
+        // landmark (rescaling reduces weights, which is numerically safe) before combining them,
+        // mirroring DecayCounter.merge.
+        if (alpha > 0.0 && landmarkInSeconds < other.landmarkInSeconds) {
+            rescale(other.landmarkInSeconds);
+        }
+        else if (alpha > 0.0 && landmarkInSeconds > other.landmarkInSeconds) {
+            // Rescale a copy of the other digest so that this method does not mutate its argument;
+            // callers may retain a reference to it.
+            DecayTDigest rescaled = other.duplicate();
+            rescaled.rescale(landmarkInSeconds);
+            copy = rescaled;
+        }
+        digest.mergeWith(copy.digest);
     }
 }
