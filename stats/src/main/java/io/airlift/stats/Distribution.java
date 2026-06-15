@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.google.common.base.Verify.verify;
+import static java.lang.Math.clamp;
+import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -15,6 +17,7 @@ public class Distribution
 {
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
+    private static final int STRIPES = clamp(Runtime.getRuntime().availableProcessors(), 2, 16);
 
     static {
         PERCENTILES = new double[100];
@@ -24,10 +27,14 @@ public class Distribution
     }
 
     private final double alpha;
+    private final Object[] locks = new Object[STRIPES];
+    // @GuardedBy("locks[i]") for partials[i]
+    private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
     @GuardedBy("this")
-    private DecayTDigest digest;
+    private DecayTDigest merged;
 
     private final DecayCounter total;
+    private final DecayCounter partialTotal;
 
     public Distribution()
     {
@@ -42,116 +49,147 @@ public class Distribution
     private Distribution(double alpha, DecayTDigest digest, DecayCounter total)
     {
         this.alpha = alpha;
-        this.digest = requireNonNull(digest, "digest is null");
+        this.merged = requireNonNull(digest, "digest is null");
         this.total = requireNonNull(total, "total is null");
+        this.partialTotal = new DecayCounter(alpha);
+        for (int i = 0; i < STRIPES; i++) {
+            locks[i] = new Object();
+        }
     }
 
-    public synchronized void add(long value)
+    public void add(long value)
     {
-        digest.add(value);
-        total.add(value);
+        add(value, 1);
     }
 
-    public synchronized void add(long value, long count)
+    public void add(long value, long count)
     {
-        digest.add(value, count);
-        total.add(value * count);
+        int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
+        synchronized (locks[segment]) {
+            if (partials[segment] == null) {
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+            }
+            partials[segment].add(value, count);
+        }
+        partialTotal.add(value * count); // Fine outside of lock as DecayCounter is thread safe
     }
 
     public synchronized Distribution duplicate()
     {
-        return new Distribution(alpha, digest.duplicate(), total.duplicate());
+        mergePartials();
+        return new Distribution(alpha, merged.duplicate(), total.duplicate());
     }
 
     @Managed
     public synchronized void reset()
     {
         total.reset();
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        partialTotal.reset();
+        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        // Reset all partial digests (stripes) to avoid stale data
+        for (int i = 0; i < partials.length; i++) {
+            synchronized (locks[i]) {
+                partials[i] = null;
+            }
+        }
     }
 
     @Managed
     public synchronized double getCount()
     {
-        return digest.getCount();
+        mergePartials();
+        return merged.getCount();
     }
 
     @Managed
     public synchronized double getTotal()
     {
+        mergePartials();
         return total.getCount();
     }
 
     @Managed
     public synchronized double getP01()
     {
-        return digest.valueAt(0.01);
+        mergePartials();
+        return merged.valueAt(0.01);
     }
 
     @Managed
     public synchronized double getP05()
     {
-        return digest.valueAt(0.05);
+        mergePartials();
+        return merged.valueAt(0.05);
     }
 
     @Managed
     public synchronized double getP10()
     {
-        return digest.valueAt(0.10);
+        mergePartials();
+        return merged.valueAt(0.10);
     }
 
     @Managed
     public synchronized double getP25()
     {
-        return digest.valueAt(0.25);
+        mergePartials();
+        return merged.valueAt(0.25);
     }
 
     @Managed
     public synchronized double getP50()
     {
-        return digest.valueAt(0.5);
+        mergePartials();
+        return merged.valueAt(0.5);
     }
 
     @Managed
     public synchronized double getP75()
     {
-        return digest.valueAt(0.75);
+        mergePartials();
+        return merged.valueAt(0.75);
     }
 
     @Managed
     public synchronized double getP90()
     {
-        return digest.valueAt(0.90);
+        mergePartials();
+        return merged.valueAt(0.90);
     }
 
     @Managed
     public synchronized double getP95()
     {
-        return digest.valueAt(0.95);
+        mergePartials();
+        return merged.valueAt(0.95);
     }
 
     @Managed
     public synchronized double getP99()
     {
-        return digest.valueAt(0.99);
+        mergePartials();
+        return merged.valueAt(0.99);
     }
 
     @Managed
     public synchronized double getMin()
     {
-        return digest.getMin();
+        mergePartials();
+        return merged.getMin();
     }
 
     @Managed
     public synchronized double getMax()
     {
-        return digest.getMax();
+        mergePartials();
+        return merged.getMax();
     }
 
     @Managed
     public synchronized double getAvg()
     {
-        return getTotal() / getCount();
+        mergePartials();
+        return total.getCount() / merged.getCount();
     }
 
     @Managed
@@ -159,7 +197,8 @@ public class Distribution
     {
         double[] values;
         synchronized (this) {
-            values = digest.valuesAt(PERCENTILES);
+            mergePartials();
+            values = merged.valuesAt(PERCENTILES);
         }
 
         verify(values.length == PERCENTILES.length, "result length mismatch");
@@ -180,11 +219,12 @@ public class Distribution
         double max;
         double[] quantiles;
         synchronized (this) {
+            mergePartials();
             totalCount = total.getCount();
-            digestCount = digest.getCount();
-            min = digest.getMin();
-            max = digest.getMax();
-            quantiles = digest.valuesAt(SNAPSHOT_QUANTILES);
+            digestCount = merged.getCount();
+            min = merged.getMin();
+            max = merged.getMax();
+            quantiles = merged.valuesAt(SNAPSHOT_QUANTILES);
         }
         double average = totalCount / digestCount;
         return new DistributionSnapshot(
@@ -202,6 +242,27 @@ public class Distribution
                 min,
                 max,
                 average);
+    }
+
+    // Unlike TimeDistribution, partials are folded in on every read rather than behind a
+    // time threshold: readers expect to see their own writes immediately (e.g. CachedDistribution
+    // in http-client builds a Distribution and reads it right away). The sweep is cheap when
+    // no values were added since the last read.
+    @GuardedBy("this")
+    private void mergePartials()
+    {
+        for (int i = 0; i < STRIPES; i++) {
+            synchronized (locks[i]) {
+                if (partials[i] == null) {
+                    continue;
+                }
+                merged.merge(partials[i]);
+                // Reset the partial
+                partials[i] = null;
+            }
+        }
+        total.merge(partialTotal);
+        partialTotal.reset();
     }
 
     public record DistributionSnapshot(
