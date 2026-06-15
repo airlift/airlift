@@ -38,6 +38,11 @@ public class DecayTDigest
     private final double alpha;
     private long landmarkInSeconds;
 
+    // The forward-decay weight is constant for a given (second, landmark) pair, so cache it and
+    // recompute the Math.exp only when the second rolls over or the landmark moves.
+    private long cachedWeightSeconds = Long.MIN_VALUE;
+    private double cachedWeight;
+
     public DecayTDigest(double compression, double alpha)
     {
         this(new TDigest(compression), alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
@@ -103,13 +108,28 @@ public class DecayTDigest
 
     public void add(double value, double weight)
     {
-        rescaleIfNeeded();
-
         if (alpha > 0.0) {
-            weight *= weight(alpha, nowInSeconds(), landmarkInSeconds) * SCALE_FACTOR;
+            // read the tick once: it drives both the rescale check and the decay weight
+            long nowInSeconds = nowInSeconds();
+            if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
+                rescale(nowInSeconds);
+            }
+            weight *= currentWeight(nowInSeconds) * SCALE_FACTOR;
         }
 
         digest.add(value, weight);
+    }
+
+    private double currentWeight(long nowInSeconds)
+    {
+        if (nowInSeconds != cachedWeightSeconds) {
+            // forward-decay multiplier exp(alpha * (now - landmark)): 1 at the landmark, growing >= 1
+            // as the clock advances so newer adds weigh more; the read path (getCount) divides it back out.
+            // Constant within a second, so the Math.exp runs only on this cache miss, not on every add.
+            cachedWeight = weight(alpha, nowInSeconds, landmarkInSeconds);
+            cachedWeightSeconds = nowInSeconds;
+        }
+        return cachedWeight;
     }
 
     private void rescaleIfNeeded()
@@ -168,6 +188,9 @@ public class DecayTDigest
         digest.max = max;
 
         landmarkInSeconds = newLandmarkInSeconds;
+        // at the landmark the age (now - landmark) is 0, so the weight is exp(0) == 1; seed the cache with it directly
+        cachedWeightSeconds = newLandmarkInSeconds;
+        cachedWeight = 1.0;
     }
 
     private long nowInSeconds()

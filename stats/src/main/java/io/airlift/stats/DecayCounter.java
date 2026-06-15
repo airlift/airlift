@@ -31,6 +31,12 @@ public final class DecayCounter
     private long landmarkInSeconds;
     private double count;
 
+    // The forward-decay weight is constant for a given (second, landmark) pair, so cache it and
+    // recompute the Math.exp only when the second rolls over or the landmark moves. add() is called
+    // on essentially every counted event, so this removes a Math.exp from the hot path.
+    private long cachedWeightSeconds = Long.MIN_VALUE;
+    private double cachedWeight;
+
     public DecayCounter(double alpha)
     {
         this(alpha, Ticker.systemTicker());
@@ -61,7 +67,19 @@ public final class DecayCounter
         if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
             rescaleToNewLandmark(nowInSeconds);
         }
-        count += value * weight(alpha, nowInSeconds, landmarkInSeconds);
+        count += value * currentWeight(nowInSeconds);
+    }
+
+    private double currentWeight(long nowInSeconds)
+    {
+        if (nowInSeconds != cachedWeightSeconds) {
+            // forward-decay multiplier exp(alpha * (now - landmark)): 1 at the landmark, growing >= 1
+            // as the clock advances so newer adds weigh more; the read path (getCount) divides it back out.
+            // Constant within a second, so the Math.exp runs only on this cache miss, not on every add.
+            cachedWeight = weight(alpha, nowInSeconds, landmarkInSeconds);
+            cachedWeightSeconds = nowInSeconds;
+        }
+        return cachedWeight;
     }
 
     public synchronized void merge(DecayCounter decayCounter)
@@ -88,13 +106,21 @@ public final class DecayCounter
     {
         // rescale the count based on a new landmark to avoid numerical overflow issues
         count = count / weight(alpha, newLandMarkInSeconds, landmarkInSeconds);
-        landmarkInSeconds = newLandMarkInSeconds;
+        setLandmarkInSeconds(newLandMarkInSeconds);
+    }
+
+    private void setLandmarkInSeconds(long landmarkInSeconds)
+    {
+        this.landmarkInSeconds = landmarkInSeconds;
+        // at the landmark the age (now - landmark) is 0, so the weight is exp(0) == 1; seed the cache with it directly
+        cachedWeightSeconds = landmarkInSeconds;
+        cachedWeight = 1.0;
     }
 
     @Managed
     public synchronized void reset()
     {
-        landmarkInSeconds = getTickInSeconds();
+        setLandmarkInSeconds(getTickInSeconds());
         count = 0;
     }
 
@@ -105,7 +131,7 @@ public final class DecayCounter
     public synchronized void resetTo(DecayCounter counter)
     {
         synchronized (counter) {
-            landmarkInSeconds = counter.landmarkInSeconds;
+            setLandmarkInSeconds(counter.landmarkInSeconds);
             count = counter.count;
         }
     }

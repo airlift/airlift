@@ -68,6 +68,12 @@ public class QuantileDigest
     private final double alpha;
     private long landmarkInSeconds;
 
+    // The forward-decay weight is constant for a given (second, landmark) pair, so cache it and
+    // recompute the Math.exp only when the second rolls over or the landmark moves. add() is on the
+    // hot ingestion path, so this removes a Math.exp from every weighted insert.
+    private long cachedWeightSeconds = Long.MIN_VALUE;
+    private double cachedWeight;
+
     private double weightedCount;
     private long max = Long.MIN_VALUE;
     private long min = Long.MAX_VALUE;
@@ -263,7 +269,7 @@ public class QuantileDigest
                 needsCompression = true; // rescale affects weights globally, so force compression
             }
 
-            weight *= weight(alpha, nowInSeconds, landmarkInSeconds);
+            weight *= currentWeight(nowInSeconds);
         }
 
         max = Math.max(max, value);
@@ -639,6 +645,18 @@ public class QuantileDigest
         }
     }
 
+    private double currentWeight(long nowInSeconds)
+    {
+        if (nowInSeconds != cachedWeightSeconds) {
+            // forward-decay multiplier exp(alpha * (now - landmark)): 1 at the landmark, growing >= 1
+            // as the clock advances so newer adds weigh more; the read path normalizes it back out.
+            // Constant within a second, so the Math.exp runs only on this cache miss, not on every add.
+            cachedWeight = weight(alpha, nowInSeconds, landmarkInSeconds);
+            cachedWeightSeconds = nowInSeconds;
+        }
+        return cachedWeight;
+    }
+
     private void rescale(long newLandmarkInSeconds)
     {
         // rescale the weights based on a new landmark to avoid numerical overflow issues
@@ -648,6 +666,9 @@ public class QuantileDigest
             counts[i] /= factor;
         }
         landmarkInSeconds = newLandmarkInSeconds;
+        // at the landmark the age (now - landmark) is 0, so the weight is exp(0) == 1; seed the cache with it directly
+        cachedWeightSeconds = newLandmarkInSeconds;
+        cachedWeight = 1.0;
     }
 
     private int calculateCompressionFactor()
