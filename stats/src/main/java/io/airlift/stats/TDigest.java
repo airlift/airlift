@@ -60,8 +60,14 @@ public class TDigest
     private boolean needsMerge;
 
     private int[] indexes;
+    private int[] tempIndexes;
     private double[] tempMeans;
     private double[] tempWeights;
+
+    // Length of the ascending-sorted prefix of means[]. Every merge() leaves the whole array sorted,
+    // and add()/mergeWith() only append beyond it, so the next merge can sort just the unsorted tail
+    // and merge the two runs instead of re-sorting the entire buffer.
+    private int sortedPrefixLength;
 
     public TDigest()
     {
@@ -409,7 +415,8 @@ public class TDigest
                 SizeOf.sizeOf(weights) +
                 SizeOf.sizeOf(tempMeans) +
                 SizeOf.sizeOf(tempWeights) +
-                SizeOf.sizeOf(indexes));
+                SizeOf.sizeOf(indexes) +
+                SizeOf.sizeOf(tempIndexes));
     }
 
     private void merge(double compression)
@@ -420,7 +427,7 @@ public class TDigest
 
         initializeIndexes();
 
-        DoubleArrays.quickSortIndirect(indexes, means, 0, centroidCount);
+        sortIndexes();
         if (backwards) {
             Ints.reverse(indexes, 0, centroidCount);
         }
@@ -482,6 +489,61 @@ public class TDigest
 
         System.arraycopy(tempMeans, 0, means, 0, centroidCount);
         System.arraycopy(tempWeights, 0, weights, 0, centroidCount);
+
+        // the buffer is now fully sorted (ascending) and compressed
+        sortedPrefixLength = centroidCount;
+    }
+
+    private void sortIndexes()
+    {
+        // means[0, sortedPrefixLength) is already ascending. If nothing was appended since the last
+        // merge, indexes is the identity permutation and is already correctly ordered.
+        if (sortedPrefixLength >= centroidCount) {
+            return;
+        }
+
+        // sort only the unsorted tail
+        DoubleArrays.quickSortIndirect(indexes, means, sortedPrefixLength, centroidCount);
+
+        // merge the sorted prefix run with the just-sorted tail run into a single ascending order
+        if (sortedPrefixLength > 0) {
+            mergeSortedRuns();
+        }
+    }
+
+    private void mergeSortedRuns()
+    {
+        // indexes[0, sortedPrefixLength) and indexes[sortedPrefixLength, centroidCount) are each
+        // ascending by mean; merge them into tempIndexes, then swap it in as the new indexes
+        if (tempIndexes == null || tempIndexes.length < centroidCount) {
+            tempIndexes = new int[means.length];
+        }
+
+        int left = 0;
+        int right = sortedPrefixLength;
+        int out = 0;
+        while (left < sortedPrefixLength && right < centroidCount) {
+            int leftIndex = indexes[left];
+            int rightIndex = indexes[right];
+            if (means[leftIndex] <= means[rightIndex]) {
+                tempIndexes[out++] = leftIndex;
+                left++;
+            }
+            else {
+                tempIndexes[out++] = rightIndex;
+                right++;
+            }
+        }
+        while (left < sortedPrefixLength) {
+            tempIndexes[out++] = indexes[left++];
+        }
+        while (right < centroidCount) {
+            tempIndexes[out++] = indexes[right++];
+        }
+
+        int[] swap = indexes;
+        indexes = tempIndexes;
+        tempIndexes = swap;
     }
 
     @VisibleForTesting
