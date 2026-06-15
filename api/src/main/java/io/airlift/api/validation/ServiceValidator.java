@@ -24,7 +24,6 @@ public interface ServiceValidator
 
         validationContext.inContext("Service: " + modelService.serviceClass(), subContext -> {
             subContext.validateName(modelService.service().type().id(), ValidationContext.NameType.STANDARD);
-            subContext.validateDocumentationLinks(modelService.service().documentationLinks());
         });
     }
 
