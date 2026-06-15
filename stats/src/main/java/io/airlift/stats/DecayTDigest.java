@@ -15,16 +15,16 @@ package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import static io.airlift.stats.ExponentialDecay.weight;
+import static java.util.Objects.requireNonNull;
 
 public class DecayTDigest
 {
     @VisibleForTesting
-    static final long RESCALE_THRESHOLD_SECONDS = 50;
+    static final long RESCALE_THRESHOLD_SECONDS = DecayConfig.RESCALE_THRESHOLD_SECONDS;
     @VisibleForTesting
     static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
 
@@ -33,32 +33,31 @@ public class DecayTDigest
     private static final double SCALE_FACTOR = 1 / ZERO_WEIGHT_THRESHOLD;
 
     private final TDigest digest;
-
-    private final Ticker ticker;
-    private final double alpha;
-    private long landmarkInSeconds;
+    @Nullable
+    private final DecayState decay;
 
     public DecayTDigest(double compression, double alpha)
     {
-        this(new TDigest(compression), alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
+        this(compression, alpha == 0.0 ? null : DecayConfig.of(alpha));
     }
 
     public DecayTDigest(double compression, double alpha, Ticker ticker)
     {
-        this(new TDigest(compression), alpha, ticker);
+        this(compression, alpha == 0.0 ? null : DecayConfig.of(alpha, ticker));
     }
 
-    private DecayTDigest(TDigest digest, double alpha, Ticker ticker)
+    /**
+     * @param config the decay configuration, or null for a digest that does not decay
+     */
+    public DecayTDigest(double compression, @Nullable DecayConfig config)
     {
-        this(digest, alpha, ticker, TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+        this(new TDigest(compression), config == null ? null : config.newState());
     }
 
-    private DecayTDigest(TDigest digest, double alpha, Ticker ticker, long landmarkInSeconds)
+    private DecayTDigest(TDigest digest, @Nullable DecayState decay)
     {
-        this.digest = digest;
-        this.alpha = alpha;
-        this.ticker = ticker;
-        this.landmarkInSeconds = landmarkInSeconds;
+        this.digest = requireNonNull(digest, "digest is null");
+        this.decay = decay;
     }
 
     public double getMin()
@@ -85,8 +84,8 @@ public class DecayTDigest
 
         double result = digest.getCount();
 
-        if (alpha > 0.0) {
-            result /= (weight(alpha, nowInSeconds(), landmarkInSeconds) * SCALE_FACTOR);
+        if (decay != null) {
+            result /= (decay.currentWeight() * SCALE_FACTOR);
         }
 
         if (result < ZERO_WEIGHT_THRESHOLD) {
@@ -105,8 +104,8 @@ public class DecayTDigest
     {
         rescaleIfNeeded();
 
-        if (alpha > 0.0) {
-            weight *= weight(alpha, nowInSeconds(), landmarkInSeconds) * SCALE_FACTOR;
+        if (decay != null) {
+            weight *= decay.currentWeight() * SCALE_FACTOR;
         }
 
         digest.add(value, weight);
@@ -114,11 +113,12 @@ public class DecayTDigest
 
     private void rescaleIfNeeded()
     {
-        if (alpha > 0.0) {
-            long nowInSeconds = nowInSeconds();
-            if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
-                rescale(nowInSeconds);
-            }
+        if (decay == null) {
+            return;
+        }
+        long nowInSeconds = decay.nowInSeconds();
+        if (decay.needsRescale(nowInSeconds)) {
+            rescale(nowInSeconds);
         }
     }
 
@@ -140,7 +140,7 @@ public class DecayTDigest
     private void rescale(long newLandmarkInSeconds)
     {
         // rescale the weights based on a new landmark to avoid numerical overflow issues
-        double factor = weight(alpha, newLandmarkInSeconds, landmarkInSeconds);
+        double factor = decay.rescaleTo(newLandmarkInSeconds);
         digest.totalWeight /= factor;
 
         double min = Double.POSITIVE_INFINITY;
@@ -166,30 +166,11 @@ public class DecayTDigest
         digest.centroidCount = index;
         digest.min = min;
         digest.max = max;
-
-        landmarkInSeconds = newLandmarkInSeconds;
-    }
-
-    private long nowInSeconds()
-    {
-        return TimeUnit.NANOSECONDS.toSeconds(ticker.read());
-    }
-
-    private static Ticker noOpTicker()
-    {
-        return new Ticker()
-        {
-            @Override
-            public long read()
-            {
-                return 0;
-            }
-        };
     }
 
     public DecayTDigest duplicate()
     {
-        return new DecayTDigest(TDigest.copyOf(digest), alpha, ticker, landmarkInSeconds);
+        return new DecayTDigest(TDigest.copyOf(digest), decay == null ? null : decay.copy());
     }
 
     public void merge(DecayTDigest other)

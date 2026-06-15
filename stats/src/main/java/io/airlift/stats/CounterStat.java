@@ -37,9 +37,9 @@ import static java.util.Objects.requireNonNull;
 public final class CounterStat
 {
     private final LongAdder count = new LongAdder();
-    private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
-    private final DecayCounter fiveMinute = new DecayCounter(ExponentialDecay.fiveMinutes());
-    private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
+    private final DecayCounter oneMinute = new DecayCounter(DecayConfig.oneMinute());
+    private final DecayCounter fiveMinute = new DecayCounter(DecayConfig.fiveMinutes());
+    private final DecayCounter fifteenMinute = new DecayCounter(DecayConfig.fifteenMinutes());
 
     public void update(long count)
     {

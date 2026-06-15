@@ -2,6 +2,7 @@ package io.airlift.stats;
 
 import com.google.errorprone.annotations.ThreadSafe;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import jakarta.annotation.Nullable;
 import org.weakref.jmx.Managed;
 
 import java.util.LinkedHashMap;
@@ -23,7 +24,9 @@ public class Distribution
         }
     }
 
-    private final double alpha;
+    // immutable config shared by every sub-structure; null when this distribution does not decay
+    @Nullable
+    private final DecayConfig config;
     @GuardedBy("this")
     private DecayTDigest digest;
 
@@ -31,17 +34,25 @@ public class Distribution
 
     public Distribution()
     {
-        this(0);
+        this((DecayConfig) null);
     }
 
     public Distribution(double alpha)
     {
-        this(alpha, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
+        this(alpha == 0.0 ? null : DecayConfig.of(alpha));
     }
 
-    private Distribution(double alpha, DecayTDigest digest, DecayCounter total)
+    /**
+     * @param config the decay configuration, or null for a distribution that does not decay
+     */
+    public Distribution(@Nullable DecayConfig config)
     {
-        this.alpha = alpha;
+        this(config, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config), new DecayCounter(config));
+    }
+
+    private Distribution(@Nullable DecayConfig config, DecayTDigest digest, DecayCounter total)
+    {
+        this.config = config;
         this.digest = requireNonNull(digest, "digest is null");
         this.total = requireNonNull(total, "total is null");
     }
@@ -60,14 +71,15 @@ public class Distribution
 
     public synchronized Distribution duplicate()
     {
-        return new Distribution(alpha, digest.duplicate(), total.duplicate());
+        // the config is immutable and freely shared; digest/total keep their own landmark-preserving copies
+        return new Distribution(config, digest.duplicate(), total.duplicate());
     }
 
     @Managed
     public synchronized void reset()
     {
         total.reset();
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
     }
 
     @Managed

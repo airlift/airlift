@@ -26,9 +26,9 @@ public class MeterStat
 {
     private final AtomicLong sum = new AtomicLong(0);
     private final ExponentiallyDecayingSample sample = new ExponentiallyDecayingSample(1028, 0.015);
-    private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
-    private final DecayCounter fiveMinute = new DecayCounter(ExponentialDecay.fiveMinutes());
-    private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
+    private final DecayCounter oneMinute = new DecayCounter(DecayConfig.oneMinute());
+    private final DecayCounter fiveMinute = new DecayCounter(DecayConfig.fiveMinutes());
+    private final DecayCounter fifteenMinute = new DecayCounter(DecayConfig.fifteenMinutes());
 
     public void update(long value)
     {

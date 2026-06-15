@@ -360,7 +360,7 @@ public class TestQuantileDigest
     public void testDecayedQuantiles()
     {
         TestingTicker ticker = new TestingTicker();
-        QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), ticker);
+        QuantileDigest digest = new QuantileDigest(1, DecayConfig.computeAlpha(0.5, 60), ticker);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
@@ -380,7 +380,7 @@ public class TestQuantileDigest
     public void testDecayedCounts()
     {
         TestingTicker ticker = new TestingTicker();
-        QuantileDigest digest = new QuantileDigest(1, ExponentialDecay.computeAlpha(0.5, 60), ticker);
+        QuantileDigest digest = new QuantileDigest(1, DecayConfig.computeAlpha(0.5, 60), ticker);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
@@ -401,7 +401,7 @@ public class TestQuantileDigest
         TestingTicker ticker = new TestingTicker();
         QuantileDigest digest = new QuantileDigest(
                 1,
-                ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds),
+                DecayConfig.computeAlpha(0.5, targetAgeInSeconds),
                 ticker);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -431,7 +431,7 @@ public class TestQuantileDigest
 
         QuantileDigest digest = new QuantileDigest(
                 0.01,
-                ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD, 60),
+                DecayConfig.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD, 60),
                 ticker);
 
         addRange(digest, 1, 10);
@@ -456,7 +456,7 @@ public class TestQuantileDigest
 
         QuantileDigest digest = new QuantileDigest(
                 0.01,
-                ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD / 2, targetAgeInSeconds),
+                DecayConfig.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD / 2, targetAgeInSeconds),
                 ticker);
 
         for (int i = 0; i < 10; ++i) {
