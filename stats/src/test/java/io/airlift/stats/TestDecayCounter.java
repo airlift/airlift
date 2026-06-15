@@ -14,7 +14,7 @@ public class TestDecayCounter
     {
         TestingTicker ticker = new TestingTicker();
 
-        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
         counter.add(1);
         ticker.increment(1, TimeUnit.MINUTES);
 
@@ -26,7 +26,7 @@ public class TestDecayCounter
     {
         TestingTicker ticker = new TestingTicker();
 
-        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
         counter.add(1);
         ticker.increment(1, TimeUnit.MINUTES);
         counter.add(2);
@@ -40,7 +40,7 @@ public class TestDecayCounter
     {
         TestingTicker ticker = new TestingTicker();
 
-        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
         counter.add(1);
         ticker.increment(1, TimeUnit.MINUTES);
 

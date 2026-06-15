@@ -15,9 +15,9 @@ public class DistributionStat
 
     public DistributionStat()
     {
-        oneMinute = new Distribution(ExponentialDecay.oneMinute());
-        fiveMinutes = new Distribution(ExponentialDecay.fiveMinutes());
-        fifteenMinutes = new Distribution(ExponentialDecay.fifteenMinutes());
+        oneMinute = new Distribution(DecayConfig.oneMinute());
+        fiveMinutes = new Distribution(DecayConfig.fiveMinutes());
+        fifteenMinutes = new Distribution(DecayConfig.fifteenMinutes());
         allTime = new Distribution();
     }
 

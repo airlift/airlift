@@ -3,6 +3,7 @@ package io.airlift.stats;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import jakarta.annotation.Nullable;
 import org.weakref.jmx.Managed;
 
 import java.util.LinkedHashMap;
@@ -33,7 +34,9 @@ public class TimeDistribution
     }
 
     private final Ticker ticker;
-    private final double alpha;
+    // immutable config shared by every sub-structure; null when this distribution does not decay
+    @Nullable
+    private final DecayConfig config;
     private final Object[] locks = new Object[STRIPES];
     // @GuardedBy("locks[i]") for partials[i]
     private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
@@ -52,30 +55,48 @@ public class TimeDistribution
 
     public TimeDistribution(TimeUnit unit)
     {
-        this(systemTicker(), 0, unit);
+        this(systemTicker(), unit);
     }
 
     public TimeDistribution(Ticker ticker)
     {
-        this(ticker, 0, SECONDS);
+        this(ticker, SECONDS);
+    }
+
+    public TimeDistribution(Ticker ticker, TimeUnit unit)
+    {
+        this(ticker, (DecayConfig) null, unit);
     }
 
     public TimeDistribution(double alpha)
     {
-        this(systemTicker(), alpha, SECONDS);
+        this(systemTicker(), alpha == 0.0 ? null : DecayConfig.of(alpha), SECONDS);
     }
 
+    /**
+     * @deprecated retained for backward compatibility; prefer {@link #TimeDistribution(Ticker, DecayConfig, TimeUnit)}.
+     */
+    @Deprecated
     public TimeDistribution(Ticker ticker, double alpha, TimeUnit unit)
+    {
+        this(ticker, alpha == 0.0 ? null : DecayConfig.of(alpha, ticker), unit);
+    }
+
+    /**
+     * @param config the decay configuration, or null for a distribution that does not decay
+     */
+    public TimeDistribution(Ticker ticker, @Nullable DecayConfig config, TimeUnit unit)
     {
         requireNonNull(ticker, "ticker is null");
         requireNonNull(unit, "unit is null");
-        this.alpha = alpha;
-        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        // the config is immutable and shared; each sub-structure derives its own decay state
+        this.config = config;
+        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
         for (int i = 0; i < STRIPES; i++) {
             locks[i] = new Object();
         }
-        total = new DecayCounter(alpha);
-        partialTotal = new DecayCounter(alpha);
+        total = new DecayCounter(config);
+        partialTotal = new DecayCounter(config);
         this.ticker = ticker;
         this.unit = unit;
         this.lastMerge = ticker.read(); // do not merge immediately
@@ -86,7 +107,7 @@ public class TimeDistribution
         int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
         synchronized (locks[segment]) {
             if (partials[segment] == null) {
-                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
             }
             partials[segment].add(value);
         }
@@ -289,7 +310,7 @@ public class TimeDistribution
     {
         total.reset();
         partialTotal.reset();
-        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
         // Reset all partial digests (stripes) to avoid stale data
         for (int i = 0; i < partials.length; i++) {
             synchronized (locks[i]) {
