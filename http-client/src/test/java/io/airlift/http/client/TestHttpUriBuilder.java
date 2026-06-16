@@ -413,6 +413,15 @@ public class TestHttpUriBuilder
     }
 
     @Test
+    public void testParsesParameterWithEmptyValue()
+    {
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com/?test&test2=1"))
+                .build();
+
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?test&test2=1");
+    }
+
+    @Test
     public void testAcceptsHttpAndHttpScheme()
     {
         uriBuilderFrom(URI.create("http://example.com"));

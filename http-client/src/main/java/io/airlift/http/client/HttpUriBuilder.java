@@ -8,6 +8,7 @@ import com.google.common.net.HostAndPort;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -27,6 +28,12 @@ public class HttpUriBuilder
     private int port = -1;
     private String path = ""; // decoded path
     private final ListMultimap<String, String> params = LinkedListMultimap.create(); // decoded query params
+
+    private static final Splitter QUERY_PARAM_SPLITTER = Splitter.on("&")
+            .omitEmptyStrings();
+
+    private static final Splitter QUERY_PARAM_VALUE_SPLITTER = Splitter.on("=")
+            .limit(2);
 
     private static final byte[] PCHAR = {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -244,13 +251,11 @@ public class HttpUriBuilder
         LinkedListMultimap<String, String> result = LinkedListMultimap.create();
 
         if (query != null) {
-            Iterable<String> pairs = Splitter.on("&")
-                    .omitEmptyStrings()
-                    .split(query);
-
-            for (String pair : pairs) {
-                String[] parts = pair.split("=", 2);
-                result.put(percentDecode(parts[0]), percentDecode(parts[1]));
+            for (String pair : QUERY_PARAM_SPLITTER.split(query)) {
+                List<String> parts = QUERY_PARAM_VALUE_SPLITTER.splitToList(pair);
+                String key = percentDecode(parts.get(0));
+                String value = (parts.size() == 2) ? percentDecode(parts.get(1)) : null;
+                result.put(key, value);
             }
         }
 
