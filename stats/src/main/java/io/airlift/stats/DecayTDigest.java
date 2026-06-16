@@ -19,6 +19,7 @@ import com.google.common.base.Ticker;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.stats.ExponentialDecay.weight;
 
 public class DecayTDigest
@@ -194,6 +195,22 @@ public class DecayTDigest
 
     public void merge(DecayTDigest other)
     {
-        digest.mergeWith(other.digest);
+        DecayTDigest copy = other;
+        checkArgument(other.alpha == alpha, "Expected DecayTDigest to have alpha %s, but was %s", alpha, other.alpha);
+        // Both digests store forward-decayed weights relative to their own landmark, so the raw
+        // centroid weights are only comparable once both share a landmark. Align to the newer
+        // landmark (rescaling reduces weights, which is numerically safe) before combining them,
+        // mirroring DecayCounter.merge.
+        if (alpha > 0.0 && landmarkInSeconds < other.landmarkInSeconds) {
+            rescale(other.landmarkInSeconds);
+        }
+        else if (alpha > 0.0 && landmarkInSeconds > other.landmarkInSeconds) {
+            // Rescale a copy of the other digest so that this method does not mutate its argument;
+            // callers may retain a reference to it.
+            DecayTDigest rescaled = other.duplicate();
+            rescaled.rescale(landmarkInSeconds);
+            copy = rescaled;
+        }
+        digest.mergeWith(copy.digest);
     }
 }
