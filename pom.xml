@@ -316,6 +316,12 @@
             </dependency>
 
             <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>yaml</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.github.wasabithumb</groupId>
                 <artifactId>jtoml-all</artifactId>
                 <version>1.5.2</version>

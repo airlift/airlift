@@ -4,7 +4,6 @@ import com.google.inject.Binder;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import io.airlift.jaxrs.JsonParsingFeature.MappingEnabled;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;
@@ -13,7 +12,6 @@ import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.jaxrs.BinderUtils.qualifiedKey;
-import static io.airlift.jaxrs.JsonParsingFeature.MappingEnabled.DISABLED;
 import static java.util.Objects.requireNonNull;
 
 public class JaxrsBinder
@@ -85,7 +83,17 @@ public class JaxrsBinder
 
     public JaxrsBinder disableJsonExceptionMapper()
     {
-        newOptionalBinder(binder, qualifiedKey(qualifier, MappingEnabled.class)).setBinding().toInstance(DISABLED);
+        newOptionalBinder(binder, qualifiedKey(qualifier, JsonParsingFeature.MappingEnabled.class))
+                .setBinding()
+                .toInstance(JsonParsingFeature.MappingEnabled.DISABLED);
+        return this;
+    }
+
+    public JaxrsBinder disableYamlExceptionMapper()
+    {
+        newOptionalBinder(binder, qualifiedKey(qualifier, YamlParsingFeature.MappingEnabled.class))
+                .setBinding()
+                .toInstance(YamlParsingFeature.MappingEnabled.DISABLED);
         return this;
     }
 }
