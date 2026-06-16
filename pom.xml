@@ -75,6 +75,7 @@
         <module>stats</module>
         <module>testing</module>
         <module>tracing</module>
+        <module>yaml</module>
     </modules>
 
     <scm>
@@ -385,6 +386,12 @@
                         <artifactId>jakarta.activation-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>2.5</version>
             </dependency>
 
         </dependencies>
