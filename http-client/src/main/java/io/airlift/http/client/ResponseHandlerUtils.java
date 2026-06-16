@@ -50,6 +50,23 @@ public final class ResponseHandlerUtils
                 .orElse(false);
     }
 
+    public static boolean isYamlContent(Response response)
+    {
+        return response.getHeader(CONTENT_TYPE)
+                .map(MediaType::parse)
+                // Empty charset is considered UTF-8. Any explicit charset is accepted.
+                .map(ResponseHandlerUtils::isYamlMediaType)
+                .orElse(false);
+    }
+
+    private static boolean isYamlMediaType(MediaType type)
+    {
+        String major = type.type();
+        String sub = type.subtype();
+        return (major.equals("application") && (sub.equals("yaml") || sub.equals("x-yaml")))
+                || (major.equals("text") && (sub.equals("yaml") || sub.equals("x-yaml")));
+    }
+
     public static InputStream getResponseStream(Response response)
     {
         return switch (response.getContent()) {
