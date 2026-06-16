@@ -69,6 +69,8 @@ public class JaxrsModule
                 .setDefault()
                 .toInstance(YamlParsingFeature.MappingEnabled.ENABLED);
 
+        jaxrsBinder.bind(PayloadTooLargeExceptionMapper.class);
+
         if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
             jaxrsBinder.bind(TracingDynamicFeature.class);
         }
