@@ -76,6 +76,7 @@ public class FullJsonResponseHandler<T>
     {
         private final int statusCode;
         private final ListMultimap<HeaderName, String> headers;
+        private final Charset charset;
         private final boolean hasValue;
         private final byte[] jsonBytes;
         private final byte[] responseBytes;
@@ -86,6 +87,7 @@ public class FullJsonResponseHandler<T>
         {
             this.statusCode = statusCode;
             this.headers = ImmutableListMultimap.copyOf(headers);
+            this.charset = getCharset();
 
             this.hasValue = false;
             this.jsonBytes = null;
@@ -99,6 +101,8 @@ public class FullJsonResponseHandler<T>
         {
             this.statusCode = statusCode;
             this.headers = ImmutableListMultimap.copyOf(headers);
+            // JSON is always UTF-8, matching getJson()
+            this.charset = UTF_8;
 
             this.jsonBytes = requireNonNull(jsonBytes, "jsonBytes is null");
             this.responseBytes = requireNonNull(jsonBytes, "responseBytes is null");
@@ -181,7 +185,7 @@ public class FullJsonResponseHandler<T>
 
         public String getResponseBody()
         {
-            return new String(responseBytes, getCharset());
+            return new String(responseBytes, charset);
         }
 
         public byte[] getJsonBytes()
