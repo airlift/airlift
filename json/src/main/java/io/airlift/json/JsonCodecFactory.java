@@ -15,6 +15,7 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
@@ -30,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonCodecFactory
 {
-    private final JsonMapper jsonMapper;
+    private final ObjectMapper jsonMapper;
 
     public JsonCodecFactory()
     {
@@ -40,7 +41,7 @@ public class JsonCodecFactory
     @Inject
     public JsonCodecFactory(JsonMapper jsonMapper)
     {
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this((ObjectMapper) jsonMapper);
     }
 
     @Deprecated
@@ -53,6 +54,11 @@ public class JsonCodecFactory
     public JsonCodecFactory(Provider<JsonMapper> jsonMapperProvider, boolean prettyPrint)
     {
         this(withPrettyPrint(jsonMapperProvider.get(), prettyPrint));
+    }
+
+    private JsonCodecFactory(ObjectMapper jsonMapper)
+    {
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     public JsonCodecFactory prettyPrint()
@@ -129,14 +135,11 @@ public class JsonCodecFactory
         return new JsonCodec<>(jsonMapper, mapType);
     }
 
-    private static JsonMapper withPrettyPrint(JsonMapper mapper, boolean prettyPrint)
+    private static ObjectMapper withPrettyPrint(ObjectMapper mapper, boolean prettyPrint)
     {
         if (!prettyPrint) {
             return mapper;
         }
-        return mapper
-                .rebuild()
-                .configure(INDENT_OUTPUT, true)
-                .build();
+        return mapper.copy().enable(INDENT_OUTPUT);
     }
 }

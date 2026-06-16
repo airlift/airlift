@@ -16,10 +16,10 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public class JsonCodec<T>
 {
-    private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get()
+    private static final ObjectMapper JSON_MAPPER = new JsonMapperProvider().get()
             .rebuild()
             .enable(INDENT_OUTPUT)
             .build();
@@ -114,7 +114,7 @@ public class JsonCodec<T>
     private final Supplier<ObjectWriter> writer;
     private final Supplier<ObjectReader> reader;
 
-    JsonCodec(JsonMapper mapper, Type type)
+    JsonCodec(ObjectMapper mapper, Type type)
     {
         JavaType javaType = mapper.constructType(type);
         this.typeToken = (TypeToken<T>) TypeToken.of(type);
