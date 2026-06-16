@@ -68,7 +68,6 @@
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>units</artifactId>
-            <optional>true</optional>
         </dependency>
 
         <dependency>

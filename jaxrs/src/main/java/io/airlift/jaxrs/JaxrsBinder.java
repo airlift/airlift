@@ -4,6 +4,7 @@ import com.google.inject.Binder;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import io.airlift.units.DataSize;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;
@@ -94,6 +95,24 @@ public class JaxrsBinder
         newOptionalBinder(binder, qualifiedKey(qualifier, YamlParsingFeature.MappingEnabled.class))
                 .setBinding()
                 .toInstance(YamlParsingFeature.MappingEnabled.DISABLED);
+        return this;
+    }
+
+    public JaxrsBinder withJsonMaxPayloadSize(DataSize maxPayloadSize)
+    {
+        requireNonNull(maxPayloadSize, "maxPayloadSize is null");
+        newOptionalBinder(binder, qualifiedKey(qualifier, JsonParsingConfig.class))
+                .setBinding()
+                .toInstance(new JsonParsingConfig(Optional.of(maxPayloadSize)));
+        return this;
+    }
+
+    public JaxrsBinder withYamlMaxPayloadSize(DataSize maxPayloadSize)
+    {
+        requireNonNull(maxPayloadSize, "maxPayloadSize is null");
+        newOptionalBinder(binder, qualifiedKey(qualifier, YamlParsingConfig.class))
+                .setBinding()
+                .toInstance(new YamlParsingConfig(Optional.of(maxPayloadSize)));
         return this;
     }
 }
