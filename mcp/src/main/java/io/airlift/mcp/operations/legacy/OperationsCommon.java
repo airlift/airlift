@@ -41,7 +41,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
-import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_RESOURCE_URI;
+import static io.airlift.mcp.operations.legacy.McpTracingAttributes.MCP_RESOURCE_URI;
 import static java.util.Objects.requireNonNull;
 
 public class OperationsCommon
