@@ -26,6 +26,8 @@ import static com.fasterxml.jackson.jakarta.rs.cfg.JakartaRSFeature.ADD_NO_SNIFF
 public class JaxRsYamlMapper
         extends JacksonYAMLProvider
 {
+    private YamlParsingConfig parsingConfig = YamlParsingConfig.unbounded();
+
     public JaxRsYamlMapper()
     {
         super(new YAMLMapper());
@@ -38,6 +40,12 @@ public class JaxRsYamlMapper
         setMapper(yamlMapper);
     }
 
+    @Inject(optional = true)
+    public void setParsingConfig(YamlParsingConfig parsingConfig)
+    {
+        this.parsingConfig = parsingConfig;
+    }
+
     /**
      * Throws YamlParsingException only when Jakarta-RS container calls to deserialize given YAML value.
      * Distinguishes between:
@@ -48,10 +56,19 @@ public class JaxRsYamlMapper
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException
     {
+        InputStream stream = parsingConfig.maxPayloadSize()
+                .map(size -> (InputStream) new LimitInputStream(entityStream, size.toBytes()))
+                .orElse(entityStream);
         try {
-            return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
+            return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, stream);
         }
         catch (IOException e) {
+            // SnakeYAML wraps the underlying IOException
+            for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+                if (cause instanceof PayloadTooLargeException payloadTooLarge) {
+                    throw payloadTooLarge;
+                }
+            }
             if (!(e instanceof JsonProcessingException) && !(e instanceof EOFException)) {
                 throw e;
             }
