@@ -18,22 +18,22 @@ import com.google.inject.multibindings.Multibinder;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
-public class JsonSubTypeBinder
+public class JacksonSubTypeBinder
 {
-    private final Multibinder<JsonSubType> subTypeBinder;
+    private final Multibinder<JacksonSubType> subTypeBinder;
 
-    public static JsonSubTypeBinder jsonSubTypeBinder(Binder binder)
+    public static JacksonSubTypeBinder jacksonSubTypeBinder(Binder binder)
     {
-        return new JsonSubTypeBinder(binder);
+        return new JacksonSubTypeBinder(binder);
     }
 
-    public void bindJsonSubType(JsonSubType jsonSubType)
+    public void bindJacksonSubType(JacksonSubType jacksonSubType)
     {
-        subTypeBinder.addBinding().toInstance(jsonSubType);
+        subTypeBinder.addBinding().toInstance(jacksonSubType);
     }
 
-    private JsonSubTypeBinder(Binder binder)
+    private JacksonSubTypeBinder(Binder binder)
     {
-        subTypeBinder = newSetBinder(binder, JsonSubType.class);
+        subTypeBinder = newSetBinder(binder, JacksonSubType.class);
     }
 }

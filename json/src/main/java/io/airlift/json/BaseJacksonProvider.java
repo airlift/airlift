@@ -43,7 +43,7 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
     private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
 
-    private final Set<JsonSubType> jsonSubTypes = new HashSet<>();
+    private final Set<JacksonSubType> jacksonSubTypes = new HashSet<>();
 
     protected BaseJacksonProvider(JsonFactoryBuilder jsonFactoryBuilder)
     {
@@ -193,14 +193,14 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     }
 
     @Inject(optional = true)
-    public void setJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    public void setJacksonSubTypes(Set<JacksonSubType> jacksonSubTypes)
     {
-        this.jsonSubTypes.addAll(jsonSubTypes);
+        this.jacksonSubTypes.addAll(jacksonSubTypes);
     }
 
-    public U withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    public U withJacksonSubTypes(Set<JacksonSubType> jacksonSubTypes)
     {
-        setJsonSubTypes(jsonSubTypes);
+        setJacksonSubTypes(jacksonSubTypes);
         return (U) this;
     }
 
@@ -231,8 +231,8 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
             jsonMapper.addModule(module);
         }
 
-        for (JsonSubType jsonSubType : jsonSubTypes) {
-            jsonSubType.modules()
+        for (JacksonSubType jacksonSubType : jacksonSubTypes) {
+            jacksonSubType.modules()
                     .forEach(jsonMapper::addModule);
         }
 
