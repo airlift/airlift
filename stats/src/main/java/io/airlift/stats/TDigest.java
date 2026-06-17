@@ -82,7 +82,8 @@ public class TDigest
                 new double[INITIAL_CAPACITY],
                 new double[INITIAL_CAPACITY],
                 false,
-                false);
+                false,
+                0);
     }
 
     private TDigest(
@@ -94,7 +95,8 @@ public class TDigest
             double[] means,
             double[] weights,
             boolean needsMerge,
-            boolean backwards)
+            boolean backwards,
+            int sortedPrefixLength)
     {
         checkArgument(compression >= 10, "compression factor too small (< 10)");
 
@@ -108,6 +110,7 @@ public class TDigest
         this.weights = requireNonNull(weights, "weights is null");
         this.needsMerge = needsMerge;
         this.backwards = backwards;
+        this.sortedPrefixLength = sortedPrefixLength;
     }
 
     public static TDigest copyOf(TDigest other)
@@ -121,7 +124,10 @@ public class TDigest
                 Arrays.copyOf(other.means, other.centroidCount),
                 Arrays.copyOf(other.weights, other.centroidCount),
                 other.needsMerge,
-                other.backwards);
+                other.backwards,
+                // means[0, sortedPrefixLength) is preserved by the copy, so the next merge can
+                // re-sort only the tail rather than the whole array
+                other.sortedPrefixLength);
     }
 
     public static TDigest deserialize(Slice serialized)
@@ -156,7 +162,9 @@ public class TDigest
                 means,
                 weights,
                 false,
-                false);
+                false,
+                // serialize() merges before writing, so the deserialized centroids are fully sorted
+                centroidCount);
     }
 
     public double getMin()
