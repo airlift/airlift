@@ -401,6 +401,24 @@ public class TestHttpUriBuilder
     }
 
     @Test
+    public void testCreateFromUriWithValuelessQueryParameter()
+    {
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com/?pretty"))
+                .build();
+
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?pretty");
+    }
+
+    @Test
+    public void testCreateFromUriWithMixedValuelessAndValuedQueryParameters()
+    {
+        URI uri = uriBuilderFrom(URI.create("http://www.example.com/?a=1&pretty&b=2"))
+                .build();
+
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?a=1&pretty&b=2");
+    }
+
+    @Test
     public void testEncodesQueryParameters()
     {
         URI uri = uriBuilder()
