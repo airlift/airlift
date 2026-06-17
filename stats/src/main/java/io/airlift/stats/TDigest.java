@@ -15,7 +15,6 @@ package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
@@ -60,8 +59,6 @@ public class TDigest
     private boolean backwards;
     private boolean needsMerge;
 
-    private int[] indexes;
-    private int[] tempIndexes;
     private double[] tempMeans;
     private double[] tempWeights;
 
@@ -420,9 +417,7 @@ public class TDigest
                 SizeOf.sizeOf(means) +
                 SizeOf.sizeOf(weights) +
                 SizeOf.sizeOf(tempMeans) +
-                SizeOf.sizeOf(tempWeights) +
-                SizeOf.sizeOf(indexes) +
-                SizeOf.sizeOf(tempIndexes));
+                SizeOf.sizeOf(tempWeights));
     }
 
     private void merge(double compression)
@@ -431,20 +426,20 @@ public class TDigest
             return;
         }
 
-        initializeIndexes();
+        ensureMergeBuffersCapacity();
 
-        sortIndexes();
+        // leave means[0, centroidCount) (and weights, in lockstep) fully sorted ascending
+        sortCentroids();
+
+        // Process the sorted centroids in alternating directions on successive merges to avoid
+        // systematic bias.
         if (backwards) {
-            Ints.reverse(indexes, 0, centroidCount);
+            Doubles.reverse(means, 0, centroidCount);
+            Doubles.reverse(weights, 0, centroidCount);
         }
 
-        double centroidMean = means[indexes[0]];
-        double centroidWeight = weights[indexes[0]];
-
-        if (tempMeans == null) {
-            tempMeans = new double[INITIAL_CAPACITY];
-            tempWeights = new double[INITIAL_CAPACITY];
-        }
+        double centroidMean = means[0];
+        double centroidWeight = weights[0];
 
         int lastCentroid = 0;
         tempMeans[lastCentroid] = centroidMean;
@@ -456,9 +451,8 @@ public class TDigest
         double currentQuantileMaxClusterSize = maxRelativeClusterSize(currentQuantile, normalizer);
 
         for (int i = 1; i < centroidCount; i++) {
-            int index = indexes[i];
-            double entryWeight = weights[index];
-            double entryMean = means[index];
+            double entryWeight = weights[i];
+            double entryMean = means[i];
 
             double tentativeWeight = centroidWeight + entryWeight;
             double tentativeQuantile = Math.min((weightSoFar + tentativeWeight) / totalWeight, 1);
@@ -480,7 +474,6 @@ public class TDigest
                 centroidMean = entryMean;
             }
 
-            ensureTempCapacity(lastCentroid);
             tempMeans[lastCentroid] = centroidMean;
             tempWeights[lastCentroid] = centroidWeight;
         }
@@ -493,23 +486,23 @@ public class TDigest
         }
         backwards = !backwards;
 
-        System.arraycopy(tempMeans, 0, means, 0, centroidCount);
-        System.arraycopy(tempWeights, 0, weights, 0, centroidCount);
+        // the compacted output lives in the temp buffers; swap them in as the live arrays
+        swapMergeBuffers();
 
         // the buffer is now fully sorted (ascending) and compressed
         sortedPrefixLength = centroidCount;
     }
 
-    private void sortIndexes()
+    private void sortCentroids()
     {
         // means[0, sortedPrefixLength) is already ascending. If nothing was appended since the last
-        // merge, indexes is the identity permutation and is already correctly ordered.
+        // merge, the whole buffer is already sorted.
         if (sortedPrefixLength >= centroidCount) {
             return;
         }
 
         // sort only the unsorted tail
-        DoubleArrays.quickSortIndirect(indexes, means, sortedPrefixLength, centroidCount);
+        DoubleArrays.quickSortDual(means, weights, sortedPrefixLength, centroidCount);
 
         // merge the sorted prefix run with the just-sorted tail run into a single ascending order
         if (sortedPrefixLength > 0) {
@@ -519,37 +512,51 @@ public class TDigest
 
     private void mergeSortedRuns()
     {
-        // indexes[0, sortedPrefixLength) and indexes[sortedPrefixLength, centroidCount) are each
-        // ascending by mean; merge them into tempIndexes, then swap it in as the new indexes
-        if (tempIndexes == null || tempIndexes.length < centroidCount) {
-            tempIndexes = new int[means.length];
-        }
-
+        // means[0, sortedPrefixLength) and means[sortedPrefixLength, centroidCount) (with their
+        // weights) are each ascending; merge them into the temp buffers, then swap them in.
         int left = 0;
         int right = sortedPrefixLength;
         int out = 0;
         while (left < sortedPrefixLength && right < centroidCount) {
-            int leftIndex = indexes[left];
-            int rightIndex = indexes[right];
-            if (means[leftIndex] <= means[rightIndex]) {
-                tempIndexes[out++] = leftIndex;
+            if (means[left] <= means[right]) {
+                tempMeans[out] = means[left];
+                tempWeights[out] = weights[left];
                 left++;
             }
             else {
-                tempIndexes[out++] = rightIndex;
+                tempMeans[out] = means[right];
+                tempWeights[out] = weights[right];
                 right++;
             }
+            out++;
         }
         while (left < sortedPrefixLength) {
-            tempIndexes[out++] = indexes[left++];
+            tempMeans[out] = means[left];
+            tempWeights[out] = weights[left];
+            left++;
+            out++;
         }
         while (right < centroidCount) {
-            tempIndexes[out++] = indexes[right++];
+            tempMeans[out] = means[right];
+            tempWeights[out] = weights[right];
+            right++;
+            out++;
         }
 
-        int[] swap = indexes;
-        indexes = tempIndexes;
-        tempIndexes = swap;
+        swapMergeBuffers();
+    }
+
+    private void swapMergeBuffers()
+    {
+        // The temp buffers and the live arrays are interchangeable scratch of equal length, so swap
+        // references instead of copying the freshly written temp buffers back into means/weights.
+        double[] tempMeansSwap = means;
+        means = tempMeans;
+        tempMeans = tempMeansSwap;
+
+        double[] tempWeightsSwap = weights;
+        weights = tempWeights;
+        tempWeights = tempWeightsSwap;
     }
 
     @VisibleForTesting
@@ -580,22 +587,13 @@ public class TDigest
         }
     }
 
-    private void ensureTempCapacity(int capacity)
+    private void ensureMergeBuffersCapacity()
     {
-        if (tempMeans.length <= capacity) {
-            int newSize = capacity + (int) Math.ceil(capacity * 0.5);
-            tempMeans = Arrays.copyOf(tempMeans, newSize);
-            tempWeights = Arrays.copyOf(tempWeights, newSize);
-        }
-    }
-
-    private void initializeIndexes()
-    {
-        if (indexes == null || indexes.length != means.length) {
-            indexes = new int[means.length];
-        }
-        for (int i = 0; i < centroidCount; i++) {
-            indexes[i] = i;
+        // The temp buffers serve as scratch for both the run merge and the compaction output, so
+        // they must hold every centroid currently in means[]/weights[].
+        if (tempMeans == null || tempMeans.length < means.length) {
+            tempMeans = new double[means.length];
+            tempWeights = new double[means.length];
         }
     }
 
