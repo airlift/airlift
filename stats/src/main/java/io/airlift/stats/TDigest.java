@@ -29,6 +29,7 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
+import static java.lang.Double.isFinite;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
@@ -189,10 +190,15 @@ public class TDigest
 
     public void add(double value, double weight)
     {
-        checkArgument(!isNaN(value), "value is NaN");
-        checkArgument(!isNaN(weight), "weight is NaN");
-        checkArgument(!isInfinite(value), "value must be finite");
-        checkArgument(!isInfinite(weight), "weight must be finite");
+        // Fast path: isFinite() rejects both NaN and ±Infinity in a single check, collapsing the
+        // common case to one branch and deferring the per-argument checks (which produce specific
+        // messages) to the rare invalid case.
+        if (!isFinite(value) || !isFinite(weight)) {
+            checkArgument(!isNaN(value), "value is NaN");
+            checkArgument(!isNaN(weight), "weight is NaN");
+            checkArgument(!isInfinite(value), "value must be finite");
+            checkArgument(!isInfinite(weight), "weight must be finite");
+        }
 
         if (centroidCount == means.length) {
             if (means.length < maxSize) {
