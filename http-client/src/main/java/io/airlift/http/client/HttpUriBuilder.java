@@ -8,6 +8,7 @@ import com.google.common.net.HostAndPort;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -22,6 +23,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class HttpUriBuilder
 {
+    private static final Splitter QUERY_SPLITTER = Splitter.on('&').omitEmptyStrings();
+    private static final Splitter QUERY_PAIR_SPLITTER = Splitter.on('=').limit(2);
+
     private String scheme;
     private String host;
     private int port = -1;
@@ -244,13 +248,11 @@ public class HttpUriBuilder
         LinkedListMultimap<String, String> result = LinkedListMultimap.create();
 
         if (query != null) {
-            Iterable<String> pairs = Splitter.on("&")
-                    .omitEmptyStrings()
-                    .split(query);
-
-            for (String pair : pairs) {
-                String[] parts = pair.split("=", 2);
-                result.put(percentDecode(parts[0]), percentDecode(parts[1]));
+            for (String pair : QUERY_SPLITTER.split(query)) {
+                List<String> parts = QUERY_PAIR_SPLITTER.splitToList(pair);
+                String key = percentDecode(parts.get(0));
+                String value = parts.size() > 1 ? percentDecode(parts.get(1)) : null;
+                result.put(key, value);
             }
         }
 
