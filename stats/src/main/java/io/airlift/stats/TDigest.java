@@ -21,16 +21,23 @@ import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
 import io.airlift.slice.Slices;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.SIZE_OF_BYTE;
+import static io.airlift.slice.SizeOf.SIZE_OF_DOUBLE;
+import static io.airlift.slice.SizeOf.SIZE_OF_LONG;
 import static io.airlift.slice.SizeOf.instanceSize;
 import static java.lang.Double.isFinite;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
+import static java.lang.Double.longBitsToDouble;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -41,6 +48,40 @@ public class TDigest
     public static final double DEFAULT_COMPRESSION = 100;
 
     private static final int FORMAT_TAG = 0;
+    // Compact format: tag, flags, the header fields the flags do not make redundant, the centroid
+    // count (LEB128 varint), the first mean as a raw double, then the remaining means as deltas of
+    // their sortable-long encodings and the weights as integers (when all are integral) or raw
+    // doubles. Deltas and integral weights are bit-packed in groups of eight: a byte with the group's
+    // bit width (that of its widest value), then the eight values at that width, which is exactly
+    // width bytes. A group's values are read with independent shifted whole-long loads.
+    private static final int COMPACT_FORMAT_TAG = 1;
+    // tag, flags, min, max, compression, totalWeight and a 5-byte count
+    private static final int COMPACT_HEADER_MAX_SIZE = 2 * SIZE_OF_BYTE + 4 * SIZE_OF_DOUBLE + 5;
+    // the section loops work on the backing array directly: a Slice accessor costs about as much as
+    // the rest of the per-value work put together
+    private static final VarHandle LONG_LITTLE_ENDIAN = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+    private static final int GROUP = 8;
+    // a value of width bits can be taken from one whole-long load at any bit offset within a byte
+    private static final int MAX_SINGLE_LOAD_WIDTH = Long.SIZE - (Byte.SIZE - 1);
+    private static final long[] WIDTH_MASKS = new long[Long.SIZE + 1];
+
+    static {
+        for (int width = 0; width < Long.SIZE; width++) {
+            WIDTH_MASKS[width] = (1L << width) - 1;
+        }
+        WIDTH_MASKS[Long.SIZE] = -1L;
+    }
+
+    private static final int WEIGHTS_INTEGRAL_FLAG = 0x1;
+    // compression == DEFAULT_COMPRESSION, so it is omitted
+    private static final int DEFAULT_COMPRESSION_FLAG = 0x2;
+    // min and max are bitwise equal to the first and last mean, so they are omitted
+    private static final int MIN_MAX_FROM_MEANS_FLAG = 0x4;
+    // totalWeight is bitwise equal to the sum of the weights, so it is omitted
+    private static final int TOTAL_WEIGHT_FROM_WEIGHTS_FLAG = 0x8;
+    // A flag this reader does not know may add or omit a section, so input carrying one is rejected
+    // rather than decoded at the wrong offsets. Readers that are already deployed cannot be fixed.
+    private static final int KNOWN_FLAGS = WEIGHTS_INTEGRAL_FLAG | DEFAULT_COMPRESSION_FLAG | MIN_MAX_FROM_MEANS_FLAG | TOTAL_WEIGHT_FROM_WEIGHTS_FLAG;
     private static final int T_DIGEST_SIZE = instanceSize(TDigest.class);
     private static final int INITIAL_CAPACITY = 1;
     private static final int FUDGE_FACTOR = 10;
@@ -132,11 +173,20 @@ public class TDigest
 
     public static TDigest deserialize(Slice serialized)
     {
-        SliceInput input = serialized.getInput();
+        byte format = serialized.getByte(0);
+        return switch (format) {
+            case FORMAT_TAG -> {
+                SliceInput input = serialized.getInput();
+                input.skip(1);
+                yield deserializeLegacy(input);
+            }
+            case COMPACT_FORMAT_TAG -> deserializeCompact(serialized);
+            default -> throw new IllegalArgumentException("Invalid format: " + format);
+        };
+    }
 
-        byte format = input.readByte();
-        checkArgument(format == FORMAT_TAG, "Invalid format");
-
+    private static TDigest deserializeLegacy(SliceInput input)
+    {
         double min = input.readDouble();
         double max = input.readDouble();
         double compression = input.readDouble();
@@ -165,6 +215,175 @@ public class TDigest
                 false,
                 // serialize() merges before writing, so the deserialized centroids are fully sorted
                 centroidCount);
+    }
+
+    private static TDigest deserializeCompact(Slice serialized)
+    {
+        int position = 1;
+        int flags = serialized.getByte(position++) & 0xFF;
+        checkArgument((flags & ~KNOWN_FLAGS) == 0, "Invalid format: unknown flags 0x%s", Integer.toHexString(flags));
+
+        double min = 0;
+        double max = 0;
+        if ((flags & MIN_MAX_FROM_MEANS_FLAG) == 0) {
+            min = serialized.getDouble(position);
+            max = serialized.getDouble(position + SIZE_OF_DOUBLE);
+            position += 2 * SIZE_OF_DOUBLE;
+        }
+
+        double compression = DEFAULT_COMPRESSION;
+        if ((flags & DEFAULT_COMPRESSION_FLAG) == 0) {
+            compression = serialized.getDouble(position);
+            position += SIZE_OF_DOUBLE;
+        }
+
+        double totalWeight = 0;
+        if ((flags & TOTAL_WEIGHT_FROM_WEIGHTS_FLAG) == 0) {
+            totalWeight = serialized.getDouble(position);
+            position += SIZE_OF_DOUBLE;
+        }
+
+        // LEB128 centroid count
+        int centroidCount = 0;
+        for (int shift = 0; ; shift += 7) {
+            checkArgument(shift < Integer.SIZE, "Invalid centroid count");
+            byte b = serialized.getByte(position++);
+            centroidCount |= (b & 0x7F) << shift;
+            if ((b & 0x80) == 0) {
+                break;
+            }
+        }
+        // The fewest bytes the count can take: the first mean, a width byte per group of eight deltas
+        // (equal means need no data bytes), and for the weights either a width byte plus at least one
+        // byte of bits per group (weights are positive) or eight bytes each. Computed in long: a
+        // corrupt count can be anything up to Integer.MAX_VALUE.
+        long minimumSize = 0;
+        if (centroidCount > 0) {
+            long weightGroups = ((long) centroidCount + GROUP - 1) / GROUP;
+            long deltaGroups = ((long) centroidCount - 1 + GROUP - 1) / GROUP;
+            long weightsSize = (flags & WEIGHTS_INTEGRAL_FLAG) != 0 ? 2 * weightGroups : (long) SIZE_OF_DOUBLE * centroidCount;
+            minimumSize = SIZE_OF_DOUBLE + deltaGroups + weightsSize;
+        }
+        checkArgument(centroidCount >= 0 && minimumSize <= serialized.length() - position, "Invalid centroid count: %s", centroidCount);
+
+        byte[] array = serialized.byteArray();
+        int offset = serialized.byteArrayOffset();
+
+        double[] means = new double[centroidCount];
+        if (centroidCount > 0) {
+            means[0] = serialized.getDouble(position);
+            position += SIZE_OF_DOUBLE;
+            position = readMeans(array, offset + position, means) - offset;
+        }
+
+        double[] weights = new double[centroidCount];
+        if ((flags & WEIGHTS_INTEGRAL_FLAG) != 0) {
+            position = readWeights(array, offset + position, weights) - offset;
+        }
+        else {
+            for (int i = 0; i < centroidCount; i++) {
+                weights[i] = serialized.getDouble(position);
+                position += SIZE_OF_DOUBLE;
+            }
+        }
+
+        // whole-long loads may run past the end of a sliced view, so reads past it are caught here
+        checkArgument(position <= serialized.length(), "Invalid format: truncated input");
+
+        if ((flags & MIN_MAX_FROM_MEANS_FLAG) != 0) {
+            checkArgument(centroidCount > 0, "Invalid format: min/max omitted for an empty digest");
+            min = means[0];
+            max = means[centroidCount - 1];
+        }
+        if ((flags & TOTAL_WEIGHT_FROM_WEIGHTS_FLAG) != 0) {
+            totalWeight = sum(weights, centroidCount);
+        }
+
+        return new TDigest(
+                compression,
+                min,
+                max,
+                totalWeight,
+                centroidCount,
+                means,
+                weights,
+                false,
+                false,
+                // serialize() merges before writing, so the deserialized centroids are fully sorted
+                centroidCount);
+    }
+
+    // The remaining means were written as non-negative deltas of their sortable-long encodings.
+    // The section loops work on the backing array directly rather than through Slice accessors.
+    private static int readMeans(byte[] bytes, int position, double[] means)
+    {
+        int count = means.length - 1;
+        long previous = doubleToSortableLongBits(means[0]);
+        for (int i = 0; i < count; i += GROUP) {
+            int size = Math.min(GROUP, count - i);
+            int width = bytes[position++];
+            checkArgument(width >= 0 && width <= Long.SIZE, "Invalid format: bad bit width");
+            if (size == GROUP && width <= MAX_SINGLE_LOAD_WIDTH && position + width + SIZE_OF_LONG <= bytes.length) {
+                long mask = WIDTH_MASKS[width];
+                for (int k = 0; k < GROUP; k++) {
+                    previous += unpack(bytes, position, k * width, mask);
+                    means[i + k + 1] = longBitsToDouble(sortableLongToDoubleBits(previous));
+                }
+            }
+            else {
+                for (int k = 0; k < size; k++) {
+                    previous += unpackSlow(bytes, position, k * width, width);
+                    means[i + k + 1] = longBitsToDouble(sortableLongToDoubleBits(previous));
+                }
+            }
+            position += (size * width + Byte.SIZE - 1) >>> 3;
+        }
+        return position;
+    }
+
+    private static int readWeights(byte[] bytes, int position, double[] weights)
+    {
+        int count = weights.length;
+        for (int i = 0; i < count; i += GROUP) {
+            int size = Math.min(GROUP, count - i);
+            int width = bytes[position++];
+            checkArgument(width >= 0 && width <= Long.SIZE, "Invalid format: bad bit width");
+            if (size == GROUP && width <= MAX_SINGLE_LOAD_WIDTH && position + width + SIZE_OF_LONG <= bytes.length) {
+                long mask = WIDTH_MASKS[width];
+                for (int k = 0; k < GROUP; k++) {
+                    weights[i + k] = unpack(bytes, position, k * width, mask);
+                }
+            }
+            else {
+                for (int k = 0; k < size; k++) {
+                    weights[i + k] = unpackSlow(bytes, position, k * width, width);
+                }
+            }
+            position += (size * width + Byte.SIZE - 1) >>> 3;
+        }
+        return position;
+    }
+
+    private static long unpack(byte[] bytes, int position, int bitOffset, long mask)
+    {
+        return ((long) LONG_LITTLE_ENDIAN.get(bytes, position + (bitOffset >>> 3)) >>> (bitOffset & 7)) & mask;
+    }
+
+    // for widths too wide for one load, or too close to the end of the array for a whole-long load
+    private static long unpackSlow(byte[] bytes, int position, int bitOffset, int width)
+    {
+        int index = position + (bitOffset >>> 3);
+        int shift = bitOffset & 7;
+        int needed = (shift + width + Byte.SIZE - 1) >>> 3;
+        long low = 0;
+        for (int b = Math.min(needed, SIZE_OF_LONG) - 1; b >= 0; b--) {
+            low = (low << 8) | (bytes[index + b] & 0xFF);
+        }
+        long value = low >>> shift;
+        if (needed > SIZE_OF_LONG) {
+            value |= (long) (bytes[index + SIZE_OF_LONG] & 0xFF) << (Long.SIZE - shift);
+        }
+        return value & WIDTH_MASKS[width];
     }
 
     public double getMin()
@@ -448,10 +667,192 @@ public class TDigest
         }
     }
 
+    /**
+     * Serializes this digest in the legacy fixed-width format, which every version of
+     * {@link #deserialize(Slice)} can read.
+     */
     public Slice serialize()
     {
         merge(compression);
         return serializeInternal();
+    }
+
+    /**
+     * Serializes this digest in the compact format: means as deltas of their sortable-long encodings
+     * and weights as integers when all are integral, bit-packed in groups of eight at the width of the
+     * group's widest value, and header fields omitted when they can be recomputed. The result is
+     * usually about half the size of {@link #serialize()}; in the worst case (every delta and weight
+     * needs all 64 bits) it is larger by the width byte of each group.
+     *
+     * <p>Every reader must be on a version whose {@link #deserialize(Slice)} understands this format.
+     */
+    public Slice serializeCompact()
+    {
+        merge(compression);
+        return serializeCompactInternal();
+    }
+
+    @VisibleForTesting
+    Slice serializeLegacy()
+    {
+        merge(compression);
+        return serializeInternal();
+    }
+
+    private Slice serializeCompactInternal()
+    {
+        // one pass over the weights decides whether they fit integers and whether totalWeight is redundant
+        boolean weightsIntegral = true;
+        double weightSum = 0;
+        for (int i = 0; i < centroidCount; i++) {
+            double weight = weights[i];
+            weightSum += weight;
+            // reject fractional, negative, and values outside the exactly-representable long range
+            if (weight < 0 || weight >= 0x1p63 || (double) (long) weight != weight) {
+                weightsIntegral = false;
+            }
+        }
+
+        int flags = 0;
+        if (compression == DEFAULT_COMPRESSION) {
+            flags |= DEFAULT_COMPRESSION_FLAG;
+        }
+        if (centroidCount > 0 && sameBits(min, means[0]) && sameBits(max, means[centroidCount - 1])) {
+            flags |= MIN_MAX_FROM_MEANS_FLAG;
+        }
+        if (sameBits(totalWeight, weightSum)) {
+            flags |= TOTAL_WEIGHT_FROM_WEIGHTS_FLAG;
+        }
+        if (weightsIntegral) {
+            flags |= WEIGHTS_INTEGRAL_FLAG;
+        }
+
+        // Sized for the worst case (full header, every value 64 bits, a width byte per group, a long of
+        // slack for the last whole-long store) and trimmed at the end: one copy measured cheaper than a
+        // pass working out every group's width up front.
+        byte[] bytes = new byte[COMPACT_HEADER_MAX_SIZE + SIZE_OF_DOUBLE + 2 * (SIZE_OF_LONG * centroidCount + centroidCount / GROUP + 1) + SIZE_OF_LONG];
+        Slice result = Slices.wrappedBuffer(bytes);
+        long[] group = new long[GROUP];
+        int position = 0;
+        bytes[position++] = COMPACT_FORMAT_TAG;
+        bytes[position++] = (byte) flags;
+        if ((flags & MIN_MAX_FROM_MEANS_FLAG) == 0) {
+            result.setDouble(position, min);
+            result.setDouble(position + SIZE_OF_DOUBLE, max);
+            position += 2 * SIZE_OF_DOUBLE;
+        }
+        if ((flags & DEFAULT_COMPRESSION_FLAG) == 0) {
+            result.setDouble(position, compression);
+            position += SIZE_OF_DOUBLE;
+        }
+        if ((flags & TOTAL_WEIGHT_FROM_WEIGHTS_FLAG) == 0) {
+            result.setDouble(position, totalWeight);
+            position += SIZE_OF_DOUBLE;
+        }
+        position = writeVarInt(result, position, centroidCount);
+
+        if (centroidCount > 0) {
+            result.setDouble(position, means[0]);
+            position += SIZE_OF_DOUBLE;
+            position = writeMeans(bytes, position, means, centroidCount, group);
+        }
+
+        if (weightsIntegral) {
+            position = writeWeights(bytes, position, weights, centroidCount, group);
+        }
+        else {
+            for (int i = 0; i < centroidCount; i++) {
+                result.setDouble(position, weights[i]);
+                position += SIZE_OF_DOUBLE;
+            }
+        }
+
+        return Slices.wrappedBuffer(Arrays.copyOf(bytes, position));
+    }
+
+    private static int writeMeans(byte[] output, int position, double[] means, int centroidCount, long[] group)
+    {
+        int count = centroidCount - 1;
+        long previous = doubleToSortableLongBits(means[0]);
+        for (int i = 0; i < count; i += GROUP) {
+            int size = Math.min(GROUP, count - i);
+            long bits = 0;
+            for (int k = 0; k < size; k++) {
+                long sortable = doubleToSortableLongBits(means[i + k + 1]);
+                long delta = sortable - previous;
+                previous = sortable;
+                group[k] = delta;
+                bits |= delta;
+            }
+            position = pack(output, position, group, size, bits);
+        }
+        return position;
+    }
+
+    private static int writeWeights(byte[] output, int position, double[] weights, int centroidCount, long[] group)
+    {
+        for (int i = 0; i < centroidCount; i += GROUP) {
+            int size = Math.min(GROUP, centroidCount - i);
+            long bits = 0;
+            for (int k = 0; k < size; k++) {
+                long weight = (long) weights[i + k];
+                group[k] = weight;
+                bits |= weight;
+            }
+            position = pack(output, position, group, size, bits);
+        }
+        return position;
+    }
+
+    // Writes the group's width byte and its values at that width. Whole-long stores spill zeros past
+    // the packed bits into bytes that are written afterwards or trimmed.
+    private static int pack(byte[] output, int position, long[] values, int size, long bits)
+    {
+        int width = Long.SIZE - Long.numberOfLeadingZeros(bits);
+        output[position++] = (byte) width;
+        long accumulator = 0;
+        int filled = 0;
+        for (int k = 0; k < size; k++) {
+            long value = values[k];
+            accumulator |= value << filled;
+            filled += width;
+            if (filled >= Long.SIZE) {
+                LONG_LITTLE_ENDIAN.set(output, position, accumulator);
+                position += SIZE_OF_LONG;
+                filled -= Long.SIZE;
+                // the bits of the value that did not fit, if any
+                accumulator = (filled == 0) ? 0 : value >>> (width - filled);
+            }
+        }
+        if (filled > 0) {
+            LONG_LITTLE_ENDIAN.set(output, position, accumulator);
+            position += (filled + Byte.SIZE - 1) >>> 3;
+        }
+        return position;
+    }
+
+    private static int writeVarInt(Slice output, int position, int value)
+    {
+        while ((value & ~0x7F) != 0) {
+            output.setByte(position++, (value & 0x7F) | 0x80);
+            value >>>= 7;
+        }
+        output.setByte(position++, value);
+        return position;
+    }
+
+    private static double sum(double[] values, int count)
+    {
+        double sum = 0;
+        for (int i = 0; i < count; i++) {
+            sum += values[i];
+        }
+        return sum;
+    }
+
+    private static boolean sameBits(double a, double b)
+    {
+        return Double.doubleToRawLongBits(a) == Double.doubleToRawLongBits(b);
     }
 
     private Slice serializeInternal()
@@ -698,5 +1099,18 @@ public class TDigest
     private static double internalCompressionFactor(double compression)
     {
         return 2 * compression;
+    }
+
+    // Maps a double's bits to a long that orders identically to the double under signed comparison,
+    // so that ascending means produce ascending (hence delta-friendly) longs. Self-inverse.
+    private static long doubleToSortableLongBits(double value)
+    {
+        long bits = Double.doubleToLongBits(value);
+        return bits ^ ((bits >> 63) & Long.MAX_VALUE);
+    }
+
+    private static long sortableLongToDoubleBits(long bits)
+    {
+        return bits ^ ((bits >> 63) & Long.MAX_VALUE);
     }
 }

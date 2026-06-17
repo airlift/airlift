@@ -66,6 +66,11 @@ public class BenchmarkTDigest
         private TDigest digest1;
         private TDigest digest2;
         private Slice serializedDigest;
+        private Slice serializedLegacy;
+        private Slice serializedCompact;
+        private TDigest singleValueDigest;
+        private Slice serializedSingleValueLegacy;
+        private Slice serializedSingleValueCompact;
         @Param("100")
         private int quantileCount;
         private double[] quantilesArray;
@@ -77,6 +82,12 @@ public class BenchmarkTDigest
             digest1 = makeDigest(data.values1);
             digest2 = makeDigest(data.values2);
             serializedDigest = digest1.serialize();
+            serializedLegacy = digest1.serializeLegacy();
+            serializedCompact = digest1.serializeCompact();
+            singleValueDigest = new TDigest();
+            singleValueDigest.add(data.values1[0]);
+            serializedSingleValueLegacy = singleValueDigest.serializeLegacy();
+            serializedSingleValueCompact = singleValueDigest.serializeCompact();
             quantilesArray = makeQuantiles(quantileCount);
             quantilesList = Arrays.stream(quantilesArray).boxed()
                     .collect(toImmutableList());
@@ -139,6 +150,54 @@ public class BenchmarkTDigest
     public Slice benchmarkSerialize(Digest data)
     {
         return data.digest1.serialize();
+    }
+
+    @Benchmark
+    public TDigest benchmarkDeserializeLegacy(Digest data)
+    {
+        return TDigest.deserialize(data.serializedLegacy);
+    }
+
+    @Benchmark
+    public TDigest benchmarkDeserializeCompact(Digest data)
+    {
+        return TDigest.deserialize(data.serializedCompact);
+    }
+
+    @Benchmark
+    public Slice benchmarkSerializeLegacy(Digest data)
+    {
+        return data.digest1.serializeLegacy();
+    }
+
+    @Benchmark
+    public Slice benchmarkSerializeCompact(Digest data)
+    {
+        return data.digest1.serializeCompact();
+    }
+
+    @Benchmark
+    public TDigest benchmarkDeserializeSingleValueLegacy(Digest data)
+    {
+        return TDigest.deserialize(data.serializedSingleValueLegacy);
+    }
+
+    @Benchmark
+    public TDigest benchmarkDeserializeSingleValueCompact(Digest data)
+    {
+        return TDigest.deserialize(data.serializedSingleValueCompact);
+    }
+
+    @Benchmark
+    public Slice benchmarkSerializeSingleValueLegacy(Digest data)
+    {
+        return data.singleValueDigest.serializeLegacy();
+    }
+
+    @Benchmark
+    public Slice benchmarkSerializeSingleValueCompact(Digest data)
+    {
+        return data.singleValueDigest.serializeCompact();
     }
 
     @Benchmark

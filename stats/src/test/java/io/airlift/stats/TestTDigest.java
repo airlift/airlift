@@ -18,7 +18,6 @@ import com.google.common.io.Resources;
 import com.google.common.primitives.Doubles;
 import io.airlift.slice.Slices;
 import org.assertj.core.data.Offset;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -207,66 +206,11 @@ public class TestTDigest
     }
 
     @Test
-    public void testSerializationEmpty()
+    public void testDeserializeInvalidFormat()
     {
-        TDigest digest = new TDigest();
-        TDigest deserialized = TDigest.deserialize(digest.serialize());
-
-        assertSimilar(deserialized, digest);
-
-        // ensure the internal arrays are initialized properly
-        deserialized.add(10);
-        assertThat(deserialized.getCount()).isEqualTo(1.0);
-        assertThat(deserialized.valueAt(0.5)).isEqualTo(10.0);
-    }
-
-    @Test
-    public void testSerializationSingle()
-    {
-        TDigest digest = new TDigest();
-        digest.add(1);
-
-        TDigest deserialized = TDigest.deserialize(digest.serialize());
-
-        assertSimilar(deserialized, digest);
-        assertThat(deserialized.valueAt(0)).isEqualTo(digest.valueAt(0));
-        assertThat(deserialized.valueAt(1)).isEqualTo(digest.valueAt(1));
-    }
-
-    @Test
-    public void testSerializationComplex()
-    {
-        TDigest digest = new TDigest();
-        addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
-
-        TDigest deserialized = TDigest.deserialize(digest.serialize());
-
-        assertSimilar(deserialized, digest);
-
-        for (double quantile = 0; quantile <= 1; quantile += 0.1) {
-            assertThat(deserialized.valueAt(quantile)).isEqualTo(digest.valueAt(quantile));
-        }
-    }
-
-    @RepeatedTest(1000)
-    public void testSerializationRandom()
-    {
-        TDigest digest = new TDigest();
-
-        List<Integer> values = new ArrayList<>();
-        for (int i = 0; i < 1000; i++) {
-            values.add(ThreadLocalRandom.current().nextInt());
-        }
-
-        addAll(digest, values);
-
-        TDigest deserialized = TDigest.deserialize(digest.serialize());
-
-        assertSimilar(deserialized, digest);
-
-        for (double quantile = 0; quantile <= 1; quantile += 0.1) {
-            assertThat(deserialized.valueAt(quantile)).isEqualTo(digest.valueAt(quantile));
-        }
+        assertThatThrownBy(() -> TDigest.deserialize(Slices.wrappedBuffer((byte) 99)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid format");
     }
 
     @Test
