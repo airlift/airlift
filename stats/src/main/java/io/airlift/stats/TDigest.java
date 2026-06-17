@@ -251,6 +251,30 @@ public class TDigest
         needsMerge = true;
     }
 
+    /**
+     * Releases unused capacity, shrinking this digest to its current set of centroids.
+     *
+     * <p>Pending additions are compressed, the centroid arrays are trimmed to the live centroid
+     * count, and the transient merge buffers are released. This is intended for digests that are
+     * done being fed (for example, cached or held in memory in large numbers): the bulk of the
+     * insert headroom and all of the merge scratch are reclaimed. A subsequent {@link #add} or
+     * {@link #mergeWith} simply re-grows the arrays on demand.
+     */
+    public void compact()
+    {
+        mergeIfNeeded(internalCompressionFactor(compression));
+
+        // drop the insert headroom kept in means[]/weights[]
+        if (means.length > centroidCount) {
+            means = Arrays.copyOf(means, centroidCount);
+            weights = Arrays.copyOf(weights, centroidCount);
+        }
+
+        // drop the transient merge scratch; ensureMergeBuffersCapacity() reallocates it if the digest is fed again
+        tempMeans = null;
+        tempWeights = null;
+    }
+
     public double valueAt(double quantile)
     {
         return valuesAt(quantile)[0];

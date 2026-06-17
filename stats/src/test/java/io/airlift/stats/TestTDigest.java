@@ -283,6 +283,52 @@ public class TestTDigest
     }
 
     @Test
+    public void testCompact()
+    {
+        TDigest digest = new TDigest();
+        for (int i = 0; i < 10_000; i++) {
+            digest.add(i);
+        }
+
+        double[] quantiles = {0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 1};
+
+        // merge up front so that compact() only trims and does not change the contents
+        double[] expected = digest.valuesAt(quantiles);
+        int centroidCount = digest.getCentroidCount();
+        int sizeBeforeCompact = digest.estimatedInMemorySizeInBytes();
+
+        digest.compact();
+
+        // compaction preserves the centroids and the computed quantiles
+        assertThat(digest.getCentroidCount()).isEqualTo(centroidCount);
+        assertThat(digest.valuesAt(quantiles)).isEqualTo(expected);
+
+        // and reclaims memory
+        assertThat(digest.estimatedInMemorySizeInBytes()).isLessThan(sizeBeforeCompact);
+
+        // a compacted digest still serializes and round-trips correctly
+        TDigest deserialized = TDigest.deserialize(digest.serialize());
+        assertSimilar(deserialized, digest);
+        assertThat(deserialized.valuesAt(quantiles)).isEqualTo(digest.valuesAt(quantiles));
+
+        // and still accepts new values, re-growing its buffers on demand
+        digest.add(10_000);
+        assertThat(digest.getCount()).isEqualTo(10_001.0);
+    }
+
+    @Test
+    public void testCompactEmpty()
+    {
+        TDigest digest = new TDigest();
+        digest.compact();
+
+        // a compacted empty digest is still usable
+        digest.add(10);
+        assertThat(digest.getCount()).isEqualTo(1.0);
+        assertThat(digest.valueAt(0.5)).isEqualTo(10.0);
+    }
+
+    @Test
     public void testMerge()
     {
         TDigest first = new TDigest();
