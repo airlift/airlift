@@ -119,6 +119,12 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>metrics</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>node</artifactId>
                 <version>${project.version}</version>
             </dependency>

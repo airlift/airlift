@@ -1,283 +1,258 @@
 package io.airlift.openmetrics;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.airlift.node.NodeInfo;
+import io.airlift.metrics.CollectedMetricGroup;
+import io.airlift.metrics.CollectedMetricGroup.Attribute;
+import io.airlift.metrics.MetricSource.JmxMetricSource;
+import io.airlift.metrics.MetricSource.ManagedMetricSource;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
 import io.airlift.stats.CounterStat;
+import io.airlift.stats.Distribution;
+import io.airlift.stats.DistributionStat;
 import io.airlift.stats.TimeDistribution;
+import io.airlift.stats.TimeStat;
 import io.airlift.testing.TestingTicker;
 import org.junit.jupiter.api.Test;
-import org.weakref.jmx.MBeanExporter;
-import org.weakref.jmx.Managed;
-import org.weakref.jmx.Nested;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-import javax.management.StandardMBean;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
-import static io.airlift.node.NodeConfig.AddressSource.IP;
-import static io.airlift.openmetrics.MetricsUtils.renderMetricsExpositions;
-import static io.airlift.openmetrics.MetricsUtils.writeMetricsExpositions;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 public class TestOpenMetricsCollector
 {
-    @Test
-    public void testCollectManagedNumericGauge()
-            throws Exception
-    {
-        OpenMetricsCollector collector = createTestingCollector();
-
-        assertThat(collector.collect())
-                .filteredOn(Gauge.class::isInstance)
-                .map(Gauge.class::cast)
-                .anySatisfy(metric -> {
-                    assertThat(metric.metricName()).endsWith("_NumericGauge");
-                    assertThat(metric.value()).isEqualTo(7.0);
-                    assertThat(metric.labels()).isEqualTo(ImmutableMap.of("region", "b", "team", "a"));
-                    assertThat(metric.help()).isEqualTo("numeric gauge");
-                });
-    }
+    private static final Map<String, String> LABELS = ImmutableMap.of("region", "b", "team", "a");
 
     @Test
-    public void testCollectManagedCounterStat()
+    public void testConvertGroupNames()
             throws Exception
     {
-        OpenMetricsCollector collector = createTestingCollector();
+        ObjectName objectName = new ObjectName("io.airlift.metrics.test:name=configured,type=Test");
 
-        assertThat(collector.collect())
-                .filteredOn(Counter.class::isInstance)
-                .map(Counter.class::cast)
-                .anySatisfy(metric -> {
-                    assertThat(metric.metricName()).endsWith("_Requests");
-                    assertThat(metric.value()).isEqualTo(11);
-                    assertThat(metric.labels()).isEqualTo(ImmutableMap.of("region", "b", "team", "a"));
-                    assertThat(metric.help()).isEqualTo("request counter");
-                });
-    }
-
-    @Test
-    public void testCollectManagedTimeDistribution()
-            throws Exception
-    {
-        OpenMetricsCollector collector = createTestingCollector();
-
-        assertThat(collector.collect())
-                .filteredOn(Summary.class::isInstance)
-                .map(Summary.class::cast)
-                .anySatisfy(metric -> {
-                    assertThat(metric.metricName()).endsWith("_Latency");
-                    assertThat(metric.count()).isEqualTo(2);
-                    assertThat(metric.labels()).isEqualTo(ImmutableMap.of("region", "b", "team", "a"));
-                    assertThat(metric.help()).isEqualTo("request latency");
-                });
-    }
-
-    @Test
-    public void testCollectConfiguredJmxNumericAttribute()
-            throws Exception
-    {
-        OpenMetricsCollector collector = createTestingCollector();
-
-        assertThat(collector.collect())
-                .filteredOn(Gauge.class::isInstance)
-                .map(Gauge.class::cast)
-                .anySatisfy(metric -> {
-                    assertThat(metric.metricName()).isEqualTo("JMX_io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Count");
-                    assertThat(metric.value()).isEqualTo(23.0);
-                    assertThat(metric.labels()).isEqualTo(ImmutableMap.of("region", "b", "team", "a"));
-                });
-    }
-
-    @Test
-    public void testCollectConfiguredJmxCompositeAttribute()
-            throws Exception
-    {
-        OpenMetricsCollector collector = createTestingCollector();
-
-        Optional<CompositeMetric> memoryMetric = collector.collect().stream()
-                .filter(CompositeMetric.class::isInstance)
-                .map(CompositeMetric.class::cast)
-                .filter(metric -> metric.metricName().equals("JMX_io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Memory"))
-                .findFirst();
-
-        assertThat(memoryMetric).isPresent();
-        assertThat(memoryMetric.orElseThrow().labels()).isEqualTo(ImmutableMap.of("region", "b", "team", "a"));
-        assertThat(memoryMetric.orElseThrow().subMetrics())
-                .filteredOn(Gauge.class::isInstance)
-                .map(Gauge.class::cast)
-                .extracting(Gauge::metricName, Gauge::value)
-                .contains(
-                        tuple("JMX_io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Memory_committed", 200.0),
-                        tuple("JMX_io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Memory_max", 1000.0),
-                        tuple("JMX_io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Memory_used", 100.0));
-    }
-
-    @Test
-    public void testResourceOutputMatchesCollectorRendering()
-            throws Exception
-    {
-        OpenMetricsCollector collector = createTestingCollector();
-        MetricsResource resource = new MetricsResource(collector);
-
-        StringWriter writer = new StringWriter();
-        writeMetricsExpositions(writer, collector.collect());
-        writer.append("# EOF\n");
-
-        assertThat(getMetrics(resource, ImmutableList.of())).isEqualTo(writer.toString());
-    }
-
-    @Test
-    public void testFilteredMetricLookupCompatibility()
-            throws Exception
-    {
-        OpenMetricsCollector collector = createTestingCollector();
-        MetricsResource resource = new MetricsResource(collector);
-        String managedMetricName = collector.collect().stream()
-                .map(Metric::metricName)
-                .filter(name -> name.endsWith("_NumericGauge"))
-                .findFirst()
-                .orElseThrow();
-        String jmxMetricName = "JMX_io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Count";
-
-        assertThat(collector.collect(ImmutableList.of(managedMetricName)))
+        assertThat(OpenMetricsCollector.toOpenMetrics(List.of(
+                new CollectedMetricGroup(
+                        new ManagedMetricSource("io.airlift.metrics.test:name=managed"),
+                        LABELS,
+                        List.of(new Attribute(List.of("NumericGauge"), 7, "metric help"))),
+                new CollectedMetricGroup(
+                        new JmxMetricSource(objectName),
+                        LABELS,
+                        List.of(new Attribute(List.of("Count"), 23, "metric help"))))))
                 .extracting(Metric::metricName)
-                .containsExactly(managedMetricName);
-        assertThat(getMetrics(resource, ImmutableList.of(managedMetricName)))
-                .isEqualTo(renderMetricsExpositions(collector.collect(ImmutableList.of(managedMetricName)), true));
-
-        Metric filteredJmxMetric = collector.findMetric(jmxMetricName).orElseThrow();
-        assertThat(filteredJmxMetric.metricName()).isEqualTo("io_airlift_openmetrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Count");
-        assertThat(getMetrics(resource, ImmutableList.of(jmxMetricName)))
-                .isEqualTo(renderMetricsExpositions(collector.collect(ImmutableList.of(jmxMetricName)), true));
+                .containsExactly(
+                        "io_airlift_metrics_test_name_managed_NumericGauge",
+                        "JMX_io_airlift_metrics_test_NAME_configured_TYPE_Test_ATTRIBUTE_Count");
     }
 
-    private static String getMetrics(MetricsResource resource, List<String> filter)
-            throws IOException
+    @Test
+    public void testConvertNumberToGauge()
     {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        resource.getMetrics(filter).write(output);
-        return output.toString(UTF_8);
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), 7, "metric help"), LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(Gauge.class, gauge -> {
+            assertThat(gauge.metricName()).isEqualTo("metric_name");
+            assertThat(gauge.value()).isEqualTo(7.0);
+            assertThat(gauge.labels()).isEqualTo(LABELS);
+            assertThat(gauge.help()).isEqualTo("metric help");
+        });
     }
 
-    private static OpenMetricsCollector createTestingCollector()
-            throws Exception
+    @Test
+    public void testConvertBooleanToGauge()
     {
-        MBeanServer mbeanServer = MBeanServerFactory.newMBeanServer();
-        MBeanExporter mbeanExporter = new MBeanExporter(mbeanServer);
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), true, "metric help"), LABELS);
 
-        ManagedMetrics managedMetrics = new ManagedMetrics();
-        managedMetrics.getRequests().update(11);
-        managedMetrics.getLatency().add(100);
-        managedMetrics.getLatency().add(200);
-        managedMetrics.forceLatencyMerge();
-        mbeanExporter.export(new ObjectName("io.airlift.openmetrics.test:name=managed"), managedMetrics);
-
-        ObjectName configuredObjectName = new ObjectName("io.airlift.openmetrics.test:name=configured,type=Test");
-        mbeanServer.registerMBean(new StandardMBean(new ConfiguredMetrics(), ConfiguredMetricsMBean.class), configuredObjectName);
-
-        MetricsConfig metricsConfig = new MetricsConfig().setJmxObjectNames(ImmutableList.of(configuredObjectName));
-        NodeInfo nodeInfo = new NodeInfo(
-                "test",
-                "pool",
-                "nodeInfo",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                IP,
-                null,
-                ImmutableMap.of("team", "a", "region", "b"),
-                false);
-
-        return new OpenMetricsCollector(mbeanServer, mbeanExporter, metricsConfig, nodeInfo);
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(Gauge.class, gauge -> {
+            assertThat(gauge.metricName()).isEqualTo("metric_name");
+            assertThat(gauge.value()).isEqualTo(1.0);
+            assertThat(gauge.labels()).isEqualTo(LABELS);
+            assertThat(gauge.help()).isEqualTo("metric help");
+        });
     }
 
-    public static class ManagedMetrics
+    @Test
+    public void testConvertCompositeDataToCompositeMetric()
     {
-        private final CounterStat requests = new CounterStat();
-        private final TestingTicker ticker = new TestingTicker();
-        private final TimeDistribution latency = new TimeDistribution(ticker);
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), createMemoryUsageCompositeData(100, 200, 1000), "metric help"), LABELS);
 
-        @Managed(description = "numeric gauge")
-        public int getNumericGauge()
-        {
-            return 7;
-        }
-
-        @Managed(description = "request counter")
-        @Nested
-        public CounterStat getRequests()
-        {
-            return requests;
-        }
-
-        @Managed(description = "request latency")
-        @Nested
-        public TimeDistribution getLatency()
-        {
-            return latency;
-        }
-
-        private void forceLatencyMerge()
-        {
-            ticker.increment(1, SECONDS);
-            latency.getCount();
-        }
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(CompositeMetric.class, compositeMetric -> {
+            assertThat(compositeMetric.metricName()).isEqualTo("metric_name");
+            assertThat(compositeMetric.labels()).isEqualTo(LABELS);
+            assertThat(compositeMetric.help()).isEqualTo("metric help");
+            assertThat(compositeMetric.subMetrics())
+                    .filteredOn(Gauge.class::isInstance)
+                    .map(Gauge.class::cast)
+                    .extracting(Gauge::metricName, Gauge::value)
+                    .contains(
+                            tuple("metric_name_committed", 200.0),
+                            tuple("metric_name_max", 1000.0),
+                            tuple("metric_name_used", 100.0));
+        });
     }
 
-    public interface ConfiguredMetricsMBean
+    @Test
+    public void testConvertCounterStatToCounter()
     {
-        int getCount();
+        CounterStat counterStat = new CounterStat();
+        counterStat.update(11);
 
-        CompositeData getMemory();
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), counterStat, "metric help"), LABELS);
 
-        String getUnsupported();
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(Counter.class, counter -> {
+            assertThat(counter.metricName()).isEqualTo("metric_name");
+            assertThat(counter.value()).isEqualTo(11);
+            assertThat(counter.labels()).isEqualTo(LABELS);
+            assertThat(counter.help()).isEqualTo("metric help");
+        });
     }
 
-    public static class ConfiguredMetrics
-            implements ConfiguredMetricsMBean
+    @Test
+    public void testConvertTimeDistributionToSummary()
     {
-        @Override
-        public int getCount()
-        {
-            return 23;
-        }
+        TestingTicker ticker = new TestingTicker();
+        TimeDistribution timeDistribution = new TimeDistribution(ticker);
+        timeDistribution.add(100);
+        timeDistribution.add(200);
+        ticker.increment(1, SECONDS);
+        timeDistribution.getCount();
 
-        @Override
-        public CompositeData getMemory()
-        {
-            return createMemoryUsageCompositeData(100, 200, 1000);
-        }
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), timeDistribution, "metric help"), LABELS);
 
-        @Override
-        public String getUnsupported()
-        {
-            return "ignored";
-        }
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(Summary.class, summary -> {
+            assertThat(summary.metricName()).isEqualTo("metric_name");
+            assertThat(summary.count()).isEqualTo(2);
+            assertThat(summary.labels()).isEqualTo(LABELS);
+            assertThat(summary.help()).isEqualTo("metric help");
+        });
+    }
+
+    @Test
+    public void testConvertDistributionToSummary()
+    {
+        Distribution distribution = new Distribution();
+        distribution.add(100);
+        distribution.add(200);
+
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), distribution, "metric help"), LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(Summary.class, summary -> {
+            assertThat(summary.metricName()).isEqualTo("metric_name");
+            assertThat(summary.count()).isEqualTo(2);
+            assertThat(summary.sum()).isEqualTo(300);
+            assertThat(summary.quantiles()).containsKeys(0.01, 0.5, 0.99);
+            assertThat(summary.labels()).isEqualTo(LABELS);
+            assertThat(summary.help()).isEqualTo("metric help");
+        });
+    }
+
+    @Test
+    public void testConvertTimeStatToSummaries()
+    {
+        TestingTicker ticker = new TestingTicker();
+        TimeStat timeStat = new TimeStat(ticker);
+        timeStat.addNanos(100);
+        timeStat.addNanos(200);
+        ticker.increment(1, SECONDS);
+
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), timeStat, "metric help"), LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(CompositeMetric.class, compositeMetric -> {
+            assertThat(compositeMetric.subMetrics())
+                    .filteredOn(Summary.class::isInstance)
+                    .map(Summary.class::cast)
+                    .extracting(Summary::metricName, Summary::count)
+                    .containsExactlyInAnyOrder(
+                            tuple("metric_name_OneMinute", 2L),
+                            tuple("metric_name_FiveMinutes", 2L),
+                            tuple("metric_name_FifteenMinutes", 2L),
+                            tuple("metric_name_AllTime", 2L));
+        });
+    }
+
+    @Test
+    public void testConvertDistributionStatToSummaries()
+    {
+        DistributionStat distributionStat = new DistributionStat();
+        distributionStat.add(100);
+        distributionStat.add(200);
+
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), distributionStat, "metric help"), LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(CompositeMetric.class, compositeMetric -> {
+            assertThat(compositeMetric.subMetrics())
+                    .filteredOn(Summary.class::isInstance)
+                    .map(Summary.class::cast)
+                    .extracting(Summary::metricName, Summary::count)
+                    .containsExactlyInAnyOrder(
+                            tuple("metric_name_OneMinute", 2L),
+                            tuple("metric_name_FiveMinutes", 2L),
+                            tuple("metric_name_FifteenMinutes", 2L),
+                            tuple("metric_name_AllTime", 2L));
+        });
+    }
+
+    @Test
+    public void testFilterCompositeSubMetric()
+    {
+        CompositeMetric compositeMetric = new CompositeMetric(
+                "metric_name",
+                LABELS,
+                "metric help",
+                List.of(
+                        new Summary("metric_name_OneMinute", 1L, 1.0, null, Map.of(), LABELS, "metric help"),
+                        new Summary("metric_name_AllTime", 2L, 2.0, null, Map.of(), LABELS, "metric help")));
+
+        assertThat(OpenMetricsCollector.filterMetrics(List.of(compositeMetric), Set.of("metric_name_AllTime")))
+                .singleElement()
+                .isInstanceOfSatisfying(CompositeMetric.class, filteredMetric -> assertThat(filteredMetric.subMetrics())
+                        .singleElement()
+                        .isInstanceOfSatisfying(Summary.class, summary -> assertThat(summary.metricName()).isEqualTo("metric_name_AllTime")));
+    }
+
+    @Test
+    public void testFindCompositeMetricRoot()
+    {
+        CompositeMetric compositeMetric = new CompositeMetric(
+                "metric_name",
+                LABELS,
+                "metric help",
+                List.of(
+                        new Summary("metric_name_OneMinute", 1L, 1.0, null, Map.of(), LABELS, "metric help"),
+                        new Summary("metric_name_AllTime", 2L, 2.0, null, Map.of(), LABELS, "metric help")));
+
+        assertThat(OpenMetricsCollector.findMetric(List.of(compositeMetric), "metric_name"))
+                .containsSame(compositeMetric);
+        assertThat(OpenMetricsCollector.findMetric(List.of(compositeMetric), "metric_name_AllTime"))
+                .containsInstanceOf(Summary.class);
+    }
+
+    @Test
+    public void testIgnoreUnsupportedValue()
+    {
+        assertThat(OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), "ignored", "metric help"), LABELS)).isEmpty();
     }
 
     private static CompositeData createMemoryUsageCompositeData(long used, long committed, long max)

@@ -6,6 +6,8 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Elements;
+import io.airlift.metrics.MetricsCollector;
+import io.airlift.metrics.MetricsConfig;
 import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Retention;
@@ -22,6 +24,9 @@ public class TestJmxOpenMetricsModule
     {
         List<Element> elements = Elements.getElements(new JmxOpenMetricsModule(ForTesting.class));
 
+        assertThat(hasBinding(elements, Key.get(MetricsConfig.class))).isTrue();
+        assertThat(hasBinding(elements, Key.get(MetricsCollector.class))).isTrue();
+        assertThat(hasBinding(elements, Key.get(OpenMetricsCollector.class))).isTrue();
         assertThat(hasBinding(elements, Key.get(new TypeLiteral<Set<Object>>() {}))).isFalse();
         assertThat(hasBinding(elements, Key.get(new TypeLiteral<Set<Object>>() {}, ForTesting.class))).isTrue();
     }
