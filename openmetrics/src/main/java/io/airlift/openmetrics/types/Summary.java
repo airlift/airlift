@@ -14,6 +14,8 @@
 package io.airlift.openmetrics.types;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.stats.Distribution;
+import io.airlift.stats.Distribution.DistributionSnapshot;
 import io.airlift.stats.TimeDistribution;
 import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 
@@ -39,6 +41,29 @@ public record Summary(String metricName, Long count, Double sum, Double created,
                 snapshot.avg() * snapshot.count(),
                 null,
                 ImmutableMap.<Double, Double>builder()
+                        .put(0.5, snapshot.p50())
+                        .put(0.75, snapshot.p75())
+                        .put(0.9, snapshot.p90())
+                        .put(0.95, snapshot.p95())
+                        .put(0.99, snapshot.p99())
+                        .build(),
+                labels,
+                help);
+    }
+
+    public static Summary from(String metricName, Distribution distribution, Map<String, String> labels, String help)
+    {
+        DistributionSnapshot snapshot = distribution.snapshot();
+        return new Summary(
+                metricName,
+                (long) snapshot.count(),
+                snapshot.total(),
+                null,
+                ImmutableMap.<Double, Double>builder()
+                        .put(0.01, snapshot.p01())
+                        .put(0.05, snapshot.p05())
+                        .put(0.10, snapshot.p10())
+                        .put(0.25, snapshot.p25())
                         .put(0.5, snapshot.p50())
                         .put(0.75, snapshot.p75())
                         .put(0.9, snapshot.p90())

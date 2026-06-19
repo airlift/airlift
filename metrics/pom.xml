@@ -8,10 +8,10 @@
         <version>437-SNAPSHOT</version>
     </parent>
 
-    <artifactId>openmetrics</artifactId>
+    <artifactId>metrics</artifactId>
     <packaging>jar</packaging>
-    <name>openmetrics</name>
-    <description>Airlift - OpenMetrics support</description>
+    <name>metrics</name>
+    <description>Airlift - Metrics discovery</description>
 
     <dependencies>
         <dependency>
@@ -27,12 +27,17 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>jaxrs</artifactId>
+            <artifactId>configuration</artifactId>
         </dependency>
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>metrics</artifactId>
+            <artifactId>log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>node</artifactId>
         </dependency>
 
         <dependency>
@@ -41,8 +46,14 @@
         </dependency>
 
         <dependency>
-            <groupId>jakarta.ws.rs</groupId>
-            <artifactId>jakarta.ws.rs-api</artifactId>
+            <groupId>org.weakref</groupId>
+            <artifactId>jmxutils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration-testing</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

@@ -11,12 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.openmetrics;
+package io.airlift.metrics;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.LegacyConfig;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -36,7 +37,8 @@ public class MetricsConfig
         return jmxObjectNames;
     }
 
-    @Config("openmetrics.jmx-object-names")
+    @Config("metrics.jmx-object-names")
+    @LegacyConfig("openmetrics.jmx-object-names")
     @ConfigDescription("JMX object names to include when retrieving all metrics, separated by '|'")
     public MetricsConfig setJmxObjectNames(String names)
     {

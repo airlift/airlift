@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.openmetrics;
+package io.airlift.metrics;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -21,6 +21,7 @@ import javax.management.ObjectName;
 
 import java.util.Map;
 
+import static io.airlift.configuration.testing.ConfigAssertions.assertDeprecatedEquivalence;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
@@ -39,7 +40,7 @@ public class TestMetricsConfig
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("openmetrics.jmx-object-names", "foo.bar:name=baz,type=qux|baz.bar:*")
+                .put("metrics.jmx-object-names", "foo.bar:name=baz,type=qux|baz.bar:*")
                 .build();
 
         MetricsConfig expected = new MetricsConfig()
@@ -48,5 +49,19 @@ public class TestMetricsConfig
                         new ObjectName("baz.bar:*")));
 
         assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testDeprecatedProperties()
+    {
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("metrics.jmx-object-names", "foo.bar:name=baz,type=qux|baz.bar:*")
+                .build();
+
+        Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
+                .put("openmetrics.jmx-object-names", "foo.bar:name=baz,type=qux|baz.bar:*")
+                .build();
+
+        assertDeprecatedEquivalence(MetricsConfig.class, currentProperties, oldProperties);
     }
 }
