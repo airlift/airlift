@@ -15,12 +15,16 @@
  */
 package io.airlift.stats;
 
+import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import io.airlift.stats.TimeStat.BlockTimer;
+import io.airlift.stats.TimeStat.TimeDistributionStatSnapshot;
 import io.airlift.testing.TestingTicker;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,9 +32,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.math.DoubleMath.fuzzyEquals;
+import static io.airlift.stats.StatsBackend.AIRLIFT;
+import static io.airlift.stats.StatsBackend.OPENTELEMETRY;
 import static io.airlift.stats.TimeDistribution.MERGE_THRESHOLD_NANOS;
 import static java.lang.Math.min;
 import static java.util.Comparator.naturalOrder;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -39,6 +46,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
 @TestInstance(PER_CLASS)
+@Isolated
 @Execution(SAME_THREAD)
 public class TestTimeStat
 {
@@ -48,7 +56,15 @@ public class TestTimeStat
     @BeforeEach
     public void setup()
     {
+        StatsBackendFactory.resetForTesting();
+        StatsBackendFactory.setBackend(AIRLIFT);
         ticker = new TestingTicker();
+    }
+
+    @AfterEach
+    public void reset()
+    {
+        StatsBackendFactory.resetForTesting();
     }
 
     @Test
@@ -132,6 +148,48 @@ public class TestTimeStat
         assertThat(stat.getOneMinute().getAvg()).isNaN();
         assertThat(stat.getFiveMinutes().getAvg()).isNaN();
         assertThat(stat.getFifteenMinutes().getAvg()).isNaN();
+    }
+
+    @Test
+    public void testAirliftExponentialHistogramSnapshot()
+    {
+        TimeStat stat = new TimeStat(ticker);
+        stat.addNanos(1);
+
+        assertThat(stat.exponentialHistogramSnapshot()).isEmpty();
+    }
+
+    @Test
+    public void testOpenTelemetryExponentialHistogramSnapshot()
+    {
+        StatsBackendFactory.setBackend(OPENTELEMETRY);
+        TimeStat stat = new TimeStat(ticker, NANOSECONDS);
+        stat.addNanos(1);
+        stat.addNanos(2);
+
+        ExponentialHistogramSnapshot snapshot = stat.exponentialHistogramSnapshot().orElseThrow();
+
+        assertThat(stat.getOneMinute()).isNull();
+        assertThat(stat.getFiveMinutes()).isNull();
+        assertThat(stat.getFifteenMinutes()).isNull();
+        assertThat(stat.getAllTime().getCount()).isEqualTo(2);
+        assertThat(snapshot.count()).isEqualTo(2);
+    }
+
+    @Test
+    public void testOpenTelemetrySnapshotContainsOnlyAllTime()
+    {
+        StatsBackendFactory.setBackend(OPENTELEMETRY);
+        TimeStat stat = new TimeStat(ticker, NANOSECONDS);
+        stat.addNanos(1);
+        stat.addNanos(2);
+
+        TimeDistributionStatSnapshot snapshot = stat.snapshot();
+
+        assertThat(snapshot.oneMinute()).isNull();
+        assertThat(snapshot.fiveMinute()).isNull();
+        assertThat(snapshot.fifteenMinute()).isNull();
+        assertThat(snapshot.allTime().count()).isEqualTo(2);
     }
 
     @Test

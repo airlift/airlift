@@ -19,11 +19,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
+import jakarta.annotation.Nullable;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 import java.util.concurrent.atomic.LongAdder;
 
+import static io.airlift.stats.StatsBackend.AIRLIFT;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,24 +39,46 @@ import static java.util.Objects.requireNonNull;
 public final class CounterStat
 {
     private final LongAdder count = new LongAdder();
-    private final DecayCounter oneMinute = new DecayCounter(DecayConfig.oneMinute());
-    private final DecayCounter fiveMinute = new DecayCounter(DecayConfig.fiveMinutes());
-    private final DecayCounter fifteenMinute = new DecayCounter(DecayConfig.fifteenMinutes());
+    @Nullable
+    private final DecayCounter oneMinute;
+    @Nullable
+    private final DecayCounter fiveMinute;
+    @Nullable
+    private final DecayCounter fifteenMinute;
+
+    public CounterStat()
+    {
+        if (StatsBackendFactory.getBackend() == AIRLIFT) {
+            oneMinute = new DecayCounter(DecayConfig.oneMinute());
+            fiveMinute = new DecayCounter(DecayConfig.fiveMinutes());
+            fifteenMinute = new DecayCounter(DecayConfig.fifteenMinutes());
+        }
+        else {
+            oneMinute = null;
+            fiveMinute = null;
+            fifteenMinute = null;
+        }
+    }
 
     public void update(long count)
     {
-        oneMinute.add(count);
-        fiveMinute.add(count);
-        fifteenMinute.add(count);
+        if (oneMinute != null && fiveMinute != null && fifteenMinute != null) {
+            oneMinute.add(count);
+            fiveMinute.add(count);
+            fifteenMinute.add(count);
+        }
         this.count.add(count);
     }
 
     public void merge(CounterStat counterStat)
     {
         requireNonNull(counterStat, "counterStat is null");
-        oneMinute.merge(counterStat.getOneMinute());
-        fiveMinute.merge(counterStat.getFiveMinute());
-        fifteenMinute.merge(counterStat.getFifteenMinute());
+        if (oneMinute != null && fiveMinute != null && fifteenMinute != null &&
+                counterStat.getOneMinute() != null && counterStat.getFiveMinute() != null && counterStat.getFifteenMinute() != null) {
+            oneMinute.merge(counterStat.getOneMinute());
+            fiveMinute.merge(counterStat.getFiveMinute());
+            fifteenMinute.merge(counterStat.getFifteenMinute());
+        }
         count.add(counterStat.getTotalCount());
     }
 
@@ -68,9 +92,11 @@ public final class CounterStat
     @Managed
     public void reset()
     {
-        oneMinute.reset();
-        fiveMinute.reset();
-        fifteenMinute.reset();
+        if (oneMinute != null && fiveMinute != null && fifteenMinute != null) {
+            oneMinute.reset();
+            fiveMinute.reset();
+            fifteenMinute.reset();
+        }
         count.reset();
     }
 
@@ -80,9 +106,13 @@ public final class CounterStat
     @Deprecated
     public void resetTo(CounterStat counterStat)
     {
-        oneMinute.resetTo(counterStat.getOneMinute());
-        fiveMinute.resetTo(counterStat.getFiveMinute());
-        fifteenMinute.resetTo(counterStat.getFifteenMinute());
+        requireNonNull(counterStat, "counterStat is null");
+        if (oneMinute != null && fiveMinute != null && fifteenMinute != null &&
+                counterStat.getOneMinute() != null && counterStat.getFiveMinute() != null && counterStat.getFifteenMinute() != null) {
+            oneMinute.resetTo(counterStat.getOneMinute());
+            fiveMinute.resetTo(counterStat.getFiveMinute());
+            fifteenMinute.resetTo(counterStat.getFifteenMinute());
+        }
 
         synchronized (count) {
             count.reset();
@@ -98,6 +128,7 @@ public final class CounterStat
 
     @Managed
     @Nested
+    @Nullable
     public DecayCounter getOneMinute()
     {
         return oneMinute;
@@ -105,6 +136,7 @@ public final class CounterStat
 
     @Managed
     @Nested
+    @Nullable
     public DecayCounter getFiveMinute()
     {
         return fiveMinute;
@@ -112,6 +144,7 @@ public final class CounterStat
 
     @Managed
     @Nested
+    @Nullable
     public DecayCounter getFifteenMinute()
     {
         return fifteenMinute;
@@ -119,21 +152,31 @@ public final class CounterStat
 
     public CounterStatSnapshot snapshot()
     {
-        return new CounterStatSnapshot(getTotalCount(), getOneMinute().snapshot(), getFiveMinute().snapshot(), getFifteenMinute().snapshot());
+        return new CounterStatSnapshot(
+                getTotalCount(),
+                oneMinute == null ? null : oneMinute.snapshot(),
+                fiveMinute == null ? null : fiveMinute.snapshot(),
+                fifteenMinute == null ? null : fifteenMinute.snapshot());
     }
 
     public static class CounterStatSnapshot
     {
         private final long totalCount;
+        @Nullable
         private final DecayCounterSnapshot oneMinute;
+        @Nullable
         private final DecayCounterSnapshot fiveMinute;
+        @Nullable
         private final DecayCounterSnapshot fifteenMinute;
 
         @JsonCreator
         public CounterStatSnapshot(
                 @JsonProperty("totalCount") long totalCount,
+                @Nullable
                 @JsonProperty("oneMinute") DecayCounterSnapshot oneMinute,
+                @Nullable
                 @JsonProperty("fiveMinute") DecayCounterSnapshot fiveMinute,
+                @Nullable
                 @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute)
         {
             this.totalCount = totalCount;
@@ -149,18 +192,21 @@ public final class CounterStat
         }
 
         @JsonProperty
+        @Nullable
         public DecayCounterSnapshot getOneMinute()
         {
             return oneMinute;
         }
 
         @JsonProperty
+        @Nullable
         public DecayCounterSnapshot getFiveMinute()
         {
             return fiveMinute;
         }
 
         @JsonProperty
+        @Nullable
         public DecayCounterSnapshot getFifteenMinute()
         {
             return fifteenMinute;

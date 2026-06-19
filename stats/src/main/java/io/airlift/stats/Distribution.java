@@ -1,36 +1,26 @@
 package io.airlift.stats;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
 import com.google.errorprone.annotations.ThreadSafe;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
+import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import jakarta.annotation.Nullable;
 import org.weakref.jmx.Managed;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
-import static com.google.common.base.Verify.verify;
+import static com.google.common.base.Ticker.systemTicker;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @ThreadSafe
 public class Distribution
 {
-    private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
-    private static final double[] PERCENTILES;
+    @VisibleForTesting
+    static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
 
-    static {
-        PERCENTILES = new double[100];
-        for (int i = 0; i < 100; ++i) {
-            PERCENTILES[i] = (i / 100.0);
-        }
-    }
-
-    // immutable config shared by every sub-structure; null when this distribution does not decay
-    @Nullable
-    private final DecayConfig config;
-    @GuardedBy("this")
-    private DecayTDigest digest;
-
-    private final DecayCounter total;
+    private final DistributionImplementation implementation;
 
     public Distribution()
     {
@@ -47,173 +37,147 @@ public class Distribution
      */
     public Distribution(@Nullable DecayConfig config)
     {
-        this(config, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config), new DecayCounter(config));
+        this(systemTicker(), config);
     }
 
-    private Distribution(@Nullable DecayConfig config, DecayTDigest digest, DecayCounter total)
+    @VisibleForTesting
+    Distribution(Ticker ticker)
     {
-        this.config = config;
-        this.digest = requireNonNull(digest, "digest is null");
-        this.total = requireNonNull(total, "total is null");
+        this(ticker, null);
     }
 
-    public synchronized void add(long value)
+    private Distribution(Ticker ticker, @Nullable DecayConfig config)
     {
-        digest.add(value);
-        total.add(value);
+        implementation = switch (StatsBackendFactory.getBackend()) {
+            case AIRLIFT -> new AirliftDistribution(config);
+            case OPENTELEMETRY -> new OpenTelemetryDistribution(ticker);
+        };
     }
 
-    public synchronized void add(long value, long count)
+    private Distribution(DistributionImplementation implementation)
     {
-        digest.add(value, count);
-        total.add(value * count);
+        this.implementation = requireNonNull(implementation, "implementation is null");
     }
 
-    public synchronized Distribution duplicate()
+    public void add(long value)
     {
-        // the config is immutable and freely shared; digest/total keep their own landmark-preserving copies
-        return new Distribution(config, digest.duplicate(), total.duplicate());
+        implementation.add(value);
     }
 
-    @Managed
-    public synchronized void reset()
+    public void add(long value, long count)
     {
-        total.reset();
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
+        implementation.add(value, count);
     }
 
-    @Managed
-    public synchronized double getCount()
+    public Distribution duplicate()
     {
-        return digest.getCount();
+        return new Distribution(implementation.duplicate());
     }
 
     @Managed
-    public synchronized double getTotal()
+    public void reset()
     {
-        return total.getCount();
+        implementation.reset();
     }
 
     @Managed
-    public synchronized double getP01()
+    public double getCount()
     {
-        return digest.valueAt(0.01);
+        return implementation.getCount();
     }
 
     @Managed
-    public synchronized double getP05()
+    public double getTotal()
     {
-        return digest.valueAt(0.05);
+        return implementation.getTotal();
     }
 
     @Managed
-    public synchronized double getP10()
+    public double getP01()
     {
-        return digest.valueAt(0.10);
+        return implementation.getP01();
     }
 
     @Managed
-    public synchronized double getP25()
+    public double getP05()
     {
-        return digest.valueAt(0.25);
+        return implementation.getP05();
     }
 
     @Managed
-    public synchronized double getP50()
+    public double getP10()
     {
-        return digest.valueAt(0.5);
+        return implementation.getP10();
     }
 
     @Managed
-    public synchronized double getP75()
+    public double getP25()
     {
-        return digest.valueAt(0.75);
+        return implementation.getP25();
     }
 
     @Managed
-    public synchronized double getP90()
+    public double getP50()
     {
-        return digest.valueAt(0.90);
+        return implementation.getP50();
     }
 
     @Managed
-    public synchronized double getP95()
+    public double getP75()
     {
-        return digest.valueAt(0.95);
+        return implementation.getP75();
     }
 
     @Managed
-    public synchronized double getP99()
+    public double getP90()
     {
-        return digest.valueAt(0.99);
+        return implementation.getP90();
     }
 
     @Managed
-    public synchronized double getMin()
+    public double getP95()
     {
-        return digest.getMin();
+        return implementation.getP95();
     }
 
     @Managed
-    public synchronized double getMax()
+    public double getP99()
     {
-        return digest.getMax();
+        return implementation.getP99();
     }
 
     @Managed
-    public synchronized double getAvg()
+    public double getMin()
     {
-        return getTotal() / getCount();
+        return implementation.getMin();
+    }
+
+    @Managed
+    public double getMax()
+    {
+        return implementation.getMax();
+    }
+
+    @Managed
+    public double getAvg()
+    {
+        return implementation.getAvg();
     }
 
     @Managed
     public Map<Double, Double> getPercentiles()
     {
-        double[] values;
-        synchronized (this) {
-            values = digest.valuesAt(PERCENTILES);
-        }
-
-        verify(values.length == PERCENTILES.length, "result length mismatch");
-
-        Map<Double, Double> result = new LinkedHashMap<>(values.length);
-        for (int i = 0; i < values.length; ++i) {
-            result.put(PERCENTILES[i], values[i]);
-        }
-
-        return result;
+        return implementation.getPercentiles();
     }
 
     public DistributionSnapshot snapshot()
     {
-        double totalCount;
-        double digestCount;
-        double min;
-        double max;
-        double[] quantiles;
-        synchronized (this) {
-            totalCount = total.getCount();
-            digestCount = digest.getCount();
-            min = digest.getMin();
-            max = digest.getMax();
-            quantiles = digest.valuesAt(SNAPSHOT_QUANTILES);
-        }
-        double average = totalCount / digestCount;
-        return new DistributionSnapshot(
-                digestCount,
-                totalCount,
-                quantiles[0], // p01
-                quantiles[1], // p05
-                quantiles[2], // p10
-                quantiles[3], // p25
-                quantiles[4], // p50
-                quantiles[5], // p75
-                quantiles[6], // p90
-                quantiles[7], // p95
-                quantiles[8], // p99
-                min,
-                max,
-                average);
+        return implementation.snapshot();
+    }
+
+    public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
+    {
+        return implementation.exponentialHistogramSnapshot();
     }
 
     public record DistributionSnapshot(
