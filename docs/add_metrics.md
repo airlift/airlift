@@ -144,3 +144,22 @@ mvn exec:java -Dexec.mainClass=example.Service -Dnode.environment=test
 
 Open `jconsole` or your preferred JMX tool and locate the "example" MBean. You will see the count
 increment for each time you `curl http://localhost:8080/v1/service`.
+
+### Metrics backend
+
+Airlift statistics objects such as `CounterStat`, `TimeStat`, `TimeDistribution`,
+`DistributionStat`, and `Distribution` use the Airlift metrics backend by default. This backend
+maintains the existing decayed windows and JMX/OpenMetrics compatibility behavior.
+
+Services that export directly to OpenTelemetry can select the OpenTelemetry stats backend with the
+system property:
+
+```
+-Dio.airlift.stats.backend=open-telemetry
+```
+
+The backend must be selected before any Airlift stats object is created. In OpenTelemetry mode,
+histogram-shaped stats collect into native base-2 exponential histograms, and counters keep only
+their total count. Decayed windows such as one-minute, five-minute, and fifteen-minute stats are not
+created in this mode. Use the default Airlift backend when JMX or the OpenMetrics endpoint needs the
+full decayed-window view.

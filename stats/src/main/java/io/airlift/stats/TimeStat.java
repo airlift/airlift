@@ -16,20 +16,27 @@
 package io.airlift.stats;
 
 import com.google.common.base.Ticker;
+import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 import io.airlift.units.Duration;
+import jakarta.annotation.Nullable;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import static io.airlift.stats.StatsBackend.AIRLIFT;
 import static java.util.Objects.requireNonNull;
 
 public class TimeStat
 {
+    @Nullable
     private final TimeDistribution oneMinute;
+    @Nullable
     private final TimeDistribution fiveMinutes;
+    @Nullable
     private final TimeDistribution fifteenMinutes;
     private final TimeDistribution allTime;
     private final Ticker ticker;
@@ -52,9 +59,16 @@ public class TimeStat
     public TimeStat(Ticker ticker, TimeUnit unit)
     {
         this.ticker = ticker;
-        oneMinute = new TimeDistribution(ticker, DecayConfig.oneMinute(), unit);
-        fiveMinutes = new TimeDistribution(ticker, DecayConfig.fiveMinutes(), unit);
-        fifteenMinutes = new TimeDistribution(ticker, DecayConfig.fifteenMinutes(), unit);
+        if (StatsBackendFactory.getBackend() == AIRLIFT) {
+            oneMinute = new TimeDistribution(ticker, DecayConfig.oneMinute(), unit);
+            fiveMinutes = new TimeDistribution(ticker, DecayConfig.fiveMinutes(), unit);
+            fifteenMinutes = new TimeDistribution(ticker, DecayConfig.fifteenMinutes(), unit);
+        }
+        else {
+            oneMinute = null;
+            fiveMinutes = null;
+            fifteenMinutes = null;
+        }
         allTime = new TimeDistribution(ticker, unit);
     }
 
@@ -80,9 +94,11 @@ public class TimeStat
         if (nanos < 0) {
             throw new IllegalArgumentException("value is negative: " + nanos);
         }
-        oneMinute.add(nanos);
-        fiveMinutes.add(nanos);
-        fifteenMinutes.add(nanos);
+        if (oneMinute != null && fiveMinutes != null && fifteenMinutes != null) {
+            oneMinute.add(nanos);
+            fiveMinutes.add(nanos);
+            fifteenMinutes.add(nanos);
+        }
         allTime.add(nanos);
     }
 
@@ -117,6 +133,7 @@ public class TimeStat
 
     @Managed
     @Nested
+    @Nullable
     public TimeDistribution getOneMinute()
     {
         return oneMinute;
@@ -124,6 +141,7 @@ public class TimeStat
 
     @Managed
     @Nested
+    @Nullable
     public TimeDistribution getFiveMinutes()
     {
         return fiveMinutes;
@@ -131,6 +149,7 @@ public class TimeStat
 
     @Managed
     @Nested
+    @Nullable
     public TimeDistribution getFifteenMinutes()
     {
         return fifteenMinutes;
@@ -146,32 +165,39 @@ public class TimeStat
     public TimeDistributionStatSnapshot snapshot()
     {
         return new TimeDistributionStatSnapshot(
-                getOneMinute().snapshot(),
-                getFiveMinutes().snapshot(),
-                getFifteenMinutes().snapshot(),
+                oneMinute == null ? null : oneMinute.snapshot(),
+                fiveMinutes == null ? null : fiveMinutes.snapshot(),
+                fifteenMinutes == null ? null : fifteenMinutes.snapshot(),
                 getAllTime().snapshot());
+    }
+
+    public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
+    {
+        return getAllTime().exponentialHistogramSnapshot();
     }
 
     @Managed
     public void reset()
     {
-        oneMinute.reset();
-        fiveMinutes.reset();
-        fifteenMinutes.reset();
+        if (oneMinute != null && fiveMinutes != null && fifteenMinutes != null) {
+            oneMinute.reset();
+            fiveMinutes.reset();
+            fifteenMinutes.reset();
+        }
         allTime.reset();
     }
 
     public record TimeDistributionStatSnapshot(
+            @Nullable
             TimeDistributionSnapshot oneMinute,
+            @Nullable
             TimeDistributionSnapshot fiveMinute,
+            @Nullable
             TimeDistributionSnapshot fifteenMinute,
             TimeDistributionSnapshot allTime)
     {
         public TimeDistributionStatSnapshot
         {
-            requireNonNull(oneMinute, "oneMinute is null");
-            requireNonNull(fiveMinute, "fiveMinute is null");
-            requireNonNull(fifteenMinute, "fifteenMinute is null");
             requireNonNull(allTime, "allTime is null");
         }
     }
