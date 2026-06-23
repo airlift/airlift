@@ -534,7 +534,7 @@ public class TDigest
         }
 
         // sort only the unsorted tail
-        DoubleArrays.quickSortDual(means, weights, sortedPrefixLength, centroidCount);
+        DoubleArrays.sort(means, weights, sortedPrefixLength, centroidCount);
 
         // merge the sorted prefix run with the just-sorted tail run into a single ascending order
         if (sortedPrefixLength > 0) {
