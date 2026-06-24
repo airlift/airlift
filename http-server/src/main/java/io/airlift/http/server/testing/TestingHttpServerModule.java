@@ -21,6 +21,7 @@ import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.AnnouncementHttpServerInfoProvider;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
+import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpServerInfoProvider;
@@ -37,7 +38,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import static java.util.Objects.requireNonNull;
 
 public class TestingHttpServerModule
