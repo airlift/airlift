@@ -25,6 +25,7 @@ import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
 import static io.airlift.http.client.HttpStatus.NOT_FOUND;
 import static io.airlift.http.client.HttpStatus.NO_CONTENT;
+import static io.airlift.http.client.HttpStatus.SERVICE_UNAVAILABLE;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -317,6 +318,15 @@ public class TestApiMethods
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(BAD_REQUEST.code());
+    }
+
+    @Test
+    public void testUnspecifiedServerErrorStatus()
+    {
+        URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}:unavailable").build(new ThingId("12345"));
+        Request request = prepareGet().setUri(uri).build();
+        StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
+        assertThat(response.getStatusCode()).isEqualTo(SERVICE_UNAVAILABLE.code());
     }
 
     private <T> void genericUpdateTest(T thing, ThingId thingId, JsonCodec<T> jsonCodec, int expectedResponseCode)
