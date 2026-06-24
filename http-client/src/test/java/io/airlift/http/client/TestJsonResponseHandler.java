@@ -1,6 +1,7 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
+import io.airlift.http.client.TestFullJsonResponseHandler.User;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.json.JsonCodec;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,6 @@ import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
-import static io.airlift.http.client.TestFullJsonResponseHandler.User;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -3,13 +3,13 @@ package io.airlift.http.client;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableListMultimap;
+import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.json.JsonCodec;
 import org.junit.jupiter.api.Test;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;

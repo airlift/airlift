@@ -17,6 +17,7 @@ package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
+import io.airlift.discovery.client.ServiceDescriptor.ServiceDescriptorBuilder;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.UUID;
 
-import static io.airlift.discovery.client.ServiceDescriptor.ServiceDescriptorBuilder;
 import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
