@@ -235,9 +235,10 @@ public class TDigest
     public void mergeWith(TDigest other)
     {
         if (centroidCount + other.centroidCount > means.length) {
-            // first, try to compact the digests to make room
-            merge(internalCompressionFactor(compression));
-            other.merge(internalCompressionFactor(compression));
+            // first, try to compact the digests to make room. Skip a digest that is already
+            // compacted: re-merging it frees no space and only allocates a fresh temp buffer.
+            mergeIfNeeded(internalCompressionFactor(compression));
+            other.mergeIfNeeded(internalCompressionFactor(compression));
 
             // but if that's not sufficient to fit all clusters, grow the arrays
             ensureCapacity(centroidCount + other.centroidCount);
@@ -528,6 +529,10 @@ public class TDigest
 
         // the buffer is now fully sorted (ascending) and compressed
         sortedPrefixLength = centroidCount;
+
+        // everything pending has been folded in; a later mergeIfNeeded()/mergeWith() can now skip
+        // re-merging an already-compacted digest (avoiding the temp-buffer allocation it would do)
+        needsMerge = false;
     }
 
     private void sortCentroids()
