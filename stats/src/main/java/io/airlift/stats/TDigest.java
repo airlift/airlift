@@ -468,14 +468,15 @@ public class TDigest
         sortCentroids();
 
         // Process the sorted centroids in alternating directions on successive merges to avoid
-        // systematic bias.
-        if (backwards) {
-            Doubles.reverse(means, 0, centroidCount);
-            Doubles.reverse(weights, 0, centroidCount);
-        }
+        // systematic bias. Rather than physically reversing means[]/weights[] for a backward pass,
+        // walk them from the high end: the compacted output still lands in the temp buffers in
+        // processing order and is reversed once below to restore ascending order.
+        int step = backwards ? -1 : 1;
+        int start = backwards ? centroidCount - 1 : 0;
+        int end = backwards ? -1 : centroidCount;
 
-        double centroidMean = means[0];
-        double centroidWeight = weights[0];
+        double centroidMean = means[start];
+        double centroidWeight = weights[start];
 
         int lastCentroid = 0;
         tempMeans[lastCentroid] = centroidMean;
@@ -486,7 +487,7 @@ public class TDigest
         double currentQuantile = 0;
         double currentQuantileMaxClusterSize = maxRelativeClusterSize(currentQuantile, normalizer);
 
-        for (int i = 1; i < centroidCount; i++) {
+        for (int i = start + step; i != end; i += step) {
             double entryWeight = weights[i];
             double entryMean = means[i];
 
