@@ -222,8 +222,12 @@ public class TDigest
         centroidCount++;
 
         totalWeight += weight;
-        min = Math.min(value, min);
-        max = Math.max(value, max);
+        if (value < min) {
+            min = value;
+        }
+        if (value > max) {
+            max = value;
+        }
 
         needsMerge = true;
     }
