@@ -195,14 +195,18 @@ public class TDigest
 
     public void add(double value, double weight)
     {
-        // Fast path: isFinite() rejects both NaN and ±Infinity in a single check, collapsing the
-        // common case to one branch and deferring the per-argument checks (which produce specific
-        // messages) to the rare invalid case.
-        if (!isFinite(value) || !isFinite(weight)) {
+        // Fast path: a finite value with a strictly positive weight is the common case and clears
+        // this guard in a single combined branch. Anything else (NaN/±Infinity on either argument,
+        // or a non-positive weight) falls into the slow path, which reproduces the specific message.
+        // The weight must be validated before any state is mutated below: a zero or negative weight
+        // would still increment centroidCount while leaving totalWeight non-positive, desyncing
+        // getCount()/getMin()/valueAt() and corrupting later merges.
+        if (!isFinite(value) || !isFinite(weight) || weight <= 0) {
             checkArgument(!isNaN(value), "value is NaN");
             checkArgument(!isNaN(weight), "weight is NaN");
             checkArgument(!isInfinite(value), "value must be finite");
             checkArgument(!isInfinite(weight), "weight must be finite");
+            checkArgument(weight > 0, "weight must be positive: %s", weight);
         }
 
         if (centroidCount == means.length) {

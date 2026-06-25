@@ -254,6 +254,25 @@ public class TestTDigest
     }
 
     @Test
+    public void testAddNonPositiveWeight()
+    {
+        TDigest digest = new TDigest();
+        digest.add(1, 5);
+
+        assertThatThrownBy(() -> digest.add(2, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("weight must be positive");
+        assertThatThrownBy(() -> digest.add(2, -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("weight must be positive");
+
+        // a rejected add must not mutate digest state
+        assertThat(digest.getCount()).isEqualTo(5.0);
+        assertThat(digest.getMin()).isEqualTo(1.0);
+        assertThat(digest.getMax()).isEqualTo(1.0);
+    }
+
+    @Test
     public void testCopy()
     {
         TDigest digest = new TDigest();
