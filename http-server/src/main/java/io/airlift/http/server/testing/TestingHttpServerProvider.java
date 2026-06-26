@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
+import io.airlift.http.server.HttpConfig;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
@@ -51,6 +52,7 @@ class TestingHttpServerProvider
                     injector.getInstance(qualifiedKey(HttpServerInfo.class)),
                     injector.getInstance(NodeInfo.class),
                     injector.getInstance(qualifiedKey(HttpServerConfig.class)),
+                    injector.getInstance(qualifiedKey(new TypeLiteral<Optional<HttpConfig>>() {})),
                     injector.getInstance(qualifiedKey(new TypeLiteral<Optional<HttpsConfig>>() {})),
                     injector.getInstance(qualifiedKey(Servlet.class)),
                     injector.getInstance(qualifiedKey(new TypeLiteral<Set<Filter>>() {})),

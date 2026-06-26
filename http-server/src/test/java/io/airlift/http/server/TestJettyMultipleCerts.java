@@ -64,7 +64,6 @@ public class TestJettyMultipleCerts
         HttpServerConfig config = new HttpServerConfig()
                 .setLogEnabled(false)
                 .setHttpEnabled(false)
-                .setHttpPort(0)
                 .setHttpsEnabled(true);
         HttpsConfig httpsConfig = new HttpsConfig()
                 .setHttpsPort(0)
@@ -75,7 +74,7 @@ public class TestJettyMultipleCerts
                 .setEnvironment("test")
                 .setNodeInternalAddress("localhost"));
 
-        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.empty(), Optional.of(httpsConfig), nodeInfo);
 
         Provider<HttpServer> serverProvider = () -> {
             try {
@@ -84,6 +83,7 @@ public class TestJettyMultipleCerts
                         httpServerInfo,
                         nodeInfo,
                         config,
+                        Optional.empty(),
                         Optional.of(httpsConfig),
                         servlet,
                         ImmutableSet.of(new DummyFilter()),

@@ -88,7 +88,7 @@ public class TestHttpServerCipher
                 .setHttpsExcludedCipherSuites("")
                 .setHttpsIncludedCipherSuites(" ,   ");
         NodeInfo nodeInfo = new NodeInfo("test");
-        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.empty(), Optional.of(httpsConfig), nodeInfo);
         HttpServer server = createServer(nodeInfo, httpServerInfo, config, httpsConfig);
         try {
             server.start();
@@ -117,7 +117,7 @@ public class TestHttpServerCipher
                 .setHttpsExcludedCipherSuites("")
                 .setHttpsIncludedCipherSuites(CIPHER_1 + "," + CIPHER_2);
         NodeInfo nodeInfo = new NodeInfo("test");
-        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.empty(), Optional.of(httpsConfig), nodeInfo);
         HttpServer server = createServer(nodeInfo, httpServerInfo, config, httpsConfig);
         try {
             server.start();
@@ -153,7 +153,7 @@ public class TestHttpServerCipher
         HttpsConfig httpsConfig = createHttpsConfig()
                 .setHttpsExcludedCipherSuites(CIPHER_1 + "," + CIPHER_2);
         NodeInfo nodeInfo = new NodeInfo("test");
-        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.empty(), Optional.of(httpsConfig), nodeInfo);
         HttpServer server = createServer(nodeInfo, httpServerInfo, config, httpsConfig);
 
         try {
@@ -223,6 +223,7 @@ public class TestHttpServerCipher
                     httpServerInfo,
                     nodeInfo,
                     config,
+                    Optional.empty(),
                     Optional.of(httpsConfig),
                     servlet,
                     ImmutableSet.of(new DummyFilter()),

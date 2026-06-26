@@ -28,8 +28,6 @@ import java.net.URISyntaxException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Optional;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 public class HttpServerInfo
 {
     private final URI httpUri;
@@ -40,16 +38,12 @@ public class HttpServerInfo
     private final ServerSocketChannel httpChannel;
     private final ServerSocketChannel httpsChannel;
 
-    public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo)
-    {
-        this(config, Optional.empty(), nodeInfo);
-    }
-
     @Inject
-    public HttpServerInfo(HttpServerConfig config, Optional<HttpsConfig> httpsConfig, NodeInfo nodeInfo)
+    public HttpServerInfo(HttpServerConfig config, Optional<HttpConfig> httpConfig, Optional<HttpsConfig> httpsConfig, NodeInfo nodeInfo)
     {
         if (config.isHttpEnabled()) {
-            httpChannel = createChannel(nodeInfo.getBindIp(), config.getHttpPort(), config.getHttpAcceptQueueSize());
+            HttpConfig http = httpConfig.orElseThrow(() -> new IllegalArgumentException("httpConfig must be present when HTTP is enabled"));
+            httpChannel = createChannel(nodeInfo.getBindIp(), http.getHttpPort(), http.getAcceptQueueSize());
             httpUri = buildUri("http", nodeInfo.getInternalAddress(), port(httpChannel));
             httpExternalUri = buildUri("http", nodeInfo.getExternalAddress(), httpUri.getPort());
         }
@@ -60,8 +54,8 @@ public class HttpServerInfo
         }
 
         if (config.isHttpsEnabled()) {
-            checkArgument(httpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
-            httpsChannel = createChannel(nodeInfo.getBindIp(), httpsConfig.orElseThrow().getHttpsPort(), config.getHttpAcceptQueueSize());
+            HttpsConfig https = httpsConfig.orElseThrow(() -> new IllegalArgumentException("httpsConfig must be present when HTTPS is enabled"));
+            httpsChannel = createChannel(nodeInfo.getBindIp(), https.getHttpsPort(), https.getAcceptQueueSize());
             httpsUri = buildUri("https", nodeInfo.getInternalAddress(), port(httpsChannel));
             httpsExternalUri = buildUri("https", nodeInfo.getExternalAddress(), httpsUri.getPort());
         }

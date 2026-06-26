@@ -21,6 +21,7 @@ import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import io.airlift.bootstrap.ApplicationConfigurationException;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
@@ -70,6 +71,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.nio.file.Files.createTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
@@ -197,6 +199,33 @@ public class TestHttpServerModule
         catch (Exception e) {
             server.stop();
         }
+    }
+
+    @Test
+    public void testHttpConfigIsUnusedWhenHttpDisabled()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.enabled", "false")
+                .put("http-server.http.port", "0")
+                .put("http-server.http.accept-queue-size", "1")
+                .put("http-server.https.enabled", "true")
+                .put("http-server.https.automatic-shared-secret", "secret")
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .build();
+
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
+                new TestingNodeModule(),
+                new TracingModule("airlift.http-server", "1.0"),
+                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
+
+        assertThatThrownBy(() -> app
+                .setRequiredConfigurationProperties(properties)
+                .doNotInitializeLogging()
+                .initialize())
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e -> assertThat(e.getErrors())
+                        .anySatisfy(error -> assertThat(error.getMessage()).contains("Configuration property 'http-server.http.port' was not used"))
+                        .anySatisfy(error -> assertThat(error.getMessage()).contains("Configuration property 'http-server.http.accept-queue-size' was not used")));
     }
 
     @Test
