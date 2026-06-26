@@ -63,9 +63,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class HttpServerConfig
 {
     private boolean httpEnabled = true;
-    private int httpPort = 8080;
-    private int httpAcceptQueueSize = 8000;
-
     private boolean httpsEnabled;
 
     private String logPath = "var/log/http-request.log";
@@ -77,11 +74,6 @@ public class HttpServerConfig
     private boolean logImmediateFlush;
 
     private ProcessForwardedMode processForwarded = REJECT;
-
-    private Integer httpAcceptorThreads;
-    private Integer httpSelectorThreads;
-    private Integer httpsAcceptorThreads;
-    private Integer httpsSelectorThreads;
 
     private int minThreads = 2;
     private int maxThreads = 200;
@@ -118,30 +110,6 @@ public class HttpServerConfig
         return this;
     }
 
-    public int getHttpPort()
-    {
-        return httpPort;
-    }
-
-    @Config("http-server.accept-queue-size")
-    public HttpServerConfig setHttpAcceptQueueSize(int httpAcceptQueueSize)
-    {
-        this.httpAcceptQueueSize = httpAcceptQueueSize;
-        return this;
-    }
-
-    public int getHttpAcceptQueueSize()
-    {
-        return httpAcceptQueueSize;
-    }
-
-    @Config("http-server.http.port")
-    public HttpServerConfig setHttpPort(int httpPort)
-    {
-        this.httpPort = httpPort;
-        return this;
-    }
-
     public boolean isHttpsEnabled()
     {
         return httpsEnabled;
@@ -152,6 +120,12 @@ public class HttpServerConfig
     {
         this.httpsEnabled = httpsEnabled;
         return this;
+    }
+
+    @AssertTrue(message = "either HTTP or HTTPS must be enabled")
+    public boolean isProtocolEnabled()
+    {
+        return httpEnabled || httpsEnabled;
     }
 
     public String getLogPath()
@@ -211,58 +185,6 @@ public class HttpServerConfig
     public HttpServerConfig setProcessForwarded(boolean processForwareded)
     {
         return setProcessForwarded(processForwareded ? ACCEPT : REJECT);
-    }
-
-    @Min(1)
-    public Integer getHttpAcceptorThreads()
-    {
-        return httpAcceptorThreads;
-    }
-
-    @Config("http-server.http.acceptor-threads")
-    public HttpServerConfig setHttpAcceptorThreads(Integer httpAcceptorThreads)
-    {
-        this.httpAcceptorThreads = httpAcceptorThreads;
-        return this;
-    }
-
-    @Min(1)
-    public Integer getHttpSelectorThreads()
-    {
-        return httpSelectorThreads;
-    }
-
-    @Config("http-server.http.selector-threads")
-    public HttpServerConfig setHttpSelectorThreads(Integer httpSelectorThreads)
-    {
-        this.httpSelectorThreads = httpSelectorThreads;
-        return this;
-    }
-
-    @Min(1)
-    public Integer getHttpsAcceptorThreads()
-    {
-        return httpsAcceptorThreads;
-    }
-
-    @Config("http-server.https.acceptor-threads")
-    public HttpServerConfig setHttpsAcceptorThreads(Integer httpsAcceptorThreads)
-    {
-        this.httpsAcceptorThreads = httpsAcceptorThreads;
-        return this;
-    }
-
-    @Min(1)
-    public Integer getHttpsSelectorThreads()
-    {
-        return httpsSelectorThreads;
-    }
-
-    @Config("http-server.https.selector-threads")
-    public HttpServerConfig setHttpsSelectorThreads(Integer httpsSelectorThreads)
-    {
-        this.httpsSelectorThreads = httpsSelectorThreads;
-        return this;
     }
 
     public int getMaxThreads()

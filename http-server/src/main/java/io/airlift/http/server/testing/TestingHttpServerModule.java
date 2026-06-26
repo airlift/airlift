@@ -19,6 +19,7 @@ import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.AnnouncementHttpServerInfoProvider;
+import io.airlift.http.server.HttpConfig;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -84,8 +85,6 @@ public class TestingHttpServerModule
     protected void setup(Binder binder)
     {
         configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
-        configBinder(binder).bindConfigDefaults(qualifiedKey(HttpServerConfig.class), config -> config
-                .setHttpPort(httpPort));
 
         if (qualifier.isPresent()) {
             binder.bind(qualifiedKey(HttpServerInfo.class))
@@ -112,12 +111,19 @@ public class TestingHttpServerModule
         newSetBinder(binder, qualifiedKey(Filter.class));
         newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
 
+        newOptionalBinder(binder, qualifiedKey(HttpConfig.class));
         newOptionalBinder(binder, qualifiedKey(HttpsConfig.class));
-        if (buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix).isHttpsEnabled()) {
+        HttpServerConfig config = buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        if (config.isHttpEnabled()) {
+            configBinder(binder).bindConfig(qualifiedKey(HttpConfig.class), HttpConfig.class, configPrefix);
+            configBinder(binder).bindConfigDefaults(qualifiedKey(HttpConfig.class), httpConfig -> httpConfig
+                    .setHttpPort(httpPort));
+        }
+        if (config.isHttpsEnabled()) {
             configBinder(binder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix);
-            configBinder(binder).bindConfigDefaults(qualifiedKey(HttpsConfig.class), config -> {
+            configBinder(binder).bindConfigDefaults(qualifiedKey(HttpsConfig.class), httpsConfig -> {
                 if (httpPort == 0) {
-                    config.setHttpsPort(0);
+                    httpsConfig.setHttpsPort(0);
                 }
             });
         }

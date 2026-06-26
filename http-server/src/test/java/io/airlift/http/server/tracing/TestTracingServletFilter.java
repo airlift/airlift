@@ -6,6 +6,7 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.http.server.HttpConfig;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
@@ -93,13 +94,15 @@ public class TestTracingServletFilter
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
-        HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
-        HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
+        HttpServerConfig config = new HttpServerConfig();
+        HttpConfig httpConfig = new HttpConfig().setHttpPort(0);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpConfig), Optional.empty(), nodeInfo);
         return new TestingHttpServer(
                 "testing",
                 httpServerInfo,
                 nodeInfo,
                 config,
+                Optional.of(httpConfig),
                 Optional.empty(),
                 servlet,
                 ImmutableSet.of(filter),

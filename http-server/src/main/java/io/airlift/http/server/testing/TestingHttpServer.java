@@ -17,6 +17,7 @@ package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import io.airlift.http.server.HttpConfig;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
@@ -61,6 +62,7 @@ public class TestingHttpServer
                 httpServerInfo,
                 nodeInfo,
                 config,
+                Optional.of(new HttpConfig()),
                 Optional.empty(),
                 servlet,
                 ImmutableSet.of(),
@@ -75,6 +77,7 @@ public class TestingHttpServer
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            Optional<HttpConfig> httpConfig,
             Optional<HttpsConfig> httpsConfig,
             Servlet servlet,
             Set<Filter> filters,
@@ -87,6 +90,7 @@ public class TestingHttpServer
                 httpServerInfo,
                 nodeInfo,
                 config.setLogEnabled(false),
+                httpConfig,
                 httpsConfig,
                 servlet,
                 ImmutableSet.copyOf(filters),

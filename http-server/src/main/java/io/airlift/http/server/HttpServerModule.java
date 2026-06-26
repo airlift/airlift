@@ -101,6 +101,7 @@ public class HttpServerModule
         newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
         newOptionalBinder(binder, qualifiedKey(SslContextFactory.Server.class));
         configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        newOptionalBinder(binder, qualifiedKey(HttpConfig.class));
         newOptionalBinder(binder, qualifiedKey(HttpsConfig.class));
 
         binder.bind(qualifiedKey(AnnouncementHttpServerInfo.class))
@@ -111,11 +112,13 @@ public class HttpServerModule
                 .toProvider(new HttpServerInfoProvider(qualifier))
                 .in(SINGLETON);
 
-        if (buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix).isHttpsEnabled()) {
+        HttpServerConfig config = buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        if (config.isHttpEnabled()) {
+            configBinder(binder).bindConfig(qualifiedKey(HttpConfig.class), HttpConfig.class, configPrefix);
+        }
+        if (config.isHttpsEnabled()) {
             configBinder(binder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix);
         }
-
-        configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
     }
 
     private <T> Key<T> qualifiedKey(Class<T> type)

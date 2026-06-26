@@ -32,9 +32,10 @@ public class HttpServerInfoProvider
     @Override
     public HttpServerInfo get()
     {
-        HttpServerConfig httpConfig = injector.getInstance(qualifiedKey(qualifier, HttpServerConfig.class));
+        HttpServerConfig serverConfig = injector.getInstance(qualifiedKey(qualifier, HttpServerConfig.class));
+        Optional<HttpConfig> httpConfig = injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {}));
         Optional<HttpsConfig> httpsConfig = injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {}));
-        NodeInfo nodeConfig = injector.getInstance(NodeInfo.class);
-        return new HttpServerInfo(httpConfig, httpsConfig, nodeConfig);
+        NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
+        return new HttpServerInfo(serverConfig, httpConfig, httpsConfig, nodeInfo);
     }
 }

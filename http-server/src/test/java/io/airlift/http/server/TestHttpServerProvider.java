@@ -114,6 +114,7 @@ public class TestHttpServerProvider
     private File logFile;
     private NodeInfo nodeInfo;
     private HttpServerConfig config;
+    private HttpConfig httpConfig;
     private HttpsConfig httpsConfig;
     private ClientCertificate clientCertificate;
     private HttpServerInfo httpServerInfo;
@@ -131,8 +132,9 @@ public class TestHttpServerProvider
         tempDir = createTempDirectory(getClass().getSimpleName()).toFile();
         logFile = new File(tempDir, "http-request.log");
         config = new HttpServerConfig()
-                .setHttpPort(0)
                 .setLogPath(logFile.getAbsolutePath());
+        httpConfig = new HttpConfig()
+                .setHttpPort(0);
         httpsConfig = new HttpsConfig()
                 .setHttpsPort(0);
         clientCertificate = ClientCertificate.NONE;
@@ -323,6 +325,8 @@ public class TestHttpServerProvider
                 .setAutomaticHttpsSharedSecret("shared-secret");
 
         createAndStartServer();
+        assertThat(server.getHttpConnectionStats()).isNull();
+        assertThat(server.getHttpsConnectionStats()).isNotNull();
 
         HttpClientConfig http1ClientConfig = new HttpClientConfig()
                 .setHttp2Enabled(false)
@@ -742,6 +746,7 @@ public class TestHttpServerProvider
                     httpServerInfo,
                     nodeInfo,
                     config,
+                    optionalHttpConfig(),
                     optionalHttpsConfig(),
                     servlet,
                     ImmutableSet.of(new DummyFilter()),
@@ -760,7 +765,12 @@ public class TestHttpServerProvider
 
     private HttpServerInfo createHttpServerInfo()
     {
-        return new HttpServerInfo(config, optionalHttpsConfig(), nodeInfo);
+        return new HttpServerInfo(config, optionalHttpConfig(), optionalHttpsConfig(), nodeInfo);
+    }
+
+    private Optional<HttpConfig> optionalHttpConfig()
+    {
+        return config.isHttpEnabled() ? Optional.of(this.httpConfig) : Optional.empty();
     }
 
     private Optional<HttpsConfig> optionalHttpsConfig()

@@ -41,13 +41,14 @@ public class TestHttpServerInfo
 
         HttpServerConfig serverConfig = new HttpServerConfig();
         serverConfig.setHttpEnabled(true);
-        serverConfig.setHttpPort(0);
         serverConfig.setHttpsEnabled(true);
 
+        HttpConfig httpConfig = new HttpConfig()
+                .setHttpPort(0);
         HttpsConfig httpsConfig = new HttpsConfig()
                 .setHttpsPort(0);
 
-        HttpServerInfo httpServerInfo = new HttpServerInfo(serverConfig, Optional.ofNullable(httpsConfig), nodeInfo);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(serverConfig, Optional.of(httpConfig), Optional.ofNullable(httpsConfig), nodeInfo);
 
         int httpPort = httpServerInfo.getHttpUri().getPort();
         assertThat(httpServerInfo.getHttpUri()).isEqualTo(new URI("http://[::1]:" + httpPort));

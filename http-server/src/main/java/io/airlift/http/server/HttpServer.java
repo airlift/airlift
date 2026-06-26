@@ -73,6 +73,7 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -124,6 +125,7 @@ public class HttpServer
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            Optional<HttpConfig> maybeHttpConfig,
             Optional<HttpsConfig> maybeHttpsConfig,
             Servlet servlet,
             Set<Filter> filters,
@@ -138,13 +140,22 @@ public class HttpServer
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
+        requireNonNull(maybeHttpConfig, "httpConfig is null");
         requireNonNull(maybeHttpsConfig, "httpsConfig is null");
         requireNonNull(servlet, "servlet is null");
         requireNonNull(maybeSslContextFactory, "maybeSslContextFactory is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
         requireNonNull(mBeanServer, "mBeanServer is null");
 
-        checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
+        checkArgument(config.isHttpEnabled() || config.isHttpsEnabled(), "either HTTP or HTTPS must be enabled");
+
+        HttpConfig httpConfig = config.isHttpEnabled()
+                ? maybeHttpConfig.orElseThrow(() -> new IllegalArgumentException("httpConfig must be present when HTTP is enabled"))
+                : null;
+        HttpsConfig httpsConfig = config.isHttpsEnabled()
+                ? maybeHttpsConfig.orElseThrow(() -> new IllegalArgumentException("httpsConfig must be present when HTTPS is enabled"))
+                : null;
+
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
@@ -229,8 +240,8 @@ public class HttpServer
                 httpConfiguration.setSecurePort(httpServerInfo.getHttpsUri().getPort());
             }
 
-            Integer acceptors = config.getHttpAcceptorThreads();
-            Integer selectors = config.getHttpSelectorThreads();
+            Integer acceptors = httpConfig.getHttpAcceptorThreads();
+            Integer selectors = httpConfig.getHttpSelectorThreads();
             httpConnector = createServerConnector(
                     httpServerInfo.getHttpChannel(),
                     server,
@@ -242,7 +253,7 @@ public class HttpServer
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-            httpConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
+            httpConnector.setAcceptQueueSize(httpConfig.getAcceptQueueSize());
 
             // track connection statistics
             ConnectionStatistics connectionStats = new ConnectionStatistics();
@@ -257,10 +268,9 @@ public class HttpServer
             HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
             setSecureRequestCustomizer(httpsConfiguration);
 
-            HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(name, httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-            Integer acceptors = config.getHttpsAcceptorThreads();
-            Integer selectors = config.getHttpsSelectorThreads();
+            Integer acceptors = httpsConfig.getHttpsAcceptorThreads();
+            Integer selectors = httpsConfig.getHttpsSelectorThreads();
             httpsConnector = createServerConnector(
                     httpServerInfo.getHttpsChannel(),
                     server,
@@ -272,7 +282,7 @@ public class HttpServer
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
             httpsConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-            httpsConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
+            httpsConnector.setAcceptQueueSize(httpsConfig.getAcceptQueueSize());
 
             // track connection statistics
             ConnectionStatistics connectionStats = new ConnectionStatistics();
@@ -296,7 +306,14 @@ public class HttpServer
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
 
-        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, serverFeatures.contains(LEGACY_URI_COMPLIANCE));
+        Set<String> connectorNames = new HashSet<>();
+        if (config.isHttpEnabled()) {
+            connectorNames.add("http");
+        }
+        if (config.isHttpsEnabled()) {
+            connectorNames.add("https");
+        }
+        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, connectorNames, showStackTrace, serverFeatures.contains(LEGACY_URI_COMPLIANCE));
 
         if (enableCompression) {
             CompressionHandler compressionHandler = new CompressionHandler();

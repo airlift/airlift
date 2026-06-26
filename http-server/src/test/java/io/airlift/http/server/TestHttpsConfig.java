@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static io.airlift.configuration.testing.ConfigAssertions.assertDeprecatedEquivalence;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
@@ -41,6 +42,9 @@ public class TestHttpsConfig
     {
         assertRecordedDefaults(recordDefaults(HttpsConfig.class)
                 .setHttpsPort(8443)
+                .setAcceptQueueSize(8000)
+                .setHttpsAcceptorThreads(null)
+                .setHttpsSelectorThreads(null)
                 .setSecureRandomAlgorithm(null)
                 .setHttpsIncludedCipherSuites("")
                 .setHttpsExcludedCipherSuites(join(",", getJettyDefaultExcludedCiphers()))
@@ -52,7 +56,6 @@ public class TestHttpsConfig
                 .setTrustStorePath(null)
                 .setTrustStorePassword(null)
                 .setSslContextRefreshTime(new Duration(1, MINUTES))
-                .setAutomaticHttpsSharedSecret(null)
                 .setAutomaticHttpsSharedSecret(null));
     }
 
@@ -61,6 +64,9 @@ public class TestHttpsConfig
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.https.port", "2")
+                .put("http-server.https.accept-queue-size", "2048")
+                .put("http-server.https.acceptor-threads", "12")
+                .put("http-server.https.selector-threads", "13")
                 .put("http-server.https.keystore.path", "/keystore")
                 .put("http-server.https.keystore.key", "keystore password")
                 .put("http-server.https.keymanager.password", "keymanager password")
@@ -77,6 +83,9 @@ public class TestHttpsConfig
 
         HttpsConfig expected = new HttpsConfig()
                 .setHttpsPort(2)
+                .setAcceptQueueSize(2048)
+                .setHttpsAcceptorThreads(12)
+                .setHttpsSelectorThreads(13)
                 .setHttpsIncludedCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setSslSessionTimeout(new Duration(7, HOURS))
@@ -91,6 +100,22 @@ public class TestHttpsConfig
                 .setAutomaticHttpsSharedSecret("automatic-secret");
 
         assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testLegacyPropertyMapping()
+    {
+        Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.https.accept-queue-size", "2048")
+                .put("http-server.https.keystore.path", "/keystore")
+                .build();
+
+        Map<String, String> legacyProperties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.accept-queue-size", "2048")
+                .put("http-server.https.keystore.path", "/keystore")
+                .build();
+
+        assertDeprecatedEquivalence(HttpsConfig.class, currentProperties, legacyProperties);
     }
 
     @Test

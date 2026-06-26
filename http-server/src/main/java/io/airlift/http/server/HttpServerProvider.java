@@ -73,6 +73,7 @@ public class HttpServerProvider
                     injector.getInstance(NodeInfo.class),
                     injector.getInstance(qualifiedKey(qualifier, HttpServerConfig.class)),
                     injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
+                    injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
                     injector.getInstance(qualifiedKey(qualifier, Servlet.class)),
                     injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
                     injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),

@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
+import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.AssertTrue;
@@ -20,6 +21,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class HttpsConfig
 {
     private int httpsPort = 8443;
+    private int acceptQueueSize = 8000;
+    private Integer httpsAcceptorThreads;
+    private Integer httpsSelectorThreads;
     private String keystorePath;
     private String keystorePassword;
     private String keyManagerPassword;
@@ -44,6 +48,46 @@ public class HttpsConfig
     public HttpsConfig setHttpsPort(int httpsPort)
     {
         this.httpsPort = httpsPort;
+        return this;
+    }
+
+    @Min(1)
+    public int getAcceptQueueSize()
+    {
+        return acceptQueueSize;
+    }
+
+    @Config("http-server.https.accept-queue-size")
+    @LegacyConfig("http-server.accept-queue-size")
+    public HttpsConfig setAcceptQueueSize(int acceptQueueSize)
+    {
+        this.acceptQueueSize = acceptQueueSize;
+        return this;
+    }
+
+    @Min(1)
+    public Integer getHttpsAcceptorThreads()
+    {
+        return httpsAcceptorThreads;
+    }
+
+    @Config("http-server.https.acceptor-threads")
+    public HttpsConfig setHttpsAcceptorThreads(Integer httpsAcceptorThreads)
+    {
+        this.httpsAcceptorThreads = httpsAcceptorThreads;
+        return this;
+    }
+
+    @Min(1)
+    public Integer getHttpsSelectorThreads()
+    {
+        return httpsSelectorThreads;
+    }
+
+    @Config("http-server.https.selector-threads")
+    public HttpsConfig setHttpsSelectorThreads(Integer httpsSelectorThreads)
+    {
+        this.httpsSelectorThreads = httpsSelectorThreads;
         return this;
     }
 
