@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import io.airlift.mcp.handler.PromptEntry;
+import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
@@ -23,10 +25,12 @@ import io.airlift.mcp.model.GetPromptResult.PromptMessage;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.OptionalBoolean;
+import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 
 import java.time.Duration;
@@ -50,12 +54,14 @@ public class ConformanceEndpoints
 
     private final JsonMapper jsonMapper;
     private final LegacyServerToClientRequest serverToClientRequest;
+    private final McpEntities entities;
 
     @Inject
-    public ConformanceEndpoints(JsonMapper jsonMapper, LegacyServerToClientRequest serverToClientRequest)
+    public ConformanceEndpoints(JsonMapper jsonMapper, LegacyServerToClientRequest serverToClientRequest, McpEntities entities)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.serverToClientRequest = requireNonNull(serverToClientRequest, "serverToClientRequest is null");
+        this.entities = requireNonNull(entities, "entities is null");
     }
 
     @McpTool(name = "test_simple_text", description = "Tests simple text content response")
@@ -214,5 +220,29 @@ public class ConformanceEndpoints
                 new PromptMessage(Role.USER, new ImageContent(TEST_IMAGE_BASE64, "image/png")),
                 new PromptMessage(Role.USER, new TextContent("Please analyze the image above.")));
         return new GetPromptResult(Optional.empty(), messages);
+    }
+
+    @McpTool(name = "wrong_tool_name", description = "test")
+    public String wrongToolName()
+    {
+        return "OK";
+    }
+
+    @McpTool(name = "test_trigger_prompt_change", description = "test")
+    public void testTriggerPromptChange(McpRequestContext requestContext)
+    {
+        Prompt prompt = entities.prompts(requestContext).getFirst();
+        PromptEntry entry = entities.promptEntry(requestContext, prompt.name()).orElseThrow();
+        Prompt changedPrompt = new Prompt(prompt.name(), Optional.of(prompt.description().orElse("") + Math.random()), prompt.role(), prompt.arguments(), prompt.icons());
+        entities.addPrompt(changedPrompt, entry.promptHandler());
+    }
+
+    @McpTool(name = "test_trigger_tool_change", description = "test")
+    public void testTriggerToolChange(McpRequestContext requestContext)
+    {
+        Tool tool = entities.tools(requestContext).getFirst();
+        ToolEntry entry = entities.toolEntry(requestContext, tool.name()).orElseThrow();
+        Tool changedTool = new Tool(tool.name(), Optional.of(tool.description().orElse("") + Math.random()), tool.title(), tool.inputSchema(), tool.outputSchema(), tool.annotations(), tool.icons(), tool.meta());
+        entities.addTool(changedTool, entry.toolHandler());
     }
 }
