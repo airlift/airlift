@@ -1,12 +1,15 @@
 package io.airlift.mcp.operations.legacy;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.handler.PromptEntry;
+import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ToolEntry;
+import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest;
@@ -26,9 +29,9 @@ import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
 
 import java.util.List;
@@ -36,23 +39,24 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
-import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
-import static io.airlift.mcp.operations.legacy.McpTracingAttributes.MCP_RESOURCE_URI;
 import static java.util.Objects.requireNonNull;
 
 public class OperationsCommon
 {
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
+    private final JsonMapper jsonMapper;
+    private final MrtrEmulator mrtrEmulator;
 
     @Inject
-    OperationsCommon(McpEntities entities, McpConfig mcpConfig)
+    OperationsCommon(McpEntities entities, McpConfig mcpConfig, JsonMapper jsonMapper, MrtrEmulator mrtrEmulator)
     {
         this.entities = requireNonNull(entities, "entities is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this.mrtrEmulator = requireNonNull(mrtrEmulator, "mrtrEmulator is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
     }
@@ -79,7 +83,14 @@ public class OperationsCommon
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
         try {
-            return toolEntry.toolHandler().callTool(requestContext.withProgressToken(progressToken(callToolRequest)), callToolRequest);
+            ToolHandler toolHandler = toolEntry.toolHandler();
+            LegacyRequestContextImpl processTokenRequestContext = requestContext.withProgressToken(progressToken(callToolRequest));
+
+            CallToolResult callToolResult = toolHandler.callTool(processTokenRequestContext, callToolRequest);
+            return mrtrEmulator.emulate(processTokenRequestContext, callToolResult, (requestState, inputResponses) -> {
+                CallToolRequest adjustedCallToolRequest = callToolRequest.withInputResponses(requestState, inputResponses);
+                return toolHandler.callTool(processTokenRequestContext, adjustedCallToolRequest);
+            });
         }
         catch (McpClientException mcpClientException) {
             return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
@@ -102,7 +113,13 @@ public class OperationsCommon
         PromptEntry promptEntry = entities.promptEntry(requestContext, getPromptRequest.name())
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name()));
 
-        return promptEntry.promptHandler().getPrompt(requestContext.withProgressToken(progressToken(getPromptRequest)), getPromptRequest);
+        PromptHandler promptHandler = promptEntry.promptHandler();
+        LegacyRequestContextImpl processTokenRequestContext = requestContext.withProgressToken(progressToken(getPromptRequest));
+        GetPromptResult getPromptResult = promptHandler.getPrompt(processTokenRequestContext, getPromptRequest);
+        return mrtrEmulator.emulate(processTokenRequestContext, getPromptResult, (requestState, inputResponses) -> {
+            GetPromptRequest adjustedGetPromptRequest = getPromptRequest.withInputResponses(requestState, inputResponses);
+            return promptHandler.getPrompt(processTokenRequestContext, adjustedGetPromptRequest);
+        });
     }
 
     ListResourcesResult listResources(LegacyRequestContextImpl requestContext, ListRequest listRequest)
@@ -123,14 +140,14 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
-    Object readResources(LegacyRequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
+    ReadResourceResult readResources(LegacyRequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
     {
-        updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
-
-        List<ResourceContents> resourceContents = entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest)
-                .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
-
-        return new ReadResourceResult(resourceContents);
+        LegacyRequestContextImpl processTokenRequestContext = requestContext.withProgressToken(progressToken(readResourceRequest));
+        ReadResourceResult readResourceResult = OperationsImpl.readResources(entities, processTokenRequestContext, readResourceRequest);
+        return mrtrEmulator.emulate(processTokenRequestContext, readResourceResult, (requestState, inputResponses) -> {
+            ReadResourceRequest adjustedReadResourceRequest = readResourceRequest.withInputResponses(requestState, inputResponses);
+            return OperationsImpl.readResources(entities, processTokenRequestContext, adjustedReadResourceRequest);
+        });
     }
 
     CompleteResult completionComplete(LegacyRequestContextImpl requestContext, CompleteRequest completeRequest)

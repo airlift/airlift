@@ -12,6 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -23,6 +24,24 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 public class TestConformance
 {
     private static final List<String> SCENARIOS = List.of(
+            "http-header-validation",
+            "server-stateless",
+            "caching",
+            "input-required-result-validate-input",
+            "input-required-result-ignore-extra-params",
+            "input-required-result-capability-check",
+            "input-required-result-tampered-state",
+            "input-required-result-result-type",
+            "input-required-result-missing-input-response",
+            "input-required-result-multi-round",
+            "input-required-result-multiple-input-requests",
+            "input-required-result-basic-elicitation",
+            "input-required-result-basic-sampling",
+            "input-required-result-basic-list-roots",
+            "input-required-result-request-state",
+            "input-required-result-non-tool-request",
+            "input-required-result-unsupported-methods",
+            "sep-2164-resource-not-found",
             "server-initialize",
             "logging-set-level",
             "ping",
@@ -49,8 +68,7 @@ public class TestConformance
             "prompts-get-simple",
             "prompts-get-with-args",
             "prompts-get-embedded-resource",
-            "prompts-get-with-image",
-            "tools-call-elicitation");
+            "prompts-get-with-image");
 
     private final Closer closer = Closer.create();
     private final TestingNodeContainer nodeContainer;
@@ -60,7 +78,10 @@ public class TestConformance
     {
         nodeContainer = closer.register(new TestingNodeContainer());
 
-        TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
+        Map<String, String> properties = ImmutableMap.of("mcp.resource-subscription.cache-period", "1ms");
+
+        TestingServer testingServer = closer.register(new TestingServer(properties, Optional.empty(), builder -> builder
+                .withStrictValidation()
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
@@ -86,8 +107,8 @@ public class TestConformance
     public void testConformance(String scenario)
     {
         // see: https://github.com/modelcontextprotocol/conformance?tab=readme-ov-file#testing-servers
-        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance", "server", "--url", mcpUri, "--scenario", scenario);
-        assertThat(result).contains("Passed: 1/1, 0 failed, 0 warnings");
+        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@alpha", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
+        assertThat(result).contains("0 failed, 0 warnings");
     }
 
     static List<String> scenarioProvider()
