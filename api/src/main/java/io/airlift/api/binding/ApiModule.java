@@ -14,6 +14,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import io.airlift.api.ApiBuilderConfig;
+import io.airlift.api.ApiCancellation;
 import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiIdLookup;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -58,6 +60,7 @@ import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
 import static io.airlift.api.binding.ApiMapBinders.newMapBinder;
 import static io.airlift.api.binding.JaxrsResourceBuilder.jaxrsResourceBuilder;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static java.util.Objects.requireNonNull;
 
 public class ApiModule
@@ -75,6 +78,7 @@ public class ApiModule
     private final boolean withApiLogging;
     private final ApiMode apiMode;
     private final ApiEnumValueResolver enumValueResolver;
+    private final Optional<ExecutorService> cancellableRequestExecutor;
 
     private ApiModule(
             ModelApi modelApi,
@@ -88,7 +92,8 @@ public class ApiModule
             Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
             ApiMode apiMode,
-            ApiEnumValueResolver enumValueResolver)
+            ApiEnumValueResolver enumValueResolver,
+            Optional<ExecutorService> cancellableRequestExecutor)
     {
         this.modelApi = requireNonNull(modelApi, "api is null");
         this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
@@ -102,6 +107,7 @@ public class ApiModule
         this.withApiLogging = withApiLogging;
         this.apiMode = requireNonNull(apiMode, "apiMode is null");
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
+        this.cancellableRequestExecutor = requireNonNull(cancellableRequestExecutor, "cancellableRequestExecutor is null");
     }
 
     public static Builder builder()
@@ -124,6 +130,7 @@ public class ApiModule
         private boolean withApiLogging;
         private ApiMode apiMode = ApiMode.DEBUG;
         private ApiEnumValueResolver enumValueResolver = ApiBuilderConfig.jackson().enumValueResolver();
+        private Optional<ExecutorService> cancellableRequestExecutor = Optional.empty();
 
         private Builder() {}
 
@@ -219,6 +226,14 @@ public class ApiModule
             return this;
         }
 
+        public Builder withCancellableRequestExecutor(ExecutorService executor)
+        {
+            checkArgument(this.cancellableRequestExecutor.isEmpty(), "cancellable request executor is already set");
+
+            this.cancellableRequestExecutor = Optional.of(requireNonNull(executor, "executor is null"));
+            return this;
+        }
+
         public Builder forProduction()
         {
             this.apiMode = ApiMode.PRODUCTION;
@@ -250,7 +265,8 @@ public class ApiModule
                     compatibilityTester,
                     withApiLogging,
                     apiMode,
-                    enumValueResolver);
+                    enumValueResolver,
+                    cancellableRequestExecutor);
         }
 
         private ModelApi mergeApis()
@@ -275,6 +291,16 @@ public class ApiModule
     @Override
     public void configure(Binder binder)
     {
+        boolean hasCancellableMethods = hasCancellableMethods();
+        if (hasCancellableMethods && cancellableRequestExecutor.isEmpty()) {
+            binder.addError(
+                    "API methods with @Context %s require a cancellable request executor. Call %s.%s().%s(...).",
+                    ApiCancellation.class.getSimpleName(),
+                    ApiModule.class.getSimpleName(),
+                    "builder",
+                    "withCancellableRequestExecutor");
+        }
+
         bindApi(binder);
 
         newOptionalBinder(binder, annotatedKey(ApiQuotaController.class, bindingAnnotation)).setBinding().toInstance(new ApiQuotaControllerProxy());
@@ -307,6 +333,8 @@ public class ApiModule
         binder.bind(annotatedKey(new TypeLiteral<Set<ModelServiceType>>() {}, bindingAnnotation)).toInstance(servicesByType.keySet());
 
         JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation);
+        cancellableRequestExecutor.ifPresent(executor -> jaxrsBinder(binder, bindingAnnotation).bindInstance(new ApiCancellableRequestExecutorProvider(executor)));
+
         MapBinder<Method, ModelDeprecation> deprecationBinder = newMapBinder(
                 binder,
                 new TypeLiteral<>() {},
@@ -323,6 +351,13 @@ public class ApiModule
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 
         bindContainerFilters(binder);
+    }
+
+    private boolean hasCancellableMethods()
+    {
+        return modelApi.modelServices().services().stream()
+                .flatMap(service -> service.methods().stream())
+                .anyMatch(JaxrsResourceBuilder::isCancellable);
     }
 
     private void bindContainerFilters(Binder binder)

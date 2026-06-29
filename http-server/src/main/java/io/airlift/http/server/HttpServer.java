@@ -88,6 +88,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
 import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
+import static io.airlift.http.server.ServerFeature.REQUEST_CANCELLATION;
 import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
@@ -296,7 +297,14 @@ public class HttpServer
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
 
-        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, serverFeatures.contains(LEGACY_URI_COMPLIANCE));
+        ServletContextHandler servletContext = createServletContext(
+                servlet,
+                resources,
+                filters,
+                Set.of("http", "https"),
+                showStackTrace,
+                serverFeatures.contains(LEGACY_URI_COMPLIANCE),
+                serverFeatures.contains(REQUEST_CANCELLATION));
 
         if (enableCompression) {
             CompressionHandler compressionHandler = new CompressionHandler();
@@ -413,7 +421,8 @@ public class HttpServer
             Set<Filter> filters,
             Set<String> connectorNames,
             boolean showStackTrace,
-            boolean enableLegacyUriCompliance)
+            boolean enableLegacyUriCompliance,
+            boolean requestCancellationEnabled)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         ErrorHandler handler = new ErrorHandler();
@@ -425,6 +434,11 @@ public class HttpServer
             // allow encoded slashes to occur in URI paths
             context.getServletHandler().setDecodeAmbiguousURIs(true);
         }
+        if (requestCancellationEnabled) {
+            // -- low-level server filters
+            context.addFilter(new FilterHolder(new RequestCancellationServletFilter()), "/*", null);
+        }
+
         // -- user provided filters
         for (Filter filter : filters) {
             context.addFilter(new FilterHolder(filter), "/*", null);
