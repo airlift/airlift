@@ -38,6 +38,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestMetricsCollector
 {
+    private static final ObjectName MANAGED_OBJECT_NAME;
+    private static final ObjectName CONFIGURED_OBJECT_NAME;
+
+    static {
+        try {
+            MANAGED_OBJECT_NAME = new ObjectName("io.airlift.metrics.test:name=managed");
+            CONFIGURED_OBJECT_NAME = new ObjectName("io.airlift.metrics.test:name=configured,type=Test");
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
     public void testCollectManagedNumericMetric()
             throws Exception
@@ -153,7 +166,7 @@ public class TestMetricsCollector
         MetricsCollector collector = createTestingCollector();
 
         assertThat(collector.collect())
-                .anySatisfy(group -> assertThat(group.source()).isEqualTo(new JmxMetricSource(new ObjectName("io.airlift.metrics.test:name=configured,type=Test"))));
+                .anySatisfy(group -> assertThat(group.source()).isEqualTo(new JmxMetricSource(CONFIGURED_OBJECT_NAME)));
 
         assertThat(attributes(collector))
                 .anySatisfy(metric -> {
@@ -178,6 +191,19 @@ public class TestMetricsCollector
                 });
     }
 
+    @Test
+    public void testConfiguredJmxMetricsSkipManagedObjects()
+            throws Exception
+    {
+        MetricsCollector collector = createTestingCollector(new ObjectName("io.airlift.metrics.test:*"));
+
+        assertThat(collector.collect())
+                .extracting(CollectedMetricGroup::source)
+                .contains(new ManagedMetricSource(MANAGED_OBJECT_NAME.toString()))
+                .contains(new JmxMetricSource(CONFIGURED_OBJECT_NAME))
+                .doesNotContain(new JmxMetricSource(MANAGED_OBJECT_NAME));
+    }
+
     private static List<CollectedMetricGroup.Attribute> attributes(MetricsCollector collector)
     {
         return collector.collect().stream()
@@ -186,6 +212,12 @@ public class TestMetricsCollector
     }
 
     private static MetricsCollector createTestingCollector()
+            throws Exception
+    {
+        return createTestingCollector(CONFIGURED_OBJECT_NAME);
+    }
+
+    private static MetricsCollector createTestingCollector(ObjectName configuredObjectName)
             throws Exception
     {
         MBeanServer mbeanServer = MBeanServerFactory.newMBeanServer();
@@ -202,10 +234,9 @@ public class TestMetricsCollector
         managedMetrics.getReadBytes().add(100);
         managedMetrics.getReadBytes().add(200);
         managedMetrics.forceLatencyMerge();
-        mbeanExporter.export(new ObjectName("io.airlift.metrics.test:name=managed"), managedMetrics);
+        mbeanExporter.export(MANAGED_OBJECT_NAME, managedMetrics);
 
-        ObjectName configuredObjectName = new ObjectName("io.airlift.metrics.test:name=configured,type=Test");
-        mbeanServer.registerMBean(new StandardMBean(new ConfiguredMetrics(), ConfiguredMetricsMBean.class), configuredObjectName);
+        mbeanServer.registerMBean(new StandardMBean(new ConfiguredMetrics(), ConfiguredMetricsMBean.class), CONFIGURED_OBJECT_NAME);
 
         MetricsConfig metricsConfig = new MetricsConfig().setJmxObjectNames(List.of(configuredObjectName));
         NodeInfo nodeInfo = new NodeInfo(
