@@ -24,6 +24,9 @@ import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
+import javax.management.openmbean.TabularData;
+import javax.management.openmbean.TabularDataSupport;
+import javax.management.openmbean.TabularType;
 
 import java.util.List;
 import java.util.Map;
@@ -106,6 +109,41 @@ public class TestOpenMetricsCollector
                             tuple("metric_name_max", 1000.0),
                             tuple("metric_name_used", 100.0));
         });
+    }
+
+    @Test
+    public void testConvertTabularDataToCompositeMetric()
+    {
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), createTestTabularData(), "metric help"), LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(CompositeMetric.class, compositeMetric -> {
+            assertThat(compositeMetric.metricName()).isEqualTo("metric_name");
+            assertThat(compositeMetric.labels()).isEqualTo(LABELS);
+            assertThat(compositeMetric.help()).isEqualTo("metric help");
+            assertThat(compositeMetric.subMetrics())
+                    .filteredOn(Gauge.class::isInstance)
+                    .map(Gauge.class::cast)
+                    .extracting(Gauge::metricName, Gauge::value, Gauge::labels)
+                    .containsExactlyInAnyOrder(
+                            tuple("metric_name_value", 1.0, ImmutableMap.<String, String>builder()
+                                    .putAll(LABELS)
+                                    .put("name", "one")
+                                    .buildOrThrow()),
+                            tuple("metric_name_value", 2.0, ImmutableMap.<String, String>builder()
+                                    .putAll(LABELS)
+                                    .put("name", "two")
+                                    .buildOrThrow()));
+        });
+    }
+
+    @Test
+    public void testConvertEmptyTabularDataToEmptyCompositeMetric()
+    {
+        Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), createEmptyTestTabularData(), "metric help"), LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(CompositeMetric.class, compositeMetric -> assertThat(compositeMetric.subMetrics()).isEmpty());
     }
 
     @Test
@@ -269,6 +307,35 @@ public class TestOpenMetricsCollector
                     .buildOrThrow();
 
             return new CompositeDataSupport(compositeType, values);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static TabularData createTestTabularData()
+    {
+        try {
+            TabularDataSupport tabularData = createEmptyTestTabularData();
+            CompositeType compositeType = tabularData.getTabularType().getRowType();
+
+            tabularData.put(new CompositeDataSupport(compositeType, ImmutableMap.of("name", "one", "value", 1L)));
+            tabularData.put(new CompositeDataSupport(compositeType, ImmutableMap.of("name", "two", "value", 2L)));
+
+            return tabularData;
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static TabularDataSupport createEmptyTestTabularData()
+    {
+        try {
+            String[] itemNames = {"name", "value"};
+            OpenType<?>[] itemTypes = {SimpleType.STRING, SimpleType.LONG};
+            CompositeType compositeType = new CompositeType("TestData", "Test Data", itemNames, itemNames, itemTypes);
+            return new TabularDataSupport(new TabularType("TestTable", "Test Table", compositeType, new String[] {"name"}));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
