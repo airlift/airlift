@@ -89,7 +89,7 @@
             <plugin>
                 <groupId>ca.vanzyl.provisio.maven.plugins</groupId>
                 <artifactId>provisio-maven-plugin</artifactId>
-                <version>1.1.1</version>
+                <version>1.1.3</version>
             </plugin>
             <plugin>
                 <groupId>io.trino</groupId>
