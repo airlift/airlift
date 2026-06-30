@@ -180,7 +180,7 @@ public class MetricsCollector
         try {
             Object attributeValue = mbeanServer.getAttribute(objectName, attributeName);
             return switch (attributeValue) {
-                case Number _, CompositeData _ -> Optional.of(new CollectedMetricGroup.Attribute(List.of(attributeName), attributeValue, description));
+                case Number _, Boolean _, CompositeData _ -> Optional.of(new CollectedMetricGroup.Attribute(List.of(attributeName), attributeValue, description));
                 case null, default -> Optional.empty();
             };
         }
