@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.yaml;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +22,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.ThreadSafe;
+import io.airlift.json.LengthLimitedWriter;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
@@ -36,32 +35,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
-public class JsonCodec<T>
+public class YamlCodec<T>
 {
-    private static final ObjectMapper JSON_MAPPER = new JsonMapperProvider().get()
-            .rebuild()
-            .enable(INDENT_OUTPUT)
-            .build();
+    private static final ObjectMapper YAML_MAPPER = new YamlMapperProvider().get();
 
-    public static <T> JsonCodec<T> jsonCodec(Class<T> type)
+    public static <T> YamlCodec<T> yamlCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(JSON_MAPPER, type);
+        return new YamlCodec<>(YAML_MAPPER, type);
     }
 
-    public static <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
+    public static <T> YamlCodec<T> yamlCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(JSON_MAPPER, type.getType());
+        return new YamlCodec<>(YAML_MAPPER, type.getType());
     }
 
-    public static <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
+    public static <T> YamlCodec<List<T>> listYamlCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
@@ -69,10 +64,10 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, type)
                 .getType();
 
-        return new JsonCodec<>(JSON_MAPPER, listType);
+        return new YamlCodec<>(YAML_MAPPER, listType);
     }
 
-    public static <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
+    public static <T> YamlCodec<List<T>> listYamlCodec(YamlCodec<T> type)
     {
         requireNonNull(type, "type is null");
 
@@ -80,10 +75,10 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, type.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(JSON_MAPPER, listType);
+        return new YamlCodec<>(YAML_MAPPER, listType);
     }
 
-    public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
+    public static <K, V> YamlCodec<Map<K, V>> mapYamlCodec(Class<K> keyType, Class<V> valueType)
     {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
@@ -93,10 +88,10 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, valueType)
                 .getType();
 
-        return new JsonCodec<>(JSON_MAPPER, mapType);
+        return new YamlCodec<>(YAML_MAPPER, mapType);
     }
 
-    public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
+    public static <K, V> YamlCodec<Map<K, V>> mapYamlCodec(Class<K> keyType, YamlCodec<V> valueType)
     {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
@@ -106,7 +101,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, valueType.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(JSON_MAPPER, mapType);
+        return new YamlCodec<>(YAML_MAPPER, mapType);
     }
 
     private final TypeToken<T> typeToken;
@@ -114,7 +109,7 @@ public class JsonCodec<T>
     private final Supplier<ObjectWriter> writer;
     private final Supplier<ObjectReader> reader;
 
-    JsonCodec(ObjectMapper mapper, Type type)
+    YamlCodec(ObjectMapper mapper, Type type)
     {
         JavaType javaType = mapper.constructType(type);
         this.typeToken = (TypeToken<T>) TypeToken.of(type);
@@ -123,59 +118,34 @@ public class JsonCodec<T>
         this.reader = Suppliers.memoize(() -> mapper.readerFor(javaType));
     }
 
-    /**
-     * Gets the type this codec supports.
-     */
     public Type getType()
     {
         return type;
     }
 
-    /**
-     * Converts the specified json string into an instance of type T.
-     *
-     * @param json the json string to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json string can not be converted to the type T
-     */
-    public T fromJson(String json)
+    public T fromYaml(String yaml)
             throws IllegalArgumentException
     {
         try {
-            return reader.get().readValue(json);
+            return reader.get().readValue(yaml);
         }
         catch (Exception e) {
             throw mapException(e, "string", type);
         }
     }
 
-    /**
-     * Converts the specified instance to json.
-     *
-     * @param instance the instance to convert to json
-     * @return json string
-     * @throws IllegalArgumentException if the specified instance can not be converted to json
-     */
-    public String toJson(T instance)
+    public String toYaml(T instance)
             throws IllegalArgumentException
     {
         try {
             return writer.get().writeValueAsString(instance);
         }
         catch (IOException e) {
-            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
+            throw new IllegalArgumentException("%s could not be converted to YAML".formatted(instance.getClass().getName()), e);
         }
     }
 
-    /**
-     * Converts the specified instance to optional json string with a length limit. Returns Optional.empty() if length limit is exceeded.
-     *
-     * @param instance the instance to convert to json
-     * @param lengthLimit the maximum length of the serialized string in characters
-     * @return json string
-     * @throws IllegalArgumentException if the specified instance can not be converted to json
-     */
-    public Optional<String> toJsonWithLengthLimit(T instance, int lengthLimit)
+    public Optional<String> toYamlWithLengthLimit(T instance, int lengthLimit)
     {
         try (StringWriter stringWriter = new StringWriter();
                 LengthLimitedWriter lengthLimitedWriter = new LengthLimitedWriter(stringWriter, lengthLimit)) {
@@ -186,76 +156,48 @@ public class JsonCodec<T>
             return Optional.empty();
         }
         catch (IOException e) {
-            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
+            throw new IllegalArgumentException("%s could not be converted to YAML".formatted(instance.getClass().getName()), e);
         }
     }
 
-    /**
-     * Coverts the specified json bytes (UTF-8) into an instance of type T.
-     *
-     * @param json the json bytes (UTF-8) to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json bytes can not be converted to the type T
-     */
-    public T fromJson(byte[] json)
+    public T fromYaml(byte[] yaml)
             throws IllegalArgumentException
     {
         try {
-            return reader.get().readValue(json);
+            return reader.get().readValue(yaml);
         }
         catch (Exception e) {
             throw mapException(e, "bytes", type);
         }
     }
 
-    /**
-     * Converts the specified instance to json.
-     *
-     * @param instance the instance to convert to json
-     * @return json bytes (UTF-8)
-     * @throws IllegalArgumentException if the specified instance can not be converted to json
-     */
-    public byte[] toJsonBytes(T instance)
+    public byte[] toYamlBytes(T instance)
             throws IllegalArgumentException
     {
         try {
             return writer.get().writeValueAsBytes(instance);
         }
         catch (IOException e) {
-            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
+            throw new IllegalArgumentException("%s could not be converted to YAML".formatted(instance.getClass().getName()), e);
         }
     }
 
-    /**
-     * Coverts the specified {@link InputStream} (UTF-8) into an instance of type T.
-     *
-     * @param json the json stream (UTF-8) to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json bytes can not be converted to the type T
-     */
-    public T fromJson(InputStream json)
+    public T fromYaml(InputStream yaml)
             throws IllegalArgumentException
     {
         try {
-            return reader.get().readValue(json);
+            return reader.get().readValue(yaml);
         }
         catch (Exception e) {
             throw mapException(e, "stream", type);
         }
     }
 
-    /**
-     * Coverts the specified {@link Reader} into an instance of type T.
-     *
-     * @param json the json character stream to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json characters can not be converted to the type T
-     */
-    public T fromJson(Reader json)
+    public T fromYaml(Reader yaml)
             throws IllegalArgumentException
     {
         try {
-            return reader.get().readValue(json);
+            return reader.get().readValue(yaml);
         }
         catch (Exception e) {
             throw mapException(e, "characters", type);
@@ -267,7 +209,7 @@ public class JsonCodec<T>
         return switch (e) {
             case MismatchedInputException mismatchedInputException when mismatchedInputException.getMessage().contains("not allowed as per `DeserializationFeature.FAIL_ON_TRAILING_TOKENS`") -> new IllegalArgumentException("Found characters after the expected end of input", e);
             case IllegalArgumentException iae -> iae;
-            default -> new IllegalArgumentException("Invalid JSON %s for %s".formatted(source, type), e);
+            default -> new IllegalArgumentException("Invalid YAML %s for %s".formatted(source, type), e);
         };
     }
 

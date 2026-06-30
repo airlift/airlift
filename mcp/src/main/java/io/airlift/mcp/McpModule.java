@@ -15,8 +15,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.name.Names;
 import com.google.inject.util.Types;
-import io.airlift.json.JsonSubType;
-import io.airlift.json.JsonSubTypeBinder;
+import io.airlift.json.JacksonSubType;
+import io.airlift.json.JacksonSubTypeBinder;
 import io.airlift.mcp.handler.CompletionEntry;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
@@ -71,8 +71,8 @@ import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.json.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
-import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
@@ -151,9 +151,9 @@ public class McpModule
     }
 
     @VisibleForTesting
-    public static JsonSubType buildJsonSubType()
+    public static JacksonSubType buildJacksonSubType()
     {
-        return JsonSubType.builder()
+        return JacksonSubType.builder()
                 .forBase(Content.class, "type")
                 .add(TextContent.class, "text")
                 .add(ImageContent.class, "image")
@@ -352,7 +352,7 @@ public class McpModule
         bindPrompts(binder);
         bindResources(binder);
         bindResourceTemplates(binder);
-        bindJsonSubTypes(binder);
+        bindJacksonSubTypes(binder);
         bindIdentityMapper(binder);
         bindCompletions(binder);
         bindSessions(binder);
@@ -446,11 +446,11 @@ public class McpModule
         tools.forEach(tool -> toolsBinder.addBinding().toProvider(tool).in(SINGLETON));
     }
 
-    private void bindJsonSubTypes(Binder binder)
+    private void bindJacksonSubTypes(Binder binder)
     {
-        JsonSubType jsonSubType = buildJsonSubType();
+        JacksonSubType jacksonSubType = buildJacksonSubType();
 
-        JsonSubTypeBinder jsonSubTypeBinder = jsonSubTypeBinder(binder);
-        jsonSubTypeBinder.bindJsonSubType(jsonSubType);
+        JacksonSubTypeBinder jacksonSubTypeBinder = jacksonSubTypeBinder(binder);
+        jacksonSubTypeBinder.bindJacksonSubType(jacksonSubType);
     }
 }

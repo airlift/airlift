@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,81 +11,72 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.yaml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.util.Objects.requireNonNull;
 
-public class JsonCodecFactory
+public class YamlCodecFactory
 {
-    private final ObjectMapper jsonMapper;
+    private final ObjectMapper yamlMapper;
 
-    public JsonCodecFactory()
+    public YamlCodecFactory()
     {
-        this(new JsonMapperProvider().get());
+        this(new YamlMapperProvider().get());
     }
 
     @Inject
-    public JsonCodecFactory(JsonMapper jsonMapper)
+    public YamlCodecFactory(YAMLMapper yamlMapper)
     {
-        this((ObjectMapper) jsonMapper);
+        this((ObjectMapper) yamlMapper);
     }
 
-    @Deprecated
-    public JsonCodecFactory(Provider<JsonMapper> jsonMapperProvider)
+    private YamlCodecFactory(ObjectMapper yamlMapper)
     {
-        this(jsonMapperProvider.get());
+        this.yamlMapper = requireNonNull(yamlMapper, "yamlMapper is null");
     }
 
-    @Deprecated
-    public JsonCodecFactory(Provider<JsonMapper> jsonMapperProvider, boolean prettyPrint)
+    /**
+     * No-op for symmetry with JsonCodecFactory. YAML output is block-formatted regardless of
+     * SerializationFeature.INDENT_OUTPUT, so there is no practical difference between a default
+     * and a "pretty" YAML codec.
+     */
+    public YamlCodecFactory prettyPrint()
     {
-        this(withPrettyPrint(jsonMapperProvider.get(), prettyPrint));
+        return this;
     }
 
-    private JsonCodecFactory(ObjectMapper jsonMapper)
-    {
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
-    }
-
-    public JsonCodecFactory prettyPrint()
-    {
-        return new JsonCodecFactory(withPrettyPrint(jsonMapper, true));
-    }
-
-    public <T> JsonCodec<T> jsonCodec(Class<T> type)
+    public <T> YamlCodec<T> yamlCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(jsonMapper, type);
+        return new YamlCodec<>(yamlMapper, type);
     }
 
-    public <T> JsonCodec<T> jsonCodec(Type type)
+    public <T> YamlCodec<T> yamlCodec(Type type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(jsonMapper, type);
+        return new YamlCodec<>(yamlMapper, type);
     }
 
-    public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
+    public <T> YamlCodec<T> yamlCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(jsonMapper, type.getType());
+        return new YamlCodec<>(yamlMapper, type.getType());
     }
 
-    public <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
+    public <T> YamlCodec<List<T>> listYamlCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
@@ -95,10 +84,10 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, type)
                 .getType();
 
-        return new JsonCodec<>(jsonMapper, listType);
+        return new YamlCodec<>(yamlMapper, listType);
     }
 
-    public <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
+    public <T> YamlCodec<List<T>> listYamlCodec(YamlCodec<T> type)
     {
         requireNonNull(type, "type is null");
 
@@ -106,10 +95,10 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, type.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(jsonMapper, listType);
+        return new YamlCodec<>(yamlMapper, listType);
     }
 
-    public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
+    public <K, V> YamlCodec<Map<K, V>> mapYamlCodec(Class<K> keyType, Class<V> valueType)
     {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
@@ -119,10 +108,10 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, valueType)
                 .getType();
 
-        return new JsonCodec<>(jsonMapper, mapType);
+        return new YamlCodec<>(yamlMapper, mapType);
     }
 
-    public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
+    public <K, V> YamlCodec<Map<K, V>> mapYamlCodec(Class<K> keyType, YamlCodec<V> valueType)
     {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
@@ -132,14 +121,6 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, valueType.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(jsonMapper, mapType);
-    }
-
-    private static ObjectMapper withPrettyPrint(ObjectMapper mapper, boolean prettyPrint)
-    {
-        if (!prettyPrint) {
-            return mapper;
-        }
-        return mapper.copy().enable(INDENT_OUTPUT);
+        return new YamlCodec<>(yamlMapper, mapType);
     }
 }

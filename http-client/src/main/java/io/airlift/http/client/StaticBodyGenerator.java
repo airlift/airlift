@@ -19,7 +19,7 @@ import java.nio.charset.Charset;
 
 public sealed class StaticBodyGenerator
         implements BodyGenerator
-        permits JsonBodyGenerator
+        permits JsonBodyGenerator, YamlBodyGenerator
 {
     public static StaticBodyGenerator createStaticBodyGenerator(String body, Charset charset)
     {

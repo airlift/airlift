@@ -5,7 +5,7 @@ import java.io.Writer;
 
 import static java.util.Objects.requireNonNull;
 
-class LengthLimitedWriter
+public class LengthLimitedWriter
         extends Writer
 {
     private final Writer writer;

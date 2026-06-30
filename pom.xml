@@ -75,6 +75,7 @@
         <module>stats</module>
         <module>testing</module>
         <module>tracing</module>
+        <module>yaml</module>
     </modules>
 
     <scm>
@@ -315,6 +316,12 @@
             </dependency>
 
             <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>yaml</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.github.wasabithumb</groupId>
                 <artifactId>jtoml-all</artifactId>
                 <version>1.5.2</version>
@@ -385,6 +392,12 @@
                         <artifactId>jakarta.activation-api</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>2.5</version>
             </dependency>
 
         </dependencies>
