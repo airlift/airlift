@@ -78,6 +78,7 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
                     }
                 }
             }
+            case TabularData _ -> {}
             default -> throw new IllegalStateException("Unexpected value: " + value);
         }
     }
