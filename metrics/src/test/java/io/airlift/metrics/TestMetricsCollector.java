@@ -25,6 +25,9 @@ import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
+import javax.management.openmbean.TabularData;
+import javax.management.openmbean.TabularDataSupport;
+import javax.management.openmbean.TabularType;
 
 import java.util.List;
 import java.util.Map;
@@ -168,6 +171,10 @@ public class TestMetricsCollector
                         assertThat(memory.get("committed")).isEqualTo(200L);
                         assertThat(memory.get("max")).isEqualTo(1000L);
                     });
+                })
+                .anySatisfy(metric -> {
+                    assertThat(metric.path()).containsExactly("Table");
+                    assertThat(metric.value()).isInstanceOfSatisfying(TabularData.class, table -> assertThat(table.size()).isEqualTo(2));
                 });
     }
 
@@ -317,6 +324,8 @@ public class TestMetricsCollector
 
         CompositeData getMemory();
 
+        TabularData getTable();
+
         String getUnsupported();
     }
 
@@ -342,6 +351,12 @@ public class TestMetricsCollector
         }
 
         @Override
+        public TabularData getTable()
+        {
+            return createTestTabularData();
+        }
+
+        @Override
         public String getUnsupported()
         {
             return "ignored";
@@ -362,6 +377,24 @@ public class TestMetricsCollector
                     .buildOrThrow();
 
             return new CompositeDataSupport(compositeType, values);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static TabularData createTestTabularData()
+    {
+        try {
+            String[] itemNames = {"name", "value"};
+            OpenType<?>[] itemTypes = {SimpleType.STRING, SimpleType.LONG};
+            CompositeType compositeType = new CompositeType("TestData", "Test Data", itemNames, itemNames, itemTypes);
+            TabularDataSupport tabularData = new TabularDataSupport(new TabularType("TestTable", "Test Table", compositeType, new String[] {"name"}));
+
+            tabularData.put(new CompositeDataSupport(compositeType, ImmutableMap.of("name", "one", "value", 1L)));
+            tabularData.put(new CompositeDataSupport(compositeType, ImmutableMap.of("name", "two", "value", 2L)));
+
+            return tabularData;
         }
         catch (Exception e) {
             throw new RuntimeException(e);

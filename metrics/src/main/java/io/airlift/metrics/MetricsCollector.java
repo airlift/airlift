@@ -38,6 +38,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.TabularData;
 
 import java.util.List;
 import java.util.Map;
@@ -180,7 +181,7 @@ public class MetricsCollector
         try {
             Object attributeValue = mbeanServer.getAttribute(objectName, attributeName);
             return switch (attributeValue) {
-                case Number _, Boolean _, CompositeData _ -> Optional.of(new CollectedMetricGroup.Attribute(List.of(attributeName), attributeValue, description));
+                case Number _, Boolean _, CompositeData _, TabularData _ -> Optional.of(new CollectedMetricGroup.Attribute(List.of(attributeName), attributeValue, description));
                 case null, default -> Optional.empty();
             };
         }

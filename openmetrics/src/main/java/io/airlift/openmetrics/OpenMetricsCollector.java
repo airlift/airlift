@@ -35,6 +35,7 @@ import io.airlift.stats.TimeStat;
 
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.TabularData;
 
 import java.util.List;
 import java.util.Map;
@@ -158,6 +159,7 @@ public class OpenMetricsCollector
             case Number number -> Optional.of(Gauge.from(metricName, number, labels, attribute.description()));
             case Boolean bool -> Optional.of(Gauge.from(metricName, bool ? 1 : 0, labels, attribute.description()));
             case CompositeData compositeData -> Optional.of(CompositeMetric.from(metricName, compositeData, labels, attribute.description()));
+            case TabularData tabularData -> Optional.of(CompositeMetric.from(metricName, tabularData, labels, attribute.description()));
             case CounterStat counterStat -> Optional.of(Counter.from(metricName, counterStat, labels, attribute.description()));
             case TimeDistribution timeDistribution -> Optional.of(Summary.from(metricName, timeDistribution, labels, attribute.description()));
             case TimeStat timeStat -> Optional.of(timeStatToOpenMetrics(metricName, timeStat, attribute, labels));
