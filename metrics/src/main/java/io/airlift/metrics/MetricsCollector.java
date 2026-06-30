@@ -40,12 +40,14 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 
 /// Discovers Airlift managed metrics and configured JMX metrics in their native form.
@@ -71,15 +73,20 @@ public class MetricsCollector
 
     public List<CollectedMetricGroup> collect()
     {
+        Collection<ManagedObjectExport> managedExports = mbeanExporter.getManagedObjectExports().values();
+        Set<ObjectName> managedObjectNames = managedExports.stream()
+                .map(ManagedObjectExport::getObjectName)
+                .collect(toImmutableSet());
+
         return ImmutableList.<CollectedMetricGroup>builder()
-                .addAll(collectManagedClasses())
-                .addAll(collectMBeans())
+                .addAll(collectManagedClasses(managedExports))
+                .addAll(collectMBeans(managedObjectNames))
                 .build();
     }
 
-    private List<CollectedMetricGroup> collectManagedClasses()
+    private List<CollectedMetricGroup> collectManagedClasses(Collection<ManagedObjectExport> managedExports)
     {
-        return mbeanExporter.getManagedObjectExports().values().stream()
+        return managedExports.stream()
                 .map(export -> new CollectedMetricGroup(
                         managedMetricSource(export),
                         labels,
@@ -144,12 +151,13 @@ public class MetricsCollector
                 value instanceof DistributionStat;
     }
 
-    private List<CollectedMetricGroup> collectMBeans()
+    private List<CollectedMetricGroup> collectMBeans(Set<ObjectName> managedObjectNames)
     {
         return allMetricsObjectNames.stream()
                 .map(objectName -> mbeanServer.queryNames(objectName, null))
                 .flatMap(Set::stream)
                 .distinct()
+                .filter(objectName -> !managedObjectNames.contains(objectName))
                 .map(this::collectMBean)
                 .flatMap(Optional::stream)
                 .toList();
