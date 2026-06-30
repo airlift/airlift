@@ -20,6 +20,7 @@ public class OperationsModule
         binder.bind(LegacyVersionsController.class).in(SINGLETON);
         binder.bind(OperationsCommon.class).in(SINGLETON);
         binder.bind(LegacyServerToClientRequest.class).in(SINGLETON);
+        binder.bind(OperationsImpl.class).in(SINGLETON);
         newOptionalBinder(binder, ErrorHandler.class).setDefault().to(ErrorHandlerImpl.class);
 
         binder.bind(LegacyCancellationController.class).in(SINGLETON);

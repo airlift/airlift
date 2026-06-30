@@ -30,6 +30,7 @@ import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.REQUEST_TIMEOUT;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -128,6 +129,9 @@ public class ErrorHandlerImpl
         int errorCode = rpcResponse.error().map(JsonRpcErrorDetail::code).orElse(0);
         if (isClientError || (errorCode == JsonRpcErrorCode.RESOURCE_NOT_FOUND.code())) {
             response.setStatus(SC_OK);
+        }
+        else if (errorCode == JsonRpcErrorCode.METHOD_NOT_FOUND.code()) {
+            response.setStatus(SC_NOT_FOUND);
         }
         else {
             response.setStatus((errorCode < 0) ? SC_BAD_REQUEST : SC_INTERNAL_SERVER_ERROR);

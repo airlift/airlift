@@ -161,6 +161,7 @@ public class InternalEntities
         return tools.values()
                 .stream()
                 .map(ToolEntry::tool)
+                .sorted(comparing(Tool::name))
                 .filter(tool -> capabilityFilter.isAllowed(requestContext.identity(), tool))
                 .collect(toImmutableList());
     }
@@ -188,6 +189,7 @@ public class InternalEntities
         return prompts.values()
                 .stream()
                 .map(PromptEntry::prompt)
+                .sorted(comparing(Prompt::name))
                 .filter(prompt -> capabilityFilter.isAllowed(requestContext.identity(), prompt))
                 .collect(toImmutableList());
     }
@@ -220,7 +222,10 @@ public class InternalEntities
             Resource indexResource = new Resource(SKILL_INDEX_URI, SKILL_INDEX_URI, Optional.of(SKILLS_INDEX_DESCRIPTION), "application/json", OptionalLong.empty(), Optional.empty());
             resourcesStream = Stream.concat(resourcesStream, Stream.of(indexResource));
         }
-        return resourcesStream.collect(toImmutableList());
+        return resourcesStream
+                .sorted(comparing(Resource::name))
+                .filter(resource -> capabilityFilter.isAllowed(requestContext.identity(), resource))
+                .collect(toImmutableList());
     }
 
     @Override
@@ -246,6 +251,7 @@ public class InternalEntities
         return resourceTemplates.values()
                 .stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
+                .sorted(comparing(ResourceTemplate::name))
                 .filter(resourceTemplate -> capabilityFilter.isAllowed(requestContext.identity(), resourceTemplate))
                 .collect(toImmutableList());
     }
@@ -256,6 +262,7 @@ public class InternalEntities
         return completions.values()
                 .stream()
                 .map(CompletionEntry::reference)
+                .sorted(comparing(CompleteReference::sortValue))
                 .filter(completeReference -> capabilityFilter.isAllowed(requestContext.identity(), completeReference))
                 .collect(toImmutableList());
     }
