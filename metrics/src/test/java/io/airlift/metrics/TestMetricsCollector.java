@@ -158,6 +158,10 @@ public class TestMetricsCollector
                     assertThat(metric.value()).isEqualTo(23);
                 })
                 .anySatisfy(metric -> {
+                    assertThat(metric.path()).containsExactly("Enabled");
+                    assertThat(metric.value()).isEqualTo(true);
+                })
+                .anySatisfy(metric -> {
                     assertThat(metric.path()).containsExactly("Memory");
                     assertThat(metric.value()).isInstanceOfSatisfying(CompositeData.class, memory -> {
                         assertThat(memory.get("used")).isEqualTo(100L);
@@ -309,6 +313,8 @@ public class TestMetricsCollector
     {
         int getCount();
 
+        boolean isEnabled();
+
         CompositeData getMemory();
 
         String getUnsupported();
@@ -321,6 +327,12 @@ public class TestMetricsCollector
         public int getCount()
         {
             return 23;
+        }
+
+        @Override
+        public boolean isEnabled()
+        {
+            return true;
         }
 
         @Override
