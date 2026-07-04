@@ -27,11 +27,14 @@ new Bootstrap(
 `OpenTelemetryMetricsModule` adds the jmxutils managed-metrics producer to the
 OpenTelemetry meter provider.
 
-Common exporter configuration:
+The default exporter protocol is gRPC and its default endpoint is `http://localhost:4317`. When
+HTTP/protobuf is selected without an explicit endpoint, its default endpoint is
+`http://localhost:4318`.
+For OTLP HTTP/protobuf, configure the base collector URL and protocol:
 
 ```properties
-otel.exporter.endpoint=http://otel-collector.example.com:4317
-otel.exporter.protocol=grpc
+otel.exporter.endpoint=http://otel-collector.example.com:4318
+otel.exporter.protocol=http/protobuf
 otel.exporter.interval=10s
 ```
 

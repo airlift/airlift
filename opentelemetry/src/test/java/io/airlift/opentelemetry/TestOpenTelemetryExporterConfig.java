@@ -10,7 +10,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +34,7 @@ public class TestOpenTelemetryExporterConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(OpenTelemetryExporterConfig.class)
-                .setEndpoint("http://localhost:4317")
+                .setEndpoint(URI.create("http://localhost:4317"))
                 .setProtocol(GRPC)
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
                 .setMetricsTemporalityPreference(DELTA)
@@ -52,6 +54,22 @@ public class TestOpenTelemetryExporterConfig
                 .setClientKeyPath(null)
                 .setClientKeyPem(null)
                 .setClientKeyPassword(null));
+    }
+
+    @Test
+    public void testProtocolSpecificDefaultEndpoint()
+    {
+        assertThat(new OpenTelemetryExporterConfig().getEndpoint())
+                .isEqualTo(URI.create("http://localhost:4317"));
+        assertThat(new OpenTelemetryExporterConfig()
+                .setProtocol(HTTP_PROTOBUF)
+                .getEndpoint())
+                .isEqualTo(URI.create("http://localhost:4318"));
+        assertThat(new OpenTelemetryExporterConfig()
+                .setProtocol(HTTP_PROTOBUF)
+                .setEndpoint(URI.create("http://collector.example.com:1234"))
+                .getEndpoint())
+                .isEqualTo(URI.create("http://collector.example.com:1234"));
     }
 
     @Test
@@ -78,7 +96,7 @@ public class TestOpenTelemetryExporterConfig
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
-                .setEndpoint("http://example.com:1234")
+                .setEndpoint(URI.create("http://example.com:1234"))
                 .setProtocol(HTTP_PROTOBUF)
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
                 .setMetricsTemporalityPreference(CUMULATIVE)
@@ -205,6 +223,24 @@ public class TestOpenTelemetryExporterConfig
                 "clientTlsValid",
                 "client certificate and key must be set together",
                 AssertTrue.class);
+    }
+
+    @Test
+    public void testEndpointFailsValidation()
+    {
+        for (String endpoint : List.of(
+                "ftp://example.com",
+                "http:/collector",
+                "http:collector",
+                "http://example.com?tenant=test",
+                "http://example.com#fragment")) {
+            assertFailsValidation(
+                    new OpenTelemetryExporterConfig()
+                            .setEndpoint(URI.create(endpoint)),
+                    "endpointValid",
+                    "must be an HTTP or HTTPS URI with a host and without a query or fragment",
+                    AssertTrue.class);
+        }
     }
 
     @Test
