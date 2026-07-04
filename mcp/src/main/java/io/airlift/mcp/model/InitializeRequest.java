@@ -22,28 +22,25 @@ public record InitializeRequest(
         meta = normalize(meta);
     }
 
-    public InitializeRequest(String protocolVersion, ClientCapabilities capabilities, Implementation clientInfo)
-    {
-        this(protocolVersion, capabilities, clientInfo, Optional.empty());
-    }
-
     @Override
     public InitializeRequest withMeta(Map<String, Object> meta)
     {
         return new InitializeRequest(protocolVersion, capabilities, clientInfo, Optional.of(meta));
     }
 
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
+    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> extensions,
+                                     Optional<Map<String, Object>> experimental)
             implements Experimental
     {
-        public static final ClientCapabilities EMPTY = new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        public static final ClientCapabilities EMPTY = new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
 
         public ClientCapabilities
         {
             roots = requireNonNullElse(roots, Optional.empty());
             sampling = requireNonNullElse(sampling, Optional.empty());
             elicitation = requireNonNullElse(elicitation, Optional.empty());
-            experimental = requireNonNullElse(experimental, Optional.empty());
+            extensions = normalize(extensions);
+            experimental = normalize(experimental);
         }
     }
 
