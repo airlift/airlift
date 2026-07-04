@@ -15,6 +15,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
@@ -37,9 +38,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,15 +71,18 @@ public class TestOpenTelemetryModule
                 new TestingNodeModule(),
                 new OpenTelemetryModule("testService", "testVersion"))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         Tracer tracer = injector.getInstance(Tracer.class);
         Meter meter = injector.getInstance(Meter.class);
+        SdkLoggerProvider loggerProvider = injector.getInstance(SdkLoggerProvider.class);
 
         assertThat(tracer.getClass().getName())
                 .isEqualTo("io.opentelemetry.api.trace.DefaultTracer");
         assertThat(meter.getClass().getName())
                 .isEqualTo("io.opentelemetry.api.metrics.DefaultMeter");
+        assertThat(injector.getInstance(SdkLoggerProvider.class)).isSameAs(loggerProvider);
 
         tracer.spanBuilder("my-span").startSpan().end();
         meter.counterBuilder("my-counter").build().add(123);
@@ -90,6 +96,7 @@ public class TestOpenTelemetryModule
                 new OpenTelemetryModule("testService", "testVersion"),
                 new OpenTelemetryExporterModule())
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         Tracer tracer = injector.getInstance(Tracer.class);
@@ -116,6 +123,7 @@ public class TestOpenTelemetryModule
                 binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
                         .toInstance(SimpleSpanProcessor.create(exporter)))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         Tracer tracer = injector.getInstance(Tracer.class);
@@ -152,6 +160,7 @@ public class TestOpenTelemetryModule
                 binder -> newSetBinder(binder, LogRecordProcessor.class).addBinding()
                         .toInstance(SimpleLogRecordProcessor.create(exporter)))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         OpenTelemetry openTelemetry = injector.getInstance(OpenTelemetry.class);
@@ -177,6 +186,36 @@ public class TestOpenTelemetryModule
     }
 
     @Test
+    void testCustomOptionalLogRecordProcessor()
+    {
+        @SuppressWarnings("resource")
+        InMemoryLogRecordExporter exporter = InMemoryLogRecordExporter.create();
+        AtomicInteger processorCreations = new AtomicInteger();
+
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newOptionalBinder(binder, LogRecordProcessor.class).setBinding()
+                        .toProvider(() -> {
+                            processorCreations.incrementAndGet();
+                            return SimpleLogRecordProcessor.create(exporter);
+                        }))
+                .quiet()
+                .doNotInitializeLogging()
+                .initialize();
+
+        injector.getInstance(OpenTelemetry.class)
+                .getLogsBridge()
+                .get("test-logger")
+                .logRecordBuilder()
+                .setBody("test log message")
+                .emit();
+
+        assertThat(exporter.getFinishedLogRecordItems()).hasSize(1);
+        assertThat(processorCreations).hasValue(1);
+    }
+
+    @Test
     void testCustomMetricReader()
     {
         @SuppressWarnings("resource")
@@ -189,6 +228,7 @@ public class TestOpenTelemetryModule
                 binder -> newSetBinder(binder, MetricReader.class).addBinding()
                         .toInstance(reader))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         Meter meter = injector.getInstance(Meter.class);
@@ -230,6 +270,7 @@ public class TestOpenTelemetryModule
                 binder -> newSetBinder(binder, MetricProducer.class).addBinding()
                         .toInstance(producer))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         injector.getInstance(Meter.class);
@@ -251,6 +292,7 @@ public class TestOpenTelemetryModule
                         .toInstance(SimpleSpanProcessor.create(exporter)))
                 .setRequiredConfigurationProperties(ImmutableMap.of("otel.tracing.baggage.allowed-keys", "orderId"))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         OpenTelemetry openTelemetry = injector.getInstance(OpenTelemetry.class);
@@ -281,6 +323,7 @@ public class TestOpenTelemetryModule
                         .toInstance(SpanProcessor.composite()))
                 .setRequiredConfigurationProperties(ImmutableMap.of("otel.tracing.baggage.allowed-keys", "orderId"))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         TextMapPropagator propagator = injector.getInstance(OpenTelemetry.class).getPropagators().getTextMapPropagator();
@@ -321,6 +364,7 @@ public class TestOpenTelemetryModule
                         "otel.tracing.baggage.allowed-keys", "orderId,note",
                         "otel.tracing.baggage.max-value-length", "5"))
                 .quiet()
+                .doNotInitializeLogging()
                 .initialize();
 
         TextMapPropagator propagator = injector.getInstance(OpenTelemetry.class).getPropagators().getTextMapPropagator();
