@@ -21,6 +21,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import javax.security.auth.x500.X500Principal;
 
+import java.net.URI;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.cert.X509Certificate;
@@ -41,11 +42,37 @@ final class TestOpenTelemetryExporterModule
     private static final String KEY_PASSWORD = "key-password";
 
     @Test
+    void testHttpProtobufEndpointAddsSignalPath()
+    {
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318"), "v1/traces"))
+                .isEqualTo("http://localhost:4318/v1/traces");
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/"), "v1/metrics"))
+                .isEqualTo("http://localhost:4318/v1/metrics");
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/collector"), "v1/logs"))
+                .isEqualTo("http://localhost:4318/collector/v1/logs");
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/collector/"), "v1/traces"))
+                .isEqualTo("http://localhost:4318/collector/v1/traces");
+    }
+
+    @Test
+    void testHttpProtobufEndpointReplacesExistingSignalPath()
+    {
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/v1/traces"), "v1/traces"))
+                .isEqualTo("http://localhost:4318/v1/traces");
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/v1/traces"), "v1/metrics"))
+                .isEqualTo("http://localhost:4318/v1/metrics");
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/collector/v1/logs"), "v1/traces"))
+                .isEqualTo("http://localhost:4318/collector/v1/traces");
+        assertThat(OpenTelemetryExporterModule.httpProtobufEndpoint(URI.create("http://localhost:4318/collector/v1/metrics/"), "v1/logs"))
+                .isEqualTo("http://localhost:4318/collector/v1/logs");
+    }
+
+    @Test
     void testGrpcExporterIsCreated()
     {
         OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
                 .setProtocol(GRPC)
-                .setEndpoint("http://localhost:4317");
+                .setEndpoint(URI.create("http://localhost:4317"));
 
         assertExportersCreated(config);
     }
@@ -55,7 +82,7 @@ final class TestOpenTelemetryExporterModule
     {
         OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
                 .setProtocol(HTTP_PROTOBUF)
-                .setEndpoint("http://localhost:4317");
+                .setEndpoint(URI.create("http://localhost:4318"));
 
         assertExportersCreated(config);
     }
@@ -68,14 +95,14 @@ final class TestOpenTelemetryExporterModule
 
         assertExportersCreated(new OpenTelemetryExporterConfig()
                 .setProtocol(GRPC)
-                .setEndpoint("https://localhost:4317")
+                .setEndpoint(URI.create("https://localhost:4317"))
                 .setTrustedCertificatesPem(tlsMaterials.certificatePem())
                 .setClientCertificatePem(tlsMaterials.certificatePem())
                 .setClientKeyPem(tlsMaterials.privateKeyPem()));
 
         assertExportersCreated(new OpenTelemetryExporterConfig()
                 .setProtocol(HTTP_PROTOBUF)
-                .setEndpoint("https://localhost:4318")
+                .setEndpoint(URI.create("https://localhost:4318"))
                 .setTrustedCertificatesPem(tlsMaterials.certificatePem())
                 .setClientCertificatePem(tlsMaterials.certificatePem())
                 .setClientKeyPem(tlsMaterials.privateKeyPem()));
@@ -89,7 +116,7 @@ final class TestOpenTelemetryExporterModule
 
         assertExportersCreated(new OpenTelemetryExporterConfig()
                 .setProtocol(GRPC)
-                .setEndpoint("https://localhost:4317")
+                .setEndpoint(URI.create("https://localhost:4317"))
                 .setTrustedCertificatesPem(tlsMaterials.certificatePem())
                 .setClientCertificatePem(tlsMaterials.certificatePem())
                 .setClientKeyPem(tlsMaterials.encryptedPrivateKeyPem())
@@ -97,7 +124,7 @@ final class TestOpenTelemetryExporterModule
 
         assertExportersCreated(new OpenTelemetryExporterConfig()
                 .setProtocol(HTTP_PROTOBUF)
-                .setEndpoint("https://localhost:4318")
+                .setEndpoint(URI.create("https://localhost:4318"))
                 .setTrustedCertificatesPem(tlsMaterials.certificatePem())
                 .setClientCertificatePem(tlsMaterials.certificatePem())
                 .setClientKeyPem(tlsMaterials.encryptedPrivateKeyPem())

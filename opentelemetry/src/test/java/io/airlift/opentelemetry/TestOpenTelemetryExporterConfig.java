@@ -6,6 +6,7 @@ import io.airlift.units.Duration;
 import jakarta.validation.constraints.AssertTrue;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +25,7 @@ public class TestOpenTelemetryExporterConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(OpenTelemetryExporterConfig.class)
-                .setEndpoint("http://localhost:4317")
+                .setEndpoint(URI.create("http://localhost:4317"))
                 .setProtocol(GRPC)
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
                 .setSpanMaxExportBatchSize(null)
@@ -62,7 +63,7 @@ public class TestOpenTelemetryExporterConfig
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
-                .setEndpoint("http://example.com:1234")
+                .setEndpoint(URI.create("http://example.com:1234"))
                 .setProtocol(HTTP_PROTOBUF)
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
                 .setSpanMaxExportBatchSize(128)
@@ -127,6 +128,17 @@ public class TestOpenTelemetryExporterConfig
                         .setClientCertificatePath(Path.of("/certs/client.pem")),
                 "clientTlsValid",
                 "client certificate and key must be set together",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testEndpointProtocolFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setEndpoint(URI.create("ftp://example.com")),
+                "endpointProtocolValid",
+                "must start with http:// or https://",
                 AssertTrue.class);
     }
 
