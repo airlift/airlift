@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
@@ -77,6 +78,9 @@ public class Logging
     @GuardedBy("this")
     private boolean configured;
 
+    @GuardedBy("this")
+    private Map<String, String> logAnnotations = Map.of();
+
     private final SettableFuture<MBeanExporter> mBeanExporterAvailableFuture = SettableFuture.create();
     private final SettableFuture<List<MBeanExport>> mBeanExportsFuture = SettableFuture.create();
 
@@ -95,6 +99,16 @@ public class Logging
         }
 
         return instance;
+    }
+
+    public ErrorManager createErrorManager()
+    {
+        return new BufferedHandlerErrorManager(stdErr);
+    }
+
+    public synchronized Map<String, String> getLogAnnotations()
+    {
+        return logAnnotations;
     }
 
     private Logging()
@@ -168,7 +182,7 @@ public class Logging
     {
         log.info("Logging to %s", logPath);
         RollingFileMessageOutput output = new RollingFileMessageOutput(logPath, maxFileSize, maxTotalSize, compressionType);
-        BufferedHandler handler = new BufferedHandler(output, formatter, new BufferedHandlerErrorManager(stdErr));
+        BufferedHandler handler = new BufferedHandler(output, formatter, createErrorManager());
         handler.initialize();
         mBeanExportCollector.add(new LogMBeanExport(handler, BufferedHandler.class, "RollingFileMessageOutput"));
 
@@ -182,7 +196,7 @@ public class Logging
         }
         HostAndPort hostAndPort = HostAndPort.fromString(logPath.replace("tcp://", ""));
         SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
-        BufferedHandler handler = new BufferedHandler(output, formatter, new BufferedHandlerErrorManager(stdErr));
+        BufferedHandler handler = new BufferedHandler(output, formatter, createErrorManager());
         handler.initialize();
         mBeanExportCollector.add(new LogMBeanExport(handler, BufferedHandler.class, "SocketMessageOutput"));
 
@@ -262,10 +276,10 @@ public class Logging
 
         List<LogMBeanExport> mBeanExportCollector = new ArrayList<>();
 
-        Map<String, String> logAnnotations = ImmutableMap.of();
+        logAnnotations = ImmutableMap.of();
         if (config.getLogAnnotationFile() != null) {
             try {
-                logAnnotations = replaceEnvironmentVariables(loadPropertiesFrom(config.getLogAnnotationFile()));
+                logAnnotations = ImmutableMap.copyOf(replaceEnvironmentVariables(loadPropertiesFrom(config.getLogAnnotationFile())));
             }
             catch (IOException e) {
                 throw new UncheckedIOException(e);

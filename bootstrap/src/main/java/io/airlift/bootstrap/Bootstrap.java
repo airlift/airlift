@@ -49,6 +49,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.ErrorManager;
+import java.util.logging.Handler;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -315,6 +317,47 @@ public class Bootstrap
         if (logging != null) {
             LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
             logging.configure(configuration);
+            Logging configuredLogging = logging;
+            List<LoggingBootstrap> loggingBootstraps = modules.stream()
+                    .filter(LoggingBootstrap.class::isInstance)
+                    .map(LoggingBootstrap.class::cast)
+                    .toList();
+            if (!loggingBootstraps.isEmpty()) {
+                LoggingBootstrapContext loggingBootstrapContext = new LoggingBootstrapContext()
+                {
+                    @Override
+                    public ConfigurationFactory getConfigurationFactory()
+                    {
+                        return configurationFactory;
+                    }
+
+                    @Override
+                    public Map<String, String> getLogAnnotations()
+                    {
+                        return configuredLogging.getLogAnnotations();
+                    }
+
+                    @Override
+                    public ErrorManager createErrorManager()
+                    {
+                        return configuredLogging.createErrorManager();
+                    }
+
+                    @Override
+                    public void addRootHandler(Handler handler)
+                    {
+                        java.util.logging.Logger.getLogger("").addHandler(handler);
+                    }
+                };
+                try {
+                    for (LoggingBootstrap loggingBootstrap : loggingBootstraps) {
+                        loggingBootstrap.initializeLogging(loggingBootstrapContext);
+                    }
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Failed to initialize logging bootstrap", e);
+                }
+            }
         }
 
         // Register configuration classes defined in the modules

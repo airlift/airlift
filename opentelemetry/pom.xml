@@ -20,6 +20,11 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
 
@@ -114,18 +119,17 @@
         </dependency>
 
         <dependency>
+            <groupId>org.weakref</groupId>
+            <artifactId>jmxutils</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp-jvm</artifactId>
             <scope>runtime</scope>
         </dependency>
 
         <!-- for testing -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>bootstrap</artifactId>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>configuration-testing</artifactId>
@@ -165,12 +169,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.weakref</groupId>
-            <artifactId>jmxutils</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
