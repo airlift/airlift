@@ -10,15 +10,18 @@ import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class OpenTelemetryExporterConfig
 {
-    private String endpoint = "http://localhost:4317";
+    private static final URI DEFAULT_GRPC_ENDPOINT = URI.create("http://localhost:4317");
+    private static final URI DEFAULT_HTTP_PROTOBUF_ENDPOINT = URI.create("http://localhost:4318");
+
+    private URI endpoint;
     private Protocol protocol = Protocol.GRPC;
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
     private TemporalityPreference metricsTemporalityPreference = TemporalityPreference.DELTA;
@@ -40,15 +43,17 @@ public class OpenTelemetryExporterConfig
     private Optional<String> clientKeyPassword = Optional.empty();
 
     @NotNull
-    @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
-    public String getEndpoint()
+    public URI getEndpoint()
     {
-        return endpoint;
+        if (endpoint != null) {
+            return endpoint;
+        }
+        return protocol == Protocol.HTTP_PROTOBUF ? DEFAULT_HTTP_PROTOBUF_ENDPOINT : DEFAULT_GRPC_ENDPOINT;
     }
 
     @Config("otel.exporter.endpoint")
     @LegacyConfig("tracing.exporter.endpoint")
-    public OpenTelemetryExporterConfig setEndpoint(String endpoint)
+    public OpenTelemetryExporterConfig setEndpoint(URI endpoint)
     {
         this.endpoint = endpoint;
         return this;
@@ -330,6 +335,16 @@ public class OpenTelemetryExporterConfig
     public boolean isClientTlsValid()
     {
         return hasClientCertificate() == hasClientKey();
+    }
+
+    @AssertTrue(message = "must be an HTTP or HTTPS URI with a host and without a query or fragment")
+    public boolean isEndpointValid()
+    {
+        return endpoint == null ||
+                (("http".equalsIgnoreCase(endpoint.getScheme()) || "https".equalsIgnoreCase(endpoint.getScheme())) &&
+                        endpoint.getHost() != null &&
+                        endpoint.getRawQuery() == null &&
+                        endpoint.getRawFragment() == null);
     }
 
     @AssertTrue(message = "client key password requires client key")
