@@ -18,13 +18,13 @@ data to an OpenTelemetry collector:
 new Bootstrap(
         new OpenTelemetryModule("trino", nodeVersion),
         new OpenTelemetryExporterModule(),
-        new OpenTelemetryMetricsExporterModule(),
+        new OpenTelemetryMetricsModule(),
         ...);
 ```
 
 `OpenTelemetryModule` creates the OpenTelemetry SDK objects and resource attributes.
 `OpenTelemetryExporterModule` configures OTLP export for traces, metrics, and logs.
-`OpenTelemetryMetricsExporterModule` adds the jmxutils managed-metrics producer to the
+`OpenTelemetryMetricsModule` adds the jmxutils managed-metrics producer to the
 OpenTelemetry meter provider.
 
 Common exporter configuration:
