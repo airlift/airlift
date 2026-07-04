@@ -169,7 +169,7 @@ public class ConformanceEndpoints
     public String testMissingCapability(McpRequestContext requestContext)
     {
         if (requestContext.clientCapabilities().sampling().isEmpty()) {
-            throw clientCapabilityError(new ClientCapabilities(Optional.empty(), Optional.of(new Sampling()), Optional.empty(), Optional.empty()));
+            throw clientCapabilityError(new ClientCapabilities(Optional.empty(), Optional.of(new Sampling()), Optional.empty(), Optional.empty(), Optional.empty()));
         }
         return "Success";
     }
