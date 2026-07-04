@@ -26,6 +26,7 @@ public class OpenTelemetryExporterConfig
     private Optional<Integer> logMaxExportBatchSize = Optional.empty();
     private Optional<Integer> logMaxQueueSize = Optional.empty();
     private Optional<Duration> logScheduleDelay = Optional.empty();
+    private Optional<Duration> logExportTimeout = Optional.empty();
     private Optional<Path> trustedCertificatesPath = Optional.empty();
     private Optional<String> trustedCertificatesPem = Optional.empty();
     private Optional<Path> clientCertificatePath = Optional.empty();
@@ -161,6 +162,18 @@ public class OpenTelemetryExporterConfig
     public OpenTelemetryExporterConfig setLogScheduleDelay(Duration logScheduleDelay)
     {
         this.logScheduleDelay = Optional.ofNullable(logScheduleDelay);
+        return this;
+    }
+
+    public Optional<@MinDuration("1ms") Duration> getLogExportTimeout()
+    {
+        return logExportTimeout;
+    }
+
+    @Config("otel.exporter.log.export-timeout")
+    public OpenTelemetryExporterConfig setLogExportTimeout(Duration logExportTimeout)
+    {
+        this.logExportTimeout = Optional.ofNullable(logExportTimeout);
         return this;
     }
 

@@ -5,6 +5,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import io.airlift.security.pem.PemReader;
 import io.airlift.security.pem.PemWriter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporterBuilder;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
@@ -122,11 +123,17 @@ public class OpenTelemetryExporterModule
     @ProvidesIntoSet
     public static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config, SdkMeterProvider meterProvider)
     {
+        return createLogRecordProcessor(config, (MeterProvider) meterProvider);
+    }
+
+    static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config, MeterProvider meterProvider)
+    {
         BatchLogRecordProcessorBuilder builder = BatchLogRecordProcessor.builder(createLogRecordExporter(config))
                 .setMeterProvider(meterProvider);
         config.getLogMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
         config.getLogMaxQueueSize().ifPresent(builder::setMaxQueueSize);
         config.getLogScheduleDelay().ifPresent(delay -> builder.setScheduleDelay(delay.toJavaTime()));
+        config.getLogExportTimeout().ifPresent(timeout -> builder.setExporterTimeout(timeout.toJavaTime()));
         builder.setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
         return builder.build();
     }

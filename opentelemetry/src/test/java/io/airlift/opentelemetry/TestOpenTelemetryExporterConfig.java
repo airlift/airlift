@@ -34,6 +34,7 @@ public class TestOpenTelemetryExporterConfig
                 .setLogMaxExportBatchSize(null)
                 .setLogMaxQueueSize(null)
                 .setLogScheduleDelay(null)
+                .setLogExportTimeout(null)
                 .setTrustedCertificatesPath(null)
                 .setTrustedCertificatesPem(null)
                 .setClientCertificatePath(null)
@@ -56,6 +57,7 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.log.max-export-batch-size", "64")
                 .put("otel.exporter.log.max-queue-size", "1024")
                 .put("otel.exporter.log.schedule-delay", "5s")
+                .put("otel.exporter.log.export-timeout", "10s")
                 .put("otel.exporter.tls.trusted-certificates-path", "./pom.xml")
                 .put("otel.exporter.tls.client-certificate-path", "./pom.xml")
                 .put("otel.exporter.tls.client-key-path", "./pom.xml")
@@ -72,6 +74,7 @@ public class TestOpenTelemetryExporterConfig
                 .setLogMaxExportBatchSize(64)
                 .setLogMaxQueueSize(1024)
                 .setLogScheduleDelay(new Duration(5, TimeUnit.SECONDS))
+                .setLogExportTimeout(new Duration(10, TimeUnit.SECONDS))
                 .setTrustedCertificatesPath(Path.of("./pom.xml"))
                 .setClientCertificatePath(Path.of("./pom.xml"))
                 .setClientKeyPath(Path.of("./pom.xml"))
@@ -115,6 +118,7 @@ public class TestOpenTelemetryExporterConfig
                         "otel.exporter.log.max-export-batch-size",
                         "otel.exporter.log.max-queue-size",
                         "otel.exporter.log.schedule-delay",
+                        "otel.exporter.log.export-timeout",
                         "otel.exporter.tls.trusted-certificates-path",
                         "otel.exporter.tls.client-certificate-path",
                         "otel.exporter.tls.client-key-path"));
