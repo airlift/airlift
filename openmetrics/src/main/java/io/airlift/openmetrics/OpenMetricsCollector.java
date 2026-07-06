@@ -22,6 +22,7 @@ import io.airlift.metrics.CollectedMetricGroup;
 import io.airlift.metrics.CollectedMetricGroup.Attribute;
 import io.airlift.metrics.MetricSource;
 import io.airlift.metrics.MetricsCollector;
+import io.airlift.metrics.StatWindows;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
@@ -172,32 +173,18 @@ public class OpenMetricsCollector
     private static CompositeMetric timeStatToOpenMetrics(String metricName, TimeStat timeStat, Attribute attribute, Map<String, String> labels)
     {
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
-        if (timeStat.getOneMinute() != null) {
-            metrics.add(Summary.from(metricName + "_OneMinute", timeStat.getOneMinute(), labels, attribute.description()));
+        for (StatWindows.Window<TimeDistribution> window : StatWindows.windows(timeStat)) {
+            metrics.add(Summary.from(metricName + "_" + window.name(), window.value(), labels, attribute.description()));
         }
-        if (timeStat.getFiveMinutes() != null) {
-            metrics.add(Summary.from(metricName + "_FiveMinutes", timeStat.getFiveMinutes(), labels, attribute.description()));
-        }
-        if (timeStat.getFifteenMinutes() != null) {
-            metrics.add(Summary.from(metricName + "_FifteenMinutes", timeStat.getFifteenMinutes(), labels, attribute.description()));
-        }
-        metrics.add(Summary.from(metricName + "_AllTime", timeStat.getAllTime(), labels, attribute.description()));
         return new CompositeMetric(metricName, labels, attribute.description(), metrics.build());
     }
 
     private static CompositeMetric distributionStatToOpenMetrics(String metricName, DistributionStat distributionStat, Attribute attribute, Map<String, String> labels)
     {
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
-        if (distributionStat.getOneMinute() != null) {
-            metrics.add(Summary.from(metricName + "_OneMinute", distributionStat.getOneMinute(), labels, attribute.description()));
+        for (StatWindows.Window<Distribution> window : StatWindows.windows(distributionStat)) {
+            metrics.add(Summary.from(metricName + "_" + window.name(), window.value(), labels, attribute.description()));
         }
-        if (distributionStat.getFiveMinutes() != null) {
-            metrics.add(Summary.from(metricName + "_FiveMinutes", distributionStat.getFiveMinutes(), labels, attribute.description()));
-        }
-        if (distributionStat.getFifteenMinutes() != null) {
-            metrics.add(Summary.from(metricName + "_FifteenMinutes", distributionStat.getFifteenMinutes(), labels, attribute.description()));
-        }
-        metrics.add(Summary.from(metricName + "_AllTime", distributionStat.getAllTime(), labels, attribute.description()));
         return new CompositeMetric(metricName, labels, attribute.description(), metrics.build());
     }
 
