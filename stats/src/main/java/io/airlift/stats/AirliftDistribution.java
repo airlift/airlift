@@ -3,25 +3,18 @@ package io.airlift.stats;
 import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import jakarta.annotation.Nullable;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.base.Verify.verify;
+import static io.airlift.stats.Percentiles.PERCENTILES;
+import static io.airlift.stats.Percentiles.toMap;
 import static java.util.Objects.requireNonNull;
 
 final class AirliftDistribution
         implements DistributionImplementation
 {
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
-    private static final double[] PERCENTILES;
-
-    static {
-        PERCENTILES = new double[100];
-        for (int i = 0; i < 100; ++i) {
-            PERCENTILES[i] = (i / 100.0);
-        }
-    }
 
     // immutable config shared by every sub-structure; null when this distribution does not decay
     @Nullable
@@ -164,12 +157,7 @@ final class AirliftDistribution
 
         verify(values.length == PERCENTILES.length, "result length mismatch");
 
-        Map<Double, Double> result = new LinkedHashMap<>(values.length);
-        for (int i = 0; i < values.length; ++i) {
-            result.put(PERCENTILES[i], values[i]);
-        }
-
-        return result;
+        return toMap(values);
     }
 
     @Override

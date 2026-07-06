@@ -1,47 +1,34 @@
 package io.airlift.stats;
 
 import com.google.common.base.Ticker;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.base.Ticker.systemTicker;
-import static java.util.Objects.requireNonNull;
+import static io.airlift.stats.DistributionImplementation.average;
+import static io.airlift.stats.Percentiles.PERCENTILES;
+import static io.airlift.stats.Percentiles.toMap;
 
 final class OpenTelemetryDistribution
         implements DistributionImplementation
 {
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
-    private static final double[] PERCENTILES;
-
-    static {
-        PERCENTILES = new double[100];
-        for (int i = 0; i < 100; ++i) {
-            PERCENTILES[i] = (i / 100.0);
-        }
-    }
 
     private final StripedExponentialHistogram histogram;
-    private final Ticker ticker;
-
-    @GuardedBy("this")
-    private ExponentialHistogramSnapshot cachedSnapshot;
-    @GuardedBy("this")
-    private long lastSnapshot;
+    private final CachingHistogramSnapshot snapshotCache;
 
     OpenTelemetryDistribution(Ticker ticker)
     {
-        this.ticker = requireNonNull(ticker, "ticker is null");
         histogram = new StripedExponentialHistogram();
+        snapshotCache = new CachingHistogramSnapshot(histogram, ticker, Distribution.MERGE_THRESHOLD_NANOS);
     }
 
     private OpenTelemetryDistribution(ExponentialHistogramSnapshot snapshot)
     {
-        ticker = systemTicker();
         histogram = new StripedExponentialHistogram(snapshot, ExponentialHistogram.DEFAULT_MAX_BUCKETS);
+        snapshotCache = new CachingHistogramSnapshot(histogram, systemTicker(), Distribution.MERGE_THRESHOLD_NANOS);
     }
 
     @Override
@@ -65,11 +52,7 @@ final class OpenTelemetryDistribution
     @Override
     public void reset()
     {
-        synchronized (this) {
-            histogram.reset();
-            cachedSnapshot = null;
-            lastSnapshot = ticker.read();
-        }
+        snapshotCache.reset();
     }
 
     @Override
@@ -154,21 +137,14 @@ final class OpenTelemetryDistribution
     public double getAvg()
     {
         ExponentialHistogramSnapshot snapshot = snapshotIfNeeded();
-        if (snapshot.count() == 0) {
-            return Double.NaN;
-        }
-        return snapshot.sum() / snapshot.count();
+        return average(snapshot.sum(), snapshot.count());
     }
 
     @Override
     public Map<Double, Double> getPercentiles()
     {
         double[] values = ExponentialHistogram.valuesAt(snapshot(true), PERCENTILES);
-        Map<Double, Double> result = new LinkedHashMap<>(PERCENTILES.length);
-        for (int i = 0; i < PERCENTILES.length; i++) {
-            result.put(PERCENTILES[i], values[i]);
-        }
-        return result;
+        return toMap(values);
     }
 
     @Override
@@ -190,7 +166,7 @@ final class OpenTelemetryDistribution
                 quantiles[8], // p99
                 snapshot.min(),
                 snapshot.max(),
-                snapshot.count() == 0 ? Double.NaN : snapshot.sum() / snapshot.count());
+                average(snapshot.sum(), snapshot.count()));
     }
 
     @Override
@@ -209,12 +185,8 @@ final class OpenTelemetryDistribution
         return snapshot(false);
     }
 
-    private synchronized ExponentialHistogramSnapshot snapshot(boolean forceSnapshot)
+    private ExponentialHistogramSnapshot snapshot(boolean forceSnapshot)
     {
-        if (forceSnapshot || cachedSnapshot == null || ticker.read() - lastSnapshot >= Distribution.MERGE_THRESHOLD_NANOS) {
-            cachedSnapshot = histogram.snapshot();
-            lastSnapshot = ticker.read();
-        }
-        return cachedSnapshot;
+        return snapshotCache.snapshot(forceSnapshot);
     }
 }

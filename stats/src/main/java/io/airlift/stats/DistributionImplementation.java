@@ -49,4 +49,9 @@ sealed interface DistributionImplementation
     Distribution.DistributionSnapshot snapshot();
 
     Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot();
+
+    static double average(double sum, long count)
+    {
+        return count == 0 ? Double.NaN : sum / count;
+    }
 }

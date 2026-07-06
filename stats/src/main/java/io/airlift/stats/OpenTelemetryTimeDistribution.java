@@ -1,40 +1,30 @@
 package io.airlift.stats;
 
 import com.google.common.base.Ticker;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static io.airlift.stats.DistributionImplementation.average;
+import static io.airlift.stats.Percentiles.PERCENTILES;
+import static io.airlift.stats.Percentiles.toMap;
+import static io.airlift.stats.TimeDistributionImplementation.convertToUnit;
 
 final class OpenTelemetryTimeDistribution
         implements TimeDistributionImplementation
 {
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
-    private static final double[] PERCENTILES;
-
-    static {
-        PERCENTILES = new double[100];
-        for (int i = 0; i < 100; ++i) {
-            PERCENTILES[i] = (i / 100.0);
-        }
-    }
 
     private final StripedExponentialHistogram histogram = new StripedExponentialHistogram();
-    private final Ticker ticker;
     private final TimeUnit unit;
-    @GuardedBy("this")
-    private ExponentialHistogramSnapshot cachedSnapshot;
-    @GuardedBy("this")
-    private long lastSnapshot;
+    private final CachingHistogramSnapshot snapshotCache;
 
     OpenTelemetryTimeDistribution(Ticker ticker, TimeUnit unit)
     {
-        this.ticker = ticker;
         this.unit = unit;
-        lastSnapshot = ticker.read(); // do not snapshot immediately
+        snapshotCache = new CachingHistogramSnapshot(histogram, ticker, TimeDistribution.MERGE_THRESHOLD_NANOS);
     }
 
     @Override
@@ -95,10 +85,7 @@ final class OpenTelemetryTimeDistribution
     public double getAvg()
     {
         ExponentialHistogramSnapshot snapshot = snapshotIfNeeded();
-        if (snapshot.count() == 0) {
-            return Double.NaN;
-        }
-        return convertToUnit(snapshot.sum(), unit) / snapshot.count();
+        return average(convertToUnit(snapshot.sum(), unit), snapshot.count());
     }
 
     @Override
@@ -112,11 +99,7 @@ final class OpenTelemetryTimeDistribution
     {
         ExponentialHistogramSnapshot snapshot = snapshot(true);
         double[] values = ExponentialHistogram.valuesAt(snapshot, PERCENTILES);
-        Map<Double, Double> result = new LinkedHashMap<>(PERCENTILES.length);
-        for (int i = 0; i < PERCENTILES.length; i++) {
-            result.put(PERCENTILES[i], values[i]);
-        }
-        return result;
+        return toMap(values);
     }
 
     @Override
@@ -133,7 +116,7 @@ final class OpenTelemetryTimeDistribution
                 convertToUnit(quantiles[4], unit), // p99
                 convertToUnit(snapshot.min(), unit),
                 convertToUnit(snapshot.max(), unit),
-                snapshot.count() == 0 ? Double.NaN : convertToUnit(snapshot.sum(), unit) / snapshot.count(),
+                average(convertToUnit(snapshot.sum(), unit), snapshot.count()),
                 unit);
     }
 
@@ -144,11 +127,9 @@ final class OpenTelemetryTimeDistribution
     }
 
     @Override
-    public synchronized void reset()
+    public void reset()
     {
-        histogram.reset();
-        cachedSnapshot = null;
-        lastSnapshot = ticker.read();
+        snapshotCache.reset();
     }
 
     private double valueAt(double percentile)
@@ -161,17 +142,8 @@ final class OpenTelemetryTimeDistribution
         return snapshot(false);
     }
 
-    private synchronized ExponentialHistogramSnapshot snapshot(boolean forceSnapshot)
+    private ExponentialHistogramSnapshot snapshot(boolean forceSnapshot)
     {
-        if (forceSnapshot || cachedSnapshot == null || ticker.read() - lastSnapshot >= TimeDistribution.MERGE_THRESHOLD_NANOS) {
-            cachedSnapshot = histogram.snapshot();
-            lastSnapshot = ticker.read();
-        }
-        return cachedSnapshot;
-    }
-
-    private static double convertToUnit(double nanos, TimeUnit unit)
-    {
-        return nanos / unit.toNanos(1);
+        return snapshotCache.snapshot(forceSnapshot);
     }
 }
