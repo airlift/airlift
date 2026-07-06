@@ -31,12 +31,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.operations.legacy.LegacySessionOperations.optionalSessionId;
+import static io.airlift.mcp.operations.legacy.LegacySessionOperations.requireSessionId;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.PROTOCOL;
@@ -219,17 +220,6 @@ class LegacyRequestContextImpl
         }
 
         throw new TimeoutException("Timed out waiting %s for client to respond".formatted(timeout));
-    }
-
-    static SessionId requireSessionId(HttpServletRequest request)
-    {
-        return optionalSessionId(request).orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
-    }
-
-    static Optional<SessionId> optionalSessionId(HttpServletRequest request)
-    {
-        return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
-                .map(SessionId::new);
     }
 
     private void internalSendRequest(JsonRpcRequest<?> rpcRequest)

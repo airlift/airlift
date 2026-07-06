@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
@@ -31,7 +30,6 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.LoggingLevel;
-import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -49,7 +47,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
 
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -86,6 +83,8 @@ import static io.airlift.mcp.operations.McpTracingAttributes.MCP_METHOD_NAME;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_RESOURCE_URI;
 import static io.airlift.mcp.operations.Operations.convertParams;
+import static io.airlift.mcp.operations.Operations.writeResult;
+import static io.airlift.mcp.operations.legacy.OperationsCommon.progressToken;
 import static io.airlift.mcp.operations.legacy.OperationsCommon.supportsIcons;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.LOGGING_LEVEL;
@@ -96,7 +95,6 @@ import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.cancella
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
-import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
@@ -185,16 +183,7 @@ public class LegacySessionOperations
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        response.setStatus(SC_OK);
-
-        try {
-            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
-            messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flush();
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        writeResult(jsonMapper, messageWriter, response, requestId, result);
 
         sessionController.ifPresent(controller -> optionalSessionId(request)
                 .ifPresent(sessionId -> checkSaveSentMessages(controller, sessionId, messageWriter)));
@@ -457,11 +446,6 @@ public class LegacySessionOperations
                 }
             });
         }
-    }
-
-    private Optional<Object> progressToken(Meta meta)
-    {
-        return meta.meta().flatMap(m -> Optional.ofNullable(m.get("progressToken")));
     }
 
     private void setSessionSpan(HttpServletRequest request)

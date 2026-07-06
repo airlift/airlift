@@ -19,6 +19,11 @@ public record CompleteResult(CompleteCompletion completion)
         requireNonNull(completion, "completion is null");
     }
 
+    public static CompleteResult empty()
+    {
+        return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
+    }
+
     public record CompleteCompletion(List<String> values, OptionalInt total, OptionalBoolean hasMore)
     {
         public CompleteCompletion

@@ -1,8 +1,6 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -22,7 +20,6 @@ import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
-import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.DiscoverResult;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
@@ -39,7 +36,6 @@ import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.Meta;
-import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -52,11 +48,9 @@ import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
@@ -82,11 +76,11 @@ import static io.airlift.mcp.operations.McpTracingAttributes.MCP_METHOD_NAME;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_RESOURCE_URI;
 import static io.airlift.mcp.operations.Operations.convertParams;
+import static io.airlift.mcp.operations.Operations.writeResult;
 import static io.airlift.mcp.operations.RequestMetadata.SUPPORTED_VERSIONS;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
-import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -169,16 +163,7 @@ public class OperationsImpl
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        response.setStatus(SC_OK);
-
-        try {
-            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
-            messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flush();
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        writeResult(jsonMapper, messageWriter, response, requestId, result);
     }
 
     @Override
@@ -248,7 +233,7 @@ public class OperationsImpl
             return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
         }
         catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+            return CallToolResult.forError(mcpClientException);
         }
     }
 
@@ -290,7 +275,7 @@ public class OperationsImpl
     {
         return entities.completionEntry(requestContext, completeRequest.ref())
                 .map(completionEntry -> completionEntry.handler().complete(requestContext, completeRequest))
-                .orElseGet(() -> new CompleteResult(new CompleteResult.CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED)));
+                .orElseGet(CompleteResult::empty);
     }
 
     private DiscoverResult serverDiscover(RequestContextImpl requestContext, McpMetadata metadata, RequestMetadata requestMetadata)
