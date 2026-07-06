@@ -3,13 +3,13 @@ package io.airlift.opentelemetry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import io.airlift.log.Logger;
 import io.airlift.metrics.CollectedMetricGroup;
 import io.airlift.metrics.CollectedMetricGroup.Attribute;
+import io.airlift.metrics.CompositeDataFlattener;
 import io.airlift.metrics.MetricSource;
 import io.airlift.metrics.MetricSource.ManagedMetricSource;
+import io.airlift.metrics.StatWindows;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.Distribution;
 import io.airlift.stats.Distribution.DistributionSnapshot;
@@ -22,6 +22,7 @@ import io.airlift.stats.TimeStat;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.metrics.data.DoublePointData;
 import io.opentelemetry.sdk.metrics.data.ExponentialHistogramBuckets;
@@ -40,9 +41,7 @@ import io.opentelemetry.sdk.resources.Resource;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.TabularData;
-import javax.management.openmbean.TabularType;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -187,13 +186,7 @@ public class OpenTelemetryMetricDataConverter
         List<DoublePointData> points = metricFamily.stream()
                 .map(metric -> DoublePointData.create(startEpochNanos, epochNanos, metric.attributes(), (double) metric.value(), List.of()))
                 .collect(toImmutableList());
-        return ImmutableMetricData.createDoubleGauge(
-                resource,
-                OpenTelemetryMetricProducer.INSTRUMENTATION_SCOPE,
-                metricName,
-                firstMetric.description(),
-                firstMetric.unit(),
-                GaugeData.createDoubleGaugeData(points));
+        return createMetricData(ImmutableMetricData::createDoubleGauge, metricName, firstMetric, resource, GaugeData.createDoubleGaugeData(points));
     }
 
     private static MetricData toLongSum(String metricName, List<MetricPoint> metricFamily, MetricPoint firstMetric, Resource resource, long startEpochNanos, long epochNanos)
@@ -201,13 +194,7 @@ public class OpenTelemetryMetricDataConverter
         List<LongPointData> points = metricFamily.stream()
                 .map(metric -> LongPointData.create(startEpochNanos, epochNanos, metric.attributes(), (long) metric.value()))
                 .collect(toImmutableList());
-        return ImmutableMetricData.createLongSum(
-                resource,
-                OpenTelemetryMetricProducer.INSTRUMENTATION_SCOPE,
-                metricName,
-                firstMetric.description(),
-                firstMetric.unit(),
-                SumData.createLongSumData(true, AggregationTemporality.CUMULATIVE, points));
+        return createMetricData(ImmutableMetricData::createLongSum, metricName, firstMetric, resource, SumData.createLongSumData(true, AggregationTemporality.CUMULATIVE, points));
     }
 
     private static MetricData toSummary(String metricName, List<MetricPoint> metricFamily, MetricPoint firstMetric, Resource resource, long startEpochNanos, long epochNanos)
@@ -224,13 +211,7 @@ public class OpenTelemetryMetricDataConverter
                             summary.valuesAtQuantiles());
                 })
                 .collect(toImmutableList());
-        return ImmutableMetricData.createDoubleSummary(
-                resource,
-                OpenTelemetryMetricProducer.INSTRUMENTATION_SCOPE,
-                metricName,
-                firstMetric.description(),
-                firstMetric.unit(),
-                SummaryData.create(points));
+        return createMetricData(ImmutableMetricData::createDoubleSummary, metricName, firstMetric, resource, SummaryData.create(points));
     }
 
     private static MetricData toExponentialHistogram(String metricName, List<MetricPoint> metricFamily, MetricPoint firstMetric, Resource resource, long startEpochNanos, long epochNanos)
@@ -238,13 +219,12 @@ public class OpenTelemetryMetricDataConverter
         List<ExponentialHistogramPointData> points = metricFamily.stream()
                 .map(metric -> toExponentialHistogramPoint((ExponentialHistogramSnapshot) metric.value(), metric.attributes(), startEpochNanos, epochNanos))
                 .collect(toImmutableList());
-        return ImmutableMetricData.createExponentialHistogram(
-                resource,
-                OpenTelemetryMetricProducer.INSTRUMENTATION_SCOPE,
-                metricName,
-                firstMetric.description(),
-                firstMetric.unit(),
-                ExponentialHistogramData.create(AggregationTemporality.CUMULATIVE, points));
+        return createMetricData(ImmutableMetricData::createExponentialHistogram, metricName, firstMetric, resource, ExponentialHistogramData.create(AggregationTemporality.CUMULATIVE, points));
+    }
+
+    private static <T> MetricData createMetricData(MetricDataFactory<T> factory, String metricName, MetricPoint firstMetric, Resource resource, T data)
+    {
+        return factory.create(resource, OpenTelemetryMetricProducer.INSTRUMENTATION_SCOPE, metricName, firstMetric.description(), firstMetric.unit(), data);
     }
 
     private static ExponentialHistogramPointData toExponentialHistogramPoint(
@@ -397,8 +377,8 @@ public class OpenTelemetryMetricDataConverter
         return switch (value) {
             case Number number -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.DOUBLE_GAUGE, ""), number.doubleValue(), attributes, description));
             case Boolean bool -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.DOUBLE_GAUGE, ""), bool ? 1.0 : 0.0, attributes, description));
-            case CompositeData compositeData -> compositeDataPoints(metricName, compositeData, attributes, description);
-            case TabularData tabularData -> tabularDataPoints(metricName, tabularData, attributes, description);
+            case CompositeData compositeData -> flattenedDataPoints(metricName, compositeData, attributes, description);
+            case TabularData tabularData -> flattenedDataPoints(metricName, tabularData, attributes, description);
             case CounterStat counterStat -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.LONG_SUM, ""), counterStat.getTotalCount(), attributes, description));
             case TimeDistribution timeDistribution -> timeDistribution.exponentialHistogramSnapshot()
                     .map(snapshot -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.EXPONENTIAL_HISTOGRAM, NANOSECOND_UNIT), snapshot, attributes, description)))
@@ -416,52 +396,28 @@ public class OpenTelemetryMetricDataConverter
         };
     }
 
-    private static Stream<MetricPoint> compositeDataPoints(String metricName, CompositeData compositeData, Attributes attributes, String description)
+    private static Stream<MetricPoint> flattenedDataPoints(String metricName, Object value, Attributes attributes, String description)
     {
-        CompositeType compositeType = compositeData.getCompositeType();
-        return compositeType.keySet().stream()
-                .flatMap(itemName -> toMetricPoints(metricName + "." + sanitizeMetricName(itemName), compositeData.get(itemName), attributes, description));
+        ImmutableList.Builder<MetricPoint> points = ImmutableList.builder();
+        CompositeDataFlattener.flatten(metricName, value, Map.of(), ".", OpenTelemetryMetricDataConverter::sanitizeMetricName, (name, labels, leafValue) ->
+                toMetricPoints(name, leafValue, rowAttributes(attributes, labels), description).forEach(points::add));
+        return points.build().stream();
     }
 
-    private static Stream<MetricPoint> tabularDataPoints(String metricName, TabularData tabularData, Attributes attributes, String description)
+    private static Attributes rowAttributes(Attributes attributes, Map<String, String> labels)
     {
-        if (tabularData.isEmpty()) {
-            return Stream.of();
+        if (labels.isEmpty()) {
+            return attributes;
         }
-
-        TabularType tabularType = tabularData.getTabularType();
-        ImmutableSet<String> indexNames = ImmutableSet.copyOf(tabularType.getIndexNames());
-        return tabularData.values().stream()
-                .filter(CompositeData.class::isInstance)
-                .map(CompositeData.class::cast)
-                .flatMap(compositeData -> {
-                    AttributesBuilder rowAttributes = attributes.toBuilder();
-                    for (String indexName : indexNames) {
-                        if (compositeData.containsKey(indexName)) {
-                            rowAttributes.put(indexName, compositeData.get(indexName).toString());
-                        }
-                    }
-
-                    Attributes builtAttributes = rowAttributes.build();
-                    return Sets.difference(compositeData.getCompositeType().keySet(), indexNames).stream()
-                            .flatMap(itemName -> toMetricPoints(metricName + "." + sanitizeMetricName(itemName), compositeData.get(itemName), builtAttributes, description));
-                });
+        AttributesBuilder builder = attributes.toBuilder();
+        labels.forEach(builder::put);
+        return builder.build();
     }
 
     private static Stream<MetricPoint> timeStatSummaries(String metricName, TimeStat timeStat, Attributes attributes, String description)
     {
-        ImmutableList.Builder<MetricPoint> metrics = ImmutableList.builder();
-        if (timeStat.getOneMinute() != null) {
-            metrics.add(timeSummary(metricName + ".OneMinute", timeStat.getOneMinute(), attributes, description));
-        }
-        if (timeStat.getFiveMinutes() != null) {
-            metrics.add(timeSummary(metricName + ".FiveMinutes", timeStat.getFiveMinutes(), attributes, description));
-        }
-        if (timeStat.getFifteenMinutes() != null) {
-            metrics.add(timeSummary(metricName + ".FifteenMinutes", timeStat.getFifteenMinutes(), attributes, description));
-        }
-        metrics.add(timeSummary(metricName + ".AllTime", timeStat.getAllTime(), attributes, description));
-        return metrics.build().stream();
+        return StatWindows.windows(timeStat).stream()
+                .map(window -> timeSummary(metricName + "." + window.name(), window.value(), attributes, description));
     }
 
     private static MetricPoint timeSummary(String metricName, TimeDistribution timeDistribution, Attributes attributes, String description)
@@ -484,18 +440,8 @@ public class OpenTelemetryMetricDataConverter
 
     private static Stream<MetricPoint> distributionStatSummaries(String metricName, DistributionStat distributionStat, Attributes attributes, String description)
     {
-        ImmutableList.Builder<MetricPoint> metrics = ImmutableList.builder();
-        if (distributionStat.getOneMinute() != null) {
-            metrics.add(new MetricPoint(new MetricFamilyKey(metricName + ".OneMinute", MetricKind.SUMMARY, ""), toSummary(distributionStat.getOneMinute()), attributes, description));
-        }
-        if (distributionStat.getFiveMinutes() != null) {
-            metrics.add(new MetricPoint(new MetricFamilyKey(metricName + ".FiveMinutes", MetricKind.SUMMARY, ""), toSummary(distributionStat.getFiveMinutes()), attributes, description));
-        }
-        if (distributionStat.getFifteenMinutes() != null) {
-            metrics.add(new MetricPoint(new MetricFamilyKey(metricName + ".FifteenMinutes", MetricKind.SUMMARY, ""), toSummary(distributionStat.getFifteenMinutes()), attributes, description));
-        }
-        metrics.add(new MetricPoint(new MetricFamilyKey(metricName + ".AllTime", MetricKind.SUMMARY, ""), toSummary(distributionStat.getAllTime()), attributes, description));
-        return metrics.build().stream();
+        return StatWindows.windows(distributionStat).stream()
+                .map(window -> new MetricPoint(new MetricFamilyKey(metricName + "." + window.name(), MetricKind.SUMMARY, ""), toSummary(window.value()), attributes, description));
     }
 
     private static SummaryValue toSummary(TimeDistribution timeDistribution)
@@ -552,6 +498,11 @@ public class OpenTelemetryMetricDataConverter
         LONG_SUM,
         SUMMARY,
         EXPONENTIAL_HISTOGRAM,
+    }
+
+    private interface MetricDataFactory<T>
+    {
+        MetricData create(Resource resource, InstrumentationScopeInfo scope, String metricName, String description, String unit, T data);
     }
 
     private record MetricFamilyKey(String name, MetricKind kind, String unit) {}
