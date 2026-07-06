@@ -16,7 +16,6 @@
 package io.airlift.http.server;
 
 import com.google.inject.Binder;
-import com.google.inject.Key;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
@@ -34,6 +33,7 @@ import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.http.server.BinderUtils.qualifiedKey;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -89,42 +89,35 @@ public class HttpServerModule
     @Override
     protected void setup(Binder binder)
     {
-        binder.bind(qualifiedKey(HttpServer.class))
+        binder.bind(qualifiedKey(qualifier, HttpServer.class))
                 .toProvider(new HttpServerProvider(name, qualifier))
                 .in(SINGLETON);
-        newOptionalBinder(binder, qualifiedKey(ClientCertificate.class)).setDefault().toInstance(ClientCertificate.NONE);
-        newExporter(binder).export(qualifiedKey(HttpServer.class)).withGeneratedName();
-        newSetBinder(binder, qualifiedKey(ServerFeature.class));
-        newSetBinder(binder, qualifiedKey(Filter.class)).addBinding()
+        newOptionalBinder(binder, qualifiedKey(qualifier, ClientCertificate.class)).setDefault().toInstance(ClientCertificate.NONE);
+        newExporter(binder).export(qualifiedKey(qualifier, HttpServer.class)).withGeneratedName();
+        newSetBinder(binder, qualifiedKey(qualifier, ServerFeature.class));
+        newSetBinder(binder, qualifiedKey(qualifier, Filter.class)).addBinding()
                 .to(TracingServletFilter.class)
                 .in(SINGLETON);
-        newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
-        newOptionalBinder(binder, qualifiedKey(SslContextFactory.Server.class));
-        configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
-        newOptionalBinder(binder, qualifiedKey(HttpConfig.class));
-        newOptionalBinder(binder, qualifiedKey(HttpsConfig.class));
+        newSetBinder(binder, qualifiedKey(qualifier, HttpResourceBinding.class));
+        newOptionalBinder(binder, qualifiedKey(qualifier, SslContextFactory.Server.class));
+        configBinder(binder).bindConfig(qualifiedKey(qualifier, HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        newOptionalBinder(binder, qualifiedKey(qualifier, HttpConfig.class));
+        newOptionalBinder(binder, qualifiedKey(qualifier, HttpsConfig.class));
 
-        binder.bind(qualifiedKey(AnnouncementHttpServerInfo.class))
+        binder.bind(qualifiedKey(qualifier, AnnouncementHttpServerInfo.class))
                 .toProvider(new AnnouncementHttpServerInfoProvider(qualifier))
                 .in(SINGLETON);
 
-        binder.bind(qualifiedKey(HttpServerInfo.class))
+        binder.bind(qualifiedKey(qualifier, HttpServerInfo.class))
                 .toProvider(new HttpServerInfoProvider(qualifier))
                 .in(SINGLETON);
 
-        HttpServerConfig config = buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        HttpServerConfig config = buildConfigObject(qualifiedKey(qualifier, HttpServerConfig.class), HttpServerConfig.class, configPrefix);
         if (config.isHttpEnabled()) {
-            configBinder(binder).bindConfig(qualifiedKey(HttpConfig.class), HttpConfig.class, configPrefix);
+            configBinder(binder).bindConfig(qualifiedKey(qualifier, HttpConfig.class), HttpConfig.class, configPrefix);
         }
         if (config.isHttpsEnabled()) {
-            configBinder(binder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix);
+            configBinder(binder).bindConfig(qualifiedKey(qualifier, HttpsConfig.class), HttpsConfig.class, configPrefix);
         }
-    }
-
-    private <T> Key<T> qualifiedKey(Class<T> type)
-    {
-        return qualifier
-                .map(annotation -> Key.get(type, annotation))
-                .orElseGet(() -> Key.get(type));
     }
 }
