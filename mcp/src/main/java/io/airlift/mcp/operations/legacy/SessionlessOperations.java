@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -33,7 +32,6 @@ import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -62,11 +60,11 @@ import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_METHOD_NAME;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.operations.Operations.convertParams;
+import static io.airlift.mcp.operations.Operations.writeResult;
 import static io.airlift.mcp.operations.legacy.OperationsCommon.supportsIcons;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
-import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static java.util.Objects.requireNonNull;
 
 public class SessionlessOperations
@@ -127,16 +125,7 @@ public class SessionlessOperations
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        response.setStatus(SC_OK);
-
-        try {
-            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
-            messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flush();
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        writeResult(jsonMapper, messageWriter, response, requestId, result);
     }
 
     private InitializeResult handleInitialize(LegacyRequestContextImpl requestContext, InitializeRequest initializeRequest)

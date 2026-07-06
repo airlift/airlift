@@ -68,8 +68,7 @@ public class McpException
 
     public static McpException exception(int code, String message)
     {
-        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(code, message, Optional.empty());
-        return new McpException(detail);
+        return exception(code, message, Optional.empty());
     }
 
     public static McpException exception(int code, String message, Optional<Object> data)

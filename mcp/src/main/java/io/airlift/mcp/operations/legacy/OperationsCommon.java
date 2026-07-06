@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
@@ -11,7 +10,6 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
-import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.ListPromptsResult;
@@ -20,7 +18,6 @@ import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.Meta;
-import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -32,10 +29,10 @@ import io.airlift.mcp.operations.PaginationUtil;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.METADATA_PROGRESS_TOKEN;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
 import static java.util.Objects.requireNonNull;
@@ -78,7 +75,7 @@ public class OperationsCommon
             return toolEntry.toolHandler().callTool(requestContext.withProgressToken(progressToken(callToolRequest)), callToolRequest);
         }
         catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+            return CallToolResult.forError(mcpClientException);
         }
     }
 
@@ -128,11 +125,11 @@ public class OperationsCommon
     {
         return entities.completionEntry(requestContext, completeRequest.ref())
                 .map(completionEntry -> completionEntry.handler().complete(requestContext.withProgressToken(progressToken(completeRequest)), completeRequest))
-                .orElseGet(() -> new CompleteResult(new CompleteResult.CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED)));
+                .orElseGet(CompleteResult::empty);
     }
 
-    private Optional<Object> progressToken(Meta meta)
+    static Optional<Object> progressToken(Meta meta)
     {
-        return meta.meta().flatMap(m -> Optional.ofNullable(m.get("progressToken")));
+        return meta.meta().flatMap(m -> Optional.ofNullable(m.get(METADATA_PROGRESS_TOKEN)));
     }
 }

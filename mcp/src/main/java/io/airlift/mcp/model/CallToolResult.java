@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import io.airlift.mcp.McpClientException;
 
 import java.util.List;
 import java.util.Map;
@@ -38,5 +39,10 @@ public record CallToolResult(List<Content> content, Optional<StructuredContent<?
     public CallToolResult withMeta(Map<String, Object> meta)
     {
         return new CallToolResult(content, structuredContent, isError, Optional.of(meta));
+    }
+
+    public static CallToolResult forError(McpClientException mcpClientException)
+    {
+        return new CallToolResult(ImmutableList.of(new Content.TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
     }
 }
