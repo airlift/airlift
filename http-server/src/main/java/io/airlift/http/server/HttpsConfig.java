@@ -20,6 +20,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class HttpsConfig
 {
+    private static final Splitter CIPHER_SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
+
     private int httpsPort = 8443;
     private int acceptQueueSize = 8000;
     private Integer httpsAcceptorThreads;
@@ -206,11 +208,7 @@ public class HttpsConfig
     @Config("http-server.https.included-cipher")
     public HttpsConfig setHttpsIncludedCipherSuites(String includedCipherSuites)
     {
-        this.includedCipherSuites = Splitter
-                .on(',')
-                .trimResults()
-                .omitEmptyStrings()
-                .splitToList(requireNonNull(includedCipherSuites, "includedCipherSuites is null"));
+        this.includedCipherSuites = CIPHER_SPLITTER.splitToList(requireNonNull(includedCipherSuites, "includedCipherSuites is null"));
         return this;
     }
 
@@ -223,11 +221,7 @@ public class HttpsConfig
     @ConfigDescription("Setting this config property overwrites Jetty's default excluded cipher suites")
     public HttpsConfig setHttpsExcludedCipherSuites(String excludedCipherSuites)
     {
-        this.excludedCipherSuites = Splitter
-                .on(',')
-                .trimResults()
-                .omitEmptyStrings()
-                .splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
+        this.excludedCipherSuites = CIPHER_SPLITTER.splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
         return this;
     }
 
