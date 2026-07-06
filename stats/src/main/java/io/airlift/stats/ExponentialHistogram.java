@@ -82,8 +82,8 @@ public final class ExponentialHistogram
 
     public ExponentialHistogram(int scale, int maxBuckets)
     {
-        checkArgument(scale >= MIN_SCALE && scale <= MAX_SCALE, "scale must be between %s and %s", MIN_SCALE, MAX_SCALE);
-        checkArgument(maxBuckets >= MIN_BUCKETS_FOR_FULL_FINITE_RANGE, "maxBuckets must be at least %s", MIN_BUCKETS_FOR_FULL_FINITE_RANGE);
+        checkScale(scale);
+        checkMaxBuckets(maxBuckets);
         this.initialScale = scale;
         this.scale = scale;
         this.maxBuckets = maxBuckets;
@@ -92,7 +92,7 @@ public final class ExponentialHistogram
     ExponentialHistogram(ExponentialHistogramSnapshot snapshot, int maxBuckets)
     {
         requireNonNull(snapshot, "snapshot is null");
-        checkArgument(maxBuckets >= MIN_BUCKETS_FOR_FULL_FINITE_RANGE, "maxBuckets must be at least %s", MIN_BUCKETS_FOR_FULL_FINITE_RANGE);
+        checkMaxBuckets(maxBuckets);
         checkArgument(snapshot.positiveBuckets().counts().length <= maxBuckets, "positive bucket count exceeds maxBuckets");
         checkArgument(snapshot.negativeBuckets().counts().length <= maxBuckets, "negative bucket count exceeds maxBuckets");
         this.initialScale = snapshot.scale();
@@ -178,13 +178,13 @@ public final class ExponentialHistogram
 
     public static double bucketLowerBound(int scale, int index)
     {
-        checkArgument(scale >= MIN_SCALE && scale <= MAX_SCALE, "scale must be between %s and %s", MIN_SCALE, MAX_SCALE);
+        checkScale(scale);
         return Math.pow(2, scalb(index, -scale));
     }
 
     public static double bucketUpperBound(int scale, int index)
     {
-        checkArgument(scale >= MIN_SCALE && scale <= MAX_SCALE, "scale must be between %s and %s", MIN_SCALE, MAX_SCALE);
+        checkScale(scale);
         return Math.pow(2, scalb(index + 1, -scale));
     }
 
@@ -324,7 +324,7 @@ public final class ExponentialHistogram
     {
         public ExponentialHistogramSnapshot
         {
-            checkArgument(scale >= MIN_SCALE && scale <= MAX_SCALE, "scale must be between %s and %s", MIN_SCALE, MAX_SCALE);
+            checkScale(scale);
             checkArgument(count >= 0, "count is negative");
             checkArgument(zeroCount >= 0, "zeroCount is negative");
             requireNonNull(positiveBuckets, "positiveBuckets is null");
@@ -341,7 +341,7 @@ public final class ExponentialHistogram
         public static ExponentialHistogramSnapshot merge(List<ExponentialHistogramSnapshot> snapshots, int maxBuckets)
         {
             requireNonNull(snapshots, "snapshots is null");
-            checkArgument(maxBuckets >= MIN_BUCKETS_FOR_FULL_FINITE_RANGE, "maxBuckets must be at least %s", MIN_BUCKETS_FOR_FULL_FINITE_RANGE);
+            checkMaxBuckets(maxBuckets);
 
             int targetScale = snapshots.stream()
                     .map(snapshot -> requireNonNull(snapshot, "snapshot is null").scale())
@@ -388,43 +388,22 @@ public final class ExponentialHistogram
 
     private static long bucketRangeLength(List<ExponentialHistogramSnapshot> snapshots, int targetScale, BucketSelector bucketSelector)
     {
-        long firstIndex = Long.MAX_VALUE;
-        long lastIndex = Long.MIN_VALUE;
-        for (ExponentialHistogramSnapshot snapshot : snapshots) {
-            Buckets buckets = bucketSelector.buckets(snapshot);
-            if (buckets.isEmpty()) {
-                continue;
-            }
-
-            int scaleReduction = snapshot.scale() - targetScale;
-            firstIndex = min(firstIndex, downscaleBucketIndex(buckets.offset(), scaleReduction));
-            lastIndex = max(lastIndex, downscaleBucketIndex(lastIndex(buckets), scaleReduction));
-        }
-        if (firstIndex == Long.MAX_VALUE) {
+        BucketIndexRange range = bucketIndexRange(snapshots, targetScale, bucketSelector);
+        if (range.isEmpty()) {
             return 0;
         }
-        return lastIndex - firstIndex + 1;
+        return range.length();
     }
 
     private static Buckets mergeBuckets(List<ExponentialHistogramSnapshot> snapshots, int targetScale, int maxBuckets, BucketSelector bucketSelector)
     {
-        long firstIndex = Long.MAX_VALUE;
-        long lastIndex = Long.MIN_VALUE;
-        for (ExponentialHistogramSnapshot snapshot : snapshots) {
-            Buckets buckets = bucketSelector.buckets(snapshot);
-            if (buckets.isEmpty()) {
-                continue;
-            }
-
-            int scaleReduction = snapshot.scale() - targetScale;
-            firstIndex = min(firstIndex, downscaleBucketIndex(buckets.offset(), scaleReduction));
-            lastIndex = max(lastIndex, downscaleBucketIndex(lastIndex(buckets), scaleReduction));
-        }
-        if (firstIndex == Long.MAX_VALUE) {
+        BucketIndexRange range = bucketIndexRange(snapshots, targetScale, bucketSelector);
+        if (range.isEmpty()) {
             return new Buckets(0, new long[0]);
         }
 
-        long length = lastIndex - firstIndex + 1;
+        long firstIndex = range.firstIndex();
+        long length = range.length();
         checkArgument(length <= maxBuckets, "merged bucket range exceeds maxBuckets");
         long[] counts = new long[(int) length];
         for (ExponentialHistogramSnapshot snapshot : snapshots) {
@@ -438,9 +417,49 @@ public final class ExponentialHistogram
         return new Buckets((int) firstIndex, counts);
     }
 
+    private static BucketIndexRange bucketIndexRange(List<ExponentialHistogramSnapshot> snapshots, int targetScale, BucketSelector bucketSelector)
+    {
+        long firstIndex = Long.MAX_VALUE;
+        long lastIndex = Long.MIN_VALUE;
+        for (ExponentialHistogramSnapshot snapshot : snapshots) {
+            Buckets buckets = bucketSelector.buckets(snapshot);
+            if (buckets.isEmpty()) {
+                continue;
+            }
+
+            int scaleReduction = snapshot.scale() - targetScale;
+            firstIndex = min(firstIndex, downscaleBucketIndex(buckets.offset(), scaleReduction));
+            lastIndex = max(lastIndex, downscaleBucketIndex(lastIndex(buckets), scaleReduction));
+        }
+        return new BucketIndexRange(firstIndex, lastIndex);
+    }
+
+    private record BucketIndexRange(long firstIndex, long lastIndex)
+    {
+        boolean isEmpty()
+        {
+            return firstIndex == Long.MAX_VALUE;
+        }
+
+        long length()
+        {
+            return lastIndex - firstIndex + 1;
+        }
+    }
+
     private static long downscaleBucketIndex(long index, int scaleReduction)
     {
         return index >> scaleReduction;
+    }
+
+    private static void checkScale(int scale)
+    {
+        checkArgument(scale >= MIN_SCALE && scale <= MAX_SCALE, "scale must be between %s and %s", MIN_SCALE, MAX_SCALE);
+    }
+
+    private static void checkMaxBuckets(int maxBuckets)
+    {
+        checkArgument(maxBuckets >= MIN_BUCKETS_FOR_FULL_FINITE_RANGE, "maxBuckets must be at least %s", MIN_BUCKETS_FOR_FULL_FINITE_RANGE);
     }
 
     private static void validateBucketRange(int scale, Buckets buckets)
