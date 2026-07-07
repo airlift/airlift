@@ -35,4 +35,18 @@ public @interface McpTool
     OptionalBoolean openWorldHint() default UNDEFINED;
 
     McpApp app() default @McpApp(resourceUri = "", sourcePath = "");
+
+    /**
+     * If specified, overrides the input schema for the tool. Normally, the arguments
+     * to the tool method are used to generate the input schema. When this annotation is
+     * specified, the input schema is taken from the {@link McpSchema} annotation.
+     */
+    McpSchema inputSchema() default @McpSchema;
+
+    /**
+     * If specified, overrides the output schema for the tool. Normally, the return type
+     * of the tool method is used to generate the output schema. When this annotation is
+     * specified, the output schema is taken from the {@link McpSchema} annotation.
+     */
+    McpSchema outputSchema() default @McpSchema;
 }
