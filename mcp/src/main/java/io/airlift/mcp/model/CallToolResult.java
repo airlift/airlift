@@ -3,6 +3,7 @@ package io.airlift.mcp.model;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpClientException;
+import io.airlift.mcp.model.Content.TextContent;
 
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,10 @@ public record CallToolResult(
         Optional<String> requestState,
         Optional<Map<String, InputRequest>> inputRequests,
         Optional<Map<String, Object>> meta)
-        implements InputRequests<CallToolResult>, Meta<CallToolResult>
+        implements InputRequests<CallToolResult>,
+                   Meta<CallToolResult>,
+                   TaskHandlerResult,
+                   ToolResult
 {
     private static final Factory<CallToolResult> FACTORY = (requestState, inputRequests) -> new CallToolResult(
             Optional.empty(),
@@ -71,6 +75,11 @@ public record CallToolResult(
         this(content, Optional.empty(), false, Optional.empty());
     }
 
+    public static CallToolResult errorResult(String errorMessage)
+    {
+        return new CallToolResult(ImmutableList.of(new TextContent(errorMessage)), Optional.empty(), true, Optional.empty());
+    }
+
     @Override
     public CallToolResult withInputRequests(Optional<ResultType> resultType, Optional<String> requestState, Optional<Map<String, InputRequest>> inputRequests)
     {
@@ -83,13 +92,13 @@ public record CallToolResult(
         return new CallToolResult(content, structuredContent, isError, resultType, requestState, inputRequests, Optional.of(meta));
     }
 
-    public CallToolResult withResultType(ResultType resultType)
-    {
-        return new CallToolResult(content, structuredContent, isError, Optional.of(resultType), requestState, inputRequests, meta);
-    }
-
     public static CallToolResult forError(McpClientException mcpClientException)
     {
         return new CallToolResult(ImmutableList.of(new Content.TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+    }
+
+    public CallToolResult withResultType(ResultType resultType)
+    {
+        return new CallToolResult(content, structuredContent, isError, Optional.of(resultType), requestState, inputRequests, meta);
     }
 }
