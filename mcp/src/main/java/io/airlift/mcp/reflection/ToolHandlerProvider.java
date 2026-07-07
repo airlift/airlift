@@ -1,5 +1,6 @@
 package io.airlift.mcp.reflection;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
@@ -10,6 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import io.airlift.mcp.McpApp;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.McpSchema;
 import io.airlift.mcp.McpTool;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;
@@ -22,6 +24,7 @@ import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.model.UiToolVisibility;
 
+import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
@@ -161,23 +165,64 @@ public class ToolHandlerProvider
                 tool.idempotentHint().toJsonValue(),
                 tool.openWorldHint().toJsonValue());
 
-        Optional<ObjectNode> outputSchema;
-        if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
-            outputSchema = Optional.empty();
+        ObjectNode inputSchema = checkMcpSchema(tool.name(), tool.inputSchema(), jsonSchemaBuilder)
+                .orElseGet(() -> jsonSchemaBuilder.build(description, parameters));
+
+        Optional<ObjectNode> outputSchema = checkMcpSchema(tool.name(), tool.outputSchema(), jsonSchemaBuilder)
+                .or(() -> {
+                    if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
+                        return Optional.empty();
+                    }
+                    else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
+                        return Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
+                    }
+                    else if (method.getReturnType().isRecord()) {
+                        return Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
+                    }
+                    return Optional.empty();
+                });
+
+        return applyApp(new Tool(tool.name(), description, title, inputSchema, outputSchema, toolAnnotations), tool);
+    }
+
+    private Optional<ObjectNode> checkMcpSchema(String toolName, McpSchema mcpSchema, JsonSchemaBuilder jsonSchemaBuilder)
+    {
+        boolean hasRawSchema = !mcpSchema.rawSchema().isEmpty();
+        boolean hasSchemaClass = mcpSchema.schemaClass() != void.class;
+        boolean hasSchemaClassName = !mcpSchema.schemaClassName().isEmpty();
+
+        if (hasRawSchema) {
+            checkState(!hasSchemaClass, "Tool %s has both rawSchema and schemaClass defined".formatted(toolName));
+            checkState(!hasSchemaClassName, "Tool %s has both rawSchema and schemaClassName defined".formatted(toolName));
+            try {
+                return Optional.of(jsonMapper.readTree(mcpSchema.rawSchema()))
+                        .filter(jsonNode -> {
+                            if (!jsonNode.isObject()) {
+                                throw new IllegalArgumentException("rawSchema must be an object for Tool: %s, Schema: %s".formatted(toolName, mcpSchema.rawSchema()));
+                            }
+                            return true;
+                        })
+                        .map(jsonNode -> (ObjectNode) jsonNode);
+            }
+            catch (JsonProcessingException e) {
+                throw new UncheckedIOException("Could not parse rawSchema for Tool: %s, Schema: %s".formatted(toolName, mcpSchema.rawSchema()), e);
+            }
         }
-        else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
-            outputSchema = Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
+        else if (hasSchemaClass) {
+            checkState(!hasSchemaClassName, "Tool %s has both schemaClass and schemaClassName defined".formatted(toolName));
+            return Optional.of(jsonSchemaBuilder.build(Optional.of("Tool %s".formatted(toolName)), mcpSchema.schemaClass()));
         }
-        else if (method.getReturnType().isRecord()) {
-            outputSchema = Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
-        }
-        else {
-            outputSchema = Optional.empty();
+        else if (hasSchemaClassName) {
+            try {
+                Class<?> clazz = Class.forName(mcpSchema.schemaClassName(), false, Thread.currentThread().getContextClassLoader());
+                return Optional.of(jsonSchemaBuilder.build(Optional.of("Tool %s".formatted(toolName)), clazz));
+            }
+            catch (ClassNotFoundException e) {
+                throw new RuntimeException("Could not load schema class for Tool: %s, Class: %s".formatted(toolName, mcpSchema.schemaClassName()), e);
+            }
         }
 
-        ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
-
-        return applyApp(new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations), tool);
+        return Optional.empty();
     }
 
     private Tool applyApp(Tool tool, McpTool mcpTool)
