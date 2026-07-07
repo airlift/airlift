@@ -3,6 +3,7 @@ package io.airlift.mcp.model;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Constants.METADATA_TASKS;
 import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
@@ -41,6 +42,13 @@ public record InitializeRequest(
             elicitation = requireNonNullElse(elicitation, Optional.empty());
             extensions = normalize(extensions);
             experimental = normalize(experimental);
+        }
+
+        public boolean supportsTasks()
+        {
+            return extensions()
+                    .map(extensions -> extensions.get(METADATA_TASKS) != null)
+                    .orElse(false);
         }
     }
 

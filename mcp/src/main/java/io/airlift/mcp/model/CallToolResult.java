@@ -3,6 +3,7 @@ package io.airlift.mcp.model;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpClientException;
+import io.airlift.mcp.model.Content.TextContent;
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,10 @@ public record CallToolResult(
         Optional<String> requestState,
         Optional<Map<String, InputRequest>> inputRequests,
         Optional<Map<String, Object>> meta)
-        implements InputRequests, Meta<CallToolResult>
+        implements InputRequests,
+                   Meta<CallToolResult>,
+                   TaskHandlerResult,
+                   ToolResult
 {
     private static final Factory<CallToolResult> FACTORY = (requestState, inputRequests) -> new CallToolResult(
             Optional.empty(),
@@ -65,6 +69,11 @@ public record CallToolResult(
     public CallToolResult(List<Content> content)
     {
         this(content, Optional.empty(), false, Optional.empty());
+    }
+
+    public static CallToolResult errorResult(String errorMessage)
+    {
+        return new CallToolResult(ImmutableList.of(new TextContent(errorMessage)), Optional.empty(), true, Optional.empty());
     }
 
     @Override
