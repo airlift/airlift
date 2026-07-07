@@ -195,7 +195,8 @@ public class LegacySessionOperations
         setSessionSpan(request);
 
         switch (rpcRequest.method()) {
-            case NOTIFICATION_INITIALIZED -> {} // ignore
+            case NOTIFICATION_INITIALIZED -> {
+            } // ignore
             case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, convertParams(jsonMapper, rpcRequest, CancelledNotification.class));
             case NOTIFICATION_ROOTS_LIST_CHANGED -> handleRpcRootsChanged(request);
             default -> log.warn("Unknown MCP notification method: %s", rpcRequest.method());
@@ -289,6 +290,7 @@ public class LegacySessionOperations
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                Optional.empty(),
                 Optional.empty());
 
         McpMetadata thisMetadata = metadata.map(requestContext.request());

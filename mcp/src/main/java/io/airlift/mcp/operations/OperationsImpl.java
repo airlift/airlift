@@ -311,6 +311,7 @@ public class OperationsImpl
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(true, true)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
+                Optional.empty(),
                 Optional.empty());
 
         Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
