@@ -14,7 +14,7 @@
         <maven.compiler.target>22</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dep.airlift.version>@project.version@</dep.airlift.version>
-        <dep.jackson.version>2.18.4</dep.jackson.version>
+        <dep.jackson.version>2.18.9</dep.jackson.version>
         <dep.openapi-generator.version>7.14.0</dep.openapi-generator.version>
         <dep.guice.version>5.1.0</dep.guice.version>
     </properties>
