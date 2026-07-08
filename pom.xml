@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>airlift</artifactId>
-    <version>438-SNAPSHOT</version>
+    <version>438</version>
     <packaging>pom</packaging>
 
     <name>airlift</name>
@@ -81,7 +81,7 @@
     <scm>
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>438</tag>
         <url>https://github.com/airlift/airlift/tree/master</url>
     </scm>
 
