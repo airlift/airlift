@@ -9,7 +9,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -172,6 +171,17 @@ public class TestJsonFormatter
         JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(logMessage);
 
         assertThat(jsonRecord.getMessage()).isEqualTo(record.getMessage());
-        assertThat(jsonMap.get("annotations")).asInstanceOf(InstanceOfAssertFactories.map(String.class, String.class)).containsExactlyEntriesOf(logAnnotations);
+        assertThat(jsonMap.get("annotations")).isEqualTo(logAnnotations);
+    }
+
+    @Test
+    public void testEmptyAnnotationsOmittedFromJson()
+    {
+        LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
+
+        String logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+
+        Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
+        assertThat(jsonMap).doesNotContainKey("annotations");
     }
 }
