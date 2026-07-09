@@ -14,6 +14,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
@@ -70,6 +71,7 @@ public class OpenTelemetryModule
         newSetBinder(binder, MetricProducer.class);
         newSetBinder(binder, LogRecordProcessor.class);
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
+        configBinder(binder).bindConfig(BaggageConfig.class);
     }
 
     @Provides
@@ -81,7 +83,8 @@ public class OpenTelemetryModule
             Set<LogRecordProcessor> logRecordProcessors,
             SdkTracerProvider tracerProvider,
             SdkMeterProvider meterProvider,
-            SdkLoggerProvider loggerProvider)
+            SdkLoggerProvider loggerProvider,
+            BaggageConfig baggageConfig)
     {
         if (spanProcessors.isEmpty() && metricReaders.isEmpty() && metricProducers.isEmpty() && logRecordProcessors.isEmpty()) {
             return OpenTelemetry.noop();
@@ -91,7 +94,9 @@ public class OpenTelemetryModule
                 .setTracerProvider(tracerProvider)
                 .setMeterProvider(meterProvider)
                 .setLoggerProvider(loggerProvider)
-                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .setPropagators(ContextPropagators.create(TextMapPropagator.composite(
+                        W3CTraceContextPropagator.getInstance(),
+                        new AllowlistBaggagePropagator(baggageConfig))))
                 .build();
     }
 

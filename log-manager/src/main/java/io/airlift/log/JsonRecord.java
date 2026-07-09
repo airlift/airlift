@@ -3,6 +3,8 @@ package io.airlift.log;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
+import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TraceFlags;
@@ -19,6 +21,7 @@ import java.util.stream.Stream;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
+import static java.util.function.Predicate.not;
 
 public class JsonRecord
 {
@@ -33,6 +36,7 @@ public class JsonRecord
     private final Throwable throwable;
     private final Optional<SpanContext> spanContext;
     private final Map<String, String> logAnnotations;
+    private final Map<String, String> baggage;
 
     public JsonRecord(
             Instant timestamp,
@@ -86,6 +90,16 @@ public class JsonRecord
                 .map(Span::getSpanContext)
                 .filter(SpanContext::isValid);
         this.logAnnotations = (logAnnotations == null || logAnnotations.isEmpty()) ? null : logAnnotations;
+        this.baggage = extractBaggage(context);
+    }
+
+    private static Map<String, String> extractBaggage(Context context)
+    {
+        return Optional.ofNullable(context)
+                .map(Baggage::fromContext)
+                .filter(not(Baggage::isEmpty))
+                .map(JsonRecord::convertBaggageToMap)
+                .orElse(null);
     }
 
     @JsonProperty
@@ -176,6 +190,12 @@ public class JsonRecord
         return logAnnotations;
     }
 
+    @JsonProperty("baggage")
+    public Map<String, String> getBaggage()
+    {
+        return baggage;
+    }
+
     @Override
     public String toString()
     {
@@ -211,5 +231,12 @@ public class JsonRecord
     public int hashCode()
     {
         return Objects.hash(timestamp, level, thread, loggerName, message, throwable);
+    }
+
+    private static Map<String, String> convertBaggageToMap(Baggage baggage)
+    {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builderWithExpectedSize(baggage.size());
+        baggage.forEach((key, entry) -> builder.put(key, entry.getValue()));
+        return builder.buildOrThrow();
     }
 }

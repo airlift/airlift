@@ -1,7 +1,10 @@
 package io.airlift.log;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Joiner.MapJoiner;
 import com.google.common.collect.ImmutableMap;
+import io.opentelemetry.api.baggage.Baggage;
+import io.opentelemetry.context.Context;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -36,6 +39,7 @@ class StaticFormatter
         extends Formatter
 {
     private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault().normalized();
+    private static final MapJoiner BAGGAGE_JOINER = Joiner.on(",").withKeyValueSeparator("=");
     private final String annotations;
     private final TerminalColors colors;
 
@@ -97,6 +101,12 @@ class StaticFormatter
                     .append(colors.colored(annotations, level));
         }
 
+        Baggage baggage = Baggage.fromContext(Context.current());
+        if (!baggage.isEmpty()) {
+            builder.append('\t')
+                    .append(colors.colored(formatBaggage(baggage), level));
+        }
+
         builder.append('\t')
                 .append(colors.colored(record.getMessage(), WHITE));
 
@@ -114,5 +124,12 @@ class StaticFormatter
 
         builder.append('\n');
         return builder.toString();
+    }
+
+    private static String formatBaggage(Baggage baggage)
+    {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builderWithExpectedSize(baggage.size());
+        baggage.forEach((key, entry) -> builder.put(key, entry.getValue()));
+        return "baggage=" + BAGGAGE_JOINER.join(builder.buildOrThrow());
     }
 }

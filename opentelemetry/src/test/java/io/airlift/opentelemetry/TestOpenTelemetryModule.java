@@ -1,14 +1,19 @@
 package io.airlift.opentelemetry;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
@@ -28,7 +33,9 @@ import io.opentelemetry.semconv.DeploymentAttributes;
 import io.opentelemetry.semconv.ServiceAttributes;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
@@ -39,6 +46,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestOpenTelemetryModule
 {
+    private static final TextMapGetter<Map<String, String>> MAP_GETTER = new TextMapGetter<>()
+    {
+        @Override
+        public Iterable<String> keys(Map<String, String> carrier)
+        {
+            return carrier.keySet();
+        }
+
+        @Override
+        public String get(Map<String, String> carrier, String key)
+        {
+            return (carrier == null) ? null : carrier.get(key);
+        }
+    };
+
     @Test
     void testNoopProviders()
     {
@@ -214,5 +236,109 @@ public class TestOpenTelemetryModule
         reader.collectAllMetrics();
 
         assertThat(produced).isTrue();
+    }
+
+    @Test
+    void testBaggagePropagation()
+    {
+        @SuppressWarnings("resource")
+        InMemorySpanExporter exporter = InMemorySpanExporter.create();
+
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
+                        .toInstance(SimpleSpanProcessor.create(exporter)))
+                .setRequiredConfigurationProperties(ImmutableMap.of("otel.tracing.baggage.allowed-keys", "orderId"))
+                .quiet()
+                .initialize();
+
+        OpenTelemetry openTelemetry = injector.getInstance(OpenTelemetry.class);
+        TextMapPropagator propagator = openTelemetry.getPropagators().getTextMapPropagator();
+
+        // Baggage must take part in cross-service context propagation
+        assertThat(propagator.fields()).contains("baggage");
+
+        // Inject baggage from the current context into outgoing carrier (e.g. HTTP headers)
+        Map<String, String> carrier = new HashMap<>();
+        Context context = Baggage.builder().put("orderId", "42").build().storeInContext(Context.root());
+        propagator.inject(context, carrier, Map::put);
+        assertThat(carrier).containsKey("baggage");
+
+        // Extract baggage on the receiving side from the incoming carrier
+        Context extracted = propagator.extract(Context.root(), carrier, MAP_GETTER);
+
+        assertThat(Baggage.fromContext(extracted).getEntryValue("orderId")).isEqualTo("42");
+    }
+
+    @Test
+    void testBaggageAllowlistDropsNonAllowlistedKeysOnInjectAndExtract()
+    {
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
+                        .toInstance(SpanProcessor.composite()))
+                .setRequiredConfigurationProperties(ImmutableMap.of("otel.tracing.baggage.allowed-keys", "orderId"))
+                .quiet()
+                .initialize();
+
+        TextMapPropagator propagator = injector.getInstance(OpenTelemetry.class).getPropagators().getTextMapPropagator();
+
+        // A non-allowlisted key can end up in the current baggage at runtime (e.g. added by application
+        // code), not only via an inbound request, so it must be stripped on the way out as well - the
+        // wire payload itself must never contain it, not just the value observed after a subsequent extract.
+        Map<String, String> outboundCarrier = new HashMap<>();
+        Context context = Baggage.builder()
+                .put("orderId", "42")
+                .put("secret", "leaked")
+                .build()
+                .storeInContext(Context.root());
+        propagator.inject(context, outboundCarrier, Map::put);
+
+        assertThat(outboundCarrier.get("baggage"))
+                .contains("orderId")
+                .doesNotContain("secret", "leaked");
+
+        // A non-allowlisted key arriving from a caller must also be dropped on extract.
+        Map<String, String> inboundCarrier = new HashMap<>();
+        inboundCarrier.put("baggage", "orderId=99,secret=leaked");
+        Baggage extracted = Baggage.fromContext(propagator.extract(Context.root(), inboundCarrier, MAP_GETTER));
+
+        assertThat(extracted.getEntryValue("orderId")).isEqualTo("99");
+        assertThat(extracted.getEntryValue("secret")).isNull();
+    }
+
+    @Test
+    void testBaggageAllowlistSanitizesValues()
+    {
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
+                        .toInstance(SpanProcessor.composite()))
+                .setRequiredConfigurationProperties(ImmutableMap.of(
+                        "otel.tracing.baggage.allowed-keys", "orderId,note",
+                        "otel.tracing.baggage.max-value-length", "5"))
+                .quiet()
+                .initialize();
+
+        TextMapPropagator propagator = injector.getInstance(OpenTelemetry.class).getPropagators().getTextMapPropagator();
+
+        Context context = Baggage.builder()
+                .put("orderId", "1234567890")
+                .put("note", "line1\nline2")
+                .build()
+                .storeInContext(Context.root());
+
+        Map<String, String> carrier = new HashMap<>();
+        propagator.inject(context, carrier, Map::put);
+        Baggage extracted = Baggage.fromContext(propagator.extract(Context.root(), carrier, MAP_GETTER));
+
+        // value truncated to the configured maximum length
+        assertThat(extracted.getEntryValue("orderId")).isEqualTo("12345");
+        // a value containing control characters is dropped entirely, not merely truncated, since it
+        // could otherwise be used to forge extra log lines or header entries
+        assertThat(extracted.getEntryValue("note")).isNull();
     }
 }
