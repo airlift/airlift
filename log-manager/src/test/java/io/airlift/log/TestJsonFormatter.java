@@ -1,6 +1,7 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
+import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.TraceFlags;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.LogRecord;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
@@ -183,5 +185,57 @@ public class TestJsonFormatter
 
         Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
         assertThat(jsonMap).doesNotContainKey("annotations");
+    }
+
+    @Test
+    public void testLogBaggage()
+    {
+        LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
+        Baggage baggage = Baggage.builder()
+                .put("orderId", "42")
+                .put("tenant", "acme")
+                .build();
+
+        String logMessage;
+        try (var ignored = baggage.makeCurrent()) {
+            logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+        }
+
+        Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
+        assertThat(jsonMap.get("baggage")).isEqualTo(ImmutableMap.of("orderId", "42", "tenant", "acme"));
+    }
+
+    @Test
+    public void testLogBaggageInChildThread()
+            throws InterruptedException
+    {
+        LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
+        Baggage baggage = Baggage.builder()
+                .put("orderId", "42")
+                .build();
+
+        AtomicReference<String> childLogMessage = new AtomicReference<>();
+        try (var ignored = baggage.makeCurrent()) {
+            // The OpenTelemetry Context (and thus baggage) is not inherited by child threads
+            // automatically; wrapping the task makes the child thread run with the current context.
+            Runnable child = Context.current().wrap(() -> childLogMessage.set((new JsonFormatter(ImmutableMap.of())).format(record)));
+            Thread thread = new Thread(child);
+            thread.start();
+            thread.join();
+        }
+
+        Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(childLogMessage.get());
+        assertThat(jsonMap.get("baggage")).isEqualTo(ImmutableMap.of("orderId", "42"));
+    }
+
+    @Test
+    public void testEmptyBaggageOmittedFromJson()
+    {
+        LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
+
+        String logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+
+        Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
+        assertThat(jsonMap).doesNotContainKey("baggage");
     }
 }

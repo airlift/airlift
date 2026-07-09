@@ -248,6 +248,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>opentelemetry</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- for testing -->
         <dependency>
             <groupId>io.airlift</groupId>
@@ -258,6 +264,18 @@
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>tracing</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-trace</artifactId>
             <scope>test</scope>
         </dependency>
 

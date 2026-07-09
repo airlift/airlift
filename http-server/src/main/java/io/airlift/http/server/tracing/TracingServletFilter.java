@@ -2,6 +2,7 @@ package io.airlift.http.server.tracing;
 
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
@@ -47,6 +48,7 @@ public final class TracingServletFilter
     // This attribute will be deprecated in OTEL soon
     static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
     static final String REQUEST_SPAN = "airlift.trace-span";
+    private static final String BAGGAGE_ATTRIBUTE_PREFIX = "baggage.";
 
     private final TextMapPropagator propagator;
     private final Tracer tracer;
@@ -83,6 +85,7 @@ public final class TracingServletFilter
 
         Context parent = propagator.extract(Context.root(), request, ServletTextMapGetter.INSTANCE);
         String method = request.getMethod().toUpperCase(ENGLISH);
+        Baggage baggage = Baggage.fromContext(parent);
 
         SpanBuilder spanBuilder = tracer.spanBuilder(method + " " + request.getRequestURI())
                 .setParent(parent)
@@ -93,6 +96,7 @@ public final class TracingServletFilter
                 .setAttribute(ServerAttributes.SERVER_PORT, getPort(request))
                 .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr())
                 .setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
+        baggage.forEach((key, entry) -> spanBuilder.setAttribute(BAGGAGE_ATTRIBUTE_PREFIX + key, entry.getValue()));
 
         String sessionId = (String) request.getAttribute(SSL_SESSION_ID);
         if (sessionId != null) {
@@ -125,7 +129,12 @@ public final class TracingServletFilter
         // Add to request attributes for TracingFilter to be able to update Span attributes
         request.setAttribute(REQUEST_SPAN, span);
 
-        try (Scope ignored = span.makeCurrent()) {
+        // Make the extracted parent context current (not just the span) so that baggage propagated
+        // from the caller stays in scope for the request and is visible to handlers and logging.
+        try (Scope ignored = Context.current()
+                .with(baggage)
+                .with(span)
+                .makeCurrent()) {
             // a non-recording span drops all attributes, so the response wrapper that exists
             // only to record response attributes is not needed
             chain.doFilter(request, span.isRecording() ? new TracingHttpServletResponse(response, span) : response);
