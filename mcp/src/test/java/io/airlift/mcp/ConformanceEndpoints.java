@@ -407,7 +407,7 @@ public class ConformanceEndpoints
     @McpTool(name = "test_input_required_result_multi_round", description = "test")
     public CallToolResult testInputRequiredResultMultiRound(InputResponses inputResponses)
     {
-        if (inputResponses.inputResponses().isEmpty()) {
+        if (inputResponses.inputResponsesMap().isEmpty()) {
             ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
             ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Step 1: What is your name?", schema);
             return CallToolResult.inputRequestsBuilder()
