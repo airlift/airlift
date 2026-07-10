@@ -15,6 +15,7 @@ package io.airlift.openmetrics.types;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Map;
 
 public sealed interface Metric
         permits BigCounter,
@@ -25,6 +26,10 @@ public sealed interface Metric
                 Summary
 {
     String metricName();
+
+    Map<String, String> labels();
+
+    String help();
 
     /**
      * Writes this metric's sample lines in the OpenMetrics text exposition format,
