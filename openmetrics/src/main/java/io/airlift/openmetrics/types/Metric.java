@@ -21,6 +21,7 @@ public sealed interface Metric
         permits BigCounter,
                 CompositeMetric,
                 Counter,
+                ExponentialHistogramMetric,
                 Gauge,
                 Info,
                 Summary
