@@ -37,8 +37,8 @@ public class TestCertificationRequest
     public void test()
             throws Exception
     {
-        // test only with state because BC encodes every other value using UTF8String instead of PrintableString used by the JDK
-        String name = "C=country";
+        // test only with country because BC encodes every other value using UTF8String instead of PrintableString used by the JDK
+        String name = "C=US";
 
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
         generator.initialize(new ECGenParameterSpec("secp256r1"));
