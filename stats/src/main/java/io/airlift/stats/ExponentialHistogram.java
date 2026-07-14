@@ -53,7 +53,8 @@ public final class ExponentialHistogram
     private static final double LOG_2 = log(2);
     private static final int LOOKUP_MAX_SCALE = 10;
     private static final LookupBucketIndexer[] LOOKUP_BUCKET_INDEXERS = createLookupBucketIndexers();
-    private static final int MIN_BUCKETS_FOR_FULL_FINITE_RANGE = bucketIndex(Double.MAX_VALUE, MIN_SCALE) - bucketIndex(Double.MIN_VALUE, MIN_SCALE) + 1;
+    private static final BucketIndexRange[] FINITE_BUCKET_INDEX_RANGES = createFiniteBucketIndexRanges();
+    private static final int MIN_BUCKETS_FOR_FULL_FINITE_RANGE = (int) FINITE_BUCKET_INDEX_RANGES[0].length();
 
     private final int initialScale;
     private final int maxBuckets;
@@ -312,6 +313,17 @@ public final class ExponentialHistogram
         return indexers;
     }
 
+    private static BucketIndexRange[] createFiniteBucketIndexRanges()
+    {
+        BucketIndexRange[] ranges = new BucketIndexRange[MAX_SCALE - MIN_SCALE + 1];
+        for (int scale = MIN_SCALE; scale <= MAX_SCALE; scale++) {
+            ranges[scale - MIN_SCALE] = new BucketIndexRange(
+                    bucketIndex(Double.MIN_VALUE, scale),
+                    bucketIndex(Double.MAX_VALUE, scale));
+        }
+        return ranges;
+    }
+
     public record ExponentialHistogramSnapshot(
             int scale,
             long count,
@@ -467,9 +479,10 @@ public final class ExponentialHistogram
         if (buckets.isEmpty()) {
             return;
         }
+        BucketIndexRange finiteRange = FINITE_BUCKET_INDEX_RANGES[scale - MIN_SCALE];
         checkArgument(
-                buckets.offset() >= bucketIndex(Double.MIN_VALUE, scale) &&
-                        lastIndex(buckets) <= bucketIndex(Double.MAX_VALUE, scale),
+                buckets.offset() >= finiteRange.firstIndex() &&
+                        lastIndex(buckets) <= finiteRange.lastIndex(),
                 "bucket range exceeds finite value range for scale %s",
                 scale);
     }
