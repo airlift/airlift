@@ -88,6 +88,7 @@ public class BenchmarkExponentialHistogram
     public static class HistogramState
     {
         private ExponentialHistogram histogram;
+        private StripedExponentialHistogram stripedHistogram;
         private TimeDistribution timeDistribution;
         private TimeStat timeStat;
 
@@ -95,11 +96,13 @@ public class BenchmarkExponentialHistogram
         public void setup(Data data)
         {
             histogram = new ExponentialHistogram();
+            stripedHistogram = new StripedExponentialHistogram();
             timeDistribution = new TimeDistribution(TimeUnit.NANOSECONDS);
             timeStat = new TimeStat(TimeUnit.NANOSECONDS);
             for (double value : data.values) {
                 long nanos = toNanos(value);
                 histogram.record(value);
+                stripedHistogram.record(value);
                 timeDistribution.add(nanos);
                 timeStat.addNanos(nanos);
             }
@@ -154,6 +157,12 @@ public class BenchmarkExponentialHistogram
     public ExponentialHistogram.ExponentialHistogramSnapshot benchmarkExponentialHistogramSnapshot(HistogramState state)
     {
         return state.histogram.snapshot();
+    }
+
+    @Benchmark
+    public ExponentialHistogram.ExponentialHistogramSnapshot benchmarkStripedExponentialHistogramSnapshot(HistogramState state)
+    {
+        return state.stripedHistogram.snapshot();
     }
 
     @Benchmark

@@ -11,6 +11,7 @@ import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.data.Offset.offset;
 
@@ -231,6 +232,31 @@ class TestExponentialHistogram
     }
 
     @Test
+    public void testSnapshotFiniteBucketRangeBoundariesAtEveryScale()
+    {
+        for (int scale = ExponentialHistogram.MIN_SCALE; scale <= ExponentialHistogram.MAX_SCALE; scale++) {
+            int testedScale = scale;
+            int minimumBucketIndex = bucketIndexForValue(testedScale, Double.MIN_VALUE);
+            int maximumBucketIndex = bucketIndexForValue(testedScale, Double.MAX_VALUE);
+
+            assertThatCode(() -> snapshotWithPositiveBucket(testedScale, minimumBucketIndex))
+                    .describedAs("minimum bucket index at scale %s", testedScale)
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> snapshotWithPositiveBucket(testedScale, maximumBucketIndex))
+                    .describedAs("maximum bucket index at scale %s", testedScale)
+                    .doesNotThrowAnyException();
+            assertThatThrownBy(() -> snapshotWithPositiveBucket(testedScale, minimumBucketIndex - 1))
+                    .describedAs("below minimum bucket index at scale %s", testedScale)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("bucket range exceeds finite value range for scale %s", testedScale);
+            assertThatThrownBy(() -> snapshotWithPositiveBucket(testedScale, maximumBucketIndex + 1))
+                    .describedAs("above maximum bucket index at scale %s", testedScale)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("bucket range exceeds finite value range for scale %s", testedScale);
+        }
+    }
+
+    @Test
     public void testDownscaleToAtMost()
     {
         ExponentialHistogram histogram = new ExponentialHistogram(1, ExponentialHistogram.DEFAULT_MAX_BUCKETS);
@@ -371,6 +397,26 @@ class TestExponentialHistogram
         assertThat(histogram.snapshot().positiveBuckets().offset())
                 .describedAs("bucket index for scale %s and value %s", scale, value)
                 .isEqualTo(expectedBucketIndex(scale, value));
+    }
+
+    private static int bucketIndexForValue(int scale, double value)
+    {
+        ExponentialHistogram histogram = new ExponentialHistogram(scale, ExponentialHistogram.DEFAULT_MAX_BUCKETS);
+        histogram.record(value);
+        return histogram.snapshot().positiveBuckets().offset();
+    }
+
+    private static ExponentialHistogramSnapshot snapshotWithPositiveBucket(int scale, int bucketIndex)
+    {
+        return new ExponentialHistogramSnapshot(
+                scale,
+                1,
+                1,
+                1,
+                1,
+                0,
+                new Buckets(bucketIndex, new long[] {1}),
+                new Buckets(0, new long[0]));
     }
 
     private static int expectedBucketIndex(int scale, double value)
