@@ -1,13 +1,12 @@
-package io.airlift.json;
+package io.airlift.jackson;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonFactoryBuilder;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.StreamWriteConstraints;
 import com.fasterxml.jackson.core.StreamWriteFeature;
+import com.fasterxml.jackson.core.TSFBuilder;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.util.JsonRecyclerPools;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -16,8 +15,9 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.cfg.MapperBuilder;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -32,23 +32,29 @@ import com.google.inject.Provider;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
-public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>>
-        implements Provider<V>
+public abstract class BaseJacksonProvider<
+        M extends ObjectMapper,
+        B extends MapperBuilder<? extends M, B>,
+        U extends BaseJacksonProvider<M, B, U>>
+        implements Provider<M>
 {
-    private final JsonMapper.Builder jsonMapper;
+    private final B mapperBuilder;
 
     private Map<Class<?>, JsonSerializer<?>> keySerializers;
     private Map<Class<?>, KeyDeserializer> keyDeserializers;
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
     private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
 
-    private final Set<JsonSubType> jsonSubTypes = new HashSet<>();
+    private final Set<JacksonSubType> jacksonSubTypes = new HashSet<>();
 
-    protected BaseJacksonProvider(JsonFactoryBuilder jsonFactoryBuilder)
+    protected <F extends JsonFactory> BaseJacksonProvider(
+            TSFBuilder<F, ?> factoryBuilder,
+            Function<F, B> mapperBuilderFactory)
     {
         // Disable the length limit, caller will be responsible for validating the input length
-        jsonFactoryBuilder.streamReadConstraints(StreamReadConstraints
+        factoryBuilder.streamReadConstraints(StreamReadConstraints
                 .builder()
                 .maxStringLength(Integer.MAX_VALUE)
                 .maxNestingDepth(Integer.MAX_VALUE)
@@ -56,14 +62,14 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
                 .maxDocumentLength(Long.MAX_VALUE)
                 .build());
 
-        jsonFactoryBuilder.streamWriteConstraints(StreamWriteConstraints
+        factoryBuilder.streamWriteConstraints(StreamWriteConstraints
                 .builder()
                 .maxNestingDepth(Integer.MAX_VALUE)
                 .build());
 
-        jsonFactoryBuilder.enable(StreamWriteFeature.USE_FAST_DOUBLE_WRITER);
-        jsonFactoryBuilder.enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER);
-        jsonFactoryBuilder.enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER);
+        factoryBuilder.enable(StreamWriteFeature.USE_FAST_DOUBLE_WRITER);
+        factoryBuilder.enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER);
+        factoryBuilder.enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER);
 
         /*
          * When multiple threads deserialize JSON responses concurrently,
@@ -77,59 +83,59 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
          *
          * See: https://github.com/FasterXML/jackson-core/issues/332.
          */
-        jsonFactoryBuilder.disable(JsonFactory.Feature.INTERN_FIELD_NAMES);
-        jsonFactoryBuilder.recyclerPool(JsonRecyclerPools.threadLocalPool());
+        factoryBuilder.disable(JsonFactory.Feature.INTERN_FIELD_NAMES);
+        factoryBuilder.recyclerPool(JsonRecyclerPools.threadLocalPool());
 
-        jsonMapper = JsonMapper.builder(jsonFactoryBuilder.build());
+        mapperBuilder = mapperBuilderFactory.apply(factoryBuilder.build());
 
         // ignore unknown fields (for backwards compatibility)
-        jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        mapperBuilder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         // do not allow converting a float to an integer
-        jsonMapper.disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT);
+        mapperBuilder.disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT);
 
         // use ISO dates
-        jsonMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapperBuilder.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         // Fail if there are trailing tokens after entity was read and mapped
-        jsonMapper.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
-
-        // When serialization fails in the middle, it's better to return a truncated (invalid) JSON
-        // than something that could be interpreted as a valid (but incorrect) result.
-        // This is especially applicable to server endpoints that return JSON responses.
-        jsonMapper.disable(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT);
+        mapperBuilder.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
         // Skip fields that are null or absent (Optional) when serializing objects.
         // This only applies to mapped object fields, not containers like Map or List.
-        jsonMapper.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
+        mapperBuilder.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
 
         // disable auto detection of json properties... all properties must be explicit
-        jsonMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
-        jsonMapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
-        jsonMapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
-        jsonMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
-        jsonMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
-        jsonMapper.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
-        jsonMapper.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
-        jsonMapper.disable(MapperFeature.INFER_PROPERTY_MUTATORS);
-        jsonMapper.disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
+        mapperBuilder.disable(MapperFeature.AUTO_DETECT_CREATORS);
+        mapperBuilder.disable(MapperFeature.AUTO_DETECT_FIELDS);
+        mapperBuilder.disable(MapperFeature.AUTO_DETECT_SETTERS);
+        mapperBuilder.disable(MapperFeature.AUTO_DETECT_GETTERS);
+        mapperBuilder.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
+        mapperBuilder.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
+        mapperBuilder.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
+        mapperBuilder.disable(MapperFeature.INFER_PROPERTY_MUTATORS);
+        mapperBuilder.disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
 
-        jsonMapper.addModule(new Jdk8Module());
-        jsonMapper.addModule(new JavaTimeModule());
-        jsonMapper.addModule(new GuavaModule());
-        jsonMapper.addModule(new ParameterNamesModule());
-        jsonMapper.addModule(new RecordAutoDetectModule());
+        mapperBuilder.addModule(new Jdk8Module());
+        mapperBuilder.addModule(new JavaTimeModule());
+        mapperBuilder.addModule(new GuavaModule());
+        mapperBuilder.addModule(new ParameterNamesModule());
+        mapperBuilder.addModule(new RecordAutoDetectModule());
         // Replace reflection-based bean access with runtime-generated accessors (LambdaMetafactory).
         // Property detection is unchanged (still driven by explicit annotations above); only the
         // get/set mechanism is faster, reducing CPU and allocation on serialization/deserialization.
-        jsonMapper.addModule(new BlackbirdModule());
+        mapperBuilder.addModule(new BlackbirdModule());
 
         try {
             getClass().getClassLoader().loadClass("org.joda.time.DateTime");
-            jsonMapper.addModule(new JodaModule());
+            mapperBuilder.addModule(new JodaModule());
         }
         catch (ClassNotFoundException ignored) {
         }
+    }
+
+    protected final B mapperBuilder()
+    {
+        return mapperBuilder;
     }
 
     @Inject(optional = true)
@@ -157,24 +163,24 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     }
 
     @Inject(optional = true)
-    public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    public void setKeySerializers(@JacksonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
         this.keySerializers = keySerializers;
     }
 
-    public U withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    public U withKeySerializers(@JacksonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
         setKeySerializers(keySerializers);
         return (U) this;
     }
 
     @Inject(optional = true)
-    public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    public void setKeyDeserializers(@JacksonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         this.keyDeserializers = keyDeserializers;
     }
 
-    public U withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    public U withKeyDeserializers(@JacksonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         setKeyDeserializers(keyDeserializers);
         return (U) this;
@@ -183,7 +189,7 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     @Inject(optional = true)
     public void setModules(Set<com.fasterxml.jackson.databind.Module> modules)
     {
-        modules.forEach(jsonMapper::addModule);
+        modules.forEach(mapperBuilder::addModule);
     }
 
     public U withModules(Set<Module> modules)
@@ -193,18 +199,18 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     }
 
     @Inject(optional = true)
-    public void setJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    public void setJacksonSubTypes(Set<JacksonSubType> jacksonSubTypes)
     {
-        this.jsonSubTypes.addAll(jsonSubTypes);
+        this.jacksonSubTypes.addAll(jacksonSubTypes);
     }
 
-    public U withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    public U withJacksonSubTypes(Set<JacksonSubType> jacksonSubTypes)
     {
-        setJsonSubTypes(jsonSubTypes);
+        setJacksonSubTypes(jacksonSubTypes);
         return (U) this;
     }
 
-    protected JsonMapper create()
+    protected M create()
     {
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null, null, null));
@@ -228,15 +234,15 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
                     module.addKeyDeserializer(entry.getKey(), entry.getValue());
                 }
             }
-            jsonMapper.addModule(module);
+            mapperBuilder.addModule(module);
         }
 
-        for (JsonSubType jsonSubType : jsonSubTypes) {
-            jsonSubType.modules()
-                    .forEach(jsonMapper::addModule);
+        for (JacksonSubType jacksonSubType : jacksonSubTypes) {
+            jacksonSubType.modules()
+                    .forEach(mapperBuilder::addModule);
         }
 
-        return jsonMapper.build();
+        return mapperBuilder.build();
     }
 
     //

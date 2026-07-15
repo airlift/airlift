@@ -7,10 +7,10 @@
         <artifactId>airlift</artifactId>
         <version>440-SNAPSHOT</version>
     </parent>
-    <artifactId>json</artifactId>
+    <artifactId>yaml</artifactId>
     <packaging>jar</packaging>
-    <name>json</name>
-    <description>Airlift - JSON support</description>
+    <name>yaml</name>
+    <description>Airlift - YAML support</description>
 
     <dependencies>
 
@@ -22,6 +22,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
 
         <dependency>
@@ -46,16 +51,15 @@
             <artifactId>jackson</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
+
         <!-- for testing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
             <scope>test</scope>
         </dependency>
 
