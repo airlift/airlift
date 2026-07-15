@@ -21,22 +21,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import io.airlift.jackson.JacksonSubType;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.JsonMapperProvider;
 import io.airlift.json.JsonModule;
-import io.airlift.json.JsonSubType;
 import io.airlift.json.subtype.Employee.Manager;
 import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
 
-import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
+import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestJsonSubType
+public class TestJacksonSubType
 {
     private static final Employee programmer1 = new Programmer("Joe");
     private static final Employee programmer2 = new Programmer("Rachel");
@@ -52,12 +52,12 @@ public class TestJsonSubType
     public void testAddBinding()
             throws Exception
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> jacksonSubTypeBinder(binder).bindJacksonSubType(jacksonSubType));
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(jsonMapper);
@@ -67,12 +67,12 @@ public class TestJsonSubType
     public void testAddBindingSpecifiedNames()
             throws Exception
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "specified")
                 .add(Programmer.class, "foo")
                 .add(Manager.class, "bar")
                 .build();
-        Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> jacksonSubTypeBinder(binder).bindJacksonSubType(jacksonSubType));
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(jsonMapper);
@@ -82,11 +82,11 @@ public class TestJsonSubType
     public void testAddPermittedSubClassBindings()
             throws Exception
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
                 .addPermittedSubClasses()
                 .build();
-        Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> jacksonSubTypeBinder(binder).bindJacksonSubType(jacksonSubType));
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(jsonMapper);
@@ -96,11 +96,11 @@ public class TestJsonSubType
     public void testAddPermittedSubClassBindingsSpecifiedNames()
             throws Exception
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "bogus")
                 .addPermittedSubClasses(clazz -> "xxx__" + clazz.getName() + "__XXX")
                 .build();
-        Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> jacksonSubTypeBinder(binder).bindJacksonSubType(jacksonSubType));
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(jsonMapper);
@@ -118,11 +118,11 @@ public class TestJsonSubType
     @Test
     public void testFailsWhenMissingBindings()
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
                 .add(Programmer.class)
                 .build();
-        Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> jacksonSubTypeBinder(binder).bindJacksonSubType(jacksonSubType));
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         assertThatThrownBy(() -> internalTest(jsonMapper))
@@ -133,14 +133,14 @@ public class TestJsonSubType
     public void testBuildMultipleTypes()
             throws Exception
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
                 .addPermittedSubClasses()
                 .forBase(Part.class, "category")
                 .addPermittedSubClasses()
                 .build();
 
-        Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> jacksonSubTypeBinder(binder).bindJacksonSubType(jacksonSubType));
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(jsonMapper);
@@ -171,13 +171,13 @@ public class TestJsonSubType
     public void testStandalone()
             throws Exception
     {
-        JsonSubType jsonSubType = JsonSubType.builder()
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
 
-        JsonMapperProvider jsonMapperProvider = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType));
+        JsonMapperProvider jsonMapperProvider = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType));
 
         internalTest(jsonMapperProvider.get());
     }
@@ -186,21 +186,21 @@ public class TestJsonSubType
     public void testExpectedJson()
             throws Exception
     {
-        JsonSubType jsonSubType1 = JsonSubType.builder()
+        JacksonSubType jacksonSubType1 = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        JsonMapper jsonMapper1 = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType1)).get();
+        JsonMapper jsonMapper1 = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType1)).get();
         String programmer1Json = jsonMapper1.writeValueAsString(programmer1);
         String manager1Json = jsonMapper1.writeValueAsString(manager1);
 
-        JsonSubType jsonSubType2 = JsonSubType.builder()
+        JacksonSubType jacksonSubType2 = JacksonSubType.builder()
                 .forBase(Employee.class, "category")
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        JsonMapper jsonMapper2 = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType2)).get();
+        JsonMapper jsonMapper2 = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType2)).get();
         String programmer2Json = jsonMapper2.writeValueAsString(programmer1);
         String manager2Json = jsonMapper2.writeValueAsString(manager1);
 

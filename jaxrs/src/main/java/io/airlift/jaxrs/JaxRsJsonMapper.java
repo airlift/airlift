@@ -26,12 +26,20 @@ import static com.fasterxml.jackson.jakarta.rs.cfg.JakartaRSFeature.ADD_NO_SNIFF
 public class JaxRsJsonMapper
         extends JacksonJsonProvider
 {
+    private JsonParsingConfig parsingConfig = JsonParsingConfig.unbounded();
+
     @Inject
     public JaxRsJsonMapper(JsonMapper jsonMapper)
     {
         super(jsonMapper);
         enable(ADD_NO_SNIFF_HEADER);
         enable(INCLUDE_SOURCE_IN_LOCATION);
+    }
+
+    @Inject(optional = true)
+    public void setParsingConfig(JsonParsingConfig parsingConfig)
+    {
+        this.parsingConfig = parsingConfig;
     }
 
     /**
@@ -44,10 +52,19 @@ public class JaxRsJsonMapper
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException
     {
+        InputStream stream = parsingConfig.maxPayloadSize()
+                .map(size -> (InputStream) new LimitInputStream(entityStream, size.toBytes()))
+                .orElse(entityStream);
         try {
-            return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
+            return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, stream);
         }
         catch (IOException e) {
+            // Jackson may wrap the underlying IOException.
+            for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+                if (cause instanceof PayloadTooLargeException payloadTooLarge) {
+                    throw payloadTooLarge;
+                }
+            }
             // Re-throw real IO exceptions that are not due to bad JSON
             if (!(e instanceof JsonProcessingException) && !(e instanceof EOFException)) {
                 throw e;
