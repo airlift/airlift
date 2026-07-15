@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.airlift.jackson.BaseJacksonProvider;
 
 import static java.util.Objects.requireNonNull;
 

@@ -24,7 +24,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.ThreadSafe;
-import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import io.airlift.jackson.LengthLimitedWriter;
+import io.airlift.jackson.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
 import java.io.InputStream;

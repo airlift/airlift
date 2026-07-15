@@ -1,4 +1,4 @@
-package io.airlift.json;
+package io.airlift.jackson;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -163,24 +163,24 @@ public abstract class BaseJacksonProvider<
     }
 
     @Inject(optional = true)
-    public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    public void setKeySerializers(@JacksonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
         this.keySerializers = keySerializers;
     }
 
-    public U withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    public U withKeySerializers(@JacksonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
         setKeySerializers(keySerializers);
         return (U) this;
     }
 
     @Inject(optional = true)
-    public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    public void setKeyDeserializers(@JacksonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         this.keyDeserializers = keyDeserializers;
     }
 
-    public U withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    public U withKeyDeserializers(@JacksonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         setKeyDeserializers(keyDeserializers);
         return (U) this;

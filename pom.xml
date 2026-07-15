@@ -52,6 +52,7 @@
         <module>http-client</module>
         <module>http-client-generator</module>
         <module>http-server</module>
+        <module>jackson</module>
         <module>jaxrs</module>
         <module>jaxrs-testing</module>
         <module>jmx</module>
@@ -177,6 +178,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>http-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -3,15 +3,15 @@ package io.airlift.api.binding;
 import com.google.inject.Module;
 import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
-import io.airlift.json.JacksonSubType;
-import io.airlift.json.JacksonSubType.SubTypeSubBuilder;
-import io.airlift.json.JacksonSubTypeBinder;
+import io.airlift.jackson.JacksonSubType;
+import io.airlift.jackson.JacksonSubType.SubTypeSubBuilder;
+import io.airlift.jackson.JacksonSubTypeBinder;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.airlift.json.JacksonSubTypeBinder.jacksonSubTypeBinder;
+import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static java.util.Objects.requireNonNull;
 
 public class PolyResourceModule
