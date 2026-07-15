@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.json.JacksonSubType;
+import io.airlift.jackson.JacksonSubType;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.JsonMapperProvider;
@@ -32,7 +32,7 @@ import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
 
-import static io.airlift.json.JacksonSubTypeBinder.jacksonSubTypeBinder;
+import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

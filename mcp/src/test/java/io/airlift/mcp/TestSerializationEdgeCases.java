@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.json.JacksonSubType;
+import io.airlift.jackson.JacksonSubType;
 import io.airlift.json.JsonMapperProvider;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.CallToolRequest;

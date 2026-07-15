@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
 import com.fasterxml.jackson.core.JsonGenerator;
