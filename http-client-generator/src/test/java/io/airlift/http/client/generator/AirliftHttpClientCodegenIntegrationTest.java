@@ -13,6 +13,13 @@
  */
 package io.airlift.http.client.generator;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.RecordedExchange;
+import io.airlift.http.client.RecordedExchangeSanitizer;
+import io.airlift.http.client.RecordingHttpClientInterceptor;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openapitools.codegen.ClientOptInput;
@@ -27,17 +34,99 @@ import javax.tools.ToolProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static io.airlift.http.client.RecordedExchangeSanitizer.REDACTED;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 class AirliftHttpClientCodegenIntegrationTest
 {
+    @Test
+    void testGeneratedClientRecordsEachPhysicalExchange(@TempDir Path outputPath)
+            throws Exception
+    {
+        String inputSpec = getClass().getClassLoader().getResource("petstore.yaml").getFile();
+
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec)
+                .setOutputDir(outputPath.toString())
+                .addAdditionalProperty("projectName", "petstore")
+                .addAdditionalProperty("apiPackage", "com.example.api")
+                .addAdditionalProperty("modelPackage", "com.example.model")
+                .addAdditionalProperty("invokerPackage", "com.example");
+
+        new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+
+        ConcurrentLinkedQueue<RecordedExchange> recordings = new ConcurrentLinkedQueue<>();
+        RecordingHttpClientInterceptor recorder = newRecorder(recordings);
+        AtomicInteger requests = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> respond(exchange, requests.incrementAndGet()));
+        server.start();
+
+        URI baseUri = URI.create("http://127.0.0.1:" + server.getAddress().getPort());
+        try (URLClassLoader generatedClasses = new URLClassLoader(
+                new java.net.URL[] {classesDir.toUri().toURL()},
+                getClass().getClassLoader());
+                JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig(), List.of(recorder))) {
+            Class<?> retryPolicyClass = generatedClasses.loadClass("com.example.RetryPolicy");
+            Class<?> clientClass = generatedClasses.loadClass("com.example.api.PetsClient");
+            Method listPets = Arrays.stream(clientClass.getMethods())
+                    .filter(method -> method.getName().equals("listPets"))
+                    .findFirst()
+                    .orElseThrow();
+
+            Object disabledRetry = retryPolicyClass.getMethod("disabled").invoke(null);
+            Object ordinaryClient = clientClass
+                    .getConstructor(io.airlift.http.client.HttpClient.class, URI.class, retryPolicyClass)
+                    .newInstance(httpClient, baseUri, disabledRetry);
+            assertDecodedPet(listPets.invoke(ordinaryClient, new Object[listPets.getParameterCount()]));
+            assertThat(recordings).hasSize(1);
+
+            Object oneRetry = retryPolicyClass.getMethod("withDefaults").invoke(null);
+            Object retryingClient = clientClass
+                    .getConstructor(io.airlift.http.client.HttpClient.class, URI.class, retryPolicyClass)
+                    .newInstance(httpClient, baseUri, oneRetry);
+            assertDecodedPet(listPets.invoke(retryingClient, new Object[listPets.getParameterCount()]));
+        }
+        finally {
+            server.stop(0);
+        }
+
+        assertThat(requests).hasValue(3);
+        List<RecordedExchange> exchanges = recordings.stream()
+                .sorted(java.util.Comparator.comparingLong(RecordedExchange::sequence))
+                .toList();
+        assertThat(exchanges)
+                .extracting(RecordedExchange::sequence)
+                .containsExactly(1L, 2L, 3L);
+        assertThat(exchanges)
+                .extracting(exchange -> exchange.response().orElseThrow().statusCode())
+                .containsExactly(200, 429, 200);
+        assertThat(exchanges).allSatisfy(exchange -> {
+            assertThat(exchange.request().method()).isEqualTo("GET");
+            assertThat(exchange.request().uri()).endsWith("/pets");
+            assertThat(exchange.response().orElseThrow().headers().get("set-cookie")).containsExactly(REDACTED);
+            assertThat(exchange.failure()).isEmpty();
+        });
+    }
+
     @Test
     void testGeneratePetstoreClient(@TempDir Path outputPath)
             throws Exception
@@ -352,7 +441,7 @@ class AirliftHttpClientCodegenIntegrationTest
         }
     }
 
-    private void verifyGeneratedCodeCompiles(Path outputDir)
+    private Path verifyGeneratedCodeCompiles(Path outputDir)
             throws IOException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -404,5 +493,45 @@ class AirliftHttpClientCodegenIntegrationTest
                 fail("Generated code failed to compile:\n%s".formatted(errors));
             }
         }
+        return classesDir;
+    }
+
+    private static void respond(HttpExchange exchange, int requestNumber)
+            throws IOException
+    {
+        int statusCode = requestNumber == 2 ? 429 : 200;
+        byte[] body = (statusCode == 429 ? "{\"error\":\"slow down\"}" : "[{\"id\":1,\"name\":\"Milo\"}]").getBytes(UTF_8);
+        try {
+            exchange.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
+            exchange.getResponseHeaders().add("Set-Cookie", "session=server-secret");
+            exchange.getResponseHeaders().add("Retry-After", "0");
+            exchange.sendResponseHeaders(statusCode, body.length);
+            exchange.getResponseBody().write(body);
+        }
+        finally {
+            exchange.close();
+        }
+    }
+
+    private static void assertDecodedPet(Object result)
+            throws ReflectiveOperationException
+    {
+        assertThat(result).isInstanceOf(List.class);
+        List<?> pets = (List<?>) result;
+        assertThat(pets).hasSize(1);
+        Object pet = pets.getFirst();
+        assertThat(pet.getClass().getMethod("name").invoke(pet)).isEqualTo("Milo");
+    }
+
+    private static RecordingHttpClientInterceptor newRecorder(ConcurrentLinkedQueue<RecordedExchange> recordings)
+            throws ReflectiveOperationException
+    {
+        Class<?> dataSizeClass = Class.forName("io.airlift.units.DataSize");
+        Object maxBodySize = dataSizeClass.getMethod("ofBytes", long.class).invoke(null, 64 * 1024L);
+        RecordedExchangeSanitizer sanitizer = exchange -> exchange;
+        Consumer<RecordedExchange> sink = recordings::add;
+        return (RecordingHttpClientInterceptor) RecordingHttpClientInterceptor.class
+                .getConstructor(dataSizeClass, RecordedExchangeSanitizer.class, Consumer.class)
+                .newInstance(maxBodySize, sanitizer, sink);
     }
 }
