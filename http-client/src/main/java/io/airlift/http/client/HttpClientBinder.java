@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
+import java.util.Optional;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -35,6 +36,7 @@ public class HttpClientBinder
 {
     private final Binder binder;
     private final Multibinder<HttpRequestFilter> globalFilterBinder;
+    private final Multibinder<HttpClientInterceptor> globalInterceptorBinder;
     private final Multibinder<HttpStatusListener> globalStatusListenerBinder;
     private final OptionalBinder<ByteBufferPool> byteBufferPool;
 
@@ -42,6 +44,7 @@ public class HttpClientBinder
     {
         this.binder = binder.skipSources(getClass());
         this.globalFilterBinder = newSetBinder(binder, HttpRequestFilter.class, GlobalFilter.class);
+        this.globalInterceptorBinder = newSetBinder(binder, HttpClientInterceptor.class, GlobalFilter.class);
         this.globalStatusListenerBinder = newSetBinder(binder, HttpStatusListener.class, GlobalFilter.class);
         this.byteBufferPool = newOptionalBinder(binder, ByteBufferPool.class);
     }
@@ -58,6 +61,7 @@ public class HttpClientBinder
         return new HttpClientBindingBuilder(
                 module,
                 newSetBinder(binder, Key.get(HttpRequestFilter.class, annotation)),
+                newSetBinder(binder, Key.get(HttpClientInterceptor.class, annotation)),
                 newSetBinder(binder, Key.get(HttpStatusListener.class, annotation)),
                 newOptionalBinder(binder, Key.get(ByteBufferPool.class, annotation)));
     }
@@ -70,6 +74,11 @@ public class HttpClientBinder
     public LinkedBindingBuilder<HttpStatusListener> addGlobalStatusListenerBinding()
     {
         return globalStatusListenerBinder.addBinding();
+    }
+
+    public LinkedBindingBuilder<HttpClientInterceptor> addGlobalInterceptorBinding()
+    {
+        return globalInterceptorBinder.addBinding();
     }
 
     public HttpClientBinder bindGlobalFilter(Class<? extends HttpRequestFilter> filterClass)
@@ -90,17 +99,55 @@ public class HttpClientBinder
         return this;
     }
 
+    public HttpClientBinder bindGlobalInterceptor(Class<? extends HttpClientInterceptor> interceptorClass)
+    {
+        globalInterceptorBinder.addBinding().to(interceptorClass).in(Scopes.SINGLETON);
+        return this;
+    }
+
+    public HttpClientBinder bindGlobalInterceptor(HttpClientInterceptor interceptor)
+    {
+        globalInterceptorBinder.addBinding().toInstance(interceptor);
+        return this;
+    }
+
     public static class HttpClientBindingBuilder
     {
         private final HttpClientModule module;
         private final Multibinder<HttpRequestFilter> filterBinder;
+        private final Optional<Multibinder<HttpClientInterceptor>> interceptorBinder;
         private final Multibinder<HttpStatusListener> statusListenerBinder;
         private final OptionalBinder<ByteBufferPool> byteBufferPoolBinder;
 
-        public HttpClientBindingBuilder(HttpClientModule module, Multibinder<HttpRequestFilter> filterBinder, Multibinder<HttpStatusListener> statusListenerBinder, OptionalBinder<ByteBufferPool> byteBufferPoolBinder)
+        public HttpClientBindingBuilder(
+                HttpClientModule module,
+                Multibinder<HttpRequestFilter> filterBinder,
+                Multibinder<HttpStatusListener> statusListenerBinder,
+                OptionalBinder<ByteBufferPool> byteBufferPoolBinder)
+        {
+            this(module, filterBinder, Optional.empty(), statusListenerBinder, byteBufferPoolBinder);
+        }
+
+        public HttpClientBindingBuilder(
+                HttpClientModule module,
+                Multibinder<HttpRequestFilter> filterBinder,
+                Multibinder<HttpClientInterceptor> interceptorBinder,
+                Multibinder<HttpStatusListener> statusListenerBinder,
+                OptionalBinder<ByteBufferPool> byteBufferPoolBinder)
+        {
+            this(module, filterBinder, Optional.of(requireNonNull(interceptorBinder, "interceptorBinder is null")), statusListenerBinder, byteBufferPoolBinder);
+        }
+
+        private HttpClientBindingBuilder(
+                HttpClientModule module,
+                Multibinder<HttpRequestFilter> filterBinder,
+                Optional<Multibinder<HttpClientInterceptor>> interceptorBinder,
+                Multibinder<HttpStatusListener> statusListenerBinder,
+                OptionalBinder<ByteBufferPool> byteBufferPoolBinder)
         {
             this.module = requireNonNull(module, "module is null");
             this.filterBinder = requireNonNull(filterBinder, "multibinder is null");
+            this.interceptorBinder = requireNonNull(interceptorBinder, "interceptorBinder is null");
             this.statusListenerBinder = requireNonNull(statusListenerBinder, "statusListenerBinder is null");
             this.byteBufferPoolBinder = requireNonNull(byteBufferPoolBinder, "byteBufferPoolBinder is null");
         }
@@ -133,6 +180,17 @@ public class HttpClientBinder
         public HttpClientBindingBuilder withFilter(Class<? extends HttpRequestFilter> filterClass)
         {
             filterBinder.addBinding().to(filterClass);
+            return this;
+        }
+
+        public LinkedBindingBuilder<HttpClientInterceptor> addInterceptorBinding()
+        {
+            return interceptorBinder.orElseThrow(() -> new IllegalStateException("interceptor binder is not configured")).addBinding();
+        }
+
+        public HttpClientBindingBuilder withInterceptor(Class<? extends HttpClientInterceptor> interceptorClass)
+        {
+            addInterceptorBinding().to(interceptorClass);
             return this;
         }
 
