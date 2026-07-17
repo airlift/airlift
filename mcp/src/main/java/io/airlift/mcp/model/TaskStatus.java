@@ -5,11 +5,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import static java.util.Locale.ROOT;
 
-public enum ResultType
+public enum TaskStatus
 {
-    COMPLETE,
+    WORKING,
     INPUT_REQUIRED,
-    TASK;
+    COMPLETED,
+    FAILED,
+    CANCELLED;
 
     @JsonValue
     public String toJsonValue()
@@ -18,8 +20,8 @@ public enum ResultType
     }
 
     @JsonCreator
-    public static ResultType fromJsonValue(String value)
+    public static TaskStatus fromJsonValue(String value)
     {
-        return ResultType.valueOf(value.toUpperCase(ROOT));
+        return TaskStatus.valueOf(value.toUpperCase(ROOT));
     }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.Hashing;
 import com.google.inject.Inject;
 import io.airlift.mcp.handler.PromptEntry;
@@ -19,6 +20,7 @@ import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
 import io.airlift.mcp.model.CreateMessageResult;
+import io.airlift.mcp.model.CreateTaskResult;
 import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
 import io.airlift.mcp.model.GetPromptResult;
@@ -27,6 +29,7 @@ import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.InitializeRequest.Sampling;
 import io.airlift.mcp.model.InputRequests;
 import io.airlift.mcp.model.InputResponses;
+import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.OptionalBoolean;
@@ -34,21 +37,29 @@ import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.model.Result;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.model.TaskHandlerResult.TaskFailed;
 import io.airlift.mcp.model.Tool;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.clientCapabilityError;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpTaskController.ErrorState.FAILED;
+import static io.airlift.mcp.model.CallToolResult.errorResult;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_LOG_LEVEL;
 import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
 import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.LoggingLevel.INFO;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -61,12 +72,14 @@ public class ConformanceEndpoints
 
     private final JsonMapper jsonMapper;
     private final McpEntities entities;
+    private final McpTaskController taskController;
 
     @Inject
-    public ConformanceEndpoints(JsonMapper jsonMapper, McpEntities entities)
+    public ConformanceEndpoints(JsonMapper jsonMapper, McpEntities entities, McpTaskController taskController)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.entities = requireNonNull(entities, "entities is null");
+        this.taskController = requireNonNull(taskController, "taskController is null");
     }
 
     @McpTool(name = "test_simple_text", description = "Tests simple text content response")
@@ -169,7 +182,7 @@ public class ConformanceEndpoints
     public String testMissingCapability(McpRequestContext requestContext)
     {
         if (requestContext.clientCapabilities().sampling().isEmpty()) {
-            throw clientCapabilityError(new ClientCapabilities(Optional.empty(), Optional.of(new Sampling()), Optional.empty(), Optional.empty()));
+            throw clientCapabilityError(new ClientCapabilities(Optional.empty(), Optional.of(new Sampling()), Optional.empty(), Optional.empty(), Optional.empty()));
         }
         return "Success";
     }
@@ -287,16 +300,16 @@ public class ConformanceEndpoints
         entities.addTool(changedTool, entry.toolHandler());
     }
 
-    public record InputRequiredResult(String name) {}
+    public record UserName(String name) {}
 
     @McpTool(name = "test_input_required_result_elicitation", description = "test")
     public CallToolResult testInputRequiredResultElicitation(InputResponses inputResponses)
     {
         return inputResponses.getInputResponse("user_name")
-                .map(value -> jsonMapper.convertValue(value, InputRequiredResult.class))
+                .map(value -> jsonMapper.convertValue(value, UserName.class))
                 .map(userName -> new CallToolResult(new TextContent("Hello, %s!".formatted(userName.name))))
                 .orElseGet(() -> {
-                    ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+                    ObjectNode schema = new JsonSchemaBuilder().build(UserName.class);
                     ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
                     return CallToolResult.inputRequestsBuilder()
                             .add("user_name", METHOD_ELICITATION_CREATE, elicitRequestForm)
@@ -377,7 +390,7 @@ public class ConformanceEndpoints
     @McpTool(name = "test_input_required_result_multiple_inputs", description = "test")
     public CallToolResult testInputRequiredResultMultipleInputs(InputResponses inputResponses)
     {
-        Optional<InputRequiredResult> maybeUserName = inputResponses.getInputResponse("user_name").map(value -> jsonMapper.convertValue(value, InputRequiredResult.class));
+        Optional<UserName> maybeUserName = inputResponses.getInputResponse("user_name").map(value -> jsonMapper.convertValue(value, UserName.class));
         Optional<CreateMessageResult> maybeGreeting = inputResponses.getInputResponse("greeting").map(value -> jsonMapper.convertValue(value, CreateMessageResult.class));
         Optional<ListRootsResult> maybeClientRoots = inputResponses.getInputResponse("client_roots").map(value -> jsonMapper.convertValue(value, ListRootsResult.class));
         return maybeUserName.flatMap(userName -> maybeGreeting.flatMap(greeting -> maybeClientRoots.map(clientRoots -> {
@@ -388,7 +401,7 @@ public class ConformanceEndpoints
                     return new CallToolResult(ImmutableList.of(new TextContent("Bad request state")), Optional.empty(), true);
                 })))
                 .orElseGet(() -> {
-                    ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+                    ObjectNode schema = new JsonSchemaBuilder().build(UserName.class);
                     ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
 
                     CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Generate a greeting"), 100);
@@ -408,7 +421,7 @@ public class ConformanceEndpoints
     public CallToolResult testInputRequiredResultMultiRound(InputResponses inputResponses)
     {
         if (inputResponses.inputResponses().isEmpty()) {
-            ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+            ObjectNode schema = new JsonSchemaBuilder().build(UserName.class);
             ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Step 1: What is your name?", schema);
             return CallToolResult.inputRequestsBuilder()
                     .withRequestState("yeah yeah yeah")
@@ -451,7 +464,7 @@ public class ConformanceEndpoints
                     throw new Error("RequestState mismatch");
                 })
                 .orElseGet(() -> {
-                    ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+                    ObjectNode schema = new JsonSchemaBuilder().build(UserName.class);
                     ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
                     return CallToolResult.inputRequestsBuilder()
                             .withRequestState(hashedValue)
@@ -466,7 +479,7 @@ public class ConformanceEndpoints
         InputRequests.Builder<CallToolResult> builder = CallToolResult.inputRequestsBuilder();
 
         if (requestContext.clientCapabilities().elicitation().isPresent()) {
-            ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+            ObjectNode schema = new JsonSchemaBuilder().build(UserName.class);
             ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
             builder.add("user_name", METHOD_ELICITATION_CREATE, elicitRequestForm);
         }
@@ -477,5 +490,130 @@ public class ConformanceEndpoints
         }
 
         return builder.build();
+    }
+
+    @McpTool(name = "slow_compute", description = "test")
+    public Result slowCompute(McpRequestContext requestContext, int seconds)
+    {
+        if (seconds == 60) {
+            System.out.println();
+        }
+
+        if (requestContext.clientCapabilities().supportsTasks()) {
+            Task task = requestContext.createTask();
+            taskController.executeCancelable(task.taskId(), () -> {
+                TimeUnit.SECONDS.sleep(seconds);
+                return new CallToolResult(new TextContent("It worked"));
+            });
+            return new CreateTaskResult(task);
+        }
+
+        return new CallToolResult(new TextContent("It worked"));
+    }
+
+    @McpTool(name = "failing_job", description = "test")
+    public Result failingJob(McpRequestContext requestContext)
+    {
+        Task task = requestContext.createTask();
+        taskController.executeCancelable(task.taskId(), () -> {
+            TimeUnit.SECONDS.sleep(1);
+            return errorResult("Failure");
+        });
+        return new CreateTaskResult(task);
+    }
+
+    @McpTool(name = "protocol_error_job", description = "test")
+    public Result protocolErrorJob(McpRequestContext requestContext)
+    {
+        Task task = requestContext.createTask();
+        taskController.executeCancelable(task.taskId(), () -> {
+            TimeUnit.SECONDS.sleep(1);
+            JsonRpcErrorDetail errorDetail = new JsonRpcErrorDetail(INTERNAL_ERROR, "Didn't work");
+            return new TaskFailed(FAILED, Optional.of(errorDetail));
+        });
+        return new CreateTaskResult(task);
+    }
+
+    public record ConfirmDelete(boolean confirm) {}
+
+    @McpTool(name = "confirm_delete", description = "test")
+    public Result confirmDelete(McpRequestContext requestContext, String filename)
+    {
+        Task task = requestContext.createTask();
+
+        taskController.executeCancelable(task.taskId(), () -> {
+            ObjectNode schema = new JsonSchemaBuilder().build(Optional.empty(), ConfirmDelete.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Are you sure you want to delete " + filename + "?", schema);
+            CallToolResult requests = CallToolResult.inputRequestsBuilder()
+                    .add("confirm", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .build();
+            taskController.setResult(task.taskId(), Optional.of(requests), Optional.empty());
+
+            if (!taskController.awaitInputResponses(task.taskId(), Duration.ofSeconds(10), ImmutableSet.of("confirm"))) {
+                throw new RuntimeException("Timed out waiting for input responses");
+            }
+            ElicitResult elicitResult = taskController.currentInputResponses(task.taskId())
+                    .getInputResponse("confirm")
+                    .map(value -> jsonMapper.convertValue(value, ElicitResult.class))
+                    .orElseThrow();
+            String resultText = ((elicitResult.action() == ElicitResult.Action.ACCEPT)
+                    && elicitResult.mapContent(jsonMapper, ConfirmDelete.class).orElseThrow().confirm()) ? "Deleted " + filename : "Deletion cancelled";
+            return new CallToolResult(new TextContent(resultText));
+        });
+
+        return new CreateTaskResult(task);
+    }
+
+    @McpTool(name = "multi_input", description = "test")
+    public CreateTaskResult multiInput(McpRequestContext requestContext)
+    {
+        Task task = requestContext.createTask();
+
+        taskController.executeCancelable(task.taskId(), () -> {
+            ObjectNode schema = new JsonSchemaBuilder().build(Optional.empty(), ConfirmDelete.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Are you sure?", schema);
+            CallToolResult requests = CallToolResult.inputRequestsBuilder()
+                    .add("q1", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .add("q2", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .build();
+            taskController.setResult(task.taskId(), Optional.of(requests), Optional.empty());
+
+            if (!taskController.awaitInputResponses(task.taskId(), Duration.ofSeconds(10), ImmutableSet.of("q1", "q2"))) {
+                throw new RuntimeException("Timed out waiting for input responses");
+            }
+
+            return new CallToolResult(new TextContent("Success"));
+        });
+
+        return new CreateTaskResult(task);
+    }
+
+    @McpTool(name = "test_tool_with_task", description = "test")
+    public Result testToolWithTask(McpRequestContext requestContext, InputResponses inputResponses)
+    {
+        Optional<ElicitResult> maybeElicitResult = inputResponses.getInputResponse("get-name")
+                .map(value -> jsonMapper.convertValue(value, ElicitResult.class));
+        if (maybeElicitResult.isEmpty()) {
+            ObjectNode schema = new JsonSchemaBuilder().build(UserName.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
+            return CallToolResult.inputRequestsBuilder()
+                    .add("get-name", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .build();
+        }
+
+        Task task = requestContext.createTask();
+        taskController.executeCancelable(task.taskId(), () -> {
+            TimeUnit.SECONDS.sleep(1);
+
+            UserName userName = maybeElicitResult.orElseThrow().mapContent(jsonMapper, UserName.class).orElseThrow();
+            return new CallToolResult(new TextContent("Hello " + userName.name() + "!"));
+        });
+        return new CreateTaskResult(task);
+    }
+
+    @McpTool(name = "greet", description = "test")
+    public String greet(String name)
+    {
+        return "Hello, " + name + "!";
     }
 }

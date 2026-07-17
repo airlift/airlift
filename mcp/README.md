@@ -7,7 +7,7 @@
 This module provides support for creating [MCP servers](https://modelcontextprotocol.io). There are several
 variations of MCP servers defined by the standard. This module supports:
 
-- Protocol version 2025-11-25 [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/changelog#major-changes)
+- Protocol version 2026-07-28 [(see spec)](https://modelcontextprotocol.io/specification/draft)
 - Stateless MCP servers [(see spec)](https://github.com/modelcontextprotocol/modelcontextprotocol/discussions?discussions_q=stateless)
 - Streamable HTTP transport [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
 - Resources [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/resources)
@@ -19,7 +19,6 @@ variations of MCP servers defined by the standard. This module supports:
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/progress)
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/completion)
 - Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/pagination)
-- Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging)
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle#initialization)
@@ -27,15 +26,9 @@ variations of MCP servers defined by the standard. This module supports:
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
-- MCP Skills (upcoming protocol extension)
-
-This module does not currently support:
-
-- Tasks [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks)
-
-This module currently supports these MCP extensions:
-
-- MCP Apps [(see spec)](https://modelcontextprotocol.github.io/ext-apps/api/documents/Overview.html)
+- MCP Skills [(see spec)](https://github.com/modelcontextprotocol/experimental-ext-skills)
+- MCP Apps extension [(see spec)](https://modelcontextprotocol.github.io/ext-apps/api/documents/Overview.html)
+- Tasks extension [(see spec)](https://github.com/modelcontextprotocol/ext-tasks)
 
 ## Creating tools, prompts, resources, and completions declaratively
 
@@ -176,6 +169,8 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - one of the [Content](src/main/java/io/airlift/mcp/model/Content.java) subtypes
     - [CallToolResult](src/main/java/io/airlift/mcp/model/CallToolResult.java)
     - [StructuredContentResult](src/main/java/io/airlift/mcp/model/StructuredContentResult.java)
+    - [CreateTaskResult](src/main/java/io/airlift/mcp/model/CreateTaskResult.java)
+    - [Result](src/main/java/io/airlift/mcp/model/Result.java)
 
 #### Prompts
 
@@ -228,17 +223,6 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - [CompleteCompletion](src/main/java/io/airlift/mcp/model/CompleteResult.java)
     - `List<String>`
 
-## Sessions
-
-Airlift MCP servers can optionally be configured to support MCP [sessions](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management).
-Currently, sessions are required for
-[server-sent logging](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging),
-however that will likely change in a future version of the MCP spec.
-
-To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
-resilient implementation of [StorageController](src/main/java/io/airlift/mcp/storage/StorageController.java) should be used. For testing, an in-memory implementation is provided:
-[MemoryStorageController](src/main/java/io/airlift/mcp/storage/MemoryStorageController.java).
-
 ## Apps
 
 see: [McpApp](src/main/java/io/airlift/mcp/McpApp.java)
@@ -255,3 +239,15 @@ and [DebugApp](src/test/java/io/airlift/mcp/DebugApp.java).
 The upcoming MCP Skills spec is supported via `@McpSkill` and `@McpSkillTemplate` annotations. These annotations mark
 a method as returning MCP Skills. These are generated as normal MCP resources but marked as being Skills so that they
 are listed in the skills index and MCP server instructions.
+
+## Tasks
+
+Airlift supports the [MCP Tasks extension](https://github.com/modelcontextprotocol/ext-tasks). Tasks are created as part
+of a tool call. Airlift manages the lifecycle of tasks, but it is the application's responsibility to manage the
+tasks themselves.
+
+- Tasks rely on MCP storage, so storage must be enabled in the McpModule builder (see `withStorage()`)
+- For Production, a DB-backed, resilient implementation of [StorageController](src/main/java/io/airlift/mcp/storage/StorageController.java) should be used. For testing, an in-memory implementation is provided:
+  [MemoryStorageController](src/main/java/io/airlift/mcp/storage/MemoryStorageController.java).
+- Use the `createTask()` method of the `McpRequestContext` to create new tasks.
+- The injectable [McpTaskController](src/main/java/io/airlift/mcp/McpTaskController.java) can be used to manage tasks (see Javadoc for details)

@@ -4,16 +4,21 @@ import com.google.inject.Inject;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
+import io.airlift.mcp.McpTaskController;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ToolEntry;
-import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
+import io.airlift.mcp.model.CompleteTaskResult;
+import io.airlift.mcp.model.CreateTaskResult;
+import io.airlift.mcp.model.EmptyResult;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.InputRequiredTaskResult;
+import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
@@ -26,6 +31,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.Result;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
@@ -35,8 +41,10 @@ import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpTaskController.ErrorState.FAILED;
 import static io.airlift.mcp.model.Constants.METADATA_PROGRESS_TOKEN;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
+import static io.airlift.mcp.model.JsonRpcErrorCode.UNSUPPORTED_PROTOCOL;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
 import static java.util.Objects.requireNonNull;
 
@@ -45,12 +53,14 @@ public class OperationsCommon
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
     private final MrtrEmulator mrtrEmulator;
+    private final Optional<McpTaskController> taskController;
 
     @Inject
-    OperationsCommon(McpEntities entities, McpConfig mcpConfig, MrtrEmulator mrtrEmulator)
+    OperationsCommon(McpEntities entities, McpConfig mcpConfig, MrtrEmulator mrtrEmulator, Optional<McpTaskController> taskController)
     {
         this.entities = requireNonNull(entities, "entities is null");
         this.mrtrEmulator = requireNonNull(mrtrEmulator, "mrtrEmulator is null");
+        this.taskController = requireNonNull(taskController, "taskController is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
     }
@@ -69,7 +79,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    CallToolResult callTool(LegacyRequestContextImpl requestContext, CallToolRequest callToolRequest)
+    Result callTool(LegacyRequestContextImpl requestContext, CallToolRequest callToolRequest)
     {
         entities.validateToolAllowed(requestContext, callToolRequest.name());
 
@@ -77,13 +87,12 @@ public class OperationsCommon
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
         try {
-            ToolHandler toolHandler = toolEntry.toolHandler();
             LegacyRequestContextImpl processTokenRequestContext = requestContext.withProgressToken(progressToken(callToolRequest));
 
-            CallToolResult callToolResult = toolHandler.callTool(processTokenRequestContext, callToolRequest);
+            CallToolResult callToolResult = unwrap(toolEntry.toolHandler().callTool(processTokenRequestContext, callToolRequest));
             return mrtrEmulator.emulate(processTokenRequestContext, callToolResult, (requestState, inputResponses) -> {
                 CallToolRequest adjustedCallToolRequest = callToolRequest.withInputResponses(requestState, inputResponses);
-                return toolHandler.callTool(processTokenRequestContext, adjustedCallToolRequest);
+                return unwrap(toolEntry.toolHandler().callTool(processTokenRequestContext, adjustedCallToolRequest));
             });
         }
         catch (McpClientException mcpClientException) {
@@ -154,5 +163,22 @@ public class OperationsCommon
     static Optional<Object> progressToken(Meta meta)
     {
         return meta.meta().flatMap(m -> Optional.ofNullable(m.get(METADATA_PROGRESS_TOKEN)));
+    }
+
+    private CallToolResult unwrap(Result result)
+    {
+        return switch (result) {
+            case CallToolResult callToolResult -> callToolResult;
+            case EmptyResult _ -> throw new IllegalStateException("Tasks are not supported at this protocol version");
+            case InputRequiredTaskResult inputRequiredTaskResult -> throw taskException(inputRequiredTaskResult.task().taskId());
+            case CreateTaskResult createTaskResult -> throw taskException(createTaskResult.task().taskId());
+            case CompleteTaskResult completeTaskResult -> throw taskException(completeTaskResult.task().taskId());
+        };
+    }
+
+    private RuntimeException taskException(String taskId)
+    {
+        taskController.ifPresent(controller -> controller.setErrorState(taskId, FAILED, Optional.of(new JsonRpcErrorDetail(UNSUPPORTED_PROTOCOL, "Tasks are not supported at this protocol version"))));
+        return new IllegalStateException("Tasks are not supported at this protocol version");
     }
 }
