@@ -83,6 +83,10 @@ public class HttpClientModule
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, annotation);
 
+        // kick off the bindings for interceptors
+        newSetBinder(binder, HttpClientInterceptor.class, GlobalFilter.class);
+        newSetBinder(binder, HttpClientInterceptor.class, annotation);
+
         // export stats
         newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
     }
@@ -146,12 +150,26 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
+            Set<HttpClientInterceptor> interceptors = ImmutableSet.<HttpClientInterceptor>builder()
+                    .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpClientInterceptor>>() {}, GlobalFilter.class)))
+                    .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpClientInterceptor>>() {}, annotation)))
+                    .build();
+
             Set<HttpStatusListener> httpStatusListeners = ImmutableSet.<HttpStatusListener>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, GlobalFilter.class)))
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, httpStatusListeners);
+            return new JettyHttpClient(
+                    name,
+                    config,
+                    ImmutableList.copyOf(filters),
+                    openTelemetry,
+                    tracer,
+                    environment,
+                    sslContextFactory,
+                    httpStatusListeners,
+                    ImmutableList.copyOf(interceptors));
         }
     }
 }
