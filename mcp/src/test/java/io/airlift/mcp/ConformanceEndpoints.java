@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.Hashing;
 import com.google.inject.Inject;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ToolEntry;
@@ -24,8 +25,10 @@ import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.GetPromptResult.PromptMessage;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.InitializeRequest.Sampling;
-import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.InputRequests;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonSchemaBuilder;
+import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -33,21 +36,21 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.concurrent.TimeoutException;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.clientCapabilityError;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_LOG_LEVEL;
 import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
+import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static io.airlift.mcp.model.LoggingLevel.INFO;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 // see: https://github.com/modelcontextprotocol/conformance/blob/main/examples/servers/typescript/everything-server.ts
@@ -57,14 +60,12 @@ public class ConformanceEndpoints
     private static final String TEST_AUDIO_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA=";
 
     private final JsonMapper jsonMapper;
-    private final LegacyServerToClientRequest serverToClientRequest;
     private final McpEntities entities;
 
     @Inject
-    public ConformanceEndpoints(JsonMapper jsonMapper, LegacyServerToClientRequest serverToClientRequest, McpEntities entities)
+    public ConformanceEndpoints(JsonMapper jsonMapper, McpEntities entities)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
-        this.serverToClientRequest = requireNonNull(serverToClientRequest, "serverToClientRequest is null");
         this.entities = requireNonNull(entities, "entities is null");
     }
 
@@ -131,26 +132,37 @@ public class ConformanceEndpoints
     }
 
     @McpTool(name = "test_sampling", description = "Tests server-initiated sampling (LLM completion request)")
-    public String testSampling(McpRequestContext requestContext, @McpDescription("The prompt to send to the LLM") String prompt)
-            throws InterruptedException, TimeoutException
+    public CallToolResult testSampling(@McpDescription("The prompt to send to the LLM") String prompt, InputResponses inputResponses)
     {
-        CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent(prompt), 100);
-        JsonRpcResponse<CreateMessageResult> response = serverToClientRequest.serverToClientRequest(requestContext, METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(1), Duration.ofSeconds(1));
-        String responseText = response.result().map(messageResult -> (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response").orElse("No response");
-        return "LLM response: " + responseText;
+        return inputResponses.getInputResponse("test")
+                .map(value -> jsonMapper.convertValue(value, CreateMessageResult.class))
+                .map(messageResult -> {
+                    String responseText = (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response";
+                    return new CallToolResult(new TextContent("LLM response: " + responseText));
+                })
+                .orElseGet(() -> {
+                    CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent(prompt), 100);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("test", METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest)
+                            .build();
+                });
     }
 
     public record TestElicitation(String response) {}
 
     @McpTool(name = "test_elicitation", description = "Tests server-initiated elicitation (user input request)")
-    public String testElicitation(McpRequestContext requestContext, @McpDescription("The message to show the user") String message)
-            throws InterruptedException, TimeoutException
+    public CallToolResult testElicitation(@McpDescription("The message to show the user") String message, InputResponses inputResponses)
     {
-        ObjectNode schema = new JsonSchemaBuilder().build(Optional.of("User's response"), TestElicitation.class);
-        ElicitRequestForm elicitRequestForm = new ElicitRequestForm(message, schema);
-        JsonRpcResponse<ElicitResult> response = serverToClientRequest.serverToClientRequest(requestContext, METHOD_ELICITATION_CREATE, elicitRequestForm, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
-        return response.result().map(result -> "User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))
-                .orElse("No response");
+        return inputResponses.getInputResponse("test")
+                .map(value -> jsonMapper.convertValue(value, ElicitResult.class))
+                .map(result -> new CallToolResult(new TextContent("User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))))
+                .orElseGet(() -> {
+                    ObjectNode schema = new JsonSchemaBuilder().build(Optional.of("User's response"), TestElicitation.class);
+                    ElicitRequestForm elicitRequestForm = new ElicitRequestForm(message, schema);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("test", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                            .build();
+                });
     }
 
     @McpTool(name = "test_missing_capability", description = "Test tool requiring sampling")
@@ -273,5 +285,197 @@ public class ConformanceEndpoints
         ToolEntry entry = entities.toolEntry(requestContext, tool.name()).orElseThrow();
         Tool changedTool = new Tool(tool.name(), Optional.of(tool.description().orElse("") + Math.random()), tool.title(), tool.inputSchema(), tool.outputSchema(), tool.annotations(), tool.icons(), tool.meta());
         entities.addTool(changedTool, entry.toolHandler());
+    }
+
+    public record InputRequiredResult(String name) {}
+
+    @McpTool(name = "test_input_required_result_elicitation", description = "test")
+    public CallToolResult testInputRequiredResultElicitation(InputResponses inputResponses)
+    {
+        return inputResponses.getInputResponse("user_name")
+                .map(value -> jsonMapper.convertValue(value, InputRequiredResult.class))
+                .map(userName -> new CallToolResult(new TextContent("Hello, %s!".formatted(userName.name))))
+                .orElseGet(() -> {
+                    ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+                    ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("user_name", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                            .build();
+                });
+    }
+
+    @McpTool(name = "test_input_required_result_sampling", description = "test")
+    public CallToolResult inputRequiredResultBasicSampling(InputResponses inputResponses)
+    {
+        return inputResponses.getInputResponse("capital_question")
+                .map(value -> jsonMapper.convertValue(value, CreateMessageResult.class))
+                .map(messageResult -> {
+                    String responseText = (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response";
+                    return new CallToolResult(new TextContent(responseText));
+                })
+                .orElseGet(() -> {
+                    CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("What is the capital of France?"), 100);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("capital_question", METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest)
+                            .build();
+                });
+    }
+
+    @McpTool(name = "test_input_required_result_list_roots", description = "test")
+    public CallToolResult testInputRequiredResultListRoots(InputResponses inputResponses)
+    {
+        return inputResponses.getInputResponse("client_roots")
+                .map(value -> jsonMapper.convertValue(value, ListRootsResult.class))
+                .map(roots -> {
+                    List<Content> rootUris = roots.roots().stream()
+                            .map(root -> new TextContent(root.uri()))
+                            .collect(toImmutableList());
+                    return new CallToolResult(rootUris);
+                })
+                .orElseGet(() -> CallToolResult.inputRequestsBuilder()
+                        .add("client_roots", METHOD_ROOTS_LIST, ImmutableMap.of())
+                        .build());
+    }
+
+    public record Confirm(boolean ok) {}
+
+    @McpTool(name = "test_input_required_result_request_state", description = "MRTR tests")
+    public CallToolResult testInputRequiredResultRequestState(InputResponses inputResponses)
+    {
+        Optional<ElicitResult> elicitResult = inputResponses.getInputResponse("confirm")
+                .map(value -> jsonMapper.convertValue(value, ElicitResult.class));
+        if (elicitResult.isPresent()) {
+            boolean success = (elicitResult.orElseThrow().action() == ElicitResult.Action.ACCEPT) && inputResponses.requestState().orElse("").equals("booga-booga");
+            return new CallToolResult(new TextContent(success ? "state-ok" : "state-not-ok"));
+        }
+
+        ObjectNode objectNode = new JsonSchemaBuilder().build(Confirm.class);
+        return CallToolResult.inputRequestsBuilder()
+                .withRequestState("booga-booga")
+                .add("confirm", METHOD_ELICITATION_CREATE, new ElicitRequestForm("Please confirm", objectNode))
+                .build();
+    }
+
+    public record PromptContext(String context) {}
+
+    @McpPrompt(name = "test_input_required_result_prompt", description = "MRTR tests")
+    public GetPromptResult testInputRequiredResultPrompt(InputResponses inputResponses)
+    {
+        Optional<ElicitResult> elicitResult = inputResponses.getInputResponse("user_context")
+                .map(value -> jsonMapper.convertValue(value, ElicitResult.class));
+        if (elicitResult.isPresent() && (elicitResult.orElseThrow().action() == ElicitResult.Action.ACCEPT) && inputResponses.requestState().orElse("").equals("beep-bop")) {
+            return new GetPromptResult("Yep, it worked");
+        }
+
+        ObjectNode objectNode = new JsonSchemaBuilder().build(PromptContext.class);
+        return GetPromptResult.inputRequestsBuilder()
+                .withRequestState("beep-bop")
+                .add("user_context", METHOD_ELICITATION_CREATE, new ElicitRequestForm("What context should the prompt use?", objectNode))
+                .build();
+    }
+
+    @McpTool(name = "test_input_required_result_multiple_inputs", description = "test")
+    public CallToolResult testInputRequiredResultMultipleInputs(InputResponses inputResponses)
+    {
+        Optional<InputRequiredResult> maybeUserName = inputResponses.getInputResponse("user_name").map(value -> jsonMapper.convertValue(value, InputRequiredResult.class));
+        Optional<CreateMessageResult> maybeGreeting = inputResponses.getInputResponse("greeting").map(value -> jsonMapper.convertValue(value, CreateMessageResult.class));
+        Optional<ListRootsResult> maybeClientRoots = inputResponses.getInputResponse("client_roots").map(value -> jsonMapper.convertValue(value, ListRootsResult.class));
+        return maybeUserName.flatMap(userName -> maybeGreeting.flatMap(greeting -> maybeClientRoots.map(clientRoots -> {
+                    if (inputResponses.requestState().orElse("").equals("hey-you")) {
+                        String result = "It worked. %s %s %s".formatted(userName.name, greeting.content(), clientRoots.roots().size());
+                        return new CallToolResult(new TextContent(result));
+                    }
+                    return new CallToolResult(ImmutableList.of(new TextContent("Bad request state")), Optional.empty(), true);
+                })))
+                .orElseGet(() -> {
+                    ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+                    ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
+
+                    CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Generate a greeting"), 100);
+
+                    return CallToolResult.inputRequestsBuilder()
+                            .withRequestState("hey-you")
+                            .add("user_name", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                            .add("greeting", METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest)
+                            .add("client_roots", METHOD_ROOTS_LIST, ImmutableMap.of())
+                            .build();
+                });
+    }
+
+    public record FavoriteColor(String color) {}
+
+    @McpTool(name = "test_input_required_result_multi_round", description = "test")
+    public CallToolResult testInputRequiredResultMultiRound(InputResponses inputResponses)
+    {
+        if (inputResponses.inputResponses().isEmpty()) {
+            ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Step 1: What is your name?", schema);
+            return CallToolResult.inputRequestsBuilder()
+                    .withRequestState("yeah yeah yeah")
+                    .add("step1", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .build();
+        }
+
+        if (inputResponses.inputResponsesMap().containsKey("step1")) {
+            if (!inputResponses.requestState().orElse("").equals("yeah yeah yeah")) {
+                return new CallToolResult(ImmutableList.of(new TextContent("Bad request state")), Optional.empty(), true);
+            }
+            ObjectNode schema = new JsonSchemaBuilder().build(FavoriteColor.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("Step 2: What is your favorite color?", schema);
+            return CallToolResult.inputRequestsBuilder()
+                    .withRequestState("no no no")
+                    .add("step2", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                    .build();
+        }
+
+        if (inputResponses.inputResponsesMap().containsKey("step2")) {
+            if (!inputResponses.requestState().orElse("").equals("no no no")) {
+                return new CallToolResult(ImmutableList.of(new TextContent("Bad request state")), Optional.empty(), true);
+            }
+            return new CallToolResult(new TextContent("It worked"));
+        }
+
+        return new CallToolResult(ImmutableList.of(new TextContent("Bad inputResponses")), Optional.empty(), true);
+    }
+
+    @McpTool(name = "test_input_required_result_tampered_state", description = "test")
+    public CallToolResult testInputRequiredResultTamperedState(InputResponses inputResponses)
+    {
+        String hashedValue = Hashing.sha256().hashString("corned beef", UTF_8)
+                .toString();
+
+        return inputResponses.requestState().map(requestState -> {
+                    if (requestState.equals(hashedValue)) {
+                        return new CallToolResult(new TextContent("It worked"));
+                    }
+                    throw new Error("RequestState mismatch");
+                })
+                .orElseGet(() -> {
+                    ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+                    ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
+                    return CallToolResult.inputRequestsBuilder()
+                            .withRequestState(hashedValue)
+                            .add("user_name", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                            .build();
+                });
+    }
+
+    @McpTool(name = "test_input_required_result_capabilities", description = "test")
+    public CallToolResult testInputRequiredResultCapabilities(McpRequestContext requestContext)
+    {
+        InputRequests.Builder<CallToolResult> builder = CallToolResult.inputRequestsBuilder();
+
+        if (requestContext.clientCapabilities().elicitation().isPresent()) {
+            ObjectNode schema = new JsonSchemaBuilder().build(InputRequiredResult.class);
+            ElicitRequestForm elicitRequestForm = new ElicitRequestForm("What is your name?", schema);
+            builder.add("user_name", METHOD_ELICITATION_CREATE, elicitRequestForm);
+        }
+
+        if (requestContext.clientCapabilities().sampling().isPresent()) {
+            CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Generate a greeting"), 100);
+            builder.add("greeting", METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest);
+        }
+
+        return builder.build();
     }
 }
