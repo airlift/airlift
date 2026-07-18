@@ -266,6 +266,9 @@ public class TestConforming
         assertThat(openApiProperty(CustomJsonValueEnumService.class, "CustomJsonValueEnumResource", "value").getDescription())
                 .contains("\"SmallWireValue\"")
                 .contains("\"LargeWireValue\"");
+        // OpenAPI 3.0 consumers ignore keys beside $ref, so the referenced enum schema must document the values itself
+        assertThat(openApiEnumSchema(CustomJsonValueEnumService.class, "CustomJsonValueEnumResource", "value", CONFIG).getDescription())
+                .isEqualTo("<ul><li><code>\"SmallWireValue\"</code>: small value</li>\n<li><code>\"LargeWireValue\"</code>: large value</li></ul>");
     }
 
     @Test
@@ -620,16 +623,25 @@ public class TestConforming
 
     private static List<String> openApiEnumValues(Class<?> serviceClass, String schemaName, String propertyName)
     {
-        return openApiProperty(serviceClass, schemaName, propertyName).getEnum().stream()
-                .map(String.class::cast)
-                .toList();
+        return openApiEnumValues(serviceClass, schemaName, propertyName, CONFIG);
     }
 
     private static List<String> openApiEnumValues(Class<?> serviceClass, String schemaName, String propertyName, ApiBuilderConfig config)
     {
-        return openApiProperty(serviceClass, schemaName, propertyName, config).getEnum().stream()
+        return openApiEnumSchema(serviceClass, schemaName, propertyName, config).getEnum().stream()
                 .map(String.class::cast)
                 .toList();
+    }
+
+    private static Schema<?> openApiEnumSchema(Class<?> serviceClass, String schemaName, String propertyName, ApiBuilderConfig config)
+    {
+        Map<String, Schema> schemas = openApiSchemas(serviceClass, config);
+        Schema<?> schema = schemas.get(schemaName);
+        Schema<?> property = schema.getProperties().get(propertyName);
+        // a described enum property wraps its reference in allOf for 3.0 consumers
+        String ref = property.get$ref() != null ? property.get$ref() : property.getAllOf().getFirst().get$ref();
+        String enumSchemaName = ref.replace("#/components/schemas/", "");
+        return schemas.get(enumSchemaName);
     }
 
     private static Schema<?> openApiProperty(Class<?> serviceClass, String schemaName, String propertyName)
@@ -639,17 +651,22 @@ public class TestConforming
 
     private static Schema<?> openApiProperty(Class<?> serviceClass, String schemaName, String propertyName, ApiBuilderConfig config)
     {
-        ModelApi modelApi = ApiBuilder.apiBuilder(config).add(serviceClass).build();
-        assertThat(modelApi.modelServices().errors()).isEmpty();
-
-        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
-        OpenAPI openAPI = OpenApiProvider.create(modelApi.modelServices(), new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1), config).build(serviceType, _ -> true);
-        Map<String, Schema> schemas = openAPI.getComponents().getSchemas();
+        Map<String, Schema> schemas = openApiSchemas(serviceClass, config);
         Schema<?> schema = schemas.get(schemaName);
         assertThat(schema).withFailMessage("Schema not found: %s. Found: %s", schemaName, schemas.keySet()).isNotNull();
         Schema<?> property = schema.getProperties().get(propertyName);
         assertThat(property).isNotNull();
         return property;
+    }
+
+    private static Map<String, Schema> openApiSchemas(Class<?> serviceClass, ApiBuilderConfig config)
+    {
+        ModelApi modelApi = ApiBuilder.apiBuilder(config).add(serviceClass).build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
+
+        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
+        OpenAPI openAPI = OpenApiProvider.create(modelApi.modelServices(), new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1), config).build(serviceType, _ -> true);
+        return openAPI.getComponents().getSchemas();
     }
 
     private static ResourceBuilder resourceBuilder(Type resource)

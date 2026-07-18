@@ -42,6 +42,8 @@ public class AirliftHttpClientCodegen
         templateDir = "airlift-http-client";
         embeddedTemplateDir = "airlift-http-client";
 
+        setUseOneOfInterfaces(true);
+
         typeMapping.put("DateTime", "Instant");
         typeMapping.put("date-time", "Instant");
 
@@ -154,6 +156,7 @@ public class AirliftHttpClientCodegen
         boolean usesQueryParams = false;
         boolean hasAuth = false;
         boolean hasBearerAuth = false;
+        boolean hasNonBearerAuth = false;
 
         List<CodegenOperation> ops = operations.getOperation();
         for (CodegenOperation operation : ops) {
@@ -193,11 +196,20 @@ public class AirliftHttpClientCodegen
 
             if (operation.hasAuthMethods) {
                 hasAuth = true;
+                boolean operationHasBearerAuth = false;
+                boolean operationHasNonBearerAuth = false;
                 for (CodegenSecurity auth : operation.authMethods) {
                     if (Boolean.TRUE.equals(auth.isBasicBearer)) {
                         hasBearerAuth = true;
+                        operationHasBearerAuth = true;
+                    }
+                    else {
+                        hasNonBearerAuth = true;
+                        operationHasNonBearerAuth = true;
                     }
                 }
+                operation.vendorExtensions.put("x_has_bearer_auth", operationHasBearerAuth);
+                operation.vendorExtensions.put("x_has_non_bearer_auth", operationHasNonBearerAuth);
             }
 
             // Build deduplicated codec references
@@ -248,13 +260,19 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_map_codec", usesMapCodec);
         objs.put("x_has_auth", hasAuth);
         objs.put("x_has_bearer_auth", hasBearerAuth);
+        objs.put("x_has_non_bearer_auth", hasNonBearerAuth);
 
         // Feature flags on operations for class body (inside {{#operations}})
         operations.put("x_has_auth", hasAuth);
+        operations.put("x_has_bearer_auth", hasBearerAuth);
+        operations.put("x_has_non_bearer_auth", hasNonBearerAuth);
 
         // Set global auth flag for supporting file templates (clientConfig, etc.)
         if (hasAuth) {
             additionalProperties.put("hasAuthMethods", true);
+        }
+        if (hasBearerAuth) {
+            additionalProperties.put("hasBearerAuthMethods", true);
         }
 
         return objs;
