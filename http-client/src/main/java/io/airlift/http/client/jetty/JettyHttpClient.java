@@ -10,7 +10,6 @@ import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.HttpClientInterceptor;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
 import io.airlift.http.client.Request;
@@ -107,7 +106,6 @@ import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -166,7 +164,6 @@ public class JettyHttpClient
     private final CachedDistribution currentResponseProcessTime;
 
     private final List<HttpRequestFilter> requestFilters;
-    private final List<HttpClientInterceptor> interceptorChain;
     private final HttpStatusListeners httpStatusListeners;
     private final String name;
     private final TextMapPropagator propagator;
@@ -184,11 +181,6 @@ public class JettyHttpClient
     public JettyHttpClient(HttpClientConfig config)
     {
         this(uniqueName(), config);
-    }
-
-    public JettyHttpClient(HttpClientConfig config, Iterable<? extends HttpClientInterceptor> interceptors)
-    {
-        this(uniqueName(), config, ImmutableList.of(), NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), ImmutableList.of(), interceptors);
     }
 
     public JettyHttpClient(String name, HttpClientConfig config)
@@ -245,20 +237,6 @@ public class JettyHttpClient
             Optional<SslContextFactory.Client> maybeSslContextFactory,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
-        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, httpStatusListeners, ImmutableList.of());
-    }
-
-    public JettyHttpClient(
-            String name,
-            HttpClientConfig config,
-            Iterable<? extends HttpRequestFilter> requestFilters,
-            OpenTelemetry openTelemetry,
-            Tracer tracer,
-            Optional<String> environment,
-            Optional<SslContextFactory.Client> maybeSslContextFactory,
-            Iterable<? extends HttpStatusListener> httpStatusListeners,
-            Iterable<? extends HttpClientInterceptor> interceptors)
-    {
         this.name = requireNonNull(name, "name is null");
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
@@ -266,7 +244,6 @@ public class JettyHttpClient
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
         requireNonNull(httpStatusListeners, "httpStatusListeners is null");
-        requireNonNull(interceptors, "interceptors is null");
 
         maxResponseContentLength = config.getMaxResponseContentLength();
         requestTimeout = config.getRequestTimeout();
@@ -395,13 +372,6 @@ public class JettyHttpClient
         this.clientDiagnostics = new JettyClientDiagnostics();
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
-        this.interceptorChain = ImmutableList.<HttpClientInterceptor>builder()
-                .addAll(this.requestFilters.stream()
-                        .map(filter -> (HttpClientInterceptor) chain -> chain.proceed(filter.filterRequest(chain.request())))
-                        .toList())
-                .add(this::interceptTracing)
-                .addAll(interceptors)
-                .build();
         this.httpStatusListeners = new HttpStatusListeners(ImmutableList.copyOf(httpStatusListeners));
 
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
@@ -693,109 +663,106 @@ public class JettyHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        requireNonNull(request, "request is null");
-        requireNonNull(responseHandler, "responseHandler is null");
+        request = applyRequestFilters(request);
 
-        ExecutionState state = new ExecutionState(request, true);
+        Span span = startSpan(request);
+        request = injectTracing(request, span);
+
         try {
-            try (StreamingResponse response = executeIntercepted(state)) {
-                try {
-                    return responseHandler.handle(state.request(), response);
+            InternalResponse<T> internalResponse = internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span);
+            return switch (internalResponse) {
+                case InternalExceptionResponse(T exceptionResponse) -> exceptionResponse;
+                case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> {
+                    try {
+                        yield responseHandler.handle(request, jettyResponse);
+                    }
+                    finally {
+                        completionHandler.run();
+                    }
                 }
-                catch (Throwable t) {
-                    recordSpanFailure(state.span(), t);
-                    throw t;
-                }
-            }
+            };
         }
-        catch (TransportException e) {
-            try {
-                return responseHandler.handleException(e.request(), e.exception());
-            }
-            catch (Throwable t) {
-                recordSpanFailure(state.span(), t);
-                throw t;
-            }
-            finally {
-                state.span().end();
-            }
+        catch (Throwable t) {
+            span.setStatus(StatusCode.ERROR, t.getMessage());
+            span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
+            throw t;
+        }
+        finally {
+            span.end();
         }
     }
 
     @Override
     public StreamingResponse executeStreaming(Request request)
     {
-        requireNonNull(request, "request is null");
+        request = applyRequestFilters(request);
 
-        try {
-            return executeIntercepted(new ExecutionState(request, false));
-        }
-        catch (TransportException e) {
-            throw propagate(e.request(), e.exception());
-        }
-    }
+        Span span = startSpan(request);
+        request = injectTracing(request, span);
 
-    private StreamingResponse executeIntercepted(ExecutionState state)
-    {
-        return new RealChain(0, state.request(), state).proceed(state.request());
-    }
+        ExceptionHandler<StreamingResponse, RuntimeException> exceptionHandler = (r, exception) -> {
+            try {
+                span.setStatus(StatusCode.ERROR, exception.getMessage());
+                span.recordException(exception, Attributes.of(EXCEPTION_ESCAPED, true));
 
-    private StreamingResponse interceptTracing(HttpClientInterceptor.Chain chain)
-    {
-        RealChain realChain = (RealChain) chain;
-        ExecutionState state = realChain.state();
-
-        Span span = startSpan(chain.request());
-        state.setSpan(span);
-        Request tracedRequest = injectTracing(chain.request(), span);
-
-        try {
-            StreamingResponse response = requireNonNull(chain.proceed(tracedRequest), "interceptor returned null response");
-            return new ForwardingStreamingResponse(response, () -> {
-                try {
-                    response.close();
-                }
-                catch (Throwable t) {
-                    if (state.limitResponseSize()) {
-                        recordSpanFailure(span, t);
-                    }
-                    throw t;
-                }
-                finally {
-                    span.end();
-                }
-            });
-        }
-        catch (Throwable t) {
-            if (!(t instanceof TransportException) || !state.limitResponseSize()) {
-                Throwable failure = t instanceof TransportException transportException ? transportException.exception() : t;
-                recordSpanFailure(span, failure);
+                throw propagate(r, exception);
+            }
+            finally {
                 span.end();
             }
-            throwIfUnchecked(t);
-            throw new RuntimeException(t);
-        }
-    }
-
-    private static void recordSpanFailure(Span span, Throwable failure)
-    {
-        span.setStatus(StatusCode.ERROR, failure.getMessage());
-        span.recordException(failure, Attributes.of(EXCEPTION_ESCAPED, true));
-    }
-
-    private StreamingResponse executeTerminal(Request request, ExecutionState state)
-    {
-        OptionalLong maxResponseLength = state.limitResponseSize()
-                ? OptionalLong.of(getMaxResponseContentLength(request).toBytes())
-                : OptionalLong.empty();
-
-        ExceptionHandler<StreamingResponse, RuntimeException> exceptionHandler = (failedRequest, exception) -> {
-            throw new TransportException(failedRequest, exception);
         };
 
-        return switch (internalExecute(request, maxResponseLength, exceptionHandler, state.span())) {
+        return switch (internalExecute(request, OptionalLong.empty(), exceptionHandler, span)) {
             case InternalExceptionResponse(StreamingResponse exceptionResponse) -> exceptionResponse;
-            case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> new ForwardingStreamingResponse(jettyResponse, completionHandler);
+            case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> new StreamingResponse()
+            {
+                @Override
+                public io.airlift.http.client.HttpVersion getHttpVersion()
+                {
+                    return jettyResponse.getHttpVersion();
+                }
+
+                @Override
+                public int getStatusCode()
+                {
+                    return jettyResponse.getStatusCode();
+                }
+
+                @Override
+                public ListMultimap<HeaderName, String> getHeaders()
+                {
+                    return jettyResponse.getHeaders();
+                }
+
+                @Override
+                public Content getContent()
+                {
+                    return jettyResponse.getContent();
+                }
+
+                @Override
+                public InputStream getInputStream()
+                {
+                    return jettyResponse.getInputStream();
+                }
+
+                @Override
+                public long getBytesRead()
+                {
+                    return jettyResponse.getBytesRead();
+                }
+
+                @Override
+                public void close()
+                {
+                    try {
+                        completionHandler.run();
+                    }
+                    finally {
+                        span.end();
+                    }
+                }
+            };
         };
     }
 
@@ -804,166 +771,6 @@ public class JettyHttpClient
     {
         T handleException(Request request, Exception exception)
                 throws E;
-    }
-
-    private final class RealChain
-            implements HttpClientInterceptor.Chain
-    {
-        private final int index;
-        private final Request request;
-        private final ExecutionState state;
-
-        private RealChain(int index, Request request, ExecutionState state)
-        {
-            this.index = index;
-            this.request = requireNonNull(request, "request is null");
-            this.state = requireNonNull(state, "state is null");
-        }
-
-        @Override
-        public Request request()
-        {
-            return request;
-        }
-
-        @Override
-        public StreamingResponse proceed(Request request)
-        {
-            requireNonNull(request, "request is null");
-            state.setRequest(request);
-            if (index == interceptorChain.size()) {
-                return executeTerminal(request, state);
-            }
-            return requireNonNull(
-                    interceptorChain.get(index).intercept(new RealChain(index + 1, request, state)),
-                    "interceptor returned null response");
-        }
-
-        private ExecutionState state()
-        {
-            return state;
-        }
-    }
-
-    private static final class ExecutionState
-    {
-        private Request request;
-        private final boolean limitResponseSize;
-        private Span span;
-
-        private ExecutionState(Request request, boolean limitResponseSize)
-        {
-            this.request = requireNonNull(request, "request is null");
-            this.limitResponseSize = limitResponseSize;
-        }
-
-        private Request request()
-        {
-            return request;
-        }
-
-        private void setRequest(Request request)
-        {
-            this.request = requireNonNull(request, "request is null");
-        }
-
-        private boolean limitResponseSize()
-        {
-            return limitResponseSize;
-        }
-
-        private Span span()
-        {
-            return requireNonNull(span, "span is null");
-        }
-
-        private void setSpan(Span span)
-        {
-            this.span = requireNonNull(span, "span is null");
-        }
-    }
-
-    private static final class TransportException
-            extends RuntimeException
-    {
-        private final Request request;
-        private final Exception exception;
-
-        private TransportException(Request request, Exception exception)
-        {
-            super(exception);
-            this.request = requireNonNull(request, "request is null");
-            this.exception = requireNonNull(exception, "exception is null");
-        }
-
-        private Request request()
-        {
-            return request;
-        }
-
-        private Exception exception()
-        {
-            return exception;
-        }
-    }
-
-    private static final class ForwardingStreamingResponse
-            implements StreamingResponse
-    {
-        private final io.airlift.http.client.Response delegate;
-        private final Runnable closeHandler;
-        private final AtomicBoolean closed = new AtomicBoolean();
-
-        private ForwardingStreamingResponse(io.airlift.http.client.Response delegate, Runnable closeHandler)
-        {
-            this.delegate = requireNonNull(delegate, "delegate is null");
-            this.closeHandler = requireNonNull(closeHandler, "closeHandler is null");
-        }
-
-        @Override
-        public io.airlift.http.client.HttpVersion getHttpVersion()
-        {
-            return delegate.getHttpVersion();
-        }
-
-        @Override
-        public int getStatusCode()
-        {
-            return delegate.getStatusCode();
-        }
-
-        @Override
-        public ListMultimap<HeaderName, String> getHeaders()
-        {
-            return delegate.getHeaders();
-        }
-
-        @Override
-        public Content getContent()
-        {
-            return delegate.getContent();
-        }
-
-        @Override
-        public InputStream getInputStream()
-                throws IOException
-        {
-            return delegate.getInputStream();
-        }
-
-        @Override
-        public long getBytesRead()
-        {
-            return delegate.getBytesRead();
-        }
-
-        @Override
-        public void close()
-        {
-            if (closed.compareAndSet(false, true)) {
-                closeHandler.run();
-            }
-        }
     }
 
     @SuppressWarnings("unused")
