@@ -24,6 +24,7 @@ import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
 import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.ApiServiceType;
+import io.airlift.api.binding.ApiModule;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.openapi.models.OpenAPI;
@@ -42,6 +43,7 @@ import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
 import static io.airlift.api.builders.ApiBuilder.apiBuilder;
 import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.openapi.OpenApiMetadata.SecurityScheme.BEARER_ACCESS_TOKEN;
+import static io.airlift.api.openapi.OpenApiSecurityMetadata.TokenEndpointAuthenticationMethod.CLIENT_SECRET_BASIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -256,6 +258,159 @@ public class TestGeneratedClientCompatibilityOpenApi
     }
 
     @Test
+    public void testNamedSecurityMetadataAndOperationRequirements()
+    {
+        ModelApi modelApi = apiBuilder()
+                .add(NamedSecurityService.class)
+                .build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
+
+        OpenApiSecurityMetadata securityMetadata = new OpenApiSecurityMetadata(
+                Map.of(
+                        "serviceBearer", new OpenApiSecurityMetadata.BearerSecurityScheme("JWT"),
+                        "serviceBearerWithoutFormat", new OpenApiSecurityMetadata.BearerSecurityScheme(),
+                        "serviceBasic", new OpenApiSecurityMetadata.BasicSecurityScheme(),
+                        "serviceKey", new OpenApiSecurityMetadata.HeaderApiKeySecurityScheme("X-Service-Key"),
+                        "serviceOAuth", new OpenApiSecurityMetadata.OAuth2ClientCredentialsSecurityScheme(
+                                "/oauth/token",
+                                Map.of("status:read", "Read service status"),
+                                CLIENT_SECRET_BASIC)),
+                List.of(new OpenApiSecurityMetadata.SecurityRequirement(Map.of("serviceBearer", List.of()))));
+
+        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
+        OpenAPI openAPI = OpenApiProvider.create(
+                        modelApi.modelServices(),
+                        new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1),
+                        securityMetadata,
+                        ApiBuilderConfig.jackson())
+                .build(serviceType, _ -> true);
+
+        assertThat(openAPI.getComponents().getSecuritySchemes())
+                .containsOnlyKeys("serviceBearer", "serviceBearerWithoutFormat", "serviceBasic", "serviceKey", "serviceOAuth");
+        assertThat(openAPI.getComponents().getSecuritySchemes().get("serviceBearer"))
+                .extracting("type", "scheme", "bearerFormat")
+                .containsExactly(
+                        io.airlift.api.openapi.models.SecurityScheme.Type.HTTP,
+                        "bearer",
+                        "JWT");
+        assertThat(openAPI.getComponents().getSecuritySchemes().get("serviceBearerWithoutFormat"))
+                .extracting("type", "scheme", "bearerFormat")
+                .containsExactly(
+                        io.airlift.api.openapi.models.SecurityScheme.Type.HTTP,
+                        "bearer",
+                        null);
+        assertThat(openAPI.getComponents().getSecuritySchemes().get("serviceBasic"))
+                .extracting("type", "scheme")
+                .containsExactly(io.airlift.api.openapi.models.SecurityScheme.Type.HTTP, "basic");
+        assertThat(openAPI.getComponents().getSecuritySchemes().get("serviceKey"))
+                .extracting("type", "name", "in")
+                .containsExactly(
+                        io.airlift.api.openapi.models.SecurityScheme.Type.APIKEY,
+                        "X-Service-Key",
+                        io.airlift.api.openapi.models.SecurityScheme.In.HEADER);
+        assertThat(openAPI.getComponents().getSecuritySchemes().get("serviceOAuth").getFlows().getClientCredentials())
+                .satisfies(flow -> {
+                    assertThat(flow.getTokenUrl()).isEqualTo("/oauth/token");
+                    assertThat(flow.getScopes().getScopes()).containsEntry("status:read", "Read service status");
+                });
+        assertThat(openAPI.getComponents().getSecuritySchemes().get("serviceOAuth").getExtensions())
+                .containsEntry("x-airlift-token-endpoint-authentication-method", "client_secret_basic");
+        assertThat(openAPI.getSecurity()).singleElement().satisfies(requirement ->
+                assertThat(requirement.getMap()).containsEntry("serviceBearer", List.of()));
+
+        assertThat(openAPI.getPaths().getPaths().get("/compatibility/api/v1/combinedStatus").getGet().getSecurity())
+                .satisfiesExactly(
+                        requirement -> assertThat(requirement.getMap())
+                                .containsEntry("serviceBasic", List.of())
+                                .containsEntry("serviceKey", List.of()),
+                        requirement -> assertThat(requirement.getMap())
+                                .containsEntry("serviceOAuth", List.of("status:read")));
+        assertThat(openAPI.getPaths().getPaths().get("/compatibility/api/v1/publicStatus").getGet().getSecurity())
+                .singleElement()
+                .satisfies(requirement -> assertThat(requirement.getMap()).isEmpty());
+        assertThat(openAPI.getPaths().getPaths().get("/compatibility/api/v1/defaultStatus").getGet().getSecurity())
+                .isNull();
+    }
+
+    @Test
+    public void testOperationSecurityRequirementRejectsUndeclaredScope()
+    {
+        ModelApi modelApi = apiBuilder()
+                .add(UndeclaredScopeService.class)
+                .build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
+
+        OpenApiSecurityMetadata securityMetadata = new OpenApiSecurityMetadata(
+                Map.of("serviceOAuth", new OpenApiSecurityMetadata.OAuth2ClientCredentialsSecurityScheme(
+                        "/oauth/token",
+                        Map.of("status:read", "Read service status"),
+                        CLIENT_SECRET_BASIC)),
+                List.of());
+
+        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
+        assertThatThrownBy(() -> OpenApiProvider.create(
+                        modelApi.modelServices(),
+                        new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1),
+                        securityMetadata,
+                        ApiBuilderConfig.jackson())
+                .build(serviceType, _ -> true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("undeclared scope for scheme serviceOAuth: status:write");
+    }
+
+    @Test
+    public void testNamedSecurityValidation()
+    {
+        assertThatThrownBy(() -> new OpenApiSecurityMetadata(
+                Map.of("serviceBasic", new OpenApiSecurityMetadata.BasicSecurityScheme()),
+                List.of(new OpenApiSecurityMetadata.SecurityRequirement(Map.of("missing", List.of())))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unknown scheme: missing");
+
+        assertThatThrownBy(() -> new OpenApiSecurityMetadata(
+                Map.of("serviceBasic", new OpenApiSecurityMetadata.BasicSecurityScheme()),
+                List.of(new OpenApiSecurityMetadata.SecurityRequirement(Map.of("serviceBasic", List.of("invalid"))))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("scopes require an OAuth2 scheme: serviceBasic");
+
+        assertThatThrownBy(() -> new OpenApiSecurityMetadata(
+                Map.of("serviceOAuth", new OpenApiSecurityMetadata.OAuth2ClientCredentialsSecurityScheme(
+                        "/oauth/token",
+                        Map.of("status:read", "Read service status"),
+                        OpenApiSecurityMetadata.TokenEndpointAuthenticationMethod.CLIENT_SECRET_BASIC)),
+                List.of(new OpenApiSecurityMetadata.SecurityRequirement(Map.of("serviceOAuth", List.of("status:write"))))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("undeclared scope for scheme serviceOAuth: status:write");
+
+        assertThatThrownBy(() -> new OpenApiSecurityMetadata.HeaderApiKeySecurityScheme("Bad Header"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("headerName is not a valid HTTP header name: Bad Header");
+    }
+
+    @Test
+    public void testSecurityMetadataRequiresOpenApiMetadata()
+    {
+        assertThatThrownBy(() -> ApiModule.builder()
+                .addApi(apiBuilder -> apiBuilder.add(NamedSecurityService.class))
+                .withOpenApiSecurityMetadata(new OpenApiSecurityMetadata(
+                        Map.of("serviceBasic", new OpenApiSecurityMetadata.BasicSecurityScheme()),
+                        List.of()))
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("openApiSecurityMetadata requires openApiMetadata");
+    }
+
+    @Test
+    public void testSecuritySchemeNameMustBeComponentKey()
+    {
+        assertThatThrownBy(() -> new OpenApiSecurityMetadata(
+                Map.of("service/key", new OpenApiSecurityMetadata.BearerSecurityScheme(Optional.empty())),
+                List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("security scheme name is not a valid OpenAPI component key: service/key");
+    }
+
+    @Test
     public void testHeaderParameterNameMustBeHttpToken()
     {
         ModelApi modelApi = apiBuilder()
@@ -392,6 +547,56 @@ public class TestGeneratedClientCompatibilityOpenApi
         @OpenApiIdempotencyKey(header = "Idempotency-Key")
         public void createStatus() {}
     }
+
+    @ApiService(name = "undeclaredScope", type = CompatibilityServiceType.class, description = "Undeclared scope operation")
+    public static class UndeclaredScopeService
+    {
+        @ApiGet(description = "Require a scope the scheme does not declare")
+        @OpenApiSecurityRequirement(
+                @OpenApiSecuritySchemeRequirement(name = "serviceOAuth", scopes = "status:write"))
+        public PublicStatus undeclared()
+        {
+            return new PublicStatus("undeclared");
+        }
+    }
+
+    @ApiService(name = "namedSecurity", type = CompatibilityServiceType.class, description = "Named security operations")
+    public static class NamedSecurityService
+    {
+        @ApiGet(description = "Use an AND group or an OAuth alternative")
+        @OpenApiSecurityRequirement({
+                @OpenApiSecuritySchemeRequirement(name = "serviceBasic"),
+                @OpenApiSecuritySchemeRequirement(name = "serviceKey"),
+        })
+        @OpenApiSecurityRequirement(
+                @OpenApiSecuritySchemeRequirement(name = "serviceOAuth", scopes = "status:read"))
+        public CombinedStatus combined()
+        {
+            return new CombinedStatus("combined");
+        }
+
+        @ApiGet(description = "Explicitly public operation")
+        @OpenApiSecurityRequirement({})
+        public PublicStatus public_()
+        {
+            return new PublicStatus("public");
+        }
+
+        @ApiGet(description = "Use the default security")
+        public DefaultStatus defaultSecurity()
+        {
+            return new DefaultStatus("default");
+        }
+    }
+
+    @ApiResource(name = "combinedStatus", description = "Combined status")
+    public record CombinedStatus(String value) {}
+
+    @ApiResource(name = "publicStatus", description = "Public status")
+    public record PublicStatus(String value) {}
+
+    @ApiResource(name = "defaultStatus", description = "Default status")
+    public record DefaultStatus(String value) {}
 
     public static class CompatibilityServiceType
             implements ApiServiceType

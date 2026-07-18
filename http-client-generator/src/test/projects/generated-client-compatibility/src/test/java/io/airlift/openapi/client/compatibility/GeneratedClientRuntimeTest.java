@@ -20,6 +20,7 @@ import io.airlift.api.binding.ApiModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.BearerTokenProvider;
+import io.airlift.http.client.HttpClientCredentials;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.UnexpectedResponseException;
@@ -29,10 +30,12 @@ import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.openapi.client.generated.api.CompatibilityServiceClient;
+import io.airlift.openapi.client.generated.api.NamedAuthenticationServiceClient;
 import io.airlift.openapi.client.generated.ApiException;
 import io.airlift.openapi.client.generated.RetryPolicy;
 import io.airlift.openapi.client.generated.model.CompatibilityConflict;
 import io.airlift.openapi.client.generated.model.FrameKind;
+import io.airlift.openapi.client.generated.model.NamedStatus;
 import io.airlift.openapi.client.generated.model.QueryFrame;
 import io.airlift.openapi.client.generated.model.ServiceStatus;
 import io.airlift.openapi.client.generated.model.ServiceStatusPatch;
@@ -133,7 +136,7 @@ class GeneratedClientRuntimeTest
     @Test
     void testAuthenticatedPolymorphicRoundTrip()
     {
-        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, ACCESS_TOKEN);
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken(ACCESS_TOKEN));
 
         QueryFrame frame = client.getQueryFrame();
 
@@ -175,9 +178,9 @@ class GeneratedClientRuntimeTest
                 return true;
             }
         };
-        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, tokenProvider);
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken(tokenProvider));
         io.airlift.openapi.client.generated.second.api.CompatibilityServiceClient secondClient =
-                new io.airlift.openapi.client.generated.second.api.CompatibilityServiceClient(httpClient, baseUri, tokenProvider);
+                new io.airlift.openapi.client.generated.second.api.CompatibilityServiceClient(httpClient, baseUri, accessToken(tokenProvider));
 
         QueryFrame frame = client.getQueryFrame();
         Object secondFrame = secondClient.getQueryFrame();
@@ -209,7 +212,7 @@ class GeneratedClientRuntimeTest
                 return false;
             }
         };
-        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, tokenProvider);
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken(tokenProvider));
 
         assertThatThrownBy(client::getQueryFrame)
                 .isInstanceOf(ApiException.class)
@@ -240,7 +243,7 @@ class GeneratedClientRuntimeTest
                 return !token.get().equals(rejectedToken);
             }
         };
-        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, tokenProvider);
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken(tokenProvider));
 
         QueryFrame frame = client.getQueryFrame();
 
@@ -272,7 +275,7 @@ class GeneratedClientRuntimeTest
                 return true;
             }
         };
-        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, tokenProvider);
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken(tokenProvider));
 
         assertThatThrownBy(client::getQueryFrame)
                 .isInstanceOf(ApiException.class)
@@ -312,7 +315,7 @@ class GeneratedClientRuntimeTest
                 attempts.incrementAndGet();
                 return unauthorizedResponse(challenges.toArray(String[]::new));
             })) {
-                CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, tokenProvider);
+                CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(tokenProvider));
 
                 assertThatThrownBy(client::getQueryFrame)
                         .as("WWW-Authenticate values: %s", challenges)
@@ -461,7 +464,7 @@ class GeneratedClientRuntimeTest
             }
             return unauthorizedResponse("Basic realm=\"test,internal\", Bearer realm=\"api\"");
         })) {
-            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, provider, new RetryPolicy(2, NO_DELAY, NO_DELAY));
+            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(provider), new RetryPolicy(2, NO_DELAY, NO_DELAY));
             client.unsafeExecute();
             assertThat(attempts).hasValue(2);
             assertThat(refreshes).hasValue(1);
@@ -488,7 +491,7 @@ class GeneratedClientRuntimeTest
             repeatedAttempts.incrementAndGet();
             return unauthorizedResponse("Bearer");
         })) {
-            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, repeatedProvider, new RetryPolicy(2, NO_DELAY, NO_DELAY));
+            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(repeatedProvider), new RetryPolicy(2, NO_DELAY, NO_DELAY));
             assertThatThrownBy(client::unsafeExecute)
                     .isInstanceOf(ApiException.class)
                     .satisfies(exception -> assertThat(((ApiException) exception).getStatusCode()).isEqualTo(401));
@@ -509,7 +512,7 @@ class GeneratedClientRuntimeTest
             BearerTokenProvider failingProvider = () -> {
                 throw tokenFailure;
             };
-            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, failingProvider, new RetryPolicy(2, NO_DELAY, NO_DELAY));
+            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(failingProvider), new RetryPolicy(2, NO_DELAY, NO_DELAY));
             assertThatThrownBy(client::getServiceStatus)
                     .isInstanceOf(ApiException.class)
                     .hasMessage("getServiceStatus call failed")
@@ -538,12 +541,60 @@ class GeneratedClientRuntimeTest
             unauthorizedRequests.incrementAndGet();
             return unauthorizedResponse("Bearer");
         })) {
-            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, failingRefreshProvider, new RetryPolicy(2, NO_DELAY, NO_DELAY));
+            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(failingRefreshProvider), new RetryPolicy(2, NO_DELAY, NO_DELAY));
             assertThatThrownBy(client::getServiceStatus)
                     .isInstanceOf(ApiException.class)
                     .hasMessage("getServiceStatus call failed")
                     .hasCause(refreshFailure);
             assertThat(unauthorizedRequests).hasValue(1);
+        }
+    }
+
+    @Test
+    void testNamedAuthenticationAlternativeSelection()
+    {
+        HttpClientCredentials combinedCredentials = HttpClientCredentials.builder()
+                .basicAuth("serviceBasic", "client", "secret")
+                .headerApiKey("serviceKey", "header-secret")
+                .bearerToken("serviceBearer", BearerTokenProvider.fixedToken("unselected-token"))
+                .build();
+        try (TestingHttpClient testingHttpClient = new TestingHttpClient(request -> {
+            assertThat(request.getHeader(AUTHORIZATION)).isEqualTo("Basic Y2xpZW50OnNlY3JldA==");
+            assertThat(request.getHeader(HeaderName.of("X-Service-Key"))).isEqualTo("header-secret");
+            return mockResponse(OK, JSON_UTF_8, "{\"value\":\"combined\"}");
+        })) {
+            NamedAuthenticationServiceClient client = new NamedAuthenticationServiceClient(testingHttpClient, TEST_URI, combinedCredentials);
+            assertThat(client.combined()).isEqualTo(new NamedStatus("combined"));
+        }
+
+        HttpClientCredentials bearerCredentials = HttpClientCredentials.builder()
+                .bearerToken("serviceBearer", BearerTokenProvider.fixedToken("selected-token"))
+                .build();
+        try (TestingHttpClient testingHttpClient = new TestingHttpClient(request -> {
+            assertThat(request.getHeader(AUTHORIZATION)).isEqualTo("Bearer selected-token");
+            assertThat(request.getHeader(HeaderName.of("X-Service-Key"))).isNull();
+            return mockResponse(OK, JSON_UTF_8, "{\"value\":\"bearer\"}");
+        })) {
+            NamedAuthenticationServiceClient client = new NamedAuthenticationServiceClient(testingHttpClient, TEST_URI, bearerCredentials);
+            assertThat(client.combined()).isEqualTo(new NamedStatus("bearer"));
+        }
+
+        try (TestingHttpClient testingHttpClient = new TestingHttpClient(request -> {
+            assertThat(request.getHeader(AUTHORIZATION)).isNull();
+            assertThat(request.getHeader(HeaderName.of("X-Service-Key"))).isNull();
+            return mockResponse(OK, JSON_UTF_8, "{\"value\":\"public\"}");
+        })) {
+            NamedAuthenticationServiceClient client = new NamedAuthenticationServiceClient(testingHttpClient, TEST_URI, combinedCredentials);
+            assertThat(client.publicOperation()).isEqualTo(new NamedStatus("public"));
+        }
+
+        try (TestingHttpClient testingHttpClient = new TestingHttpClient(_ -> {
+            throw new AssertionError("request must not be sent without a satisfiable authentication alternative");
+        })) {
+            NamedAuthenticationServiceClient client = new NamedAuthenticationServiceClient(testingHttpClient, TEST_URI, HttpClientCredentials.none());
+            assertThatThrownBy(client::combined)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("No configured credentials satisfy authentication for operation 'combined'");
         }
     }
 
@@ -560,7 +611,7 @@ class GeneratedClientRuntimeTest
             CompatibilityServiceClient client = new CompatibilityServiceClient(
                     testingHttpClient,
                     URI.create("http://user:password@example.test/api?token=query-secret#fragment"),
-                    ACCESS_TOKEN,
+                    accessToken(ACCESS_TOKEN),
                     RetryPolicy.disabled());
 
             assertThatThrownBy(client::readFailure)
@@ -585,7 +636,7 @@ class GeneratedClientRuntimeTest
         }
 
         try (TestingHttpClient testingHttpClient = new TestingHttpClient(_ -> mockResponse(CONFLICT, JSON_UTF_8, "{\"message\":\"active\"}"))) {
-            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, ACCESS_TOKEN, RetryPolicy.disabled());
+            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(ACCESS_TOKEN), RetryPolicy.disabled());
             assertThatThrownBy(() -> client.safeExecute("request-key"))
                     .isInstanceOf(ApiException.class)
                     .satisfies(throwable -> {
@@ -610,15 +661,25 @@ class GeneratedClientRuntimeTest
         assertRawFallback(mockResponse(CONFLICT, JSON_UTF_8, oversized), oversized.substring(0, UnexpectedResponseException.DEFAULT_MAX_RESPONSE_BODY_BYTES), true);
     }
 
+    private static HttpClientCredentials accessToken(String token)
+    {
+        return accessToken(BearerTokenProvider.fixedToken(token));
+    }
+
+    private static HttpClientCredentials accessToken(BearerTokenProvider tokenProvider)
+    {
+        return HttpClientCredentials.builder().bearerToken("accessToken", tokenProvider).build();
+    }
+
     private static CompatibilityServiceClient client(TestingHttpClient httpClient, int maxRetries)
     {
-        return new CompatibilityServiceClient(httpClient, TEST_URI, ACCESS_TOKEN, new RetryPolicy(maxRetries, NO_DELAY, NO_DELAY));
+        return new CompatibilityServiceClient(httpClient, TEST_URI, accessToken(ACCESS_TOKEN), new RetryPolicy(maxRetries, NO_DELAY, NO_DELAY));
     }
 
     private static void assertRawFallback(io.airlift.http.client.Response response, String expectedBody, boolean truncated)
     {
         try (TestingHttpClient testingHttpClient = new TestingHttpClient(_ -> response)) {
-            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, ACCESS_TOKEN, RetryPolicy.disabled());
+            CompatibilityServiceClient client = new CompatibilityServiceClient(testingHttpClient, TEST_URI, accessToken(ACCESS_TOKEN), RetryPolicy.disabled());
             assertThatThrownBy(client::readFailure)
                     .isInstanceOf(ApiException.class)
                     .satisfies(throwable -> {

@@ -13,6 +13,8 @@
  */
 package io.airlift.http.client.generator;
 
+import com.google.inject.spi.Message;
+import io.airlift.configuration.ConfigurationFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openapitools.codegen.ClientOptInput;
@@ -27,11 +29,15 @@ import javax.tools.ToolProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,6 +45,84 @@ import static org.assertj.core.api.Assertions.fail;
 
 class AirliftHttpClientCodegenIntegrationTest
 {
+    @Test
+    void testGeneratesNamedAuthenticationAlternatives(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("mixed-authentication.yaml", outputPath);
+
+        Path clientFile = outputPath.resolve("src/main/java/org/openapitools/client/api/MixedClient.java");
+        assertThat(clientFile).exists();
+        String clientContent = Files.readString(clientFile);
+        assertThat(clientContent)
+                .contains("private final HttpClientCredentials credentials")
+                .doesNotContain("private final String apiKey")
+                .containsSubsequence(
+                        "if (credentials.hasBasicAuth(\"serviceBasic\") && credentials.hasHeaderApiKey(\"serviceKey\"))",
+                        "else if (credentials.hasBearerToken(\"serviceBearer\"))")
+                .contains("credentials.applyBasicAuth(\"serviceBasic\", requestBuilder)")
+                .contains("credentials.applyHeaderApiKey(\"serviceKey\", \"X-Service-Key\", requestBuilder)")
+                .contains("credentials.applyBearerToken(\"serviceBearer\", bearerToken, requestBuilder)")
+                .contains("credentials.bearerTokenProvider(\"serviceOAuth\")")
+                .doesNotContain("if (true)")
+                .contains("No configured credentials satisfy authentication for operation")
+                .doesNotContain("query-secret", "cookie-secret");
+
+        Path configFile = outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java");
+        assertThat(configFile).exists();
+        String configContent = Files.readString(configFile);
+        assertThat(configContent)
+                .contains("setServiceBearerToken")
+                .contains("setServiceBasicUsername")
+                .contains("setServiceBasicPassword")
+                .contains("setServiceKeyApiKey")
+                .contains("setServiceOAuthToken")
+                .contains("HttpClientCredentials getCredentials()")
+                .doesNotContain("public String getApiKey()");
+
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testGeneratesNonBearerAuthentication(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("non-bearer-authentication.yaml", outputPath);
+
+        Path clientFile = outputPath.resolve("src/main/java/org/openapitools/client/api/NonBearerClient.java");
+        assertThat(clientFile).exists();
+        assertThat(Files.readString(clientFile))
+                .contains("credentials.applyBasicAuth(\"serviceBasic\", requestBuilder)")
+                .contains("credentials.applyHeaderApiKey(\"serviceKey\", \"X-Service-Key\", requestBuilder)")
+                .doesNotContain("authenticationBearerTokenProvider", "NO_BEARER_TOKEN");
+
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsQueryApiKey(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("query-api-key.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("API key scheme 'queryKey' uses unsupported location 'query'; only header API keys are supported");
+    }
+
+    @Test
+    void testRejectsInvalidHeaderApiKeyName(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("invalid-header-name.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Header API key scheme 'serviceKey' has an invalid header name 'Bad Header'");
+    }
+
+    @Test
+    void testRejectsCollidingAuthenticationNames(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("colliding-authentication-names.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Security scheme names 'service-key' and 'service_key' generate the same Java property 'serviceKey'");
+    }
+
     @Test
     void testGeneratesResponseRanges(@TempDir Path outputPath)
             throws Exception
@@ -236,6 +320,27 @@ class AirliftHttpClientCodegenIntegrationTest
         verifyGeneratedCodeCompiles(outputPath);
     }
 
+    private void assertCredentialsOptional(Path classesDir, String configClassName, String configPrefix, String credentialProperty)
+            throws Exception
+    {
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] {classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> configClass = classLoader.loadClass(configClassName);
+            Map<String, String> baseUriOnly = Map.of(configPrefix + ".base-uri", "https://example.test");
+            assertThat(configurationErrors(configClass, baseUriOnly)).isEmpty();
+
+            Map<String, String> withCredential = new java.util.HashMap<>(baseUriOnly);
+            withCredential.put(configPrefix + "." + credentialProperty, "secret");
+            assertThat(configurationErrors(configClass, withCredential)).isEmpty();
+        }
+    }
+
+    private static List<Message> configurationErrors(Class<?> configClass, Map<String, String> properties)
+    {
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        configurationFactory.registerConfigurationClasses(List.of(binder -> configBinder(binder).bindConfig(configClass)));
+        return configurationFactory.validateRegisteredConfigurationProvider();
+    }
+
     private static void generate(String resourceName, Path outputPath)
     {
         String inputSpec = AirliftHttpClientCodegenIntegrationTest.class.getClassLoader().getResource(resourceName).getFile();
@@ -279,20 +384,17 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).contains("public class OpenAiClient");
         assertThat(clientContent).contains("private final HttpClient httpClient");
         assertThat(clientContent).contains("private final URI baseUri");
-        assertThat(clientContent).contains("private final BearerTokenProvider bearerTokenProvider");
+        assertThat(clientContent).contains("private final HttpClientCredentials credentials");
         assertThat(clientContent).doesNotContain("private final String apiKey");
 
         // Bearer auth: Authorization header
-        assertThat(clientContent).contains("import static io.airlift.http.client.HeaderNames.AUTHORIZATION;");
-        assertThat(clientContent).contains(".setHeader(AUTHORIZATION, \"Bearer \" + bearerToken)");
+        assertThat(clientContent).contains("credentials.applyBearerToken(\"bearerAuth\", bearerToken, requestBuilder)");
 
-        // Existing string constructor remains and dynamic providers are supported
-        assertThat(clientContent).contains("config.getApiKey()");
-        assertThat(clientContent).contains("import io.airlift.http.client.BearerTokenProvider;");
-        assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, String apiKey)");
-        assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, BearerTokenProvider bearerTokenProvider)");
-        assertThat(clientContent).contains("BearerTokenProvider.fixedToken(apiKey)");
-        assertThat(clientContent).contains("retryPolicy.execute(\"generateCompletion\", \"POST\", null, bearerTokenProvider");
+        // credentials are always the named HttpClientCredentials; no per-scheme convenience constructors
+        assertThat(clientContent).contains("config.getCredentials()");
+        assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials)");
+        assertThat(clientContent).doesNotContain("URI baseUri, String apiKey)", "URI baseUri, BearerTokenProvider bearerTokenProvider)");
+        assertThat(clientContent).contains("retryPolicy.execute(\"generateCompletion\", \"POST\", null, authenticationBearerTokenProvider");
 
         Path bearerTokenProviderFile = outputPath.resolve(
                 "src/main/java/io/trino/plugin/ai/generated/BearerTokenProvider.java");
@@ -331,16 +433,17 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).doesNotContain("listJsonCodec");
         assertThat(clientContent).doesNotContain("mapJsonCodec");
 
-        // Verify config has apiKey
+        // Verify config exposes the bearer token under the scheme name
         Path clientConfig = outputPath.resolve(
                 "src/main/java/io/trino/plugin/ai/generated/OpenAiClientConfig.java");
         assertThat(clientConfig).exists();
         String configContent = Files.readString(clientConfig);
-        assertThat(configContent).contains("getApiKey");
-        assertThat(configContent).contains("setApiKey");
-        assertThat(configContent).contains("@Config(\"openai.api-key\")");
+        assertThat(configContent).contains("getBearerAuthToken");
+        assertThat(configContent).contains("setBearerAuthToken");
+        assertThat(configContent).contains("@Config(\"openai.bearer-auth.token\")");
         assertThat(configContent).contains("@ConfigSecuritySensitive");
         assertThat(configContent).contains("@Config(\"openai.base-uri\")");
+        assertThat(configContent).doesNotContain("getApiKey", "api-key", "@NotNull\n    public String getBearerAuthToken()");
 
         // Verify binding annotation uses correct PascalCase
         Path annotation = outputPath.resolve(
@@ -348,8 +451,55 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(annotation).exists();
         assertThat(Files.readString(annotation)).contains("public @interface ForOpenAi");
 
-        // Verify generated code compiles
+        // Verify generated code compiles and the bearer token is optional at bootstrap like every other credential
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        assertCredentialsOptional(classesDir, "io.trino.plugin.ai.generated.OpenAiClientConfig", "openai", "bearer-auth.token");
+    }
+
+    @Test
+    void testOptionalAuthenticationTriesCredentialsFirst(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("optional-authentication.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java"));
+        assertThat(client).contains("if (credentials.hasBearerToken(\"serviceBearer\")) {");
+        assertThat(client).contains("else if (true) {");
+        assertThat(client.indexOf("if (credentials.hasBearerToken(\"serviceBearer\")) {")).isLessThan(client.indexOf("else if (true) {"));
         verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsDigitLeadingAuthenticationName(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("digit-authentication-name.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Security scheme name '1key' does not generate a valid Java identifier");
+    }
+
+    @Test
+    void testRejectsCollidingAuthenticationHeaders(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("colliding-authentication-headers.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Security requirement for operation 'status' applies several schemes to the authorization header");
+    }
+
+    @Test
+    void testGeneratesHeaderApiKeyConfiguration(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("header-api-key.yaml", outputPath);
+
+        Path configFile = outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java");
+        assertThat(Files.readString(configFile))
+                .contains("@Config(\"api.service-key.api-key\")")
+                .contains("builder.headerApiKey(\"serviceKey\", serviceKeyApiKey)")
+                .doesNotContain("@Config(\"api.api-key\")", "getApiKey()");
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        assertCredentialsOptional(classesDir, "org.openapitools.client.ApiClientConfig", "api", "service-key.api-key");
     }
 
     @Test
@@ -424,7 +574,7 @@ class AirliftHttpClientCodegenIntegrationTest
         }
     }
 
-    private void verifyGeneratedCodeCompiles(Path outputDir)
+    private Path verifyGeneratedCodeCompiles(Path outputDir)
             throws IOException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -476,5 +626,6 @@ class AirliftHttpClientCodegenIntegrationTest
                 fail("Generated code failed to compile:\n%s".formatted(errors));
             }
         }
+        return classesDir;
     }
 }

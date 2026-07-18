@@ -2,9 +2,10 @@
 package {{invokerPackage}};
 
 import io.airlift.configuration.Config;
-{{#hasAuthMethods}}
+{{#x_has_auth_methods}}
 import io.airlift.configuration.ConfigSecuritySensitive;
-{{/hasAuthMethods}}
+import io.airlift.http.client.HttpClientCredentials;
+{{/x_has_auth_methods}}
 import io.airlift.units.Duration;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,9 +15,20 @@ import java.util.concurrent.TimeUnit;
 public class {{clientName}}ClientConfig
 {
     private URI baseUri;
-{{#hasAuthMethods}}
-    private String apiKey;
-{{/hasAuthMethods}}
+{{#x_has_auth_methods}}
+{{#x_auth_schemes}}
+{{#isBearer}}
+    private String {{propertyName}}Token;
+{{/isBearer}}
+{{#isBasic}}
+    private String {{propertyName}}Username;
+    private String {{propertyName}}Password;
+{{/isBasic}}
+{{#isHeaderApiKey}}
+    private String {{propertyName}}ApiKey;
+{{/isHeaderApiKey}}
+{{/x_auth_schemes}}
+{{/x_has_auth_methods}}
     private int maxRetries = 3;
     private Duration retryInitialDelay = new Duration(100, TimeUnit.MILLISECONDS);
     private Duration retryMaxDelay = new Duration(1, TimeUnit.SECONDS);
@@ -33,22 +45,94 @@ public class {{clientName}}ClientConfig
         this.baseUri = baseUri;
         return this;
     }
-{{#hasAuthMethods}}
+{{#x_has_auth_methods}}
+{{#x_auth_schemes}}
+{{#isBearer}}
 
-    @NotNull
-    public String getApiKey()
+    public String get{{methodName}}Token()
     {
-        return apiKey;
+        return {{propertyName}}Token;
     }
 
-    @Config("{{clientNameLower}}.api-key")
+    @Config("{{clientNameLower}}.{{configName}}.token")
     @ConfigSecuritySensitive
-    public {{clientName}}ClientConfig setApiKey(String apiKey)
+    public {{clientName}}ClientConfig set{{methodName}}Token(String {{propertyName}}Token)
     {
-        this.apiKey = apiKey;
+        this.{{propertyName}}Token = {{propertyName}}Token;
         return this;
     }
-{{/hasAuthMethods}}
+{{/isBearer}}
+{{#isBasic}}
+
+    public String get{{methodName}}Username()
+    {
+        return {{propertyName}}Username;
+    }
+
+    @Config("{{clientNameLower}}.{{configName}}.username")
+    @ConfigSecuritySensitive
+    public {{clientName}}ClientConfig set{{methodName}}Username(String {{propertyName}}Username)
+    {
+        this.{{propertyName}}Username = {{propertyName}}Username;
+        return this;
+    }
+
+    public String get{{methodName}}Password()
+    {
+        return {{propertyName}}Password;
+    }
+
+    @Config("{{clientNameLower}}.{{configName}}.password")
+    @ConfigSecuritySensitive
+    public {{clientName}}ClientConfig set{{methodName}}Password(String {{propertyName}}Password)
+    {
+        this.{{propertyName}}Password = {{propertyName}}Password;
+        return this;
+    }
+{{/isBasic}}
+{{#isHeaderApiKey}}
+
+    public String get{{methodName}}ApiKey()
+    {
+        return {{propertyName}}ApiKey;
+    }
+
+    @Config("{{clientNameLower}}.{{configName}}.api-key")
+    @ConfigSecuritySensitive
+    public {{clientName}}ClientConfig set{{methodName}}ApiKey(String {{propertyName}}ApiKey)
+    {
+        this.{{propertyName}}ApiKey = {{propertyName}}ApiKey;
+        return this;
+    }
+{{/isHeaderApiKey}}
+{{/x_auth_schemes}}
+
+    public HttpClientCredentials getCredentials()
+    {
+        HttpClientCredentials.Builder builder = HttpClientCredentials.builder();
+{{#x_auth_schemes}}
+{{#isBearer}}
+        if ({{propertyName}}Token != null) {
+            builder.bearerToken("{{name}}", () -> {{propertyName}}Token);
+        }
+{{/isBearer}}
+{{#isBasic}}
+        if (({{propertyName}}Username == null) != ({{propertyName}}Password == null)) {
+            throw new IllegalStateException("Both username and password must be configured for security scheme '{{name}}'");
+        }
+        if ({{propertyName}}Username != null) {
+            builder.basicAuth("{{name}}", {{propertyName}}Username, {{propertyName}}Password);
+        }
+{{/isBasic}}
+{{#isHeaderApiKey}}
+        if ({{propertyName}}ApiKey != null) {
+            builder.headerApiKey("{{name}}", {{propertyName}}ApiKey);
+        }
+{{/isHeaderApiKey}}
+{{/x_auth_schemes}}
+        return builder.build();
+    }
+{{/x_has_auth_methods}}
 
     public int getMaxRetries()
     {

@@ -14,10 +14,14 @@
 package io.airlift.http.client.generator;
 
 import com.google.common.base.CaseFormat;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenResponse;
-import org.openapitools.codegen.CodegenSecurity;
 import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.languages.JavaClientCodegen;
@@ -29,17 +33,30 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+import static org.openapitools.codegen.utils.CamelizeOption.LOWERCASE_FIRST_LETTER;
 import static org.openapitools.codegen.utils.StringUtils.camelize;
 
 public class AirliftHttpClientCodegen
         extends JavaClientCodegen
 {
+    // RFC 9110 token: the characters allowed in an HTTP field name
+    private static final Pattern HTTP_TOKEN = Pattern.compile("[!#$%&'*+.^_`|~0-9A-Za-z-]+");
+
     public static final String GENERATOR_NAME = "airlift-http-client";
+
+    private final Map<String, AuthenticationScheme> authenticationSchemes = new LinkedHashMap<>();
+    private List<SecurityRequirement> defaultSecurityRequirements = List.of();
 
     public AirliftHttpClientCodegen()
     {
@@ -139,6 +156,37 @@ public class AirliftHttpClientCodegen
     }
 
     @Override
+    public void preprocessOpenAPI(OpenAPI openAPI)
+    {
+        super.preprocessOpenAPI(openAPI);
+
+        authenticationSchemes.clear();
+        if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null) {
+            validateAuthenticationSchemeNames(openAPI.getComponents().getSecuritySchemes().keySet());
+            openAPI.getComponents().getSecuritySchemes().forEach((name, scheme) ->
+                    authenticationSchemes.put(name, authenticationScheme(name, scheme)));
+        }
+        defaultSecurityRequirements = openAPI.getSecurity() == null ? List.of() : List.copyOf(openAPI.getSecurity());
+
+        List<Map<String, Object>> schemes = authenticationSchemes.values().stream()
+                .map(AuthenticationScheme::templateData)
+                .toList();
+        additionalProperties.put("x_auth_schemes", schemes);
+        // openapi-generator sets its own hasAuthMethods whenever a scheme is declared, so the configuration
+        // template keys off a generator-owned property that only counts schemes an operation requires
+        additionalProperties.put("x_has_auth_methods", !schemes.isEmpty());
+    }
+
+    @Override
+    public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, List<Server> servers)
+    {
+        CodegenOperation codegenOperation = super.fromOperation(path, httpMethod, operation, servers);
+        List<SecurityRequirement> requirements = operation.getSecurity() == null ? defaultSecurityRequirements : operation.getSecurity();
+        configureAuthentication(codegenOperation, requirements == null ? List.of() : requirements);
+        return codegenOperation;
+    }
+
+    @Override
     public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels)
     {
         objs = super.postProcessOperationsWithModels(objs, allModels);
@@ -219,20 +267,12 @@ public class AirliftHttpClientCodegen
                 usesQueryParams = true;
             }
 
-            if (operation.hasAuthMethods) {
+            if (Boolean.TRUE.equals(operation.vendorExtensions.get("x_has_auth_requirements"))) {
                 hasAuth = true;
-                boolean operationHasBearerAuth = false;
-                boolean operationHasNonBearerAuth = false;
-                for (CodegenSecurity auth : operation.authMethods) {
-                    if (Boolean.TRUE.equals(auth.isBasicBearer)) {
-                        hasBearerAuth = true;
-                        operationHasBearerAuth = true;
-                    }
-                    else {
-                        hasNonBearerAuth = true;
-                        operationHasNonBearerAuth = true;
-                    }
-                }
+                boolean operationHasBearerAuth = Boolean.TRUE.equals(operation.vendorExtensions.get("x_has_bearer_auth"));
+                boolean operationHasNonBearerAuth = Boolean.TRUE.equals(operation.vendorExtensions.get("x_has_non_bearer_auth"));
+                hasBearerAuth |= operationHasBearerAuth;
+                hasNonBearerAuth |= operationHasNonBearerAuth;
                 operation.vendorExtensions.put("x_has_bearer_auth", operationHasBearerAuth);
                 operation.vendorExtensions.put("x_has_non_bearer_auth", operationHasNonBearerAuth);
             }
@@ -315,13 +355,201 @@ public class AirliftHttpClientCodegen
 
         // Set global auth flag for supporting file templates (clientConfig, etc.)
         if (hasAuth) {
-            additionalProperties.put("hasAuthMethods", true);
+            additionalProperties.put("x_has_auth_methods", true);
         }
         if (hasBearerAuth) {
             additionalProperties.put("hasBearerAuthMethods", true);
         }
 
         return objs;
+    }
+
+    private void configureAuthentication(CodegenOperation operation, List<SecurityRequirement> requirements)
+    {
+        // an empty requirement object is a valid public alternative; when every alternative is empty
+        // the operation is public and must not depend on credentials the configuration does not generate
+        if (requirements.stream().allMatch(Map::isEmpty)) {
+            operation.vendorExtensions.put("x_has_auth_requirements", false);
+            operation.vendorExtensions.put("x_auth_requirements", List.of());
+            return;
+        }
+
+        // the alternatives are a disjunction, so their order is free; an empty alternative is always satisfied
+        // and must be tried last, otherwise the client would call anonymously despite configured credentials
+        requirements.forEach(requirement -> requireNonNull(requirement, "security requirement is null"));
+        List<SecurityRequirement> orderedRequirements = new ArrayList<>();
+        requirements.stream().filter(requirement -> !requirement.isEmpty()).forEach(orderedRequirements::add);
+        requirements.stream().filter(Map::isEmpty).forEach(orderedRequirements::add);
+
+        boolean hasBearer = false;
+        boolean hasNonBearer = false;
+        List<Map<String, Object>> alternatives = new ArrayList<>();
+        for (int index = 0; index < orderedRequirements.size(); index++) {
+            SecurityRequirement requirement = orderedRequirements.get(index);
+            List<Map<String, Object>> schemes = new ArrayList<>();
+            List<String> conditions = new ArrayList<>();
+            int authorizationSchemes = 0;
+            String bearerSchemeName = null;
+            for (Map.Entry<String, List<String>> entry : requirement.entrySet()) {
+                AuthenticationScheme scheme = authenticationSchemes.get(entry.getKey());
+                checkArgument(scheme != null, "Security requirement references unknown scheme '%s'", entry.getKey());
+                if (!entry.getValue().isEmpty() && scheme.type() != AuthenticationType.BEARER) {
+                    throw new IllegalArgumentException("Scopes are only supported for OAuth2 bearer scheme '%s'".formatted(scheme.name()));
+                }
+                if (scheme.type() == AuthenticationType.BEARER || scheme.type() == AuthenticationType.BASIC) {
+                    authorizationSchemes++;
+                }
+                if (scheme.type() == AuthenticationType.BEARER) {
+                    bearerSchemeName = scheme.name();
+                    hasBearer = true;
+                }
+                else {
+                    hasNonBearer = true;
+                }
+                schemes.add(scheme.templateData());
+                conditions.add(scheme.configuredCondition());
+            }
+            checkArgument(authorizationSchemes <= 1, "Security requirement for operation '%s' contains multiple Authorization header schemes", operation.operationId);
+            // every credential is applied with setHeader, so two schemes on one header name would drop one of them
+            Set<String> headerNames = new LinkedHashSet<>();
+            for (String name : requirement.keySet()) {
+                AuthenticationScheme scheme = authenticationSchemes.get(name);
+                String header = scheme.type() == AuthenticationType.HEADER_API_KEY ? scheme.headerName() : "Authorization";
+                checkArgument(headerNames.add(header.toLowerCase(Locale.ENGLISH)),
+                        "Security requirement for operation '%s' applies several schemes to the %s header",
+                        operation.operationId,
+                        header);
+            }
+
+            Map<String, Object> alternative = new LinkedHashMap<>();
+            alternative.put("index", index);
+            alternative.put("first", index == 0);
+            alternative.put("condition", conditions.isEmpty() ? "true" : String.join(" && ", conditions));
+            alternative.put("schemes", List.copyOf(schemes));
+            alternative.put("hasBearer", bearerSchemeName != null);
+            alternative.put("bearerSchemeName", bearerSchemeName == null ? "" : javaString(bearerSchemeName));
+            alternatives.add(Map.copyOf(alternative));
+        }
+
+        operation.hasAuthMethods = true;
+        operation.vendorExtensions.put("x_has_auth_requirements", true);
+        operation.vendorExtensions.put("x_auth_requirements", List.copyOf(alternatives));
+        operation.vendorExtensions.put("x_has_bearer_auth", hasBearer);
+        operation.vendorExtensions.put("x_has_non_bearer_auth", hasNonBearer);
+    }
+
+    private static AuthenticationScheme authenticationScheme(String name, SecurityScheme scheme)
+    {
+        requireNonNull(name, "security scheme name is null");
+        requireNonNull(scheme, "security scheme is null");
+        if (scheme.getType() == SecurityScheme.Type.HTTP && "bearer".equalsIgnoreCase(scheme.getScheme())) {
+            return new AuthenticationScheme(name, AuthenticationType.BEARER, null);
+        }
+        if (scheme.getType() == SecurityScheme.Type.HTTP && "basic".equalsIgnoreCase(scheme.getScheme())) {
+            return new AuthenticationScheme(name, AuthenticationType.BASIC, null);
+        }
+        if (scheme.getType() == SecurityScheme.Type.APIKEY) {
+            checkArgument(scheme.getIn() == SecurityScheme.In.HEADER, "API key scheme '%s' uses unsupported location '%s'; only header API keys are supported", name, scheme.getIn());
+            checkArgument(scheme.getName() != null && !scheme.getName().isBlank(), "Header API key scheme '%s' has no header name", name);
+            checkArgument(HTTP_TOKEN.matcher(scheme.getName()).matches(), "Header API key scheme '%s' has an invalid header name '%s'", name, scheme.getName());
+            return new AuthenticationScheme(name, AuthenticationType.HEADER_API_KEY, scheme.getName());
+        }
+        if (scheme.getType() == SecurityScheme.Type.OAUTH2 && scheme.getFlows() != null && scheme.getFlows().getClientCredentials() != null) {
+            return new AuthenticationScheme(name, AuthenticationType.BEARER, null);
+        }
+        throw new IllegalArgumentException("Unsupported security scheme '%s'".formatted(name));
+    }
+
+    private static void validateAuthenticationSchemeNames(Set<String> names)
+    {
+        // the property name is always suffixed, so a keyword is harmless but a leading digit is not an identifier
+        names.forEach(name -> checkArgument(
+                !Character.isDigit(AuthenticationScheme.toPropertyName(name).charAt(0)),
+                "Security scheme name '%s' does not generate a valid Java identifier",
+                name));
+        validateDistinctNormalizedNames(names, "Java property", AuthenticationScheme::toPropertyName);
+        validateDistinctNormalizedNames(names, "Java method", AuthenticationScheme::toMethodName);
+        validateDistinctNormalizedNames(names, "configuration property", AuthenticationScheme::toConfigName);
+    }
+
+    private static void validateDistinctNormalizedNames(Set<String> names, String identifierType, Function<String, String> normalizer)
+    {
+        Map<String, String> normalizedNames = new LinkedHashMap<>();
+        for (String name : names) {
+            String normalizedName = normalizer.apply(name);
+            String previous = normalizedNames.putIfAbsent(normalizedName, name);
+            checkArgument(
+                    previous == null || previous.equals(name),
+                    "Security scheme names '%s' and '%s' generate the same %s '%s'",
+                    previous,
+                    name,
+                    identifierType,
+                    normalizedName);
+        }
+    }
+
+    private static String javaString(String value)
+    {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private enum AuthenticationType
+    {
+        BEARER,
+        BASIC,
+        HEADER_API_KEY,
+    }
+
+    private record AuthenticationScheme(String name, AuthenticationType type, String headerName)
+    {
+        private AuthenticationScheme
+        {
+            requireNonNull(name, "name is null");
+            requireNonNull(type, "type is null");
+        }
+
+        private String configuredCondition()
+        {
+            return switch (type) {
+                case BEARER -> "credentials.hasBearerToken(\"%s\")".formatted(javaString(name));
+                case BASIC -> "credentials.hasBasicAuth(\"%s\")".formatted(javaString(name));
+                case HEADER_API_KEY -> "credentials.hasHeaderApiKey(\"%s\")".formatted(javaString(name));
+            };
+        }
+
+        private Map<String, Object> templateData()
+        {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("name", javaString(name));
+            data.put("propertyName", toPropertyName(name));
+            data.put("methodName", toMethodName(name));
+            data.put("configName", toConfigName(name));
+            data.put("headerName", headerName == null ? "" : javaString(headerName));
+            data.put("isBearer", type == AuthenticationType.BEARER);
+            data.put("isBasic", type == AuthenticationType.BASIC);
+            data.put("isHeaderApiKey", type == AuthenticationType.HEADER_API_KEY);
+            return Map.copyOf(data);
+        }
+
+        private static String toPropertyName(String name)
+        {
+            String camelized = camelize(name.replaceAll("[^A-Za-z0-9]+", "_"), LOWERCASE_FIRST_LETTER);
+            return camelized.isEmpty() ? "credentials" : camelized;
+        }
+
+        private static String toMethodName(String name)
+        {
+            String camelized = camelize(name.replaceAll("[^A-Za-z0-9]+", "_"));
+            return camelized.isEmpty() ? "Credentials" : camelized;
+        }
+
+        private static String toConfigName(String name)
+        {
+            return name.replaceAll("([a-z0-9])([A-Z])", "$1-$2")
+                    .replaceAll("[^A-Za-z0-9]+", "-")
+                    .replaceAll("^-|-$", "")
+                    .toLowerCase(Locale.ENGLISH);
+        }
     }
 
     private static boolean isSuccessResponse(CodegenResponse response)

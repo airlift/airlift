@@ -5,9 +5,12 @@ package {{package}};
 import {{import}};
 {{/imports}}
 import {{invokerPackage}}.ApiException;
+{{#x_has_auth}}
 {{#x_has_bearer_auth}}
 import io.airlift.http.client.BearerTokenProvider;
 {{/x_has_bearer_auth}}
+import io.airlift.http.client.HttpClientCredentials;
+{{/x_has_auth}}
 import {{invokerPackage}}.For{{clientName}};
 import {{invokerPackage}}.RetryPolicy;
 import {{invokerPackage}}.{{clientName}}ClientConfig;
@@ -28,9 +31,6 @@ import java.util.List;
 import java.util.Map;
 {{/x_uses_map_codec}}
 
-{{#x_has_bearer_auth}}
-import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
-{{/x_has_bearer_auth}}
 {{#x_uses_body}}
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 {{/x_uses_body}}
@@ -79,12 +79,13 @@ public class {{classname}}
 {
     private final HttpClient httpClient;
     private final URI baseUri;
-{{#x_has_non_bearer_auth}}
-    private final String apiKey;
-{{/x_has_non_bearer_auth}}
+{{#x_has_auth}}
 {{#x_has_bearer_auth}}
-    private final BearerTokenProvider bearerTokenProvider;
+    private static final BearerTokenProvider NO_BEARER_TOKEN = () -> "";
 {{/x_has_bearer_auth}}
+
+    private final HttpClientCredentials credentials;
+{{/x_has_auth}}
     private final RetryPolicy retryPolicy;
 
 {{#x_uses_body}}
@@ -96,57 +97,23 @@ public class {{classname}}
 {{/x_codecs}}
 
     @Inject
-{{#x_has_bearer_auth}}
-    public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
-    {
-        this(httpClient, config.getBaseUri(), {{#x_has_non_bearer_auth}}config.getApiKey(), {{/x_has_non_bearer_auth}}BearerTokenProvider.fixedToken(config.getApiKey()),
-                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
-    }
-
-    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey)
-    {
-        this(httpClient, baseUri, {{#x_has_non_bearer_auth}}apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider.fixedToken(apiKey), RetryPolicy.withDefaults());
-    }
-
-    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey, RetryPolicy retryPolicy)
-    {
-        this(httpClient, baseUri, {{#x_has_non_bearer_auth}}apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider.fixedToken(apiKey), retryPolicy);
-    }
-
-    public {{classname}}(HttpClient httpClient, URI baseUri, {{#x_has_non_bearer_auth}}String apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider bearerTokenProvider)
-    {
-        this(httpClient, baseUri, {{#x_has_non_bearer_auth}}apiKey, {{/x_has_non_bearer_auth}}bearerTokenProvider, RetryPolicy.withDefaults());
-    }
-
-    public {{classname}}(HttpClient httpClient, URI baseUri, {{#x_has_non_bearer_auth}}String apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider bearerTokenProvider, RetryPolicy retryPolicy)
-    {
-        this.httpClient = requireNonNull(httpClient, "httpClient is null");
-        this.baseUri = requireNonNull(baseUri, "baseUri is null");
-{{#x_has_non_bearer_auth}}
-        this.apiKey = requireNonNull(apiKey, "apiKey is null");
-{{/x_has_non_bearer_auth}}
-        this.bearerTokenProvider = requireNonNull(bearerTokenProvider, "bearerTokenProvider is null");
-        this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
-    }
-{{/x_has_bearer_auth}}
-{{^x_has_bearer_auth}}
 {{#x_has_auth}}
     public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
     {
-        this(httpClient, config.getBaseUri(), config.getApiKey(),
+        this(httpClient, config.getBaseUri(), config.getCredentials(),
                 new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
     }
 
-    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey)
+    public {{classname}}(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials)
     {
-        this(httpClient, baseUri, apiKey, RetryPolicy.withDefaults());
+        this(httpClient, baseUri, credentials, RetryPolicy.withDefaults());
     }
 
-    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey, RetryPolicy retryPolicy)
+    public {{classname}}(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials, RetryPolicy retryPolicy)
     {
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
         this.baseUri = requireNonNull(baseUri, "baseUri is null");
-        this.apiKey = requireNonNull(apiKey, "apiKey is null");
+        this.credentials = requireNonNull(credentials, "credentials is null");
         this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
     }
 {{/x_has_auth}}
@@ -169,7 +136,6 @@ public class {{classname}}
         this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
     }
 {{/x_has_auth}}
-{{/x_has_bearer_auth}}
 
 {{#operation}}
 {{#vendorExtensions.x_returns_void}}
@@ -198,9 +164,35 @@ public class {{classname}}
         URI uri = uriBuilder.build();
 {{/hasQueryParams}}
 
+{{#vendorExtensions.x_has_auth_requirements}}
+        int authenticationAlternative;
 {{#vendorExtensions.x_has_bearer_auth}}
+        BearerTokenProvider authenticationBearerTokenProvider;
+{{/vendorExtensions.x_has_bearer_auth}}
+{{#vendorExtensions.x_auth_requirements}}
+{{#first}}
+        if ({{{condition}}}) {
+{{/first}}
+{{^first}}
+        else if ({{{condition}}}) {
+{{/first}}
+            authenticationAlternative = {{index}};
+{{#vendorExtensions.x_has_bearer_auth}}
+{{#hasBearer}}
+            authenticationBearerTokenProvider = credentials.bearerTokenProvider("{{bearerSchemeName}}");
+{{/hasBearer}}
+{{^hasBearer}}
+            authenticationBearerTokenProvider = NO_BEARER_TOKEN;
+{{/hasBearer}}
+{{/vendorExtensions.x_has_bearer_auth}}
+        }
+{{/vendorExtensions.x_auth_requirements}}
+        else {
+            throw new IllegalStateException("No configured credentials satisfy authentication for operation '{{operationId}}'");
+        }
+
 {{#vendorExtensions.x_returns_void}}
-        retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, bearerTokenProvider, exception -> {
+        retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, {{#vendorExtensions.x_has_bearer_auth}}authenticationBearerTokenProvider, {{/vendorExtensions.x_has_bearer_auth}}exception -> {
             int statusCode = exception.getStatusCode();
 {{#vendorExtensions.x_error_responses}}
             if ({{{condition}}}) {
@@ -208,10 +200,10 @@ public class {{classname}}
             }
 {{/vendorExtensions.x_error_responses}}
             return new ApiException("{{operationId}}", exception);
-        }, bearerToken -> {
+        }, {{#vendorExtensions.x_has_bearer_auth}}bearerToken -> {{/vendorExtensions.x_has_bearer_auth}}{{^vendorExtensions.x_has_bearer_auth}}() -> {{/vendorExtensions.x_has_bearer_auth}}{
 {{/vendorExtensions.x_returns_void}}
 {{^vendorExtensions.x_returns_void}}
-        return retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, bearerTokenProvider, exception -> {
+        return retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, {{#vendorExtensions.x_has_bearer_auth}}authenticationBearerTokenProvider, {{/vendorExtensions.x_has_bearer_auth}}exception -> {
             int statusCode = exception.getStatusCode();
 {{#vendorExtensions.x_error_responses}}
             if ({{{condition}}}) {
@@ -219,10 +211,10 @@ public class {{classname}}
             }
 {{/vendorExtensions.x_error_responses}}
             return new ApiException("{{operationId}}", exception);
-        }, bearerToken -> {
+        }, {{#vendorExtensions.x_has_bearer_auth}}bearerToken -> {{/vendorExtensions.x_has_bearer_auth}}{{^vendorExtensions.x_has_bearer_auth}}() -> {{/vendorExtensions.x_has_bearer_auth}}{
 {{/vendorExtensions.x_returns_void}}
-{{/vendorExtensions.x_has_bearer_auth}}
-{{^vendorExtensions.x_has_bearer_auth}}
+{{/vendorExtensions.x_has_auth_requirements}}
+{{^vendorExtensions.x_has_auth_requirements}}
 {{#vendorExtensions.x_returns_void}}
         retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, exception -> {
             int statusCode = exception.getStatusCode();
@@ -245,7 +237,7 @@ public class {{classname}}
             return new ApiException("{{operationId}}", exception);
         }, () -> {
 {{/vendorExtensions.x_returns_void}}
-{{/vendorExtensions.x_has_bearer_auth}}
+{{/vendorExtensions.x_has_auth_requirements}}
 {{^vendorExtensions.x_has_body}}
             Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
                     .setUri(uri);
@@ -254,18 +246,26 @@ public class {{classname}}
                 requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
             }
 {{/headerParams}}
-{{#hasAuthMethods}}
-{{#authMethods}}
-{{#isBasicBearer}}
-            requestBuilder.setHeader(AUTHORIZATION, "Bearer " + bearerToken);
-{{/isBasicBearer}}
-{{#isApiKey}}
-{{#isKeyInHeader}}
-            requestBuilder.setHeader("{{keyParamName}}", apiKey);
-{{/isKeyInHeader}}
-{{/isApiKey}}
-{{/authMethods}}
-{{/hasAuthMethods}}
+{{#vendorExtensions.x_has_auth_requirements}}
+            switch (authenticationAlternative) {
+{{#vendorExtensions.x_auth_requirements}}
+                case {{index}} -> {
+{{#schemes}}
+{{#isBearer}}
+                    credentials.applyBearerToken("{{name}}", bearerToken, requestBuilder);
+{{/isBearer}}
+{{#isBasic}}
+                    credentials.applyBasicAuth("{{name}}", requestBuilder);
+{{/isBasic}}
+{{#isHeaderApiKey}}
+                    credentials.applyHeaderApiKey("{{name}}", "{{headerName}}", requestBuilder);
+{{/isHeaderApiKey}}
+{{/schemes}}
+                }
+{{/vendorExtensions.x_auth_requirements}}
+                default -> throw new IllegalStateException("Invalid authentication alternative for operation '{{operationId}}'");
+            }
+{{/vendorExtensions.x_has_auth_requirements}}
             Request request = requestBuilder.build();
 {{/vendorExtensions.x_has_body}}
 {{#vendorExtensions.x_has_body}}
@@ -276,18 +276,26 @@ public class {{classname}}
                 requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
             }
 {{/headerParams}}
-{{#hasAuthMethods}}
-{{#authMethods}}
-{{#isBasicBearer}}
-            requestBuilder.setHeader(AUTHORIZATION, "Bearer " + bearerToken);
-{{/isBasicBearer}}
-{{#isApiKey}}
-{{#isKeyInHeader}}
-            requestBuilder.setHeader("{{keyParamName}}", apiKey);
-{{/isKeyInHeader}}
-{{/isApiKey}}
-{{/authMethods}}
-{{/hasAuthMethods}}
+{{#vendorExtensions.x_has_auth_requirements}}
+            switch (authenticationAlternative) {
+{{#vendorExtensions.x_auth_requirements}}
+                case {{index}} -> {
+{{#schemes}}
+{{#isBearer}}
+                    credentials.applyBearerToken("{{name}}", bearerToken, requestBuilder);
+{{/isBearer}}
+{{#isBasic}}
+                    credentials.applyBasicAuth("{{name}}", requestBuilder);
+{{/isBasic}}
+{{#isHeaderApiKey}}
+                    credentials.applyHeaderApiKey("{{name}}", "{{headerName}}", requestBuilder);
+{{/isHeaderApiKey}}
+{{/schemes}}
+                }
+{{/vendorExtensions.x_auth_requirements}}
+                default -> throw new IllegalStateException("Invalid authentication alternative for operation '{{operationId}}'");
+            }
+{{/vendorExtensions.x_has_auth_requirements}}
             Request request = requestBuilder
                     .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
                     .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
