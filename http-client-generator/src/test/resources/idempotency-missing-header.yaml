@@ -1,0 +1,13 @@
+openapi: 3.0.1
+info:
+  title: Invalid idempotency metadata
+  version: 1.0.0
+paths:
+  /jobs:
+    post:
+      operationId: createJob
+      x-airlift-idempotency:
+        header: Idempotency-Key
+      responses:
+        '204':
+          description: Created

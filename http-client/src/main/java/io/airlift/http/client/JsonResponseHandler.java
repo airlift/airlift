@@ -23,6 +23,7 @@ import java.util.Set;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -41,8 +42,20 @@ public class JsonResponseHandler<T>
         return new JsonResponseHandler<>(jsonCodec, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
     }
 
+    public static <T> JsonResponseHandler<T> createSuccessfulJsonResponseHandler(JsonCodec<T> jsonCodec)
+    {
+        return new JsonResponseHandler<>(jsonCodec, true, true, Set.of());
+    }
+
+    public static <T> JsonResponseHandler<T> createSafeJsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    {
+        return new JsonResponseHandler<>(jsonCodec, false, true, ImmutableSet.<Integer>builder().add(firstSuccessfulResponseCode).addAll(Ints.asList(otherSuccessfulResponseCodes)).build());
+    }
+
     private final JsonCodec<T> jsonCodec;
     private final Set<Integer> successfulResponseCodes;
+    private final boolean acceptAnySuccessfulResponse;
+    private final boolean safeDiagnostics;
 
     private JsonResponseHandler(JsonCodec<T> jsonCodec)
     {
@@ -53,6 +66,16 @@ public class JsonResponseHandler<T>
     {
         this.jsonCodec = jsonCodec;
         this.successfulResponseCodes = ImmutableSet.<Integer>builder().add(firstSuccessfulResponseCode).addAll(Ints.asList(otherSuccessfulResponseCodes)).build();
+        acceptAnySuccessfulResponse = false;
+        safeDiagnostics = false;
+    }
+
+    private JsonResponseHandler(JsonCodec<T> jsonCodec, boolean acceptAnySuccessfulResponse, boolean safeDiagnostics, Set<Integer> successfulResponseCodes)
+    {
+        this.jsonCodec = jsonCodec;
+        this.successfulResponseCodes = Set.copyOf(successfulResponseCodes);
+        this.acceptAnySuccessfulResponse = acceptAnySuccessfulResponse;
+        this.safeDiagnostics = safeDiagnostics;
     }
 
     @Override
@@ -64,14 +87,28 @@ public class JsonResponseHandler<T>
     @Override
     public T handle(Request request, Response response)
     {
-        if (!successfulResponseCodes.contains(response.getStatusCode())) {
+        if (!(acceptAnySuccessfulResponse && isSuccessful(response.getStatusCode())) && !successfulResponseCodes.contains(response.getStatusCode())) {
+            if (safeDiagnostics) {
+                throw captureUnexpectedResponse(
+                        "Expected %s response code, but was %d".formatted(
+                                acceptAnySuccessfulResponse ? "a successful" : successfulResponseCodes,
+                                response.getStatusCode()),
+                        request,
+                        response);
+            }
             throw new UnexpectedResponseException(
                     "Expected response code to be %s, but was %d".formatted(successfulResponseCodes, response.getStatusCode()),
                     request,
                     response);
         }
 
-        if (!isJsonUtf8Content(response)) {
+        if (!isExpectedJsonContent(response)) {
+            if (safeDiagnostics) {
+                throw captureUnexpectedResponse(
+                        "Expected %s response from server".formatted(JSON_UTF_8),
+                        request,
+                        response);
+            }
             throw new UnexpectedResponseException("Expected %s response from server but got %s".formatted(JSON_UTF_8, response.getHeader(CONTENT_TYPE).orElse(null)), request, response);
         }
 
@@ -84,8 +121,29 @@ public class JsonResponseHandler<T>
             return jsonCodec.fromJson(bytes);
         }
         catch (IllegalArgumentException e) {
+            if (safeDiagnostics) {
+                throw new IllegalArgumentException("Unable to create %s from JSON response".formatted(jsonCodec.getType()));
+            }
             String json = new String(bytes, UTF_8);
             throw new IllegalArgumentException("Unable to create %s from JSON response: <%s>".formatted(jsonCodec.getType(), json), e);
+        }
+    }
+
+    private static boolean isSuccessful(int statusCode)
+    {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    private boolean isExpectedJsonContent(Response response)
+    {
+        try {
+            return isJsonUtf8Content(response);
+        }
+        catch (IllegalArgumentException e) {
+            if (!safeDiagnostics) {
+                throw e;
+            }
+            return false;
         }
     }
 }

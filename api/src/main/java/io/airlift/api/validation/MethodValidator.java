@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static io.airlift.api.builders.MethodBuilder.OPTIONAL_PARAMETER_MAP;
@@ -51,6 +52,9 @@ import static java.util.stream.Collectors.toUnmodifiableSet;
 public interface MethodValidator
 {
     Logger log = Logger.get(MethodValidator.class);
+
+    // RFC 9110 token: the characters allowed in an HTTP field name
+    Pattern HTTP_TOKEN = Pattern.compile("[!#$%&'*+.^_`|~0-9A-Za-z-]+");
 
     Map<ApiType, Collection<Class<?>>> ALLOWED_PARAMETER_TYPES = ImmutableMap.of(
             ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class /*, ApiOrderBy.class*/),
@@ -187,6 +191,12 @@ public interface MethodValidator
     {
         if (apiParameter == null) {
             throw new ValidatorException("Method is missing @%s for %s parameter".formatted(ApiParameter.class.getSimpleName(), parameter.getType().getSimpleName()));
+        }
+        if (!apiParameter.name().isEmpty() && !ApiHeader.class.isAssignableFrom(parameter.getType())) {
+            throw new ValidatorException("@ApiParameter name is only supported for ApiHeader parameters");
+        }
+        if (!apiParameter.name().isEmpty() && !HTTP_TOKEN.matcher(apiParameter.name()).matches()) {
+            throw new ValidatorException("@ApiParameter name is not a valid HTTP header name: " + apiParameter.name());
         }
 
         if (!allowedParameterTypes.contains(parameter.getType())) {

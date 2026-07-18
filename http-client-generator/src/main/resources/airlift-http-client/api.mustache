@@ -38,9 +38,12 @@ import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 {{#x_uses_body}}
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 {{/x_uses_body}}
-{{#x_uses_json_response}}
-import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
-{{/x_uses_json_response}}
+{{#x_uses_safe_json_response}}
+import static io.airlift.http.client.JsonResponseHandler.createSafeJsonResponseHandler;
+{{/x_uses_safe_json_response}}
+{{#x_uses_successful_json_response}}
+import static io.airlift.http.client.JsonResponseHandler.createSuccessfulJsonResponseHandler;
+{{/x_uses_successful_json_response}}
 {{#x_uses_delete}}
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 {{/x_uses_delete}}
@@ -59,6 +62,9 @@ import static io.airlift.http.client.Request.Builder.preparePut;
 {{#x_uses_status_response}}
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 {{/x_uses_status_response}}
+{{#x_uses_successful_status_response}}
+import static io.airlift.http.client.StatusResponseHandler.createSuccessfulStatusResponseHandler;
+{{/x_uses_successful_status_response}}
 import static io.airlift.json.JsonCodec.jsonCodec;
 {{#x_uses_list_codec}}
 import static io.airlift.json.JsonCodec.listJsonCodec;
@@ -194,63 +200,116 @@ public class {{classname}}
 
 {{#vendorExtensions.x_has_bearer_auth}}
 {{#vendorExtensions.x_returns_void}}
-        retryPolicy.execute("{{operationId}}", uri, bearerTokenProvider, bearerToken -> {
+        retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, bearerTokenProvider, exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, bearerToken -> {
 {{/vendorExtensions.x_returns_void}}
 {{^vendorExtensions.x_returns_void}}
-        return retryPolicy.execute("{{operationId}}", uri, bearerTokenProvider, bearerToken -> {
+        return retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, bearerTokenProvider, exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, bearerToken -> {
 {{/vendorExtensions.x_returns_void}}
 {{/vendorExtensions.x_has_bearer_auth}}
 {{^vendorExtensions.x_has_bearer_auth}}
 {{#vendorExtensions.x_returns_void}}
-        retryPolicy.execute("{{operationId}}", uri, () -> {
+        retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, () -> {
 {{/vendorExtensions.x_returns_void}}
 {{^vendorExtensions.x_returns_void}}
-        return retryPolicy.execute("{{operationId}}", uri, () -> {
+        return retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, () -> {
 {{/vendorExtensions.x_returns_void}}
 {{/vendorExtensions.x_has_bearer_auth}}
 {{^vendorExtensions.x_has_body}}
-            Request request = {{vendorExtensions.x_prepare_method}}
-                    .setUri(uri)
+            Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
+                    .setUri(uri);
+{{#headerParams}}
+            if ({{paramName}} != null) {
+                requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
+            }
+{{/headerParams}}
 {{#hasAuthMethods}}
 {{#authMethods}}
 {{#isBasicBearer}}
-                    .setHeader(AUTHORIZATION, "Bearer " + bearerToken)
+            requestBuilder.setHeader(AUTHORIZATION, "Bearer " + bearerToken);
 {{/isBasicBearer}}
 {{#isApiKey}}
 {{#isKeyInHeader}}
-                    .setHeader("{{keyParamName}}", apiKey)
+            requestBuilder.setHeader("{{keyParamName}}", apiKey);
 {{/isKeyInHeader}}
 {{/isApiKey}}
 {{/authMethods}}
 {{/hasAuthMethods}}
-                    .build();
+            Request request = requestBuilder.build();
 {{/vendorExtensions.x_has_body}}
 {{#vendorExtensions.x_has_body}}
-            Request request = {{vendorExtensions.x_prepare_method}}
-                    .setUri(uri)
+            Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
+                    .setUri(uri);
+{{#headerParams}}
+            if ({{paramName}} != null) {
+                requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
+            }
+{{/headerParams}}
 {{#hasAuthMethods}}
 {{#authMethods}}
 {{#isBasicBearer}}
-                    .setHeader(AUTHORIZATION, "Bearer " + bearerToken)
+            requestBuilder.setHeader(AUTHORIZATION, "Bearer " + bearerToken);
 {{/isBasicBearer}}
 {{#isApiKey}}
 {{#isKeyInHeader}}
-                    .setHeader("{{keyParamName}}", apiKey)
+            requestBuilder.setHeader("{{keyParamName}}", apiKey);
 {{/isKeyInHeader}}
 {{/isApiKey}}
 {{/authMethods}}
 {{/hasAuthMethods}}
+            Request request = requestBuilder
                     .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
                     .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
                     .build();
 {{/vendorExtensions.x_has_body}}
 
 {{#vendorExtensions.x_returns_void}}
-            httpClient.execute(request, createStatusResponseHandler());
+{{#vendorExtensions.x_accepts_any_2xx}}
+            httpClient.execute(request, createSuccessfulStatusResponseHandler());
+{{/vendorExtensions.x_accepts_any_2xx}}
+{{^vendorExtensions.x_accepts_any_2xx}}
+            httpClient.execute(request, createStatusResponseHandler({{vendorExtensions.x_success_response_codes}}));
+{{/vendorExtensions.x_accepts_any_2xx}}
             return null;
 {{/vendorExtensions.x_returns_void}}
 {{^vendorExtensions.x_returns_void}}
-            return httpClient.execute(request, createJsonResponseHandler({{vendorExtensions.x_response_codec}}));
+{{#vendorExtensions.x_accepts_any_2xx}}
+            return httpClient.execute(request, createSuccessfulJsonResponseHandler({{vendorExtensions.x_response_codec}}));
+{{/vendorExtensions.x_accepts_any_2xx}}
+{{^vendorExtensions.x_accepts_any_2xx}}
+            return httpClient.execute(request, createSafeJsonResponseHandler({{vendorExtensions.x_response_codec}}, {{vendorExtensions.x_success_response_codes}}));
+{{/vendorExtensions.x_accepts_any_2xx}}
 {{/vendorExtensions.x_returns_void}}
         });
     }

@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.http.client.RequestDiagnostics.sanitizeUri;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
@@ -156,9 +157,9 @@ public final class Request
     {
         return toStringHelper(this)
                 .add("version", httpVersion.map(HttpVersion::name).orElse("unspecified"))
-                .add("uri", uri)
+                .add("uri", sanitizeUri(uri))
                 .add("method", method)
-                .add("headers", headers)
+                .add("headers", headers.keySet())
                 .add("timeout", requestTimeout.orElse(null))
                 .add("idleTimeout", idleTimeout.orElse(null))
                 .add("maxResponseContentLength", maxResponseContentLength)

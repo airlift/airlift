@@ -34,10 +34,58 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 class AirliftHttpClientCodegenIntegrationTest
 {
+    @Test
+    void testGeneratesResponseRanges(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("response-ranges.yaml", outputPath);
+
+        Path clientFile;
+        try (Stream<Path> files = Files.walk(outputPath)) {
+            clientFile = files
+                    .filter(path -> path.getFileName().toString().equals("DefaultClient.java"))
+                    .findFirst()
+                    .orElseThrow();
+        }
+        String clientContent = Files.readString(clientFile);
+        assertThat(clientContent)
+                .contains("createSuccessfulJsonResponseHandler(ITEM_CODEC)")
+                .contains("createSuccessfulStatusResponseHandler()")
+                .doesNotContain("createSafeJsonResponseHandler", "createStatusResponseHandler")
+                .containsSubsequence(
+                        "if (statusCode == 409)",
+                        "EXACT_ERROR_CODEC",
+                        "if (statusCode >= 400 && statusCode < 500)",
+                        "CLIENT_ERROR_CODEC",
+                        "if (true)",
+                        "DEFAULT_ERROR_CODEC");
+
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsIdempotencyMetadataWithoutHeader(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("idempotency-missing-header.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("x-airlift-idempotency header 'Idempotency-Key' is not an operation header parameter");
+    }
+
+    @Test
+    void testRejectsIdempotencyMetadataWithNonStringHeader(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("idempotency-non-string-header.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("x-airlift-idempotency header 'Idempotency-Key' must be a string operation header parameter");
+    }
+
     @Test
     void testGeneratePetstoreClient(@TempDir Path outputPath)
             throws Exception
@@ -99,8 +147,9 @@ class AirliftHttpClientCodegenIntegrationTest
 
         // Retry-wrapped httpClient.execute() calls
         assertThat(clientContent).contains("retryPolicy.execute(");
-        assertThat(clientContent).contains("httpClient.execute(request, createJsonResponseHandler(");
-        assertThat(clientContent).contains("createStatusResponseHandler()");
+        assertThat(clientContent).contains("httpClient.execute(request, createSafeJsonResponseHandler(");
+        assertThat(clientContent).contains("createStatusResponseHandler(204)");
+        assertThat(clientContent).doesNotContain("createSuccessfulJsonResponseHandler", "createSuccessfulStatusResponseHandler");
 
         // RetryPolicy field and constructor
         assertThat(clientContent).contains("private final RetryPolicy retryPolicy");
@@ -187,6 +236,18 @@ class AirliftHttpClientCodegenIntegrationTest
         verifyGeneratedCodeCompiles(outputPath);
     }
 
+    private static void generate(String resourceName, Path outputPath)
+    {
+        String inputSpec = AirliftHttpClientCodegenIntegrationTest.class.getClassLoader().getResource(resourceName).getFile();
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec)
+                .setOutputDir(outputPath.toString());
+        new DefaultGenerator()
+                .opts(configurator.toClientOptInput())
+                .generate();
+    }
+
     @Test
     void testGenerateOpenAiClient(@TempDir Path outputPath)
             throws Exception
@@ -231,7 +292,7 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, String apiKey)");
         assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, BearerTokenProvider bearerTokenProvider)");
         assertThat(clientContent).contains("BearerTokenProvider.fixedToken(apiKey)");
-        assertThat(clientContent).contains("retryPolicy.execute(\"generateCompletion\", uri, bearerTokenProvider, bearerToken ->");
+        assertThat(clientContent).contains("retryPolicy.execute(\"generateCompletion\", \"POST\", null, bearerTokenProvider");
 
         Path bearerTokenProviderFile = outputPath.resolve(
                 "src/main/java/io/trino/plugin/ai/generated/BearerTokenProvider.java");
@@ -251,7 +312,8 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).contains("private static final String JSON_CONTENT_TYPE = \"application/json; charset=utf-8\"");
         assertThat(clientContent).contains("setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)");
         assertThat(clientContent).contains("jsonBodyGenerator(CHAT_REQUEST_CODEC, chatRequest)");
-        assertThat(clientContent).contains("httpClient.execute(request, createJsonResponseHandler(CHAT_RESPONSE_CODEC))");
+        assertThat(clientContent).contains("httpClient.execute(request, createSafeJsonResponseHandler(CHAT_RESPONSE_CODEC, 200))");
+        assertThat(clientContent).doesNotContain("createSuccessfulJsonResponseHandler");
 
         // Retry-wrapped execution
         assertThat(clientContent).contains("retryPolicy.execute(");
@@ -277,6 +339,7 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(configContent).contains("getApiKey");
         assertThat(configContent).contains("setApiKey");
         assertThat(configContent).contains("@Config(\"openai.api-key\")");
+        assertThat(configContent).contains("@ConfigSecuritySensitive");
         assertThat(configContent).contains("@Config(\"openai.base-uri\")");
 
         // Verify binding annotation uses correct PascalCase

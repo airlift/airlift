@@ -14,8 +14,11 @@
 package io.airlift.api.openapi;
 
 import io.airlift.api.ApiBuilderConfig;
+import io.airlift.api.ApiCreate;
 import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiGet;
+import io.airlift.api.ApiHeader;
+import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
@@ -40,6 +43,7 @@ import static io.airlift.api.builders.ApiBuilder.apiBuilder;
 import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.openapi.OpenApiMetadata.SecurityScheme.BEARER_ACCESS_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestGeneratedClientCompatibilityOpenApi
 {
@@ -189,6 +193,14 @@ public class TestGeneratedClientCompatibilityOpenApi
         assertThat(kind.getAllOf()).hasSize(1);
         assertThat(((Schema<?>) kind.getAllOf().getFirst()).get$ref()).isEqualTo("#/components/schemas/FrameKind");
         assertThat(textFrame.getProperties().get("acceptedKinds").getItems().get$ref()).isEqualTo("#/components/schemas/FrameKind");
+
+        assertThat(openAPI.getPaths().getPaths().values().stream()
+                .map(path -> path.getPost())
+                .filter(operation -> operation != null)
+                .findFirst()
+                .orElseThrow()
+                .getExtensions())
+                .containsEntry("x-airlift-idempotency", Map.of("header", "Idempotency-Key"));
     }
 
     @Test
@@ -222,6 +234,35 @@ public class TestGeneratedClientCompatibilityOpenApi
                         new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1),
                         ApiBuilderConfig.jackson())
                 .build(serviceType, _ -> true);
+    }
+
+    @Test
+    public void testIdempotencyMetadataRequiresMatchingStringHeader()
+    {
+        ModelApi modelApi = apiBuilder()
+                .add(InvalidIdempotencyService.class)
+                .build();
+        assertThat(modelApi.modelServices().errors()).isEmpty();
+
+        ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
+        OpenApiProvider provider = OpenApiProvider.create(
+                modelApi.modelServices(),
+                new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1),
+                ApiBuilderConfig.jackson());
+
+        assertThatThrownBy(() -> provider.build(serviceType, _ -> true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("@OpenApiIdempotencyKey header 'Idempotency-Key' is not an operation header parameter");
+    }
+
+    @Test
+    public void testHeaderParameterNameMustBeHttpToken()
+    {
+        ModelApi modelApi = apiBuilder()
+                .add(InvalidHeaderNameService.class)
+                .build();
+        assertThat(modelApi.modelServices().errors())
+                .anyMatch(error -> error.contains("@ApiParameter name is not a valid HTTP header name: Bad Header"));
     }
 
     public enum FrameKind
@@ -331,6 +372,25 @@ public class TestGeneratedClientCompatibilityOpenApi
         {
             return new ServiceStatus(FrameKind.TEXT);
         }
+
+        @ApiCreate(description = "Create service status")
+        @OpenApiIdempotencyKey(header = "Idempotency-Key")
+        public void createStatus(@ApiParameter(name = "Idempotency-Key") ApiHeader idempotencyKey) {}
+    }
+
+    @ApiService(name = "invalidHeaderName", type = CompatibilityServiceType.class, description = "Invalid header name operation")
+    public static class InvalidHeaderNameService
+    {
+        @ApiCreate(description = "Create with an invalid header name")
+        public void createStatus(@ApiParameter(name = "Bad Header") ApiHeader badHeader) {}
+    }
+
+    @ApiService(name = "invalidIdempotency", type = CompatibilityServiceType.class, description = "Invalid compatibility operation")
+    public static class InvalidIdempotencyService
+    {
+        @ApiCreate(description = "Create without an idempotency header")
+        @OpenApiIdempotencyKey(header = "Idempotency-Key")
+        public void createStatus() {}
     }
 
     public static class CompatibilityServiceType

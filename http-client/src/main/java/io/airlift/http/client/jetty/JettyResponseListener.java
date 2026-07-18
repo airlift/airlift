@@ -1,5 +1,6 @@
 package io.airlift.http.client.jetty;
 
+import io.airlift.http.client.RequestDiagnostics;
 import io.airlift.log.Logger;
 import org.eclipse.jetty.client.AbstractResponseListener;
 import org.eclipse.jetty.client.Request;
@@ -60,7 +61,7 @@ class JettyResponseListener<T, E extends Exception>
             return;
         }
         if (requestFailure != null) {
-            log.debug(requestFailure, "Suppressing request failure for fully-received response from %s", request.getURI());
+            log.debug(requestFailure, "Suppressing request failure for fully-received response from %s", RequestDiagnostics.sanitizeUri(request.getURI()));
         }
         deliver(response);
     }
@@ -71,7 +72,7 @@ class JettyResponseListener<T, E extends Exception>
             future.completed(response, stream);
         }
         catch (IOException e) {
-            future.failed(new UncheckedIOException("Failed communicating with server: " + request.getURI().toASCIIString(), e));
+            future.failed(new UncheckedIOException("Failed communicating with server: " + RequestDiagnostics.sanitizeUri(request.getURI()).toASCIIString(), e));
         }
     }
 }
