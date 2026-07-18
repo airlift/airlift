@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openapitools.codegen.ClientOptInput;
 import org.openapitools.codegen.DefaultGenerator;
+import org.openapitools.codegen.SpecValidationException;
 import org.openapitools.codegen.config.CodegenConfigurator;
 
 import javax.tools.DiagnosticCollector;
@@ -196,6 +197,14 @@ class AirliftHttpClientCodegenIntegrationTest
                 .isInstanceOf(RuntimeException.class)
                 .hasRootCauseInstanceOf(IllegalArgumentException.class)
                 .hasRootCauseMessage("x-airlift-idempotency header 'Idempotency-Key' must be a string operation header parameter");
+    }
+
+    @Test
+    void testRejectsOpenApi32TypedEventsWhenItemSchemaIsUnavailable(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("openapi32-typed-sse.yaml", outputPath))
+                .isInstanceOf(SpecValidationException.class)
+                .hasMessageContaining("There were issues with the specification");
     }
 
     @Test
@@ -554,6 +563,25 @@ class AirliftHttpClientCodegenIntegrationTest
                 .isInstanceOf(RuntimeException.class)
                 .hasRootCauseInstanceOf(IllegalArgumentException.class)
                 .hasRootCauseMessage("Security requirement for operation 'status' applies several schemes to the authorization header");
+    }
+
+    @Test
+    void testReferencedEventStreamResponseIsTyped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("referenced-event-stream.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java")))
+                .contains("public ServerSentEventStream<Event> streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsUntypedServerSentEvents(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("untyped-sse.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'streamEvents' returns text/event-stream without x-airlift-event-schema; typed server-sent events cannot be generated");
     }
 
     @Test

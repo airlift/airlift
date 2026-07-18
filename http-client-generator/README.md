@@ -234,6 +234,20 @@ Transport failures, interrupted retries, and bearer token provider failures are 
 
 An `application/x-www-form-urlencoded` request body generates a method taking one parameter per form field and encodes them with `FormDataBodyBuilder` using the standard encoding. Scalar, enum, and array fields are supported; array fields repeat the field name once per value. Generation fails for nested objects, `multipart` bodies, or custom `encoding` rules because they would produce ambiguous wire data.
 
+### Server-Sent Events
+
+A `text/event-stream` response generates a method returning `ServerSentEventStream<T>`, where `T` is the event schema API Builder records in `x-airlift-event-schema`:
+
+```java
+try (ServerSentEventStream<Event> stream = client.streamEvents()) {
+    for (ServerSentEvent<Event> event : stream) {
+        handle(event.data());
+    }
+}
+```
+
+Each `ServerSentEvent` carries the decoded `data` plus the optional `event` type, `id`, and `retry` hint. Events are decoded as they arrive with a bounded UTF-8 buffer, `readEvent()` returns one event at a time, and the stream releases the connection when it is closed or exhausted. A non-2xx response while establishing the stream throws `ApiException`; a malformed event closes the stream and throws the decoding failure.
+
 ### Security Schemes
 
 The generator supports bearer token authentication from OpenAPI `securitySchemes`:

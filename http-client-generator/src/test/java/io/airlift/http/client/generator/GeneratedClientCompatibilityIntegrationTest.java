@@ -13,12 +13,19 @@
  */
 package io.airlift.http.client.generator;
 
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.takari.maven.testing.TestResources5;
 import io.takari.maven.testing.executor.MavenRuntime;
 import io.takari.maven.testing.executor.MavenRuntime.MavenRuntimeBuilder;
 import io.takari.maven.testing.executor.MavenVersions;
 import io.takari.maven.testing.executor.junit.MavenPluginTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.openapitools.codegen.validation.Invalid;
+import org.openapitools.codegen.validation.ValidationResult;
+import org.openapitools.codegen.validations.oas.OpenApiEvaluator;
+import org.openapitools.codegen.validations.oas.RuleConfiguration;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -59,6 +66,7 @@ class GeneratedClientCompatibilityIntegrationTest
 
         Path spec = basedir.toPath().resolve("target/openapi.json");
         assertThat(spec).exists();
+        assertStrictlyValid(spec);
         assertThat(Files.readString(spec))
                 .contains("\"name\" : \"Compatibility Service\"")
                 .containsOnlyOnce("\"name\" : \"Compatibility Service\"")
@@ -69,6 +77,8 @@ class GeneratedClientCompatibilityIntegrationTest
                 .contains("\"serviceOAuth\"")
                 .contains("\"tokenUrl\" : \"/oauth/token\"")
                 .contains("\"x-airlift-token-endpoint-authentication-method\" : \"client_secret_basic\"")
+                .contains("\"text/event-stream\"")
+                .contains("\"x-airlift-event-schema\"")
                 .contains("\"discriminator\"")
                 // a described enum property wraps its reference in allOf for a 3.0 contract so the description survives
                 .containsSubsequence("\"defaultKind\"", "\"description\" : \"Default frame kind\"", "\"allOf\"", "\"$ref\" : \"#/components/schemas/FrameKind\"");
@@ -81,6 +91,11 @@ class GeneratedClientCompatibilityIntegrationTest
                 .contains("retryPolicy.execute(\"getQueryFrame\", \"GET\", null, authenticationBearerTokenProvider")
                 .contains("retryPolicy.execute(\"safeExecute\", \"POST\", idempotencyKey, authenticationBearerTokenProvider")
                 .contains("requestBuilder.setHeader(\"Idempotency-Key\", String.valueOf(idempotencyKey))")
+                .contains("public ServerSentEventStream<CompatibilityEvent> streamEvents()")
+                .contains(".setHeader(ACCEPT, \"text/event-stream\")")
+                .contains("StreamingResponse response = httpClient.executeStreaming(request)")
+                .contains("throw captureUnexpectedResponse(\"Unexpected response\", request, response)")
+                .contains("return new ServerSentEventStream<>(response, COMPATIBILITY_EVENT_CODEC)")
                 .containsSubsequence(
                         "if (statusCode == 409)",
                         "return new ApiException(\"safeExecute\", exception, EXISTS_CODEC)")
@@ -117,5 +132,24 @@ class GeneratedClientCompatibilityIntegrationTest
                 .execute("clean", "process-classes")
                 .assertLogText("Legacy securityScheme and named securitySchemes/defaultSecurityRequirements cannot both be configured")
                 .assertNoLogText("BUILD SUCCESS");
+    }
+
+    private static void assertStrictlyValid(Path spec)
+    {
+        ParseOptions parseOptions = new ParseOptions();
+        parseOptions.setResolve(true);
+        SwaggerParseResult parseResult = new OpenAPIV3Parser().readLocation(spec.toString(), null, parseOptions);
+
+        RuleConfiguration rules = new RuleConfiguration();
+        rules.setEnableRecommendations(true);
+        ValidationResult validationResult = new OpenApiEvaluator(rules).validate(parseResult.getOpenAPI());
+
+        assertThat(parseResult.getMessages()).isEmpty();
+        assertThat(validationResult.getErrors())
+                .extracting(Invalid::getMessage)
+                .isEmpty();
+        assertThat(validationResult.getWarnings())
+                .extracting(Invalid::getMessage)
+                .isEmpty();
     }
 }
