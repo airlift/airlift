@@ -1,0 +1,52 @@
+openapi: 3.0.1
+info:
+  title: Form request test
+  version: 1.0.0
+paths:
+  /submit:
+    post:
+      tags:
+        - forms
+      operationId: submitForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - requiredText
+                - mode
+                - repeated
+                - emptyValue
+                - count
+              properties:
+                requiredText:
+                  type: string
+                mode:
+                  $ref: '#/components/schemas/Mode'
+                repeated:
+                  type: array
+                  items:
+                    type: string
+                emptyValue:
+                  type: string
+                count:
+                  type: integer
+                  format: int32
+                optionalText:
+                  type: string
+                optionalModes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Mode'
+      responses:
+        '204':
+          description: Accepted
+components:
+  schemas:
+    Mode:
+      type: string
+      enum:
+        - fast
+        - slow

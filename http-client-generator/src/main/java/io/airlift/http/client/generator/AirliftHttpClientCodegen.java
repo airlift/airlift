@@ -16,6 +16,9 @@ package io.airlift.http.client.generator;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -28,6 +31,7 @@ import org.openapitools.codegen.languages.JavaClientCodegen;
 import org.openapitools.codegen.model.ModelMap;
 import org.openapitools.codegen.model.OperationMap;
 import org.openapitools.codegen.model.OperationsMap;
+import org.openapitools.codegen.utils.ModelUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -189,6 +193,11 @@ public class AirliftHttpClientCodegen
             String invokerFolder = (sourceFolder + File.separator + invokerPackage).replace(".", File.separator);
             supportingFiles.add(new SupportingFile("oauth2.mustache", invokerFolder, clientName + "OAuth2.java"));
         }
+
+        if (openAPI.getPaths() != null) {
+            openAPI.getPaths().forEach((path, pathItem) -> pathItem.readOperations().forEach(operation ->
+                    validateFormRequestBody(openAPI, path, operation)));
+        }
     }
 
     @Override
@@ -218,6 +227,9 @@ public class AirliftHttpClientCodegen
         boolean usesDelete = false;
         boolean usesPatch = false;
         boolean usesBody = false;
+        boolean usesJsonBody = false;
+        boolean usesFormBody = false;
+        boolean usesListType = false;
         boolean usesSafeJsonResponse = false;
         boolean usesSuccessfulJsonResponse = false;
         boolean usesStatusResponse = false;
@@ -252,10 +264,27 @@ public class AirliftHttpClientCodegen
                 case "PATCH" -> usesPatch = true;
             }
 
-            boolean hasBody = operation.bodyParam != null;
+            boolean hasJsonBody = operation.bodyParam != null;
+            boolean hasFormBody = operation.getHasFormParams();
+            checkArgument(!(hasJsonBody && hasFormBody), "Operation '%s' has both JSON and form request bodies", operation.operationId);
+
+            if (hasFormBody) {
+                validateFormParameters(operation);
+                usesListType |= operation.formParams.stream().anyMatch(parameter -> parameter.isArray);
+            }
+
+            boolean hasBody = hasJsonBody || hasFormBody;
             operation.vendorExtensions.put("x_has_body", hasBody);
+            operation.vendorExtensions.put("x_has_json_body", hasJsonBody);
+            operation.vendorExtensions.put("x_has_form_body", hasFormBody);
             if (hasBody) {
                 usesBody = true;
+            }
+            if (hasJsonBody) {
+                usesJsonBody = true;
+            }
+            if (hasFormBody) {
+                usesFormBody = true;
             }
 
             boolean returnsVoid = "void".equals(operation.returnType) || operation.returnType == null;
@@ -302,7 +331,7 @@ public class AirliftHttpClientCodegen
                         operation.returnBaseType));
             }
 
-            if (hasBody) {
+            if (hasJsonBody) {
                 String bodyType = operation.bodyParam.dataType;
                 String codecName = toCodecName(bodyType, null, null);
                 operation.vendorExtensions.put("x_request_codec", codecName);
@@ -351,12 +380,16 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_delete", usesDelete);
         objs.put("x_uses_patch", usesPatch);
         objs.put("x_uses_body", usesBody);
+        objs.put("x_uses_json_body", usesJsonBody);
+        objs.put("x_uses_form_body", usesFormBody);
         objs.put("x_uses_safe_json_response", usesSafeJsonResponse);
         objs.put("x_uses_successful_json_response", usesSuccessfulJsonResponse);
         objs.put("x_uses_status_response", usesStatusResponse);
         objs.put("x_uses_successful_status_response", usesSuccessfulStatusResponse);
         objs.put("x_uses_query_params", usesQueryParams);
+        objs.put("x_uses_json_codec", !codecs.isEmpty());
         objs.put("x_uses_list_codec", usesListCodec);
+        objs.put("x_uses_list_type", usesListType || usesListCodec);
         objs.put("x_uses_map_codec", usesMapCodec);
         objs.put("x_has_auth", hasAuth);
         objs.put("x_has_bearer_auth", hasBearerAuth);
@@ -693,6 +726,113 @@ public class AirliftHttpClientCodegen
                     "x-airlift-idempotency header '%s' must be a string operation header parameter".formatted(headerName));
         }
         operation.vendorExtensions.put("x_idempotency_key", header.paramName);
+    }
+
+    private static void validateFormRequestBody(OpenAPI openAPI, String path, Operation operation)
+    {
+        RequestBody requestBody = ModelUtils.getReferencedRequestBody(openAPI, operation.getRequestBody());
+        if (requestBody == null || requestBody.getContent() == null) {
+            return;
+        }
+
+        List<Map.Entry<String, MediaType>> formContent = requestBody.getContent().entrySet().stream()
+                .filter(entry -> entry.getKey().toLowerCase(Locale.ENGLISH).startsWith("application/x-www-form-urlencoded"))
+                .toList();
+        if (formContent.isEmpty()) {
+            return;
+        }
+
+        String operationName = operation.getOperationId() == null ? path : operation.getOperationId();
+        checkArgument(requestBody.getContent().size() == 1 &&
+                        "application/x-www-form-urlencoded".equalsIgnoreCase(formContent.getFirst().getKey()),
+                "Form operation '%s' must declare only application/x-www-form-urlencoded content",
+                operationName);
+
+        MediaType mediaType = formContent.getFirst().getValue();
+        checkArgument(mediaType.getEncoding() == null || mediaType.getEncoding().isEmpty(),
+                "Form operation '%s' uses unsupported custom encoding",
+                operationName);
+
+        Schema<?> schema = ModelUtils.getReferencedSchema(openAPI, mediaType.getSchema());
+        checkArgument(schema != null, "Form operation '%s' has no request schema", operationName);
+        checkArgument(ModelUtils.isObjectSchema(schema) && !ModelUtils.isMapSchema(schema),
+                "Form operation '%s' must use a fixed object schema",
+                operationName);
+        checkArgument(!ModelUtils.isComposedSchema(schema),
+                "Form operation '%s' uses an unsupported composed request schema",
+                operationName);
+        checkArgument(schema.getAdditionalProperties() == null || Boolean.FALSE.equals(schema.getAdditionalProperties()),
+                "Form operation '%s' uses unsupported additionalProperties",
+                operationName);
+
+        if (schema.getProperties() != null) {
+            schema.getProperties().forEach((name, property) -> validateFormProperty(openAPI, operationName, name, property));
+        }
+    }
+
+    private static void validateFormProperty(OpenAPI openAPI, String operationName, String name, Schema<?> property)
+    {
+        Schema<?> schema = ModelUtils.getReferencedSchema(openAPI, property);
+        checkArgument(schema != null, "Form field '%s' in operation '%s' has no schema", name, operationName);
+        checkArgument(!ModelUtils.isComposedSchema(schema),
+                "Form field '%s' in operation '%s' uses an unsupported composed schema",
+                name,
+                operationName);
+
+        if (ModelUtils.isArraySchema(schema)) {
+            Schema<?> items = ModelUtils.getReferencedSchema(openAPI, schema.getItems());
+            checkArgument(items != null, "Form array field '%s' in operation '%s' has no item schema", name, operationName);
+            validateFormScalar(openAPI, operationName, name, items);
+            return;
+        }
+        validateFormScalar(openAPI, operationName, name, schema);
+    }
+
+    private static void validateFormScalar(OpenAPI openAPI, String operationName, String name, Schema<?> schema)
+    {
+        checkArgument(!ModelUtils.isArraySchema(schema) &&
+                        !ModelUtils.isMapSchema(schema) &&
+                        !ModelUtils.isObjectSchema(schema) &&
+                        !ModelUtils.isComposedSchema(schema) &&
+                        !ModelUtils.isBinarySchema(schema) &&
+                        !ModelUtils.isByteArraySchema(schema) &&
+                        !ModelUtils.isFileSchema(schema) &&
+                        !ModelUtils.isFreeFormObject(schema, openAPI) &&
+                        !ModelUtils.isAnyType(schema),
+                "Form field '%s' in operation '%s' must be a scalar or an array of scalars",
+                name,
+                operationName);
+    }
+
+    private static void validateFormParameters(CodegenOperation operation)
+    {
+        checkArgument(!operation.isMultipart, "Operation '%s' uses unsupported multipart form data", operation.operationId);
+        operation.formParams.forEach(parameter -> {
+            if (parameter.isArray) {
+                checkArgument(parameter.items != null && isSupportedFormScalar(parameter.items),
+                        "Form field '%s' in operation '%s' must contain scalar values",
+                        parameter.baseName,
+                        operation.operationId);
+            }
+            else {
+                checkArgument(isSupportedFormScalar(parameter),
+                        "Form field '%s' in operation '%s' must be a scalar",
+                        parameter.baseName,
+                        operation.operationId);
+            }
+        });
+    }
+
+    private static boolean isSupportedFormScalar(CodegenParameter parameter)
+    {
+        return parameter.isEnum || parameter.isEnumRef ||
+                (parameter.isPrimitiveType && !parameter.isBinary && !parameter.isByteArray && !parameter.isFile);
+    }
+
+    private static boolean isSupportedFormScalar(org.openapitools.codegen.CodegenProperty property)
+    {
+        return property.isEnum || property.isEnumRef ||
+                (property.isPrimitiveType && !property.isBinary && !property.isByteArray && !property.isFile && !property.isArray && !property.isMap);
     }
 
     private Map<String, String> buildCodecEntry(String name, String type, String container, String baseType)

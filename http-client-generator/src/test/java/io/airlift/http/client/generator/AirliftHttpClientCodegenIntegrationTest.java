@@ -13,8 +13,14 @@
  */
 package io.airlift.http.client.generator;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.inject.spi.Message;
 import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.http.client.testing.TestingHttpClient;
+import io.airlift.http.client.testing.TestingResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openapitools.codegen.ClientOptInput;
@@ -29,15 +35,21 @@ import javax.tools.ToolProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.HttpStatus.NO_CONTENT;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -561,6 +573,160 @@ class AirliftHttpClientCodegenIntegrationTest
     }
 
     @Test
+    void testGenerateFormRequestClient(@TempDir Path outputPath)
+            throws Exception
+    {
+        String inputSpec = getClass().getClassLoader().getResource("form-request.yaml").getFile();
+
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec)
+                .setOutputDir(outputPath.toString())
+                .addAdditionalProperty("projectName", "forms")
+                .addAdditionalProperty("apiPackage", "com.example.api")
+                .addAdditionalProperty("modelPackage", "com.example.model")
+                .addAdditionalProperty("invokerPackage", "com.example");
+
+        new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+
+        Path clientFile = outputPath.resolve("src/main/java/com/example/api/FormsClient.java");
+        String clientContent = Files.readString(clientFile);
+        assertThat(clientContent)
+                .contains("FormDataBodyBuilder form = new FormDataBodyBuilder()")
+                .containsSubsequence(
+                        "if (requireNonNull(repeated, \"repeated is null\").isEmpty())",
+                        "throw new IllegalArgumentException(\"repeated is empty\")",
+                        "repeated.forEach(value -> form.addField(\"repeated\", String.valueOf(value)))")
+                .contains("if (optionalText != null)")
+                .contains("optionalModes.forEach(value -> form.addField(\"optionalModes\", String.valueOf(value)))")
+                .contains(".setHeader(CONTENT_TYPE, \"application/x-www-form-urlencoded\")")
+                .contains(".setBodyGenerator(form.build())")
+                .doesNotContain("jsonBodyGenerator", "JSON_CONTENT_TYPE", "JsonCodec");
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        AtomicReference<Request> capturedRequest = new AtomicReference<>();
+        AtomicReference<Request> successfulRequest = new AtomicReference<>();
+        try (TestingHttpClient httpClient = new TestingHttpClient(request -> {
+            capturedRequest.set(request);
+            return new TestingResponse(NO_CONTENT, ImmutableListMultimap.of(), new byte[0]);
+        });
+                URLClassLoader classLoader = new URLClassLoader(
+                        new java.net.URL[] {classesDir.toUri().toURL()},
+                        getClass().getClassLoader())) {
+            Class<?> clientClass = classLoader.loadClass("com.example.api.FormsClient");
+            Class<?> modeClass = classLoader.loadClass("com.example.model.Mode");
+            Object fast = enumConstant(modeClass, "FAST");
+            Object slow = enumConstant(modeClass, "SLOW");
+            Object client = clientClass.getConstructor(HttpClient.class, URI.class)
+                    .newInstance(httpClient, URI.create("https://example.test/api"));
+            Method submitForm = clientClass.getMethod(
+                    "submitForm",
+                    String.class,
+                    modeClass,
+                    List.class,
+                    String.class,
+                    Integer.class,
+                    String.class,
+                    List.class);
+
+            submitForm.invoke(
+                    client,
+                    "snow ☃ & +=",
+                    fast,
+                    List.of("first value", "雪&+"),
+                    "",
+                    7,
+                    null,
+                    List.of(fast, slow));
+            successfulRequest.set(capturedRequest.get());
+
+            capturedRequest.set(null);
+            assertThatThrownBy(() -> submitForm.invoke(
+                    client,
+                    "required",
+                    fast,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null))
+                    .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                    .hasRootCauseMessage("repeated is empty");
+            assertThat(capturedRequest.get()).isNull();
+        }
+
+        Request request = successfulRequest.get();
+        assertThat(request).isNotNull();
+        assertThat(request.getUri()).isEqualTo(URI.create("https://example.test/api/submit"));
+        assertThat(request.getHeader(CONTENT_TYPE)).isEqualTo("application/x-www-form-urlencoded");
+        assertThat(new String(((StaticBodyGenerator) request.getBodyGenerator()).getBody(), UTF_8))
+                .isEqualTo("requiredText=snow+%E2%98%83+%26+%2B%3D&mode=fast&repeated=first+value&repeated=%E9%9B%AA%26%2B&emptyValue=&count=7&optionalModes=fast&optionalModes=slow");
+    }
+
+    @Test
+    void testRejectUnsupportedFormRequestShapes(@TempDir Path outputPath)
+            throws Exception
+    {
+        String baseSpec = Files.readString(Path.of(getClass().getClassLoader().getResource("form-request.yaml").toURI()));
+        String scalarProperty = formYaml(16,
+                """
+                requiredText:
+                  type: string
+                """);
+        String mediaType = formYaml(10,
+                """
+                application/x-www-form-urlencoded:
+                  schema:
+                """);
+
+        List<InvalidFormCase> cases = List.of(
+                new InvalidFormCase("nested", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          type: object
+                          properties:
+                            child:
+                              type: string
+                        """), "must be a scalar or an array of scalars"),
+                new InvalidFormCase("map", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          type: object
+                          additionalProperties:
+                            type: string
+                        """), "must be a scalar or an array of scalars"),
+                new InvalidFormCase("composed", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          oneOf:
+                            - type: string
+                            - type: integer
+                        """), "unsupported composed schema"),
+                new InvalidFormCase("binary", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          type: string
+                          format: binary
+                        """), "must be a scalar or an array of scalars"),
+                new InvalidFormCase("custom-encoding", mediaType, formYaml(10,
+                        """
+                        application/x-www-form-urlencoded:
+                          encoding:
+                            requiredText:
+                              explode: false
+                          schema:
+                        """), "unsupported custom encoding"));
+
+        for (InvalidFormCase invalidCase : cases) {
+            Path spec = outputPath.resolve(invalidCase.name() + ".yaml");
+            Files.writeString(spec, baseSpec.replace(invalidCase.target(), invalidCase.replacement()));
+
+            assertThatThrownBy(() -> generateFormClient(spec, outputPath.resolve(invalidCase.name())))
+                    .hasMessageContaining(invalidCase.expectedMessage());
+        }
+    }
+
+    @Test
     void testClientNameOverride(@TempDir Path outputPath)
             throws Exception
     {
@@ -632,6 +798,24 @@ class AirliftHttpClientCodegenIntegrationTest
         }
     }
 
+    private static void generateFormClient(Path inputSpec, Path outputPath)
+    {
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec.toString())
+                .setOutputDir(outputPath.toString())
+                .addAdditionalProperty("projectName", "forms")
+                .addAdditionalProperty("apiPackage", "com.example.api")
+                .addAdditionalProperty("modelPackage", "com.example.model")
+                .addAdditionalProperty("invokerPackage", "com.example");
+        new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+    }
+
+    private static String formYaml(int indentation, String yaml)
+    {
+        return yaml.stripIndent().indent(indentation).stripTrailing();
+    }
+
     private Path verifyGeneratedCodeCompiles(Path outputDir)
             throws IOException
     {
@@ -686,4 +870,12 @@ class AirliftHttpClientCodegenIntegrationTest
         }
         return classesDir;
     }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static Object enumConstant(Class<?> enumClass, String name)
+    {
+        return Enum.valueOf((Class<? extends Enum>) enumClass, name);
+    }
+
+    private record InvalidFormCase(String name, String target, String replacement, String expectedMessage) {}
 }
