@@ -15,7 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <it-plugin.version>@project.version@</it-plugin.version>
         <dep.airlift.version>@project.version@</dep.airlift.version>
-        <dep.jackson.version>2.18.4</dep.jackson.version>
+        <dep.jackson.version>2.18.9</dep.jackson.version>
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
         <api.serviceTypeClass>io.airlift.test.TestServiceType</api.serviceTypeClass>
         <api.outputFile>${project.build.directory}/openapi.json</api.outputFile>
