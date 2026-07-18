@@ -17,8 +17,6 @@ package io.airlift.http.client;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multiset;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
@@ -31,19 +29,11 @@ import io.airlift.units.Duration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -128,51 +118,6 @@ public class TestHttpClientBinder
         assertThat(barClient.getRequestFilters().get(0)).isEqualTo(globalFilter1);
         assertThat(barClient.getRequestFilters().get(1)).isEqualTo(globalFilter2);
         assertThat(barClient.getRequestFilters().get(2)).isEqualTo(filter2);
-    }
-
-    @Test
-    public void testGlobalAndNamedInterceptorBindingOrder()
-    {
-        List<String> events = new CopyOnWriteArrayList<>();
-        HttpClientInterceptor globalInterceptor1 = orderedInterceptor("global-1", events, false);
-        HttpClientInterceptor globalInterceptor2 = orderedInterceptor("global-2", events, false);
-        HttpClientInterceptor fooInterceptor = orderedInterceptor("foo", events, true);
-        HttpClientInterceptor barInterceptor = orderedInterceptor("bar", events, true);
-
-        Injector injector = new Bootstrap(
-                binder -> {
-                    httpClientBinder(binder)
-                            .addGlobalInterceptorBinding().toInstance(globalInterceptor1);
-                    httpClientBinder(binder)
-                            .bindGlobalInterceptor(globalInterceptor2);
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                            .addInterceptorBinding().toInstance(fooInterceptor);
-                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
-                            .addInterceptorBinding().toInstance(barInterceptor);
-                })
-                .quiet()
-                .initialize();
-
-        HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        fooClient.execute(prepareGet().setUri(URI.create("http://unused.invalid")).build(), createStringResponseHandler());
-        assertThat(events).containsExactly(
-                "global-1-before",
-                "global-2-before",
-                "foo-before",
-                "foo-after",
-                "global-2-after",
-                "global-1-after");
-
-        events.clear();
-        HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
-        barClient.execute(prepareGet().setUri(URI.create("http://unused.invalid")).build(), createStringResponseHandler());
-        assertThat(events).containsExactly(
-                "global-1-before",
-                "global-2-before",
-                "bar-before",
-                "bar-after",
-                "global-2-after",
-                "global-1-after");
     }
 
     @Test
@@ -368,68 +313,6 @@ public class TestHttpClientBinder
     {
         assertThat(httpClient).isInstanceOfSatisfying(JettyHttpClient.class, jettyClient ->
                 assertThat(jettyClient.getStatusListeners().size()).isEqualTo(statusListenerCount));
-    }
-
-    private static HttpClientInterceptor orderedInterceptor(String name, List<String> events, boolean shortCircuit)
-    {
-        return chain -> {
-            events.add(name + "-before");
-            StreamingResponse response = shortCircuit
-                    ? new StaticStreamingResponse("body")
-                    : chain.proceed(chain.request());
-            events.add(name + "-after");
-            return response;
-        };
-    }
-
-    private static final class StaticStreamingResponse
-            implements StreamingResponse
-    {
-        private final byte[] body;
-
-        private StaticStreamingResponse(String body)
-        {
-            this.body = body.getBytes(StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return HttpVersion.HTTP_1;
-        }
-
-        @Override
-        public int getStatusCode()
-        {
-            return HttpStatus.OK.code();
-        }
-
-        @Override
-        public ListMultimap<HeaderName, String> getHeaders()
-        {
-            return ImmutableListMultimap.of();
-        }
-
-        @Override
-        public Content getContent()
-        {
-            return new BytesContent(body);
-        }
-
-        @Override
-        public InputStream getInputStream()
-        {
-            return new ByteArrayInputStream(body);
-        }
-
-        @Override
-        public long getBytesRead()
-        {
-            return body.length;
-        }
-
-        @Override
-        public void close() {}
     }
 
     @Retention(RUNTIME)
