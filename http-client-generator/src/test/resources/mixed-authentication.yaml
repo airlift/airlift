@@ -50,6 +50,6 @@ components:
       x-airlift-token-endpoint-authentication-method: client_secret_basic
       flows:
         clientCredentials:
-          tokenUrl: /oauth/token
+          tokenUrl: /oauth/token?tenant=first&audience=api
           scopes:
             status:read: Read service status

@@ -20,6 +20,7 @@ import io.airlift.api.binding.ApiModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.BearerTokenProvider;
+import io.airlift.http.client.ClientCredentialsTokenProvider;
 import io.airlift.http.client.HttpClientCredentials;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
@@ -32,6 +33,7 @@ import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.openapi.client.generated.api.CompatibilityServiceClient;
 import io.airlift.openapi.client.generated.api.NamedAuthenticationServiceClient;
 import io.airlift.openapi.client.generated.ApiException;
+import io.airlift.openapi.client.generated.ApiOAuth2;
 import io.airlift.openapi.client.generated.RetryPolicy;
 import io.airlift.openapi.client.generated.model.CompatibilityConflict;
 import io.airlift.openapi.client.generated.model.FrameKind;
@@ -595,6 +597,53 @@ class GeneratedClientRuntimeTest
             assertThatThrownBy(client::combined)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("No configured credentials satisfy authentication for operation 'combined'");
+        }
+    }
+
+    @Test
+    void testGeneratedOAuthFactorySharesProviderAcrossClientFamiliesAndRefreshesAfterUnauthorized()
+    {
+        AtomicInteger tokenRequests = new AtomicInteger();
+        AtomicInteger apiRequests = new AtomicInteger();
+        try (TestingHttpClient testingHttpClient = new TestingHttpClient(request -> {
+            if (request.getUri().getPath().equals("/oauth/token")) {
+                int requestNumber = tokenRequests.incrementAndGet();
+                assertThat(request.getHeader(AUTHORIZATION)).isEqualTo("Basic Y2xpZW50OnNlY3JldA==");
+                assertThat(request.getHeader(CONTENT_TYPE)).isEqualTo("application/x-www-form-urlencoded");
+                assertThat(new String(((io.airlift.http.client.StaticBodyGenerator) request.getBodyGenerator()).getBody(), UTF_8))
+                        .isEqualTo("grant_type=client_credentials&scope=read&resource=https%3A%2F%2Fresource.example.test%2Fcatalog");
+                return mockResponse(OK, JSON_UTF_8, """
+                        {"access_token":"token-%s","token_type":"Bearer","expires_in":300,"scope":"read"}
+                        """.formatted(requestNumber));
+            }
+
+            int requestNumber = apiRequests.incrementAndGet();
+            if (requestNumber == 1) {
+                assertThat(request.getHeader(AUTHORIZATION)).isEqualTo("Bearer token-1");
+                return unauthorizedResponse("bearer realm=\"api\"");
+            }
+            assertThat(request.getHeader(AUTHORIZATION)).isEqualTo("Bearer token-2");
+            return mockResponse(OK, JSON_UTF_8, "{\"value\":\"oauth\"}");
+        })) {
+            ClientCredentialsTokenProvider provider = ApiOAuth2.createServiceOAuthTokenProvider(
+                    testingHttpClient,
+                    TEST_URI,
+                    "client",
+                    "secret",
+                    "https://resource.example.test/catalog");
+            HttpClientCredentials credentials = HttpClientCredentials.builder()
+                    .bearerToken("serviceOAuth", provider)
+                    .build();
+            assertThat(credentials.bearerTokenProvider("serviceOAuth")).isSameAs(provider);
+
+            NamedAuthenticationServiceClient firstClient = new NamedAuthenticationServiceClient(testingHttpClient, TEST_URI, credentials);
+            io.airlift.openapi.client.generated.second.api.NamedAuthenticationServiceClient secondClient =
+                    new io.airlift.openapi.client.generated.second.api.NamedAuthenticationServiceClient(testingHttpClient, TEST_URI, credentials);
+
+            assertThat(firstClient.oauth().value()).isEqualTo("oauth");
+            assertThat(secondClient.oauth().value()).isEqualTo("oauth");
+            assertThat(tokenRequests).hasValue(2);
+            assertThat(apiRequests).hasValue(3);
         }
     }
 

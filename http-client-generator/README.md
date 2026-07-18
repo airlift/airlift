@@ -153,6 +153,7 @@ For a project named `petstore` with a tag `pets`, the generator produces:
 | `PetstoreClientConfig.java` | Airlift `@Config` class with `baseUri`, retry settings, and configured named credentials when authentication is present |
 | `ForPetstore.java` | Guice `@BindingAnnotation` for the HTTP client |
 | `RetryPolicy.java` | Retry with exponential backoff, error classification, and Retry-After support |
+| `PetstoreOAuth2.java` | Token provider factories, generated when the contract declares an OAuth2 client-credentials scheme |
 | `ApiException.java` | Structured failure carrying the operation, request method and URI, status, headers, bounded response body, and decoded error model |
 
 ### PascalCase Naming
@@ -269,8 +270,21 @@ This adds a named header API-key credential and applies it to authenticated requ
 | Bearer | `{prefix}.{scheme}.token` |
 | Basic | `{prefix}.{scheme}.username` and `{prefix}.{scheme}.password`, configured together |
 | Header API key | `{prefix}.{scheme}.api-key` |
+| OAuth2 client credentials | `{prefix}.{scheme}.token` for a static token; build a refreshing provider with the generated `{ClientName}OAuth2` factory |
 
 `{scheme}` is the hyphenated scheme name (`serviceBearer` becomes `service-bearer`). Every credential is optional; the client selects a security alternative that the configured credentials satisfy and fails with `IllegalStateException` when none does. Only schemes referenced by some security requirement shape the generated client and configuration.
+
+#### OAuth2 Client Credentials
+
+An `oauth2` scheme with a `clientCredentials` flow generates a `{ClientName}OAuth2` factory:
+
+```java
+ClientCredentialsTokenProvider provider = PetstoreOAuth2.createServiceOAuthTokenProvider(httpClient, baseUri, clientId, clientSecret);
+HttpClientCredentials credentials = HttpClientCredentials.builder().bearerToken("serviceOAuth", provider).build();
+var client = new PetsClient(httpClient, baseUri, credentials);
+```
+
+The provider acquires tokens from the contract's `tokenUrl`, resolved against the client base URI, using the required scopes and the `x-airlift-token-endpoint-authentication-method` emitted by API Builder. It caches tokens until their skewed expiry, coalesces concurrent refreshes, and retries the token endpoint independently of API retries. One provider can be shared by clients generated from different contracts.
 
 #### Bearer Token Refresh
 
