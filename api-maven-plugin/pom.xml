@@ -18,8 +18,6 @@
         <dep.maven-plugin-api.version>3.9.16</dep.maven-plugin-api.version>
         <dep.maven-plugin-annotations.version>3.15.2</dep.maven-plugin-annotations.version>
         <dep.classgraph.version>4.8.184</dep.classgraph.version>
-        <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
-        <dep.swagger-parser.version>2.1.45</dep.swagger-parser.version>
         <dep.swagger-models.version>2.2.52</dep.swagger-models.version>
     </properties>
 
@@ -91,21 +89,18 @@
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser-core</artifactId>
-            <version>${dep.swagger-parser.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser-v3</artifactId>
-            <version>${dep.swagger-parser.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>io.takari.maven.plugins</groupId>
             <artifactId>takari-plugin-integration-testing</artifactId>
-            <version>${dep.takari-plugin-testing.version}</version>
             <type>pom</type>
             <scope>test</scope>
         </dependency>
@@ -113,7 +108,6 @@
         <dependency>
             <groupId>io.takari.maven.plugins</groupId>
             <artifactId>takari-plugin-testing</artifactId>
-            <version>${dep.takari-plugin-testing.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -153,7 +147,6 @@
             <plugin>
                 <groupId>io.takari.maven.plugins</groupId>
                 <artifactId>takari-lifecycle-plugin</artifactId>
-                <version>2.3.4</version>
                 <extensions>true</extensions>
                 <executions>
                     <execution>

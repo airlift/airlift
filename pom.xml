@@ -103,11 +103,13 @@
         <dep.brotli4j.version>1.23.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.85</dep.bouncycastle.version>
         <dep.mcp.sdk.version>2.0.0</dep.mcp.sdk.version>
-        <dep.openapi-generator-maven-plugin.version>7.24.0</dep.openapi-generator-maven-plugin.version>
+        <dep.openapi-generator.version>7.24.0</dep.openapi-generator.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
         <dep.jmxutils.version>1.29</dep.jmxutils.version>
         <dep.classmate.version>1.7.3</dep.classmate.version>
+        <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
+        <dep.swagger-parser.version>2.1.45</dep.swagger-parser.version>
     </properties>
 
     <dependencyManagement>
@@ -124,6 +126,12 @@
                 <groupId>com.fasterxml</groupId>
                 <artifactId>classmate</artifactId>
                 <version>${dep.classmate.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp-jvm</artifactId>
+                <version>5.4.0</version>
             </dependency>
 
             <dependency>
@@ -372,6 +380,31 @@
             </dependency>
 
             <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser-core</artifactId>
+                <version>${dep.swagger-parser.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser-v3</artifactId>
+                <version>${dep.swagger-parser.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.takari.maven.plugins</groupId>
+                <artifactId>takari-plugin-integration-testing</artifactId>
+                <version>${dep.takari-plugin-testing.version}</version>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.takari.maven.plugins</groupId>
+                <artifactId>takari-plugin-testing</artifactId>
+                <version>${dep.takari-plugin-testing.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${dep.bouncycastle.version}</version>
@@ -395,12 +428,34 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>org.openapitools</groupId>
+                <artifactId>jackson-databind-nullable</artifactId>
+                <version>0.2.10</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator</artifactId>
+                <version>${dep.openapi-generator.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>io.takari.maven.plugins</groupId>
+                    <artifactId>takari-lifecycle-plugin</artifactId>
+                    <version>2.3.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.openapitools</groupId>
+                    <artifactId>openapi-generator-maven-plugin</artifactId>
+                    <version>${dep.openapi-generator.version}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.gaul</groupId>
                     <artifactId>modernizer-maven-plugin</artifactId>
