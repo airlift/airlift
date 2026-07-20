@@ -17,40 +17,32 @@
         <air.compiler.fail-warnings>false</air.compiler.fail-warnings>
         <!-- skip modernizer as generated code isn't modern enough -->
         <air.check.skip-modernizer>true</air.check.skip-modernizer>
-
-        <openapitools.jackson.version>2.22.1</openapitools.jackson.version>
-        <openapitools.jakarta-annotation.version>3.0.0</openapitools.jakarta-annotation.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.22</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${openapitools.jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${openapitools.jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${openapitools.jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <version>${openapitools.jakarta-annotation.version}</version>
         </dependency>
 
         <dependency>
