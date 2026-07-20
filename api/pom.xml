@@ -14,13 +14,10 @@
     <description>Airlift - API building</description>
 
     <properties>
-
         <air.compiler.fail-warnings>false</air.compiler.fail-warnings>
 
         <!-- TODO move these to airbase -->
         <dep.commons-fileupload2.version>2.0.0-M5</dep.commons-fileupload2.version>
-        <dep.apache.httpcore.version>4.4.16</dep.apache.httpcore.version>
-        <dep.apache.httpmime.version>4.5.14</dep.apache.httpmime.version>
         <dep.exec-maven-plugin.version>3.6.3</dep.exec-maven-plugin.version>
     </properties>
 
@@ -42,7 +39,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>${dep.apache.httpcore.version}</version>
+                <version>4.4.16</version>
                 <exclusions>
                     <exclusion>
                         <groupId>commons-logging</groupId>
@@ -54,7 +51,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpmime</artifactId>
-                <version>${dep.apache.httpmime.version}</version>
+                <version>4.5.14</version>
                 <exclusions>
                     <exclusion>
                         <groupId>commons-logging</groupId>
@@ -62,7 +59,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
