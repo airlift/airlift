@@ -106,8 +106,6 @@
         <dep.openapi-generator.version>7.24.0</dep.openapi-generator.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
-        <dep.jmxutils.version>1.29</dep.jmxutils.version>
-        <dep.classmate.version>1.7.3</dep.classmate.version>
         <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
         <dep.swagger-parser.version>2.1.45</dep.swagger-parser.version>
     </properties>
@@ -120,12 +118,6 @@
                 <version>${dep.jersey.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml</groupId>
-                <artifactId>classmate</artifactId>
-                <version>${dep.classmate.version}</version>
             </dependency>
 
             <dependency>
@@ -364,19 +356,6 @@
                 <groupId>io.modelcontextprotocol.sdk</groupId>
                 <artifactId>mcp-json-jackson2</artifactId>
                 <version>${dep.mcp.sdk.version}</version>
-            </dependency>
-
-            <!-- TODO: move to airbase -->
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-api-incubator</artifactId>
-                <version>${dep.opentelemetry.version}-alpha</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.opentelemetry.semconv</groupId>
-                <artifactId>opentelemetry-semconv</artifactId>
-                <version>${dep.opentelemetry-semconv.version}</version>
             </dependency>
 
             <dependency>
