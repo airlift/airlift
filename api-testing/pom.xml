@@ -18,9 +18,7 @@
         <!-- skip modernizer as generated code isn't modern enough -->
         <air.check.skip-modernizer>true</air.check.skip-modernizer>
 
-        <dep.openapi-generator-maven-plugin.version>7.24.0</dep.openapi-generator-maven-plugin.version>
         <openapitools.jackson.version>2.22.1</openapitools.jackson.version>
-        <openapitools.jackson-databind-nullable.version>0.2.10</openapitools.jackson-databind-nullable.version>
         <openapitools.jakarta-annotation.version>3.0.0</openapitools.jakarta-annotation.version>
     </properties>
 
@@ -58,7 +56,6 @@
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
-            <version>${openapitools.jackson-databind-nullable.version}</version>
         </dependency>
     </dependencies>
 
@@ -67,7 +64,6 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>${dep.openapi-generator-maven-plugin.version}</version>
                 <configuration>
                     <generatorName>java</generatorName>
                     <configOptions>

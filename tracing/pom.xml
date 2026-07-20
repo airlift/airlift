@@ -69,7 +69,6 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp-jvm</artifactId>
-            <version>5.4.0</version>
             <scope>runtime</scope>
         </dependency>
 
