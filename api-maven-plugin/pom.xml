@@ -17,12 +17,9 @@
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <dep.maven-plugin-api.version>3.9.16</dep.maven-plugin-api.version>
         <dep.maven-plugin-annotations.version>3.15.2</dep.maven-plugin-annotations.version>
-        <dep.classgraph.version>4.8.184</dep.classgraph.version>
-        <dep.swagger-models.version>2.2.52</dep.swagger-models.version>
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -48,7 +45,7 @@
         <dependency>
             <groupId>io.github.classgraph</groupId>
             <artifactId>classgraph</artifactId>
-            <version>${dep.classgraph.version}</version>
+            <version>4.8.184</version>
         </dependency>
 
         <dependency>
@@ -82,7 +79,7 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-models</artifactId>
-            <version>${dep.swagger-models.version}</version>
+            <version>2.2.52</version>
             <scope>test</scope>
         </dependency>
 
