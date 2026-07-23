@@ -1,16 +1,15 @@
 package io.airlift.bootstrap;
 
-import com.google.common.collect.Sets;
-
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.System.identityHashCode;
 
 class ConcurrentWeakIdentitySet
 {
-    private final Set<Wrapper> set = Sets.newConcurrentHashSet();
+    private final Set<Wrapper> set = ConcurrentHashMap.newKeySet();
     private final ReferenceQueue<Object> queue = new ReferenceQueue<>();
 
     // copied/modified from WeakHashMap implementation

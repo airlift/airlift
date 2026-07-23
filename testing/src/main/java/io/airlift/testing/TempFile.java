@@ -3,6 +3,7 @@ package io.airlift.testing;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class TempFile
@@ -14,7 +15,7 @@ public class TempFile
     public TempFile()
             throws IOException
     {
-        this.file = File.createTempFile("tmp", null);
+        this.file = Files.createTempFile("tmp", null).toFile();
     }
 
     public File file()

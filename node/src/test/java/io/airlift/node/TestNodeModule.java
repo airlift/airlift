@@ -16,7 +16,6 @@
 package io.airlift.node;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.net.InetAddresses;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.configuration.ConfigurationFactory;
@@ -105,7 +104,7 @@ public class TestNodeModule
         assertThat(nodeInfo.getNodeId()).isNotEqualTo(nodeInfo.getInstanceId());
 
         assertThat(nodeInfo.getInternalAddress()).isEqualTo(publicAddress);
-        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.ofLiteral("0.0.0.0"));
         assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
         assertThat(nodeInfo.getAnnotations()).isEqualTo(Map.of("team", "a", "region", "b"));
 

@@ -48,7 +48,7 @@ public class DebugApp
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
-        logFile = File.createTempFile("debug-app-log", ".txt");
+        logFile = Files.createTempFile("debug-app-log", ".txt").toFile();
     }
 
     public enum ContentType

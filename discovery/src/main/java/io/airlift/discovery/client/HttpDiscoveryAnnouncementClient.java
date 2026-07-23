@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.http.client.CacheControl;
@@ -131,7 +130,7 @@ public class HttpDiscoveryAnnouncementClient
     private static String getBodyForError(Response response)
     {
         try {
-            return CharStreams.toString(new InputStreamReader(response.getInputStream(), UTF_8));
+            return new InputStreamReader(response.getInputStream(), UTF_8).readAllAsString();
         }
         catch (IOException e) {
             return "(error getting body)";

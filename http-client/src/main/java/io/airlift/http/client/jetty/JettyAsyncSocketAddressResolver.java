@@ -1,7 +1,6 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.net.InetAddresses;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -40,7 +39,7 @@ class JettyAsyncSocketAddressResolver
     private static Optional<InetAddress> resolve(String host)
     {
         try {
-            return Optional.of(InetAddresses.forString(host));
+            return Optional.of(InetAddress.ofLiteral(host));
         }
         catch (IllegalArgumentException ignored) {
             // not an IP address literal

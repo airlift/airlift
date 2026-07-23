@@ -2,7 +2,6 @@ package io.airlift.mcp.operations.legacy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
@@ -18,6 +17,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -36,7 +36,7 @@ public class LegacyCancellationController
     private static final Logger log = Logger.get(LegacyCancellationController.class);
 
     private final Optional<SessionController> sessionController;
-    private final Set<Object> activeRequestIds = Sets.newConcurrentHashSet();
+    private final Set<Object> activeRequestIds = ConcurrentHashMap.newKeySet();
     private final Duration interval;
     private final ExecutorService executorService;
 

@@ -33,8 +33,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static java.util.Objects.requireNonNull;
 
 public final class ConfigAssertions
@@ -320,7 +320,7 @@ public final class ConfigAssertions
     private static <T> InvocationHandlerAdapter createInvocationHandler(Class<T> type)
     {
         T instance = newDefaultInstance(type);
-        Set<Method> invokedMethods = newConcurrentHashSet();
+        Set<Method> invokedMethods = ConcurrentHashMap.newKeySet();
 
         return InvocationHandlerAdapter.of((proxy, method, args) -> {
             if (GET_RECORDING_CONFIG_METHOD.equals(method)) {

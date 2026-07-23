@@ -31,6 +31,7 @@ import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.configuration.ConfigurationLoader.loadProperties;
 import static java.nio.file.Files.createTempDirectory;
+import static java.nio.file.Files.createTempFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
@@ -128,7 +129,7 @@ public class TestConfigurationLoader
     private File createConfigFile(Consumer<PrintStream> contentProvider)
             throws IOException
     {
-        File file = File.createTempFile("config", ".properties", tempDir);
+        File file = createTempFile(tempDir.toPath(), "config", ".properties").toFile();
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             contentProvider.accept(out);
         }

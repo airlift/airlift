@@ -54,6 +54,7 @@ import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
 import static io.airlift.http.client.jetty.HttpRequestEvent.getFailureReason;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.readAllLines;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Objects.requireNonNull;
@@ -78,7 +79,7 @@ public class TestHttpClientLogger
     public void setup()
             throws IOException
     {
-        file = File.createTempFile(getClass().getName(), ".log");
+        file = createTempFile(getClass().getName(), ".log").toFile();
     }
 
     @AfterEach

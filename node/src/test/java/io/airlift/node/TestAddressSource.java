@@ -13,9 +13,9 @@
  */
 package io.airlift.node;
 
-import com.google.common.net.InetAddresses;
 import org.junit.jupiter.api.Test;
 
+import java.net.InetAddress;
 import java.util.Optional;
 
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
@@ -36,7 +36,7 @@ public class TestAddressSource
 
     private static void verifyEncoding(String addressString, String encodedHostname)
     {
-        assertThat(encodeAddressAsHostname(InetAddresses.forString(addressString))).isEqualTo(encodedHostname);
-        assertThat(tryDecodeHostnameToAddress(encodedHostname)).isEqualTo(Optional.of(InetAddresses.forString(addressString)));
+        assertThat(encodeAddressAsHostname(InetAddress.ofLiteral(addressString))).isEqualTo(encodedHostname);
+        assertThat(tryDecodeHostnameToAddress(encodedHostname)).isEqualTo(Optional.of(InetAddress.ofLiteral(addressString)));
     }
 }

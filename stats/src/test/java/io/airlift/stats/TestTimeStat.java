@@ -86,7 +86,7 @@ public class TestTimeStat
         assertThat(allTime.getCount()).isEqualTo(values.size());
         assertThat(fuzzyEquals(allTime.getMax(), values.getLast() * 0.001, 0.000_000_000_1)).isTrue();
         assertThat(allTime.getMin()).isEqualTo(values.getFirst() * 0.001);
-        assertThat(allTime.getAvg()).isCloseTo(values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, within(0.001));
+        assertThat(allTime.getAvg()).isCloseTo(values.stream().mapToDouble(x -> x).average().orElseThrow() * 0.001, within(0.001));
         assertThat(allTime.getUnit()).isEqualTo(TimeUnit.SECONDS);
 
         assertPercentile("tp50", allTime.getP50(), values, 0.50);

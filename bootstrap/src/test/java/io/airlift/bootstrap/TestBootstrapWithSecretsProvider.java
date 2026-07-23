@@ -112,7 +112,7 @@ final class TestBootstrapWithSecretsProvider
     private File createConfigurationResolverFile(String configurationFile)
             throws Exception
     {
-        File tomlFile = File.createTempFile("config_resolver", ".toml");
+        File tomlFile = Files.createTempFile("config_resolver", ".toml").toFile();
         tomlFile.deleteOnExit();
 
         try (BufferedWriter writer = newBufferedWriter(tomlFile.toPath())) {
