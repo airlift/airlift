@@ -293,7 +293,6 @@ public class Bootstrap
 
         // initialize logging
         if (logging != null) {
-            log.info("Initializing logging");
             LoggingConfiguration configuration = configurationFactory.build(LoggingConfiguration.class);
             logging.configure(configuration);
         }

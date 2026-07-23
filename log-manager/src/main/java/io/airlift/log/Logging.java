@@ -105,8 +105,6 @@ public class Logging
         }
 
         enableConsole();
-        log.info("Logging to stderr");
-
         redirectStdStreams();
     }
 
@@ -162,7 +160,6 @@ public class Logging
 
     public synchronized void disableConsole()
     {
-        log.info("Disabling stderr output");
         ROOT.removeHandler(consoleHandler);
         consoleHandler = null;
     }
