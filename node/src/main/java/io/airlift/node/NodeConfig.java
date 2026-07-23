@@ -16,7 +16,6 @@
 package io.airlift.node;
 
 import com.google.common.base.Splitter;
-import com.google.common.net.InetAddresses;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
@@ -149,7 +148,7 @@ public class NodeConfig
     public NodeConfig setNodeBindIp(String nodeBindIp)
     {
         if (nodeBindIp != null) {
-            this.nodeBindIp = InetAddresses.forString(nodeBindIp);
+            this.nodeBindIp = InetAddress.ofLiteral(nodeBindIp);
         }
         return this;
     }

@@ -69,7 +69,7 @@ public final class AddressToHostname
             ipString = ipString.replace('-', '.');
         }
 
-        byte[] address = InetAddresses.forString(ipString).getAddress();
+        byte[] address = InetAddress.ofLiteral(ipString).getAddress();
 
         try {
             return Optional.of(InetAddress.getByAddress(hostname, address));

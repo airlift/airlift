@@ -475,7 +475,7 @@ public class TestBufferedHandler
 
         public String serialize()
         {
-            return Joiner.on(':').join(loggerName, message);
+            return String.join(":", loggerName, message);
         }
 
         public static LogEntry deserialize(String serialized)

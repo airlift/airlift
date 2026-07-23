@@ -54,7 +54,7 @@ public class TestNodeInfo
         String binarySpec = "binary";
         String configSpec = "config";
         String internalIp = "10.0.0.22";
-        InetAddress bindIp = InetAddresses.forString("10.0.0.33");
+        InetAddress bindIp = InetAddress.ofLiteral("10.0.0.33");
         String externalAddress = "external";
 
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP, null, null, false);
@@ -83,7 +83,7 @@ public class TestNodeInfo
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP, null, null, false);
         assertThat(nodeInfo.getExternalAddress()).isEqualTo("10.0.0.22");
-        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.ofLiteral("0.0.0.0"));
     }
 
     @Test
@@ -91,7 +91,7 @@ public class TestNodeInfo
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, false);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
-        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.ofLiteral("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
     }
 
@@ -100,7 +100,7 @@ public class TestNodeInfo
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, true);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
-        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.ofLiteral("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
     }
 
@@ -110,7 +110,7 @@ public class TestNodeInfo
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME, null, null, false);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
-        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.ofLiteral("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getHostName());
     }
 
@@ -120,7 +120,7 @@ public class TestNodeInfo
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN, null, null, false);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
-        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.ofLiteral("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getCanonicalHostName());
     }
 

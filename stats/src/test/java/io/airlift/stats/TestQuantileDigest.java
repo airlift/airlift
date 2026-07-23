@@ -2,7 +2,6 @@ package io.airlift.stats;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import io.airlift.slice.Slice;
 import io.airlift.testing.TestingTicker;
 import org.junit.jupiter.api.RepeatedTest;
@@ -93,7 +92,7 @@ public class TestQuantileDigest
         QuantileDigest digest = new QuantileDigest(1);
 
         List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
-        addAll(digest, Lists.reverse(values));
+        addAll(digest, values.reversed());
 
         assertThat(digest.getCount()).isEqualTo(values.size());
     }

@@ -74,7 +74,6 @@ import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.util.Arrays.stream;
 import static java.util.Locale.ENGLISH;
@@ -102,9 +101,9 @@ public class ConfigurationFactory
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
-    private final Set<ConfigPropertyMetadata> usedProperties = newConcurrentHashSet();
+    private final Set<ConfigPropertyMetadata> usedProperties = ConcurrentHashMap.newKeySet();
     private final Set<String> allSeenProperties = new HashSet<>();
-    private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
+    private final Set<ConfigurationProvider<?>> registeredProviders = ConcurrentHashMap.newKeySet();
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());

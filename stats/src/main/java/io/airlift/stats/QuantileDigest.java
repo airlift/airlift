@@ -2,11 +2,11 @@ package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Comparators;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.airlift.slice.BasicSliceInput;
@@ -31,6 +31,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
+import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -308,7 +309,7 @@ public class QuantileDigest
      */
     public List<Long> getQuantilesLowerBound(List<Double> quantiles)
     {
-        checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
+        checkArgument(Comparators.isInOrder(quantiles, naturalOrder()), "quantiles must be sorted in increasing order");
         for (double quantile : quantiles) {
             checkArgument(quantile >= 0 && quantile <= 1, "quantile must be between [0,1]");
         }
@@ -359,7 +360,7 @@ public class QuantileDigest
      */
     public List<Long> getQuantilesUpperBound(List<Double> quantiles)
     {
-        checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
+        checkArgument(Comparators.isInOrder(quantiles, naturalOrder()), "quantiles must be sorted in increasing order");
         for (double quantile : quantiles) {
             checkArgument(quantile >= 0 && quantile <= 1, "quantile must be between [0,1]");
         }
@@ -448,7 +449,7 @@ public class QuantileDigest
     // is calculated.
     public List<Bucket> getHistogram(List<Long> bucketUpperBounds, MiddleFunction middleFunction)
     {
-        checkArgument(Ordering.natural().isOrdered(bucketUpperBounds), "buckets must be sorted in increasing order");
+        checkArgument(Comparators.isInOrder(bucketUpperBounds, naturalOrder()), "buckets must be sorted in increasing order");
 
         ImmutableList.Builder<Bucket> builder = ImmutableList.builder();
         PeekingIterator<Long> iterator = Iterators.peekingIterator(bucketUpperBounds.iterator());

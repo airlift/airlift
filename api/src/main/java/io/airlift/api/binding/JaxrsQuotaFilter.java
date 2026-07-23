@@ -18,6 +18,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -41,7 +42,7 @@ public class JaxrsQuotaFilter
             checkArgument(usedQuotas == null, "usedQuotas must be null");
             requireNonNull(modelMethod, "modelMethod is null");
 
-            usedQuotas = Sets.newConcurrentHashSet();
+            usedQuotas = ConcurrentHashMap.newKeySet();
         }
     }
 

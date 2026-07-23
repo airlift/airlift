@@ -16,7 +16,6 @@
 package io.airlift.node;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.net.InetAddresses;
 import io.airlift.configuration.testing.ConfigAssertions;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -24,6 +23,7 @@ import jakarta.validation.constraints.Pattern;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.UUID;
@@ -81,7 +81,7 @@ public class TestNodeConfig
                         .setPool("pool")
                         .setNodeId("nodeId")
                         .setNodeInternalAddress("internal")
-                        .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
+                        .setNodeBindIp(InetAddress.ofLiteral("10.11.12.13"))
                         .setNodeExternalAddress("external")
                         .setLocation("location")
                         .setBinarySpec("binary")
@@ -111,7 +111,7 @@ public class TestNodeConfig
                         .setPool("pool")
                         .setNodeId("nodeId")
                         .setNodeInternalAddress("internal")
-                        .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
+                        .setNodeBindIp(InetAddress.ofLiteral("10.11.12.13"))
                         .setNodeExternalAddress("external")
                         .setLocation("location")
                         .setBinarySpec("binary")

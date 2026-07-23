@@ -478,7 +478,7 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         byte[] contents = "hello world".getBytes(UTF_8);
-        File testFile = File.createTempFile("test", null);
+        File testFile = Files.createTempFile("test", null).toFile();
         Files.write(testFile.toPath(), contents);
 
         try (CloseableTestHttpServer server = newServer()) {
