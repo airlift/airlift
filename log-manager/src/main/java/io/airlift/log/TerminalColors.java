@@ -3,6 +3,7 @@ package io.airlift.log;
 import java.io.Console;
 import java.io.PrintWriter;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.log.TerminalColors.Color.BLUE;
 import static io.airlift.log.TerminalColors.Color.GREEN;
 import static io.airlift.log.TerminalColors.Color.RED;
@@ -137,16 +138,22 @@ public class TerminalColors
     private static boolean isColorSupported()
     {
         Console console = System.console();
+        // Console.isTerminal() reports whether the console is attached to a terminal, which
+        // holds regardless of whether System.console() returns a Console for redirected output.
+        // https://github.com/openjdk/jdk/pull/26273 changed that, so the Console itself must not
+        // be used as the signal.
+        boolean terminal = console != null && console.isTerminal();
+        return isColorSupported(terminal, System.getenv("TERM"), System.getenv("NO_COLOR"));
+    }
 
-        // https://github.com/openjdk/jdk/pull/26273 changed the behavior of System.console()
-        // to return null if there is no console attached, even if the output is redirected to
-        // a terminal.
-        if (console == null && Runtime.version().feature() < 25) {
+    static boolean isColorSupported(boolean terminal, String term, String noColor)
+    {
+        // Output is redirected to a file or a pipe
+        if (!terminal) {
             return false;
         }
 
         // No terminal at all
-        String term = System.getenv("TERM");
         if (term == null) {
             return false;
         }
@@ -156,7 +163,7 @@ public class TerminalColors
             return false;
         }
 
-        // https://no-color.org/
-        return System.getenv("NO_COLOR") == null;
+        // https://no-color.org/ - honored when present and not an empty string
+        return isNullOrEmpty(noColor);
     }
 }

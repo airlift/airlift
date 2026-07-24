@@ -15,6 +15,30 @@ public class TestTerminalColors
     private static final TerminalColors NOT_SUPPORTED = new TerminalColors(true, false);
 
     @Test
+    public void testColorSupportRequiresTerminal()
+    {
+        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", null)).isTrue();
+        assertThat(TerminalColors.isColorSupported(false, "xterm-256color", null)).isFalse();
+    }
+
+    @Test
+    public void testColorSupportRequiresCapableTerm()
+    {
+        assertThat(TerminalColors.isColorSupported(true, null, null)).isFalse();
+        assertThat(TerminalColors.isColorSupported(true, "dumb", null)).isFalse();
+        assertThat(TerminalColors.isColorSupported(true, "DUMB", null)).isFalse();
+    }
+
+    @Test
+    public void testNoColor()
+    {
+        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", "1")).isFalse();
+        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", "0")).isFalse();
+        // https://no-color.org/ - only honored when not an empty string
+        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", "")).isTrue();
+    }
+
+    @Test
     public void testColored()
     {
         assertThat(COLORED.colored("message", RED)).isEqualTo("\033[31mmessage\033[0m");
