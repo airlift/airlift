@@ -5,9 +5,9 @@ import java.io.PrintWriter;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.log.TerminalColors.Color.BLUE;
+import static io.airlift.log.TerminalColors.Color.BRIGHT_BLACK;
 import static io.airlift.log.TerminalColors.Color.GREEN;
 import static io.airlift.log.TerminalColors.Color.RED;
-import static io.airlift.log.TerminalColors.Color.WHITE;
 import static io.airlift.log.TerminalColors.Color.YELLOW;
 
 public class TerminalColors
@@ -63,7 +63,7 @@ public class TerminalColors
     {
         return switch (level) {
             case OFF -> text;
-            case TRACE -> colored(text, WHITE);
+            case TRACE -> colored(text, BRIGHT_BLACK);
             case DEBUG -> colored(text, BLUE);
             case INFO -> colored(text, GREEN);
             case WARN -> colored(text, YELLOW);

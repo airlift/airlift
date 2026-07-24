@@ -21,9 +21,8 @@ import java.util.logging.LogRecord;
 
 import static io.airlift.log.TerminalColors.Color.BRIGHT_BLACK;
 import static io.airlift.log.TerminalColors.Color.CYAN;
-import static io.airlift.log.TerminalColors.Color.GREEN;
 import static io.airlift.log.TerminalColors.Color.PURPLE;
-import static io.airlift.log.TerminalColors.Color.WHITE;
+import static io.airlift.log.TerminalColors.Color.RED;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
@@ -106,8 +105,9 @@ class StaticFormatter
                     .append(colors.colored(formatBaggage(baggage), level));
         }
 
+        // the message is left uncolored so it keeps the terminal's default foreground color
         builder.append('\t')
-                .append(colors.colored(record.getMessage(), WHITE));
+                .append(record.getMessage());
 
         if (record.getParameters() != null && record.getParameters().length != 0) {
             builder.append(" parameters=").append(deepToString(record.getParameters()));
@@ -115,7 +115,7 @@ class StaticFormatter
 
         if (record.getThrown() != null) {
             StringWriter stackTrace = new StringWriter();
-            record.getThrown().printStackTrace(colors.coloredWriter(new PrintWriter(stackTrace), GREEN));
+            record.getThrown().printStackTrace(colors.coloredWriter(new PrintWriter(stackTrace), RED));
             builder.append('\n');
             builder.append(stackTrace.getBuffer());
             builder.append('\n');
