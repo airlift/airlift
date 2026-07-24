@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.junit.jupiter.api.Test;
 
 import javax.management.openmbean.CompositeData;
@@ -14,6 +16,7 @@ import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.airlift.openmetrics.MetricsResource.sanitizeMetricName;
@@ -29,6 +32,18 @@ public class TestMetricsResource
         String original = "com.zaxxer.hikari:type=Pool (HikariPool-1),ThreadsAwaitingConnection";
         String expected = "com_zaxxer_hikari_type_Pool_HikariPool_1_ThreadsAwaitingConnection";
         assertThat(sanitizeMetricName(original)).isEqualTo(expected);
+    }
+
+    @Test
+    public void testOpenMetricsTextPreferredWhenFormatsAreEquallyAcceptable()
+            throws NoSuchMethodException
+    {
+        MediaType openMetrics = producedMediaType("getMetrics");
+        MediaType prometheusProtobuf = producedMediaType("getPrometheusProtobufMetrics");
+
+        assertThat(openMetrics.isCompatible(MediaType.valueOf("application/openmetrics-text"))).isTrue();
+        assertThat(prometheusProtobuf.isCompatible(MediaType.valueOf("application/vnd.google.protobuf"))).isTrue();
+        assertThat(serverQuality(openMetrics)).isGreaterThan(serverQuality(prometheusProtobuf));
     }
 
     @Test
@@ -113,6 +128,20 @@ public class TestMetricsResource
         assertThatThrownBy(() -> renderMetricsExpositions(ImmutableList.of(counter, gauge)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Metric family test_metric.abc contains mixed metric types: [class io.airlift.openmetrics.types.Counter, class io.airlift.openmetrics.types.Gauge]");
+    }
+
+    private static MediaType producedMediaType(String methodName)
+            throws NoSuchMethodException
+    {
+        Produces produces = MetricsResource.class.getMethod(methodName, List.class).getAnnotation(Produces.class);
+        assertThat(produces).isNotNull();
+        assertThat(produces.value()).hasSize(1);
+        return MediaType.valueOf(produces.value()[0]);
+    }
+
+    private static double serverQuality(MediaType mediaType)
+    {
+        return Double.parseDouble(mediaType.getParameters().getOrDefault("qs", "1"));
     }
 
     @Test

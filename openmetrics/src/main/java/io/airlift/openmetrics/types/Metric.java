@@ -15,16 +15,22 @@ package io.airlift.openmetrics.types;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Map;
 
 public sealed interface Metric
         permits BigCounter,
                 CompositeMetric,
                 Counter,
+                ExponentialHistogramMetric,
                 Gauge,
                 Info,
                 Summary
 {
     String metricName();
+
+    Map<String, String> labels();
+
+    String help();
 
     /**
      * Writes this metric's sample lines in the OpenMetrics text exposition format,

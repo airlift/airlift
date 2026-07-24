@@ -345,6 +345,25 @@ public final class ExponentialHistogram
             validateBucketRange(scale, negativeBuckets);
         }
 
+        public ExponentialHistogramSnapshot downscaleToAtMost(int targetScale)
+        {
+            checkArgument(targetScale >= MIN_SCALE && targetScale <= MAX_SCALE, "targetScale must be between %s and %s", MIN_SCALE, MAX_SCALE);
+            if (scale <= targetScale) {
+                return this;
+            }
+
+            int scaleReduction = scale - targetScale;
+            return new ExponentialHistogramSnapshot(
+                    targetScale,
+                    count,
+                    sum,
+                    min,
+                    max,
+                    zeroCount,
+                    positiveBuckets.downscale(scaleReduction),
+                    negativeBuckets.downscale(scaleReduction));
+        }
+
         public static ExponentialHistogramSnapshot merge(List<ExponentialHistogramSnapshot> snapshots)
         {
             return merge(snapshots, DEFAULT_MAX_BUCKETS);
@@ -492,6 +511,16 @@ public final class ExponentialHistogram
         return (long) buckets.offset() + buckets.counts.length - 1;
     }
 
+    private static long[] downscaleBucketCounts(int offset, long[] counts, int scaleReduction)
+    {
+        int newOffset = offset >> scaleReduction;
+        long[] newCounts = new long[((offset + counts.length - 1) >> scaleReduction) - newOffset + 1];
+        for (int index = 0; index < counts.length; index++) {
+            newCounts[((offset + index) >> scaleReduction) - newOffset] += counts[index];
+        }
+        return newCounts;
+    }
+
     private interface BucketSelector
     {
         Buckets buckets(ExponentialHistogramSnapshot snapshot);
@@ -512,6 +541,16 @@ public final class ExponentialHistogram
         public boolean isEmpty()
         {
             return counts.length == 0;
+        }
+
+        private Buckets downscale(int scaleReduction)
+        {
+            if (isEmpty()) {
+                return this;
+            }
+
+            int newOffset = offset >> scaleReduction;
+            return new Buckets(newOffset, downscaleBucketCounts(offset, counts, scaleReduction));
         }
 
         @Override
@@ -601,12 +640,8 @@ public final class ExponentialHistogram
             }
 
             int newOffset = offset >> by;
-            long[] newCounts = new long[(lastIndex() >> by) - newOffset + 1];
-            for (int i = 0; i < counts.length; i++) {
-                newCounts[((offset + i) >> by) - newOffset] += counts[i];
-            }
+            counts = downscaleBucketCounts(offset, counts, by);
             offset = newOffset;
-            counts = newCounts;
         }
 
         public Buckets snapshot()
