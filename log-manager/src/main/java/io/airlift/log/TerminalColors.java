@@ -12,14 +12,14 @@ import static io.airlift.log.TerminalColors.Color.YELLOW;
 
 public class TerminalColors
 {
-    private static final boolean isColorSupported = isColorSupported();
+    private static final boolean COLOR_SUPPORTED = isColorSupported();
     private static final String ANSI_RESET = "\033[0m";
 
     private final boolean enabled;
 
     public TerminalColors(boolean interactive)
     {
-        this(interactive, isColorSupported);
+        this(interactive, COLOR_SUPPORTED);
     }
 
     TerminalColors(boolean interactive, boolean colorSupported)
@@ -36,7 +36,7 @@ public class TerminalColors
         BLUE("\033[34m"),
         PURPLE("\033[35m"),
         CYAN("\033[36m"),
-        BRIGHT_BLACK("\033[90m"),;
+        BRIGHT_BLACK("\033[90m");
 
         private final String code;
 
