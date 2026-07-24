@@ -15,27 +15,27 @@ public class TestTerminalColors
     private static final TerminalColors NOT_SUPPORTED = new TerminalColors(true, false);
 
     @Test
-    public void testColorSupportRequiresTerminal()
+    public void testColorEnabledByDefault()
     {
-        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", null)).isTrue();
-        assertThat(TerminalColors.isColorSupported(false, "xterm-256color", null)).isFalse();
+        assertThat(TerminalColors.isColorSupported("xterm-256color", null)).isTrue();
+        // no TERM, as under an IDE run console or a Docker log pipe, still supports color
+        assertThat(TerminalColors.isColorSupported(null, null)).isTrue();
     }
 
     @Test
-    public void testColorSupportRequiresCapableTerm()
+    public void testDumbTerminalDisablesColor()
     {
-        assertThat(TerminalColors.isColorSupported(true, null, null)).isFalse();
-        assertThat(TerminalColors.isColorSupported(true, "dumb", null)).isFalse();
-        assertThat(TerminalColors.isColorSupported(true, "DUMB", null)).isFalse();
+        assertThat(TerminalColors.isColorSupported("dumb", null)).isFalse();
+        assertThat(TerminalColors.isColorSupported("DUMB", null)).isFalse();
     }
 
     @Test
     public void testNoColor()
     {
-        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", "1")).isFalse();
-        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", "0")).isFalse();
+        assertThat(TerminalColors.isColorSupported("xterm-256color", "1")).isFalse();
+        assertThat(TerminalColors.isColorSupported("xterm-256color", "0")).isFalse();
         // https://no-color.org/ - only honored when not an empty string
-        assertThat(TerminalColors.isColorSupported(true, "xterm-256color", "")).isTrue();
+        assertThat(TerminalColors.isColorSupported("xterm-256color", "")).isTrue();
     }
 
     @Test

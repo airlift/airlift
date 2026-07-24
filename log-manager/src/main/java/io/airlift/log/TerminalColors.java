@@ -1,6 +1,5 @@
 package io.airlift.log;
 
-import java.io.Console;
 import java.io.PrintWriter;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -137,33 +136,22 @@ public class TerminalColors
 
     private static boolean isColorSupported()
     {
-        Console console = System.console();
-        // Console.isTerminal() reports whether the console is attached to a terminal, which
-        // holds regardless of whether System.console() returns a Console for redirected output.
-        // https://github.com/openjdk/jdk/pull/26273 changed that, so the Console itself must not
-        // be used as the signal.
-        boolean terminal = console != null && console.isTerminal();
-        return isColorSupported(terminal, System.getenv("TERM"), System.getenv("NO_COLOR"));
+        return isColorSupported(System.getenv("TERM"), System.getenv("NO_COLOR"));
     }
 
-    static boolean isColorSupported(boolean terminal, String term, String noColor)
+    static boolean isColorSupported(String term, String noColor)
     {
-        // Output is redirected to a file or a pipe
-        if (!terminal) {
-            return false;
-        }
-
-        // No terminal at all
-        if (term == null) {
-            return false;
-        }
-
-        // Dumb terminal
-        if (term.equalsIgnoreCase("dumb")) {
-            return false;
-        }
+        // Color is only ever emitted on the interactive console handler (see the interactive flag),
+        // whose output is routinely consumed by sinks that render ANSI but are not TTYs and do not
+        // set TERM - Docker log pipes, IDE run consoles, CI. So color is enabled by default and only
+        // the standard opt-outs disable it, rather than requiring an attached terminal.
 
         // https://no-color.org/ - honored when present and not an empty string
-        return isNullOrEmpty(noColor);
+        if (!isNullOrEmpty(noColor)) {
+            return false;
+        }
+
+        // Dumb terminal explicitly declares no capabilities
+        return !"dumb".equalsIgnoreCase(term);
     }
 }
