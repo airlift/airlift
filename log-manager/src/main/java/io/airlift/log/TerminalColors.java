@@ -14,11 +14,16 @@ public class TerminalColors
     private static final boolean isColorSupported = isColorSupported();
     private static final String ANSI_RESET = "\033[0m";
 
-    private final boolean interactive;
+    private final boolean enabled;
 
     public TerminalColors(boolean interactive)
     {
-        this.interactive = interactive;
+        this(interactive, isColorSupported);
+    }
+
+    TerminalColors(boolean interactive, boolean colorSupported)
+    {
+        this.enabled = interactive && colorSupported;
     }
 
     public enum Color
@@ -47,10 +52,7 @@ public class TerminalColors
 
     public String colored(String text, Color color)
     {
-        if (!isColorSupported) {
-            return text;
-        }
-        if (!interactive) {
+        if (!enabled) {
             return text;
         }
         return color.getCode() + text + ANSI_RESET;
@@ -68,16 +70,49 @@ public class TerminalColors
         };
     }
 
-    public static PrintWriter coloredWriter(PrintWriter writer, Color color)
+    public PrintWriter coloredWriter(PrintWriter writer, Color color)
     {
+        if (!enabled) {
+            return writer;
+        }
         return new PrintWriter(writer)
         {
             @Override
+            public void write(int c)
+            {
+                write(String.valueOf((char) c), 0, 1);
+            }
+
+            @Override
             public void write(char[] buffer, int off, int len)
             {
-                writer.write(color.getCode());
-                writer.write(buffer, off, len);
-                writer.write(ANSI_RESET);
+                write(new String(buffer, off, len), 0, len);
+            }
+
+            @Override
+            public void write(String string, int off, int len)
+            {
+                // color each line separately, leaving the line terminators uncolored, so that
+                // the color does not carry over into the next line of a multi line string
+                int position = off;
+                int end = off + len;
+                while (position < end) {
+                    int lineEnd = position;
+                    while (lineEnd < end && !isLineTerminator(string.charAt(lineEnd))) {
+                        lineEnd++;
+                    }
+                    if (lineEnd > position) {
+                        writer.write(color.getCode());
+                        writer.write(string, position, lineEnd - position);
+                        writer.write(ANSI_RESET);
+                    }
+                    int terminatorEnd = lineEnd;
+                    while (terminatorEnd < end && isLineTerminator(string.charAt(terminatorEnd))) {
+                        terminatorEnd++;
+                    }
+                    writer.write(string, lineEnd, terminatorEnd - lineEnd);
+                    position = terminatorEnd;
+                }
             }
 
             @Override
@@ -92,6 +127,11 @@ public class TerminalColors
                 writer.close();
             }
         };
+    }
+
+    private static boolean isLineTerminator(char c)
+    {
+        return c == '\n' || c == '\r';
     }
 
     private static boolean isColorSupported()

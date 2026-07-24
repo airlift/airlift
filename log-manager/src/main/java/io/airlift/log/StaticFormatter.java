@@ -24,7 +24,6 @@ import static io.airlift.log.TerminalColors.Color.CYAN;
 import static io.airlift.log.TerminalColors.Color.GREEN;
 import static io.airlift.log.TerminalColors.Color.PURPLE;
 import static io.airlift.log.TerminalColors.Color.WHITE;
-import static io.airlift.log.TerminalColors.coloredWriter;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
@@ -116,7 +115,7 @@ class StaticFormatter
 
         if (record.getThrown() != null) {
             StringWriter stackTrace = new StringWriter();
-            record.getThrown().printStackTrace(coloredWriter(new PrintWriter(stackTrace), GREEN));
+            record.getThrown().printStackTrace(colors.coloredWriter(new PrintWriter(stackTrace), GREEN));
             builder.append('\n');
             builder.append(stackTrace.getBuffer());
             builder.append('\n');
