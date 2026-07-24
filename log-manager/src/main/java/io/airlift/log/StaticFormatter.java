@@ -23,7 +23,6 @@ import static io.airlift.log.TerminalColors.Color.BRIGHT_BLACK;
 import static io.airlift.log.TerminalColors.Color.CYAN;
 import static io.airlift.log.TerminalColors.Color.GREEN;
 import static io.airlift.log.TerminalColors.Color.PURPLE;
-import static io.airlift.log.TerminalColors.Color.WHITE;
 import static io.airlift.log.TerminalColors.coloredWriter;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -108,7 +107,7 @@ class StaticFormatter
         }
 
         builder.append('\t')
-                .append(colors.colored(record.getMessage(), WHITE));
+                .append(record.getMessage());
 
         if (record.getParameters() != null && record.getParameters().length != 0) {
             builder.append(" parameters=").append(deepToString(record.getParameters()));
