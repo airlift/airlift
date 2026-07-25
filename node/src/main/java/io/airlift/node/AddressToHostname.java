@@ -69,7 +69,14 @@ public final class AddressToHostname
             ipString = ipString.replace('-', '.');
         }
 
-        byte[] address = InetAddress.ofLiteral(ipString).getAddress();
+        byte[] address;
+        try {
+            address = InetAddress.ofLiteral(ipString).getAddress();
+        }
+        catch (IllegalArgumentException _) {
+            // the suffix matched, but the remainder is not an encoded address, so this is an ordinary hostname
+            return Optional.empty();
+        }
 
         try {
             return Optional.of(InetAddress.getByAddress(hostname, address));
