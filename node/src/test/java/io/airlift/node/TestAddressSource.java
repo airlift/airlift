@@ -34,6 +34,25 @@ public class TestAddressSource
         verifyEncoding("::1", "x--1.ip");
     }
 
+    @Test
+    public void testDecodingNonEncodedHostname()
+    {
+        assertThat(tryDecodeHostnameToAddress("example.com")).isEmpty();
+        assertThat(tryDecodeHostnameToAddress("")).isEmpty();
+    }
+
+    @Test
+    public void testDecodingMalformedEncodedHostname()
+    {
+        // the suffix matches, but the remainder does not decode to an address
+        assertThat(tryDecodeHostnameToAddress("not-an-address.ip")).isEmpty();
+        assertThat(tryDecodeHostnameToAddress("1-2-3-4-5.ip")).isEmpty();
+        assertThat(tryDecodeHostnameToAddress("999-0-0-1.ip")).isEmpty();
+        assertThat(tryDecodeHostnameToAddress("xnot-a-v6-address.ip")).isEmpty();
+        assertThat(tryDecodeHostnameToAddress(".ip")).isEmpty();
+        assertThat(tryDecodeHostnameToAddress("x.ip")).isEmpty();
+    }
+
     private static void verifyEncoding(String addressString, String encodedHostname)
     {
         assertThat(encodeAddressAsHostname(InetAddress.ofLiteral(addressString))).isEqualTo(encodedHostname);
