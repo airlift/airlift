@@ -35,17 +35,15 @@ public class AppResourceHandlerProvider
     private final String name;
     private final Optional<String> description;
     private final Supplier<String> contentSupplier;
-    private final int contentLength;
     private volatile String host;
     private volatile Supplier<List<ResourceContents>> resourceContentsSupplier;
 
-    public AppResourceHandlerProvider(McpApp app, String name, Optional<String> description, Supplier<String> contentSupplier, int contentLength)
+    public AppResourceHandlerProvider(McpApp app, String name, Optional<String> description, Supplier<String> contentSupplier)
     {
         this.app = requireNonNull(app, "app is null");
         this.name = requireNonNull(name, "name is null");
         this.description = requireNonNull(description, "description is null");
         this.contentSupplier = requireNonNull(contentSupplier, "contentSupplier is null");
-        this.contentLength = contentLength;
     }
 
     @Inject
@@ -63,7 +61,7 @@ public class AppResourceHandlerProvider
                 app.resourceUri(),
                 description,
                 PROFILE_MCP_APP,
-                OptionalLong.of(contentLength),
+                OptionalLong.empty(),
                 Optional.empty(),
                 Optional.empty());
 
