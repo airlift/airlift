@@ -14,6 +14,8 @@
 package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
+import io.airlift.log.Level;
+import io.airlift.log.Logging;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
@@ -43,6 +45,11 @@ import static java.util.Objects.requireNonNull;
 public class TestingHttpServer
         implements AutoCloseable
 {
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
+
     private final String scheme;
     private final Server server;
     private final HostAndPort hostAndPort;

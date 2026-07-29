@@ -29,6 +29,7 @@ import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.log.Level;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
@@ -84,7 +85,9 @@ public class TestHttpServerModule
     @BeforeAll
     public void setupSuite()
     {
-        Logging.initialize();
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
     }
 
     @BeforeEach
@@ -118,6 +121,7 @@ public class TestHttpServerModule
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         HttpServer server = injector.getInstance(HttpServer.class);
@@ -149,6 +153,7 @@ public class TestHttpServerModule
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         HttpServer primaryServer = injector.getInstance(HttpServer.class);
@@ -182,6 +187,7 @@ public class TestHttpServerModule
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
@@ -222,6 +228,7 @@ public class TestHttpServerModule
         assertThatThrownBy(() -> app
                 .setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize())
                 .isInstanceOfSatisfying(ApplicationConfigurationException.class, e -> assertThat(e.getErrors())
                         .anySatisfy(error -> assertThat(error.getMessage()).contains("Configuration property 'http-server.http.port' was not used"))
@@ -263,6 +270,7 @@ public class TestHttpServerModule
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);

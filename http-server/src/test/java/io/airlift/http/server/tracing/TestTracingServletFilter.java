@@ -12,6 +12,8 @@ import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.ServerFeature;
 import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.log.Level;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -35,6 +37,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTracingServletFilter
 {
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
+
     private static final String TRACE_ID = "0123456789abcdef0123456789abcdef";
     public static final HeaderName TRACEPARENT_HEADER = HeaderName.of("traceparent");
 

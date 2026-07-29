@@ -11,6 +11,8 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpServerModule;
+import io.airlift.log.Level;
+import io.airlift.log.Logging;
 import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.opentelemetry.OpenTelemetryModule;
 import io.opentelemetry.api.baggage.Baggage;
@@ -54,6 +56,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TestBaggagePropagation
 {
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
+
     @Test
     public void testBaggagePropagatesBetweenBootstrappedServices(@TempDir Path tempDir)
             throws Exception

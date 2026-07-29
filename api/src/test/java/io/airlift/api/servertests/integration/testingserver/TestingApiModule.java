@@ -37,7 +37,6 @@ public class TestingApiModule
 
         Module apiModule = ApiModule.builder()
                 .addApi(apiBuilder -> apiBuilder.add(PublicWidgetApi.class))
-                .withApiLogging()
                 .withOpenApiMetadata(openApiMetadata)
                 .withOpenApiFilterBinding(binding -> binding.to(TestingOpenApiFilter.class))
                 .withCompatibilityTester(newDefaultInstance(basePathFromClass(ApiCompatibilityUtil.class)))

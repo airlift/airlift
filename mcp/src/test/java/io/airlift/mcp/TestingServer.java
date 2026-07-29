@@ -11,6 +11,8 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
+import io.airlift.log.Level;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeModule;
 
 import java.io.Closeable;
@@ -23,6 +25,13 @@ import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 public class TestingServer
         implements Closeable
 {
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("io.modelcontextprotocol.spec.McpSchema", Level.ERROR);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
+
     private final Injector injector;
 
     public TestingServer(Map<String, String> properties, Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
@@ -45,8 +54,11 @@ public class TestingServer
                 .put("mcp.resource-subscription.cache-period", "1ms")
                 .putAll(properties);
 
-        Bootstrap app = new Bootstrap(modules.build());
-        injector = app.setRequiredConfigurationProperties(serverProperties.buildKeepingLast()).initialize();
+        injector = new Bootstrap(modules.build())
+                .doNotInitializeLogging()
+                .setRequiredConfigurationProperties(serverProperties.buildKeepingLast())
+                .quiet()
+                .initialize();
     }
 
     public Injector injector()

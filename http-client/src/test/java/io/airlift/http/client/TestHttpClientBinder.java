@@ -48,6 +48,7 @@ public class TestHttpClientBinder
                 binder -> httpClientBinder(binder)
                         .bindHttpClient("foo", FooClient.class)
                         .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))))
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -74,6 +75,7 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
                             .addStatusListenerBinding().toInstance(listener2);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -104,6 +106,7 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
                             .addFilterBinding().toInstance(filter2);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -128,6 +131,7 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withStatusListener(TestingStatusListener.class);
                     binder.bind(new TypeLiteral<Multiset<Integer>>() {}).toInstance(HashMultiset.create());
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -148,6 +152,7 @@ public class TestHttpClientBinder
                             .withFilter(TestingRequestFilter.class)
                             .addFilterBinding().to(AnotherHttpRequestFilter.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -162,6 +167,7 @@ public class TestHttpClientBinder
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
                         .withFilter(TestingRequestFilter.class)
                         .withFilter(AnotherHttpRequestFilter.class))
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -174,6 +180,7 @@ public class TestHttpClientBinder
     {
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -187,6 +194,7 @@ public class TestHttpClientBinder
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
                         .withAlias(FooAlias1.class)
                         .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class)))
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -203,6 +211,7 @@ public class TestHttpClientBinder
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
                         .withAlias(FooAlias1.class)
                         .withAlias(FooAlias2.class))
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -222,6 +231,7 @@ public class TestHttpClientBinder
                     binder.bind(SslContextFactory.Client.class).toInstance(passingFactory);
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -230,6 +240,7 @@ public class TestHttpClientBinder
                     binder.bind(SslContextFactory.Client.class).toInstance(failingFactory);
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize())
                 .hasMessageContaining("RuntimeException: fail");
@@ -248,6 +259,7 @@ public class TestHttpClientBinder
                     binder.bind(SslContextFactory.Client.class).annotatedWith(FooClient.class).toInstance(passingFactory);
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -258,6 +270,7 @@ public class TestHttpClientBinder
                     binder.bind(SslContextFactory.Client.class).annotatedWith(FooClient.class).toInstance(failingFactory);
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize())
                 .hasMessageContaining("RuntimeException: fail");
@@ -271,6 +284,7 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 
@@ -287,6 +301,7 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
+                .doNotInitializeLogging()
                 .quiet()
                 .initialize();
 

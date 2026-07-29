@@ -29,6 +29,7 @@ import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
+import io.airlift.log.Level;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
@@ -122,7 +123,9 @@ public class TestHttpServerProvider
     @BeforeAll
     public void setupSuite()
     {
-        Logging.initialize();
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
     }
 
     @BeforeEach
