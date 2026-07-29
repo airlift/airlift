@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 
 public record RequestMetadata(
         Protocol protocol,
-        Implementation implementation,
+        Optional<Implementation> clientInfo,
         ClientCapabilities clientCapabilities,
         Optional<LoggingLevel> loggingLevel,
         Optional<Object> progressToken,
@@ -46,7 +46,7 @@ public record RequestMetadata(
     public RequestMetadata
     {
         requireNonNull(protocol, "protocol is null");
-        requireNonNull(implementation, "implementation is null");
+        requireNonNull(clientInfo, "clientInfo is null");
         requireNonNull(clientCapabilities, "clientCapabilities is null");
         requireNonNull(loggingLevel, "loggingLevel is null");
         requireNonNull(progressToken, "progressToken is null");
@@ -75,12 +75,12 @@ public record RequestMetadata(
         }
         Optional<String> mcpNameHeader = optional(request, HEADER_MCP_NAME);
 
-        Implementation implementation = required(jsonMapper, metadata, METADATA_CLIENT_INFO, Implementation.class);
+        Optional<Implementation> clientInfo = optional(jsonMapper, metadata, METADATA_CLIENT_INFO, Implementation.class);
         ClientCapabilities clientCapabilities = required(jsonMapper, metadata, METADATA_CLIENT_CAPABILITIES, ClientCapabilities.class);
         Optional<LoggingLevel> loggingLevel = optional(jsonMapper, metadata, METADATA_CLIENT_LOG_LEVEL, LoggingLevel.class);
         Optional<Object> progressToken = optional(jsonMapper, metadata, METADATA_PROGRESS_TOKEN, Object.class);
 
-        return new RequestMetadata(protocol, implementation, clientCapabilities, loggingLevel, progressToken, mcpNameHeader);
+        return new RequestMetadata(protocol, clientInfo, clientCapabilities, loggingLevel, progressToken, mcpNameHeader);
     }
 
     private static McpException unsupportedProtocol(String protocolVersionHeader)
@@ -111,14 +111,22 @@ public record RequestMetadata(
     private static <T> Optional<T> optional(JsonMapper jsonMapper, Meta metadata, String name, Class<T> clazz)
     {
         return metadata.meta()
-                .flatMap(m -> Optional.ofNullable(m.get(name)))
-                .map(value -> {
+                .flatMap(values -> {
+                    if (!values.containsKey(name)) {
+                        return Optional.empty();
+                    }
+
+                    Object value = values.get(name);
+                    if (value == null) {
+                        throw exception(INVALID_PARAMS, "Metadata value is not the correct type: null");
+                    }
+
                     try {
                         if (clazz.equals(Object.class)) {
-                            return clazz.cast(value);
+                            return Optional.of(clazz.cast(value));
                         }
 
-                        return jsonMapper.convertValue(value, clazz);
+                        return Optional.of(jsonMapper.convertValue(value, clazz));
                     }
                     catch (Exception e) {
                         throw exception(INVALID_PARAMS, "Metadata value is not the correct type: " + value.getClass().getSimpleName());

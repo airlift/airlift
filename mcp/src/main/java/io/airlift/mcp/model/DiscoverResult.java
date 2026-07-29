@@ -14,7 +14,6 @@ public record DiscoverResult(
         ResultType resultType,
         List<String> supportedVersions,
         ServerCapabilities capabilities,
-        Implementation serverInfo,
         Optional<String> instructions,
         Optional<Map<String, Object>> meta)
         implements Meta
@@ -24,7 +23,6 @@ public record DiscoverResult(
         requireNonNull(resultType, "resultType is null");
         supportedVersions = ImmutableList.copyOf(supportedVersions);
         requireNonNull(capabilities, "capabilities is null");
-        requireNonNull(serverInfo, "serverInfo is null");
         instructions = requireNonNullElse(instructions, Optional.empty());
         meta = requireNonNullElse(meta, Optional.empty());
     }
@@ -32,6 +30,6 @@ public record DiscoverResult(
     @Override
     public Object withMeta(Map<String, Object> meta)
     {
-        return new DiscoverResult(resultType, supportedVersions, capabilities, serverInfo, instructions, Optional.of(meta));
+        return new DiscoverResult(resultType, supportedVersions, capabilities, instructions, Optional.of(meta));
     }
 }

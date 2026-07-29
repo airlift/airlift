@@ -44,6 +44,7 @@ public interface Constants
     String METADATA_PROTOCOL_VERSION = "io.modelcontextprotocol/protocolVersion";
     String METADATA_CLIENT_INFO = "io.modelcontextprotocol/clientInfo";
     String METADATA_CLIENT_CAPABILITIES = "io.modelcontextprotocol/clientCapabilities";
+    String METADATA_SERVER_INFO = "io.modelcontextprotocol/serverInfo";
     String METADATA_CLIENT_LOG_LEVEL = "io.modelcontextprotocol/logLevel";
     String METADATA_PROGRESS_TOKEN = "progressToken";
     String METADATA_SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId";

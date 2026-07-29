@@ -93,7 +93,7 @@ public class TestConformance
     public void testConformance(String scenario)
     {
         // see: https://github.com/modelcontextprotocol/conformance?tab=readme-ov-file#testing-servers
-        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@alpha", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
+        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@0.2.0-alpha.10", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
         assertThat(result).contains("0 failed, 0 warnings");
     }
 
