@@ -61,7 +61,6 @@ public class ToolHandlerProvider
     private final Map<String, AppContent> apps;
     private final ReturnType returnType;
     private final List<String> icons;
-    private final Consumer<Provider<ResourceEntry>> resourceHandlerConsumer;
     private Injector injector;
     private JsonMapper jsonMapper;
 
@@ -73,7 +72,6 @@ public class ToolHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         this.apps = requireNonNull(apps, "apps is null");   // do not copy
         icons = ImmutableList.copyOf(mcpTool.icons());
-        this.resourceHandlerConsumer = requireNonNull(resourceHandlerConsumer, "resourceHandlerConsumer is null");
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
 
@@ -95,6 +93,8 @@ public class ToolHandlerProvider
         else {
             throw exception(INVALID_PARAMS, "Method %s has unsupported return type: %s".formatted(method.getName(), method.getGenericReturnType()));
         }
+
+        checkAppResourceHandlerProvider(mcpTool, resourceHandlerConsumer);
     }
 
     @Inject
@@ -239,38 +239,48 @@ public class ToolHandlerProvider
             throw exception(INVALID_PARAMS, "app.resourceUri must use scheme \"ui://\" for Tool: %s".formatted(tool.name()));
         }
 
-        AppContent appContent = apps.get(app.resourceUri());
-        if (appContent == null) {
-            if (app.sourcePath().isBlank()) {
-                throw exception(INVALID_PARAMS, "app.sourcePath cannot be blank for Tool: %s".formatted(tool.name()));
-            }
-
-            appContent = new AppContent(app.sourcePath(), loadContent(tool, app), () -> loadContent(tool, app));
-            apps.put(app.resourceUri(), appContent);
-        }
-        else if (!app.sourcePath().isEmpty() && !app.sourcePath().equals(appContent.sourcePath())) {
-            throw exception(INVALID_PARAMS, "%s was previously specified but its sourcePath does not match the sourcePath of the provided app content for Tool: %s".formatted(app.resourceUri(), tool.name()));
-        }
-
         ImmutableMap.Builder<String, Object> ui = ImmutableMap.builder();
         ui.put("resourceUri", app.resourceUri());
         if (app.visibility().length > 0) {
             ui.put("visibility", Stream.of(app.visibility()).map(UiToolVisibility::toJsonValue).collect(toImmutableSet()));
         }
 
-        Supplier<String> contentLoader = app.debugMode() ? appContent.contentLoader() : appContent::content;
-        resourceHandlerConsumer.accept(new AppResourceHandlerProvider(app, tool.name(), tool.description(), contentLoader, appContent.content().length()));
-
         return tool.withMeta(ImmutableMap.of("ui", ui.build()));
     }
 
-    private static String loadContent(Tool tool, McpApp app)
+    private void checkAppResourceHandlerProvider(McpTool mcpTool, Consumer<Provider<ResourceEntry>> resourceHandlerConsumer)
+    {
+        McpApp app = mcpTool.app();
+        if (app.resourceUri().isEmpty()) {
+            return;
+        }
+
+        AppContent appContent = apps.get(app.resourceUri());
+        if (appContent == null) {
+            if (app.sourcePath().isBlank()) {
+                throw exception(INVALID_PARAMS, "app.sourcePath cannot be blank for Tool: %s".formatted(mcpTool.name()));
+            }
+
+            Supplier<String> contentLoader = () -> loadContent(app, mcpTool.name());
+            appContent = new AppContent(app.sourcePath(), contentLoader.get(), contentLoader);
+            apps.put(app.resourceUri(), appContent);
+        }
+        else if (!app.sourcePath().isEmpty() && !app.sourcePath().equals(appContent.sourcePath())) {
+            throw exception(INVALID_PARAMS, "%s was previously specified but its sourcePath does not match the sourcePath of the provided app content for Tool: %s".formatted(app.resourceUri(), mcpTool.name()));
+        }
+
+        Supplier<String> contentLoader = app.debugMode() ? appContent.contentLoader() : appContent::content;
+        Optional<String> description = mcpTool.description().isEmpty() ? Optional.empty() : Optional.of(mcpTool.description());
+        resourceHandlerConsumer.accept(new AppResourceHandlerProvider(app, mcpTool.name(), description, contentLoader, appContent.content().length()));
+    }
+
+    private static String loadContent(McpApp app, String toolName)
     {
         try {
             return Resources.toString(Resources.getResource(app.sourcePath()), UTF_8);
         }
         catch (Exception e) {
-            McpException exception = exception(INVALID_PARAMS, "Could not load app.sourcePath for Tool: %s".formatted(tool.name()));
+            McpException exception = exception(INVALID_PARAMS, "Could not load app.sourcePath for Tool: %s".formatted(toolName));
             exception.initCause(e);
             throw exception;
         }
