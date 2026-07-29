@@ -18,7 +18,9 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.log.Logger;
+import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
+import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
@@ -778,6 +780,37 @@ public abstract class TestMcp
         // app resource handler doesn't use request context
         List<ResourceContents> resourceContents = mcpMapResource.handler().readResource(null, mcpMapResource.resource(), new io.airlift.mcp.model.ReadResourceRequest(mcpMapResource.resource().uri()));
         assertThat(resourceContents).isNotEmpty();
+    }
+
+    @Test
+    public void testMetaAnnotations()
+    {
+        Set<ToolEntry> tools = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
+        ToolEntry addTool = tools.stream().filter(toolEntry -> toolEntry.tool().name().equals("add")).findFirst().orElseThrow();
+        Map<String, Object> meta = addTool.tool().meta().orElseThrow();
+
+        assertThat(meta).containsEntry("hey", ImmutableMap.of("x", 20.20));
+        assertThat(meta).containsEntry("you", 12.34);
+        assertThat(meta).containsEntry("there", "a");
+        assertThat(meta).containsEntry("buddy", ImmutableList.of("a", "b", "c"));
+
+        Set<PromptEntry> prompts = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
+        PromptEntry agePrompt = prompts.stream().filter(promptEntry -> promptEntry.prompt().name().equals("age")).findFirst().orElseThrow();
+        meta = agePrompt.prompt().meta().orElseThrow();
+
+        assertThat(meta).containsEntry("age", "12");
+
+        Set<ResourceEntry> resources = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
+        ResourceEntry example1Resource = resources.stream().filter(resourceEntry -> resourceEntry.resource().name().equals("example1")).findFirst().orElseThrow();
+        meta = example1Resource.resource().meta().orElseThrow();
+
+        assertThat(meta).containsEntry("test", ImmutableList.of("1", "2"));
+
+        Set<ResourceTemplateEntry> resourceTemplates = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
+        ResourceTemplateEntry template = resourceTemplates.stream().filter(resourceTemplateEntry -> resourceTemplateEntry.resourceTemplate().name().equals("template")).findFirst().orElseThrow();
+        meta = template.resourceTemplate().meta().orElseThrow();
+
+        assertThat(meta).containsEntry("test", "1");
     }
 
     private AbstractCollectionAssert<?, Collection<? extends String>, String, ObjectAssert<String>> assertChanges(BlockingQueue<String> changes, int qty)

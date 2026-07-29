@@ -38,7 +38,7 @@ public final class McpSkillBuilder
 
     public static McpSkillBuilder mcpSkillBuilder(ResourceTemplate resourceTemplate)
     {
-        Resource workResource = new Resource(resourceTemplate.name(), resourceTemplate.uriTemplate(), resourceTemplate.description(), resourceTemplate.mimeType(), OptionalLong.empty(), Optional.empty(), Optional.empty());
+        Resource workResource = new Resource(resourceTemplate.name(), resourceTemplate.uriTemplate(), resourceTemplate.description(), resourceTemplate.mimeType(), OptionalLong.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         return mcpSkillBuilder(workResource);
     }
 

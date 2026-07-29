@@ -219,7 +219,7 @@ public class InternalEntities
                 .map(ResourceEntry::resource)
                 .filter(resource -> capabilityFilter.isAllowed(requestContext.identity(), resource));
         if (hasSkills(requestContext)) {
-            Resource indexResource = new Resource(SKILL_INDEX_URI, SKILL_INDEX_URI, Optional.of(SKILLS_INDEX_DESCRIPTION), "application/json", OptionalLong.empty(), Optional.empty());
+            Resource indexResource = new Resource(SKILL_INDEX_URI, SKILL_INDEX_URI, Optional.of(SKILLS_INDEX_DESCRIPTION), "application/json", OptionalLong.empty(), Optional.empty(), Optional.empty(), Optional.empty());
             resourcesStream = Stream.concat(resourcesStream, Stream.of(indexResource));
         }
         return resourcesStream
