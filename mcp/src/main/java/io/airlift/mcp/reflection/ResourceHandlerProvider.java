@@ -15,6 +15,7 @@ import io.airlift.mcp.model.Role;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
@@ -28,6 +29,7 @@ import static io.airlift.mcp.reflection.Predicates.isSourceResource;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
+import static io.airlift.mcp.reflection.ReflectionHelper.buildMeta;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
@@ -62,6 +64,8 @@ public class ResourceHandlerProvider
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
+        Optional<Map<String, Object>> meta = buildMeta(mcpResource.meta());
+
         resource = buildResource(
                 mcpResource.name(),
                 resourceUri,
@@ -69,7 +73,8 @@ public class ResourceHandlerProvider
                 mcpResource.description(),
                 mcpResource.size(),
                 mcpResource.audience(),
-                mcpResource.priority());
+                mcpResource.priority(),
+                meta);
     }
 
     @Inject
@@ -119,7 +124,7 @@ public class ResourceHandlerProvider
         return (List<ResourceContents>) result;
     }
 
-    private static Resource buildResource(String name, String uri, String mimeType, String descriptionOrEmpty, long size, Role[] audience, double priority)
+    private static Resource buildResource(String name, String uri, String mimeType, String descriptionOrEmpty, long size, Role[] audience, double priority, Optional<Map<String, Object>> meta)
     {
         Optional<String> description = descriptionOrEmpty.isEmpty() ? Optional.empty() : Optional.of(descriptionOrEmpty);
 
@@ -130,6 +135,6 @@ public class ResourceHandlerProvider
         OptionalLong useSize = (size >= 0) ? OptionalLong.of(size) : OptionalLong.empty();
         Optional<Annotations> useAnnotations = annotations.equals(Annotations.EMPTY) ? Optional.empty() : Optional.of(annotations);
 
-        return new Resource(name, uri, description, mimeType, useSize, useAnnotations);
+        return new Resource(name, uri, description, mimeType, useSize, useAnnotations, Optional.empty(), meta);
     }
 }

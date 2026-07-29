@@ -30,4 +30,6 @@ public @interface McpResourceTemplate
     Role[] audience() default {};
 
     double priority() default Double.NaN;
+
+    McpMeta[] meta() default {};
 }

@@ -14,6 +14,7 @@ import io.airlift.mcp.model.Role;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
@@ -25,6 +26,7 @@ import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
+import static io.airlift.mcp.reflection.ReflectionHelper.buildMeta;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static io.airlift.mcp.reflection.ResourceHandlerProvider.mapResult;
 import static java.lang.Double.isNaN;
@@ -58,13 +60,16 @@ public class ResourceTemplateHandlerProvider
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         this.resultIsSingleContent = returnsResourceContents.test(method);
 
+        Optional<Map<String, Object>> meta = buildMeta(mcpResourceTemplate.meta());
+
         this.resourceTemplate = buildResourceTemplate(
                 mcpResourceTemplate.name(),
                 mcpResourceTemplate.uriTemplate(),
                 mcpResourceTemplate.mimeType(),
                 mcpResourceTemplate.description(),
                 mcpResourceTemplate.audience(),
-                mcpResourceTemplate.priority());
+                mcpResourceTemplate.priority(),
+                meta);
     }
 
     @Inject
@@ -97,7 +102,7 @@ public class ResourceTemplateHandlerProvider
         return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler, isSkill);
     }
 
-    private static ResourceTemplate buildResourceTemplate(String name, String uriTemplate, String mimeType, String descriptionOrEmpty, Role[] audience, double priority)
+    private static ResourceTemplate buildResourceTemplate(String name, String uriTemplate, String mimeType, String descriptionOrEmpty, Role[] audience, double priority, Optional<Map<String, Object>> meta)
     {
         Optional<String> description = descriptionOrEmpty.isEmpty() ? Optional.empty() : Optional.of(descriptionOrEmpty);
 
@@ -107,6 +112,6 @@ public class ResourceTemplateHandlerProvider
 
         Optional<Annotations> useAnnotations = annotations.equals(Annotations.EMPTY) ? Optional.empty() : Optional.of(annotations);
 
-        return new ResourceTemplate(name, uriTemplate, description, mimeType, useAnnotations);
+        return new ResourceTemplate(name, uriTemplate, description, mimeType, useAnnotations, Optional.empty(), meta);
     }
 }

@@ -49,4 +49,6 @@ public @interface McpTool
      * specified, the output schema is taken from the {@link McpSchema} annotation.
      */
     McpSchema outputSchema() default @McpSchema;
+
+    McpMeta[] meta() default {};
 }
