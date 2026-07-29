@@ -3,6 +3,7 @@ package io.airlift.mcp.reflection;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -261,17 +262,23 @@ public class ToolHandlerProvider
                 throw exception(INVALID_PARAMS, "app.sourcePath cannot be blank for Tool: %s".formatted(mcpTool.name()));
             }
 
-            Supplier<String> contentLoader = () -> loadContent(app, mcpTool.name());
-            appContent = new AppContent(app.sourcePath(), contentLoader.get(), contentLoader);
+            Supplier<String> contentLoader;
+            if (app.debugMode()) {
+                // load fresh every time
+                contentLoader = () -> loadContent(app, mcpTool.name());
+            }
+            else {
+                contentLoader = Suppliers.memoize(() -> loadContent(app, mcpTool.name()));
+            }
+            appContent = new AppContent(app.sourcePath(), contentLoader);
             apps.put(app.resourceUri(), appContent);
         }
         else if (!app.sourcePath().isEmpty() && !app.sourcePath().equals(appContent.sourcePath())) {
             throw exception(INVALID_PARAMS, "%s was previously specified but its sourcePath does not match the sourcePath of the provided app content for Tool: %s".formatted(app.resourceUri(), mcpTool.name()));
         }
 
-        Supplier<String> contentLoader = app.debugMode() ? appContent.contentLoader() : appContent::content;
         Optional<String> description = mcpTool.description().isEmpty() ? Optional.empty() : Optional.of(mcpTool.description());
-        resourceHandlerConsumer.accept(new AppResourceHandlerProvider(app, mcpTool.name(), description, contentLoader, appContent.content().length()));
+        resourceHandlerConsumer.accept(new AppResourceHandlerProvider(app, mcpTool.name(), description, appContent.contentLoader()));
     }
 
     private static String loadContent(McpApp app, String toolName)
