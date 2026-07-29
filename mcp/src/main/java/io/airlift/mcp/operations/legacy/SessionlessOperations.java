@@ -125,7 +125,7 @@ public class SessionlessOperations
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        writeResult(jsonMapper, messageWriter, response, requestId, result);
+        writeResult(jsonMapper, messageWriter, response, requestId, result, ImmutableMap.of());
     }
 
     private InitializeResult handleInitialize(LegacyRequestContextImpl requestContext, InitializeRequest initializeRequest)
