@@ -9,6 +9,7 @@ import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClient;
@@ -17,9 +18,12 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.log.Logger;
+import io.airlift.mcp.handler.ResourceEntry;
+import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
+import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.operations.legacy.LegacyCancellationController;
 import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
@@ -161,7 +165,8 @@ public abstract class TestMcp
                     .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                     .withStorage(binding -> binding.to(storageControllerClass).in(SINGLETON))
                     .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
-                    .withAllInClass(TestingEndpoints.class);
+                    .withAllInClass(TestingEndpoints.class)
+                    .withAllInClass(MapApp.class);
             if (mode != Mode.SESSIONLESS) {
                 builder = builder.withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
             }
@@ -337,7 +342,7 @@ public abstract class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling", "show-map", "geocode");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(CallToolRequest.builder("add").arguments(ImmutableMap.of("a", 1, "b", 2)).build());
         assertThat(callToolResult.content())
@@ -496,7 +501,7 @@ public abstract class TestMcp
         ListResourcesResult listResourcesResult = client1.mcpClient().listResources();
         assertThat(listResourcesResult.resources())
                 .extracting(Resource::name)
-                .containsExactlyInAnyOrder("example1", "example2", "my-test-skill", "skill://index.json");
+                .containsExactlyInAnyOrder("example1", "example2", "my-test-skill", "skill://index.json", "show-map");
 
         ReadResourceRequest readResourceRequest = ReadResourceRequest.builder("file://example2.txt").build();
         ReadResourceResult readResourceResult = client1.mcpClient().readResource(readResourceRequest);
@@ -756,6 +761,23 @@ public abstract class TestMcp
                 .first()
                 .asInstanceOf(type(TextResourceContents.class))
                 .isEqualTo(expectedContents);
+    }
+
+    @Test
+    public void testMcpApp()
+    {
+        Set<ToolEntry> tools = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
+        ToolEntry showMapTool = tools.stream().filter(toolEntry -> toolEntry.tool().name().equals("show-map")).findFirst().orElseThrow();
+        Map<String, Object> meta = showMapTool.tool().meta().orElseThrow();
+
+        Map<String, Object> mcpApp = ImmutableMap.of("resourceUri", "ui://cesium-map/mcp-app.html");
+        assertThat(meta).containsEntry("ui", mcpApp);
+
+        Set<ResourceEntry> resources = testingServer.injector().getInstance(Key.get(new TypeLiteral<>() {}));
+        ResourceEntry mcpMapResource = resources.stream().filter(resourceEntry -> resourceEntry.resource().uri().equals("ui://cesium-map/mcp-app.html")).findFirst().orElseThrow();
+        // app resource handler doesn't use request context
+        List<ResourceContents> resourceContents = mcpMapResource.handler().readResource(null, mcpMapResource.resource(), new io.airlift.mcp.model.ReadResourceRequest(mcpMapResource.resource().uri()));
+        assertThat(resourceContents).isNotEmpty();
     }
 
     private AbstractCollectionAssert<?, Collection<? extends String>, String, ObjectAssert<String>> assertChanges(BlockingQueue<String> changes, int qty)
