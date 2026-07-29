@@ -22,6 +22,8 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
+import io.airlift.log.Level;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.http.HttpServlet;
@@ -46,6 +48,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestJettyMultipleCerts
 {
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
+
     @Test
     public void test()
             throws Exception

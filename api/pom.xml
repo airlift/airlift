@@ -151,6 +151,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>log-manager</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>

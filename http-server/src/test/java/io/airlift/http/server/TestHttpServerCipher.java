@@ -15,6 +15,8 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.server.HttpServer.ClientCertificate;
+import io.airlift.log.Level;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.client.HttpClient;
@@ -47,6 +49,12 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 @Execution(SAME_THREAD)
 public class TestHttpServerCipher
 {
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
+
     private static final String KEY_STORE_PATH = constructKeyStorePath();
     private static final String KEY_STORE_PASSWORD = "airlift";
     public static final String CIPHER_1 = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";

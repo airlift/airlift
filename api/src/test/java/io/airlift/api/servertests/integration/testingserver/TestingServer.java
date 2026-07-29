@@ -10,7 +10,9 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
+import io.airlift.log.Level;
 import io.airlift.log.Logger;
+import io.airlift.log.Logging;
 import io.airlift.node.NodeModule;
 import jakarta.ws.rs.core.UriBuilder;
 
@@ -22,6 +24,12 @@ public class TestingServer
         implements Closeable
 {
     private static final Logger log = Logger.get(TestingServer.class);
+
+    static {
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
+    }
 
     private final Injector injector;
     private final URI baseUri;
@@ -38,8 +46,11 @@ public class TestingServer
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
                 .put("node.environment", "testing");
 
-        Bootstrap app = new Bootstrap(modules.build());
-        injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
+        injector = new Bootstrap(modules.build())
+                .doNotInitializeLogging()
+                .setRequiredConfigurationProperties(serverProperties.build())
+                .quiet()
+                .initialize();
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
         baseUri = UriBuilder.fromUri(httpServerInfo.getHttpsUri() != null ? httpServerInfo.getHttpsUri() : httpServerInfo.getHttpUri())

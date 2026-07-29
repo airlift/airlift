@@ -37,6 +37,7 @@ import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.ServerFeature;
+import io.airlift.log.Level;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
@@ -98,7 +99,9 @@ public abstract class AbstractTestTestingHttpServer
     @BeforeAll
     public void setupSuite()
     {
-        Logging.initialize();
+        Logging logging = Logging.initialize();
+        logging.setLevel("io.airlift.http.server", Level.WARN);
+        logging.setLevel("org.eclipse.jetty", Level.ERROR);
     }
 
     @Test
@@ -181,6 +184,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Injector injector = app
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
@@ -214,6 +218,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Injector injector = app
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
@@ -252,6 +257,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Injector injector = app
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
@@ -296,6 +302,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Injector injector = app
                 .doNotInitializeLogging()
+                .quiet()
                 .initialize();
 
         assertThat(injector.getExistingBinding(Key.get(new TypeLiteral<Set<Filter>>() {}))).isNull();
