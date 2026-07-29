@@ -262,7 +262,7 @@ public class ConformanceEndpoints
     {
         Prompt prompt = entities.prompts(requestContext).getFirst();
         PromptEntry entry = entities.promptEntry(requestContext, prompt.name()).orElseThrow();
-        Prompt changedPrompt = new Prompt(prompt.name(), Optional.of(prompt.description().orElse("") + Math.random()), prompt.role(), prompt.arguments(), prompt.icons());
+        Prompt changedPrompt = new Prompt(prompt.name(), Optional.of(prompt.description().orElse("") + Math.random()), prompt.role(), prompt.arguments(), prompt.icons(), prompt.meta());
         entities.addPrompt(changedPrompt, entry.promptHandler());
     }
 

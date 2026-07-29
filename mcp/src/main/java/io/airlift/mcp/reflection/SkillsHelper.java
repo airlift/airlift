@@ -1,5 +1,6 @@
 package io.airlift.mcp.reflection;
 
+import io.airlift.mcp.McpMeta;
 import io.airlift.mcp.McpResource;
 import io.airlift.mcp.McpResourceTemplate;
 import io.airlift.mcp.McpSkill;
@@ -83,6 +84,12 @@ public interface SkillsHelper
             }
 
             @Override
+            public McpMeta[] meta()
+            {
+                return new McpMeta[0];
+            }
+
+            @Override
             public int hashCode()
             {
                 return Objects.hash(
@@ -93,7 +100,8 @@ public interface SkillsHelper
                         Arrays.hashCode(icons()),
                         size(),
                         Arrays.hashCode(audience()),
-                        priority());
+                        priority(),
+                        Arrays.hashCode(meta()));
             }
 
             @Override
@@ -108,6 +116,7 @@ public interface SkillsHelper
                                 && uri.equals(mcpResource.uri())
                                 && size() == mcpResource.size()
                                 && Arrays.equals(audience(), mcpResource.audience())
+                                && Arrays.equals(meta(), mcpResource.meta())
                                 && Double.compare(priority(), mcpResource.priority()) == 0));
             }
         };
@@ -172,6 +181,12 @@ public interface SkillsHelper
             }
 
             @Override
+            public McpMeta[] meta()
+            {
+                return new McpMeta[0];
+            }
+
+            @Override
             public int hashCode()
             {
                 return Objects.hash(
@@ -181,7 +196,8 @@ public interface SkillsHelper
                         description(),
                         Arrays.hashCode(icons()),
                         Arrays.hashCode(audience()),
-                        priority());
+                        priority(),
+                        Arrays.hashCode(meta()));
             }
 
             @Override
@@ -195,6 +211,7 @@ public interface SkillsHelper
                                 && Arrays.equals(icons(), mcpResourceTemplate.icons())
                                 && uriTemplate.equals(mcpResourceTemplate.uriTemplate())
                                 && Arrays.equals(audience(), mcpResourceTemplate.audience())
+                                && Arrays.equals(meta(), mcpResourceTemplate.meta())
                                 && Double.compare(priority(), mcpResourceTemplate.priority()) == 0));
             }
         };

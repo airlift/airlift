@@ -82,7 +82,10 @@ public class TestingEndpoints
         this.testingIdentitySupplier = requireNonNull(testingIdentitySupplier, "testingIdentitySupplier is null");
     }
 
-    @McpTool(name = "add", description = "Add two numbers", icons = "google")
+    @McpTool(name = "add", description = "Add two numbers", icons = "google", meta = {
+            @McpMeta(name = "hey", jsonValue = "{\"x\": 20.20}"),
+            @McpMeta(name = "you", jsonValue = "12.34"), @McpMeta(name = "there", value = "a"), @McpMeta(name = "buddy", value = {"a", "b", "c"}),
+    })
     public int add(HttpServletRequest request, TestingIdentity testingIdentity, int a, int b)
     {
         // opportunistic test. Not related to the "add" tool, but we can test testingIdentitySupplier here
@@ -115,7 +118,7 @@ public class TestingEndpoints
         throw exception("this ain't good");
     }
 
-    @McpPrompt(name = "age", description = "What is your age?", icons = "google")
+    @McpPrompt(name = "age", description = "What is your age?", icons = "google", meta = @McpMeta(name = "age", value = "12"))
     public String age(@McpDescription("What is your age?") String age)
     {
         return "You are " + age + "years old.";
@@ -139,7 +142,7 @@ public class TestingEndpoints
         return ImmutableList.of();
     }
 
-    @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain", icons = "google")
+    @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain", icons = "google", meta = @McpMeta(name = "test", value = {"1", "2"}))
     public ResourceContents example1Resource()
     {
         return new ResourceContents("foo2", "file://example1.txt", "text/plain", example1Content);
@@ -151,7 +154,7 @@ public class TestingEndpoints
         return example2Content;
     }
 
-    @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain", icons = "google")
+    @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain", icons = "google", meta = @McpMeta(name = "test", value = "1"))
     public List<ResourceContents> exampleResourceTemplate(ReadResourceRequest request, ResourceTemplateValues resourceTemplateValues)
     {
         String id = resourceTemplateValues.templateValues().getOrDefault("id", "n/a");
@@ -259,7 +262,8 @@ public class TestingEndpoints
                                 Optional.of(UUID.randomUUID().toString()),
                                 firstPrompt.prompt().role(),
                                 firstPrompt.prompt().arguments(),
-                                firstPrompt.prompt().icons());
+                                firstPrompt.prompt().icons(),
+                                firstPrompt.prompt().meta());
                         entities.addPrompt(alteredPrompt, firstPrompt.promptHandler());
                     }
 
@@ -272,7 +276,8 @@ public class TestingEndpoints
                                 firstResource.resource().mimeType(),
                                 firstResource.resource().size(),
                                 firstResource.resource().annotations(),
-                                firstResource.resource().icons());
+                                firstResource.resource().icons(),
+                                firstResource.resource().meta());
                         entities.addResource(alteredResource, firstResource.handler(), firstResource.isSkill());
                     }
 

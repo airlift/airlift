@@ -1,8 +1,13 @@
 package io.airlift.mcp.reflection;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.collect.ImmutableList;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.McpMeta;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
@@ -28,20 +33,25 @@ import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
@@ -50,6 +60,8 @@ import static io.airlift.mcp.reflection.ReflectionHelper.parseParameters;
 
 public interface ReflectionHelper
 {
+    JsonMapper jsonMapper = new JsonMapperProvider().get();
+
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
     static void validate(Method method, List<MethodParameter> methodParameters, Predicate<MethodParameter> parameterPredicateChain, Predicate<Method> methodPredicateChain)
     {
@@ -136,6 +148,33 @@ public interface ReflectionHelper
             throw exception(INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
         }
         return identity;
+    }
+
+    static Optional<Map<String, Object>> buildMeta(McpMeta[] meta)
+    {
+        if ((meta == null) || (meta.length == 0)) {
+            return Optional.empty();
+        }
+        return Optional.of(Arrays.stream(meta)
+                .collect(toImmutableMap(McpMeta::name, metaValue -> {
+                    String[] value = metaValue.value();
+                    String jsonValue = metaValue.jsonValue();
+                    checkArgument((value.length > 0) || !jsonValue.isEmpty(), "Exactly one of value or jsonValue must be specified");
+                    checkArgument((value.length == 0) || jsonValue.isEmpty(), "Exactly one of value or jsonValue must be specified");
+
+                    return switch (value.length) {
+                        case 0 -> {
+                            try {
+                                yield jsonMapper.readValue(jsonValue, Object.class);
+                            }
+                            catch (JsonProcessingException e) {
+                                throw new UncheckedIOException("Could not parse JSON meta: " + jsonValue, e);
+                            }
+                        }
+                        case 1 -> value[0];
+                        default -> ImmutableList.copyOf(value);
+                    };
+                })));
     }
 
     interface InClassConsumer<A extends Annotation>

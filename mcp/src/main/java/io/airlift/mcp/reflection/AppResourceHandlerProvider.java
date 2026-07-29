@@ -63,6 +63,7 @@ public class AppResourceHandlerProvider
                 PROFILE_MCP_APP,
                 OptionalLong.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
 
         ImmutableMap.Builder<String, Object> cspMeta = ImmutableMap.builder();

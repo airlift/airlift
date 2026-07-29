@@ -24,4 +24,6 @@ public @interface McpPrompt
      * via {@link McpModule.Builder#addIcon(String, Consumer)}.
      */
     String[] icons() default {};
+
+    McpMeta[] meta() default {};
 }
