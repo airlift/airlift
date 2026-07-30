@@ -61,6 +61,7 @@ import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
+import static io.airlift.mcp.model.Constants.METADATA_SERVER_INFO;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
@@ -173,6 +174,10 @@ public class OperationsImpl
             case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
+
+        if (result instanceof Meta resultMeta) {
+            result = addServerInfo(serverImplementation, resultMeta);
+        }
 
         writeResult(jsonMapper, messageWriter, response, requestId, result);
     }
@@ -322,5 +327,13 @@ public class OperationsImpl
     private <T extends CacheableResult> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
     {
         return clazz.cast(result.withCacheableResult(metadata.cacheableResultValues().ttlMs().orElse(0), metadata.cacheableResultValues().cacheScope().orElse(PRIVATE)));
+    }
+
+    private Object addServerInfo(Implementation serverImplementation, Meta resultMeta)
+    {
+        ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+        resultMeta.meta().ifPresent(builder::putAll);
+        builder.put(METADATA_SERVER_INFO, serverImplementation);
+        return resultMeta.withMeta(builder.buildKeepingLast());
     }
 }
