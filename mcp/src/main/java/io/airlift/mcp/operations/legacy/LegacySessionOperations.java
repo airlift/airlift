@@ -183,7 +183,7 @@ public class LegacySessionOperations
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        writeResult(jsonMapper, messageWriter, response, requestId, result, ImmutableMap.of());
+        writeResult(jsonMapper, messageWriter, response, requestId, result);
 
         sessionController.ifPresent(controller -> optionalSessionId(request)
                 .ifPresent(sessionId -> checkSaveSentMessages(controller, sessionId, messageWriter)));

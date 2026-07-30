@@ -1,9 +1,7 @@
 package io.airlift.mcp.operations;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.messages.MessageWriter;
@@ -13,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.UncheckedIOException;
-import java.util.Map;
 import java.util.Optional;
 
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
@@ -36,23 +33,12 @@ public interface Operations
         return jsonMapper.convertValue(value, clazz);
     }
 
-    static void writeResult(JsonMapper jsonMapper, MessageWriter messageWriter, HttpServletResponse response, Object requestId, Object result, Map<String, Object> resultMetadata)
+    static void writeResult(JsonMapper jsonMapper, MessageWriter messageWriter, HttpServletResponse response, Object requestId, Object result)
     {
         response.setStatus(SC_OK);
 
         try {
-            Object responseResult = result;
-            if (!resultMetadata.isEmpty()) {
-                JsonNode resultNode = jsonMapper.valueToTree(result);
-                if (!(resultNode instanceof ObjectNode resultObject)) {
-                    throw new IllegalArgumentException("Result must serialize to a JSON object");
-                }
-                ObjectNode resultMeta = resultObject.withObjectProperty("_meta");
-                resultMetadata.forEach((name, value) -> resultMeta.set(name, jsonMapper.valueToTree(value)));
-                responseResult = resultObject;
-            }
-
-            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(responseResult));
+            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
             messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
             messageWriter.flush();
         }

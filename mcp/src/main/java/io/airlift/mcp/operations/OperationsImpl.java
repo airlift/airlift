@@ -61,7 +61,6 @@ import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
-import static io.airlift.mcp.model.Constants.METADATA_SERVER_INFO;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
@@ -156,9 +155,10 @@ public class OperationsImpl
         RequestMetadata requestMetadata = RequestMetadata.fromRequest(jsonMapper, request, meta, method, validationMode);
         RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated);
 
-        McpMetadata metadata = metadataMapper.map(requestContext.request());
-        Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
-                .orElse(metadata.implementation());
+        McpMetadata workMetadata = metadataMapper.map(requestContext.request());
+        Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> workMetadata.implementation().withAdditionalIcons(icons))
+                .orElse(workMetadata.implementation());
+        McpMetadata metadata = workMetadata.withImplementation(serverImplementation);
 
         Object result = switch (method) {
             case METHOD_TOOLS_LIST -> listTools(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ListRequest.class));
@@ -174,7 +174,7 @@ public class OperationsImpl
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        writeResult(jsonMapper, messageWriter, response, requestId, result, ImmutableMap.of(METADATA_SERVER_INFO, serverImplementation));
+        writeResult(jsonMapper, messageWriter, response, requestId, result);
     }
 
     @Override
