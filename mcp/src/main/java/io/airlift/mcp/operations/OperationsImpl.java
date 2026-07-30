@@ -207,12 +207,12 @@ public class OperationsImpl
         response.setStatus(SC_METHOD_NOT_ALLOWED);
     }
 
-    private Object subscriptionsList(RequestContextImpl requestContext, Object requestId, SubscriptionNotifications subscriptionNotifications)
+    private Meta subscriptionsList(RequestContextImpl requestContext, Object requestId, SubscriptionNotifications subscriptionNotifications)
     {
         SubscriptionLoop subscriptionLoop = new SubscriptionLoop(jsonMapper, requestId, entities, requestContext, subscriptionNotifications.notifications(), streamingTimeout, resourceSubscriptionCachePeriod);
         subscriptionLoop.run();
 
-        return ImmutableMap.of();
+        return new MetaOnly(Optional.empty());
     }
 
     public static ReadResourceResult readResources(McpEntities entities, McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
