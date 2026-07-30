@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -72,6 +73,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class Bootstrap
 {
+    private static final CopyOnWriteArrayList<BootstrapListener> listeners = new CopyOnWriteArrayList<>();
+
     private final String name;
     private final Logger log;
 
@@ -115,6 +118,23 @@ public class Bootstrap
         this.name = requireNonNull(name, "name is null");
         this.modules = ImmutableList.copyOf(modules);
         this.log = Logger.get(name);
+    }
+
+    /**
+     * Adds a class-loader-wide listener for bootstrap attempts that begin after registration.
+     */
+    public static void addListener(BootstrapListener listener)
+    {
+        listeners.add(requireNonNull(listener, "listener is null"));
+    }
+
+    /**
+     * Removes a class-loader-wide listener from bootstrap attempts that begin after removal.
+     * An attempt already in progress continues using its initial listener snapshot.
+     */
+    public static void removeListener(BootstrapListener listener)
+    {
+        listeners.remove(requireNonNull(listener, "listener is null"));
     }
 
     public Bootstrap setRequiredConfigurationProperty(String key, String value)
@@ -343,33 +363,66 @@ public class Bootstrap
 
     public Injector initialize()
     {
-        checkState(state != State.INITIALIZED, "Already initialized");
-        if (state == State.UNINITIALIZED) {
-            configure();
+        List<BootstrapListener> listeners = List.copyOf(Bootstrap.listeners);
+        try {
+            checkState(state != State.INITIALIZED, "Already initialized");
+            if (state == State.UNINITIALIZED) {
+                configure();
+            }
+            state = State.INITIALIZED;
+
+            // system modules
+            Builder<Module> moduleList = ImmutableList.builder();
+            moduleList.add(new LifeCycleModule(name));
+            moduleList.add(new ConfigurationModule(configurationFactory));
+            moduleList.add(binder -> closingBinder(binder).registerCloseable(configurationFactory));
+            moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
+
+            // disable broken Guice "features"
+            moduleList.add(Binder::disableCircularProxies);
+            moduleList.add(Binder::requireExplicitBindings);
+            moduleList.add(Binder::requireExactBindingAnnotations);
+
+            moduleList.add(binder -> binder.bind(SecretsResolver.class).toInstance(secretsResolver));
+            moduleList.addAll(modules);
+
+            // create the injector
+            Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
+
+            injector.getInstance(LifeCycleManager.class).start();
+            notifyInitialized(listeners, injector);
+            return injector;
         }
-        state = State.INITIALIZED;
+        catch (RuntimeException failure) {
+            notifyFailed(listeners, failure);
+            throw failure;
+        }
+    }
 
-        // system modules
-        Builder<Module> moduleList = ImmutableList.builder();
-        moduleList.add(new LifeCycleModule(name));
-        moduleList.add(new ConfigurationModule(configurationFactory));
-        moduleList.add(binder -> closingBinder(binder).registerCloseable(configurationFactory));
-        moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
+    private void notifyInitialized(List<BootstrapListener> listeners, Injector injector)
+    {
+        for (BootstrapListener listener : listeners) {
+            try {
+                listener.bootstrapInitialized(this, injector);
+            }
+            catch (RuntimeException listenerFailure) {
+                log.warn(listenerFailure, "Bootstrap listener failed after initialization");
+            }
+        }
+    }
 
-        // disable broken Guice "features"
-        moduleList.add(Binder::disableCircularProxies);
-        moduleList.add(Binder::requireExplicitBindings);
-        moduleList.add(Binder::requireExactBindingAnnotations);
-
-        moduleList.add(binder -> binder.bind(SecretsResolver.class).toInstance(secretsResolver));
-        moduleList.addAll(modules);
-
-        // create the injector
-        Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
-
-        injector.getInstance(LifeCycleManager.class).start();
-
-        return injector;
+    private void notifyFailed(List<BootstrapListener> listeners, Throwable failure)
+    {
+        for (BootstrapListener listener : listeners) {
+            try {
+                listener.bootstrapFailed(this, failure);
+            }
+            catch (RuntimeException listenerFailure) {
+                if (failure != listenerFailure) {
+                    failure.addSuppressed(listenerFailure);
+                }
+            }
+        }
     }
 
     private void logConfiguration(ConfigurationFactory configurationFactory)
