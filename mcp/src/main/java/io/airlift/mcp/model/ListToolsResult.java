@@ -3,13 +3,16 @@ package io.airlift.mcp.model;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import static java.util.Objects.requireNonNullElse;
 
-public record ListToolsResult(List<Tool> tools, Optional<String> nextCursor, OptionalInt ttlMs, Optional<CacheScope> cacheScope)
-        implements PaginatedResult, CacheableResult
+public record ListToolsResult(List<Tool> tools, Optional<String> nextCursor, OptionalInt ttlMs, Optional<CacheScope> cacheScope, Optional<Map<String, Object>> meta)
+        implements CacheableResult,
+                   Meta,
+                   PaginatedResult
 {
     public ListToolsResult
     {
@@ -17,21 +20,28 @@ public record ListToolsResult(List<Tool> tools, Optional<String> nextCursor, Opt
         nextCursor = requireNonNullElse(nextCursor, Optional.empty());
         ttlMs = requireNonNullElse(ttlMs, OptionalInt.empty());
         cacheScope = requireNonNullElse(cacheScope, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 
     public ListToolsResult(List<Tool> tools)
     {
-        this(tools, Optional.empty(), OptionalInt.empty(), Optional.empty());
+        this(tools, Optional.empty(), OptionalInt.empty(), Optional.empty(), Optional.empty());
     }
 
     public ListToolsResult(List<Tool> tools, Optional<String> nextCursor)
     {
-        this(tools, nextCursor, OptionalInt.empty(), Optional.empty());
+        this(tools, nextCursor, OptionalInt.empty(), Optional.empty(), Optional.empty());
     }
 
     @Override
     public ListToolsResult withCacheableResult(int ttlMs, CacheScope cacheScope)
     {
-        return new ListToolsResult(tools, nextCursor, OptionalInt.of(ttlMs), Optional.of(cacheScope));
+        return new ListToolsResult(tools, nextCursor, OptionalInt.of(ttlMs), Optional.of(cacheScope), meta);
+    }
+
+    @Override
+    public ListToolsResult withMeta(Map<String, Object> meta)
+    {
+        return new ListToolsResult(tools, nextCursor, ttlMs, cacheScope, Optional.of(meta));
     }
 }
