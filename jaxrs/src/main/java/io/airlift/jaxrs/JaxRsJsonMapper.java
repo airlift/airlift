@@ -35,8 +35,8 @@ public class JaxRsJsonMapper
     }
 
     /**
-     * Throws JsonParsingException only when Jakarta-RS container calls to deserialize given JSON value
-     * Need to distinguish between:
+     * Throws JsonParsingException only when the Jakarta-RS container deserializes a JSON value.
+     * This distinguishes between:
      * - JsonProcessingException due to Jakarta-RS deserialization
      * - JsonProcessingException due to operation happening in resource body
      */
