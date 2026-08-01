@@ -24,7 +24,8 @@ public record ReadResourceResult(
         Optional<Map<String, Object>> meta)
         implements CacheableResult<ReadResourceResult>,
                    InputRequests<ReadResourceResult>,
-                   Meta<ReadResourceResult>
+                   Meta<ReadResourceResult>,
+                   Result
 {
     private static final Factory<ReadResourceResult> FACTORY = (requestState, inputRequests) -> new ReadResourceResult(
             Optional.of(INPUT_REQUIRED),
@@ -35,7 +36,7 @@ public record ReadResourceResult(
             Optional.of(inputRequests),
             Optional.empty());
 
-    public static InputRequests.Builder<ReadResourceResult> inputRequestsBuilder()
+    public static Builder<ReadResourceResult> inputRequestsBuilder()
     {
         return InputRequests.builder(FACTORY);
     }

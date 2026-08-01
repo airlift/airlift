@@ -34,7 +34,7 @@ public record Tool(
         title = requireNonNullElse(title, Optional.empty());
         requireNonNull(inputSchema, "inputSchema is null");
         outputSchema = requireNonNullElse(outputSchema, Optional.empty());
-        requireNonNull(annotations, "annotations is null");
+        annotations = requireNonNullElse(annotations, new ToolAnnotations(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()));
         icons = requireNonNullElse(icons, Optional.<List<Icon>>empty()).map(ImmutableList::copyOf);
         meta = normalize(meta);
 

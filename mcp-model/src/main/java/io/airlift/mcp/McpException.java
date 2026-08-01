@@ -42,6 +42,11 @@ public class McpException
         this.isSelfContained = isSelfContained;
     }
 
+    public McpClientException asClientException()
+    {
+        return new McpClientException(this);
+    }
+
     public boolean isSelfContained()
     {
         return isSelfContained;

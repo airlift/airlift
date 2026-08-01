@@ -10,6 +10,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public sealed interface InputRequests<T extends InputRequests<T>>
+        extends Result
         permits CallToolResult,
                 GetPromptResult,
                 ReadResourceResult

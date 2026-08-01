@@ -35,7 +35,7 @@ public record CallToolResult(
             Optional.of(inputRequests),
             Optional.empty());
 
-    public static InputRequests.Builder<CallToolResult> inputRequestsBuilder()
+    public static Builder<CallToolResult> inputRequestsBuilder()
     {
         return InputRequests.builder(FACTORY);
     }
@@ -92,8 +92,13 @@ public record CallToolResult(
         return new CallToolResult(content, structuredContent, isError, resultType, requestState, inputRequests, Optional.of(meta));
     }
 
+    public CallToolResult withResultType(ResultType resultType)
+    {
+        return new CallToolResult(content, structuredContent, isError, Optional.of(resultType), requestState, inputRequests, meta);
+    }
+
     public static CallToolResult forError(McpClientException mcpClientException)
     {
-        return new CallToolResult(ImmutableList.of(new Content.TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+        return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
     }
 }

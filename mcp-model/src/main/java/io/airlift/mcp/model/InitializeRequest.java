@@ -29,8 +29,12 @@ public record InitializeRequest(
         return new InitializeRequest(protocolVersion, capabilities, clientInfo, Optional.of(meta));
     }
 
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> extensions,
-                                     Optional<Map<String, Object>> experimental)
+    public record ClientCapabilities(
+            Optional<ListChanged> roots,
+            Optional<Sampling> sampling,
+            Optional<Elicitation> elicitation,
+            Optional<Map<String, Object>> extensions,
+            Optional<Map<String, Object>> experimental)
             implements Experimental
     {
         public static final ClientCapabilities EMPTY = new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());

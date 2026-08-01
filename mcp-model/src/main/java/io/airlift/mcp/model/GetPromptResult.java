@@ -19,7 +19,9 @@ public record GetPromptResult(
         Optional<String> requestState,
         Optional<Map<String, InputRequest>> inputRequests,
         Optional<Map<String, Object>> meta)
-        implements InputRequests<GetPromptResult>, Meta<GetPromptResult>
+        implements InputRequests<GetPromptResult>,
+                   Meta<GetPromptResult>,
+                   Result
 {
     private static final Factory<GetPromptResult> FACTORY = (requestState, inputRequests) -> new GetPromptResult(
             Optional.empty(),
@@ -29,7 +31,7 @@ public record GetPromptResult(
             Optional.of(inputRequests),
             Optional.empty());
 
-    public static InputRequests.Builder<GetPromptResult> inputRequestsBuilder()
+    public static Builder<GetPromptResult> inputRequestsBuilder()
     {
         return InputRequests.builder(FACTORY);
     }
