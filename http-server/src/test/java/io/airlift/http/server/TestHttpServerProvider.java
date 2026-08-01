@@ -42,6 +42,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -72,11 +73,13 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -709,6 +712,44 @@ public class TestHttpServerProvider
             assertEventually(() -> assertThat(server.getCertificates()).hasSize(1));
             appendCertificate(tempFile.file(), "certificate-2");
             assertEventually(() -> assertThat(server.getCertificates()).hasSize(2));
+        }
+    }
+
+    @Test
+    public void testBcfksKeystore()
+            throws Exception
+    {
+        Security.addProvider(new BouncyCastleProvider());
+        try (TempFile tempFile = new TempFile()) {
+            KeyStore jksKeyStore = KeyStore.getInstance("JKS");
+            char[] password = "airlift".toCharArray();
+            try (InputStream inputStream = getResource("test.keystore").openStream()) {
+                jksKeyStore.load(inputStream, password);
+            }
+
+            KeyStore bcfksKeyStore = KeyStore.getInstance("BCFKS", "BC");
+            bcfksKeyStore.load(null, password);
+            for (String alias : Collections.list(jksKeyStore.aliases())) {
+                if (jksKeyStore.isKeyEntry(alias)) {
+                    bcfksKeyStore.setKeyEntry(alias, jksKeyStore.getKey(alias, password), password, jksKeyStore.getCertificateChain(alias));
+                }
+                else {
+                    bcfksKeyStore.setCertificateEntry(alias, jksKeyStore.getCertificate(alias));
+                }
+            }
+            try (OutputStream outputStream = new FileOutputStream(tempFile.file())) {
+                bcfksKeyStore.store(outputStream, password);
+            }
+
+            config.setHttpsEnabled(true)
+                    .setHttpEnabled(false);
+            httpsConfig
+                    .setKeystorePath(tempFile.file().getAbsolutePath())
+                    .setKeystorePassword("airlift")
+                    .setKeystoreType("BCFKS");
+            createAndStartServer();
+
+            assertThat(server.getCertificates()).hasSize(1);
         }
     }
 
