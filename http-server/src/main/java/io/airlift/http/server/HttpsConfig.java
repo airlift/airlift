@@ -28,9 +28,11 @@ public class HttpsConfig
     private Integer httpsSelectorThreads;
     private String keystorePath;
     private String keystorePassword;
+    private String keystoreType = "JKS";
     private String keyManagerPassword;
     private String trustStorePath;
     private String trustStorePassword;
+    private String trustStoreType = "JKS";
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private Duration sslContextRefreshTime = new Duration(1, MINUTES);
@@ -144,6 +146,19 @@ public class HttpsConfig
         return this;
     }
 
+    public String getKeystoreType()
+    {
+        return keystoreType;
+    }
+
+    @Config("http-server.https.keystore.type")
+    @ConfigDescription("Type of the keystore, as understood by java.security.KeyStore.getInstance(); ignored for PEM keystores")
+    public HttpsConfig setKeystoreType(String keystoreType)
+    {
+        this.keystoreType = keystoreType;
+        return this;
+    }
+
     @AssertTrue(message = "Keystore path or automatic HTTPS shared secret must be provided when HTTPS is enabled")
     public boolean isHttpsConfigurationValid()
     {
@@ -185,6 +200,19 @@ public class HttpsConfig
     public HttpsConfig setTrustStorePassword(String trustStorePassword)
     {
         this.trustStorePassword = trustStorePassword;
+        return this;
+    }
+
+    public String getTrustStoreType()
+    {
+        return trustStoreType;
+    }
+
+    @Config("http-server.https.truststore.type")
+    @ConfigDescription("Type of the truststore, as understood by java.security.KeyStore.getInstance(); ignored for PEM truststores")
+    public HttpsConfig setTrustStoreType(String trustStoreType)
+    {
+        this.trustStoreType = trustStoreType;
         return this;
     }
 

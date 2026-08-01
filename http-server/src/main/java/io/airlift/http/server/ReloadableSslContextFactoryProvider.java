@@ -36,6 +36,7 @@ final class ReloadableSslContextFactoryProvider
 
     private final Optional<FileWatch> keystoreFile;
     private final String keystorePassword;
+    private final String keystoreType;
     private final String keyManagerPassword;
 
     private final String automaticHttpsSharedSecret;
@@ -43,6 +44,7 @@ final class ReloadableSslContextFactoryProvider
 
     private final Optional<FileWatch> trustStoreFile;
     private final String trustStorePassword;
+    private final String trustStoreType;
 
     public ReloadableSslContextFactoryProvider(HttpsConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate, String environment)
     {
@@ -51,6 +53,7 @@ final class ReloadableSslContextFactoryProvider
 
         keystoreFile = Optional.ofNullable(config.getKeystorePath()).map(File::new).map(FileWatch::new);
         keystorePassword = config.getKeystorePassword();
+        keystoreType = config.getKeystoreType();
         keyManagerPassword = config.getKeyManagerPassword();
 
         automaticHttpsSharedSecret = config.getAutomaticHttpsSharedSecret();
@@ -58,6 +61,7 @@ final class ReloadableSslContextFactoryProvider
 
         trustStoreFile = Optional.ofNullable(config.getTrustStorePath()).map(File::new).map(FileWatch::new);
         trustStorePassword = config.getTrustStorePassword();
+        trustStoreType = config.getTrustStoreType();
 
         sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setIncludeCipherSuites(config.getHttpsIncludedCipherSuites().toArray(new String[0]));
@@ -82,7 +86,7 @@ final class ReloadableSslContextFactoryProvider
 
     private void loadContextFactory(SslContextFactory.Server sslContextFactory)
     {
-        KeyStore keyStore = loadKeyStore(keystoreFile.map(FileWatch::getFile), keystorePassword, keyManagerPassword);
+        KeyStore keyStore = loadKeyStore(keystoreFile.map(FileWatch::getFile), keystorePassword, keyManagerPassword, keystoreType);
 
         String password = "";
         if (keyManagerPassword != null) {
@@ -100,7 +104,7 @@ final class ReloadableSslContextFactoryProvider
         sslContextFactory.setKeyStorePassword(password);
 
         if (trustStoreFile.isPresent()) {
-            sslContextFactory.setTrustStore(loadTrustStore(trustStoreFile.orElseThrow().getFile(), trustStorePassword));
+            sslContextFactory.setTrustStore(loadTrustStore(trustStoreFile.orElseThrow().getFile(), trustStorePassword, trustStoreType));
             sslContextFactory.setTrustStorePassword("");
         }
         else {
@@ -110,11 +114,11 @@ final class ReloadableSslContextFactoryProvider
         }
     }
 
-    private static KeyStore loadKeyStore(Optional<File> keystoreFile, String keystorePassword, String keyManagerPassword)
+    private static KeyStore loadKeyStore(Optional<File> keystoreFile, String keystorePassword, String keyManagerPassword, String keystoreType)
     {
         if (!keystoreFile.isPresent()) {
             try {
-                KeyStore keyStore = KeyStore.getInstance("JKS");
+                KeyStore keyStore = KeyStore.getInstance(keystoreType);
                 keyStore.load(null, new char[0]);
                 return keyStore;
             }
@@ -135,7 +139,7 @@ final class ReloadableSslContextFactoryProvider
         }
 
         try (InputStream in = new FileInputStream(file)) {
-            KeyStore keyStore = KeyStore.getInstance("JKS");
+            KeyStore keyStore = KeyStore.getInstance(keystoreType);
             keyStore.load(in, keystorePassword.toCharArray());
             return keyStore;
         }
@@ -144,7 +148,7 @@ final class ReloadableSslContextFactoryProvider
         }
     }
 
-    private static KeyStore loadTrustStore(File trustStoreFile, String trustStorePassword)
+    private static KeyStore loadTrustStore(File trustStoreFile, String trustStorePassword, String trustStoreType)
     {
         try {
             if (PemReader.isPem(trustStoreFile)) {
@@ -156,7 +160,7 @@ final class ReloadableSslContextFactoryProvider
         }
 
         try (InputStream in = new FileInputStream(trustStoreFile)) {
-            KeyStore keyStore = KeyStore.getInstance("JKS");
+            KeyStore keyStore = KeyStore.getInstance(trustStoreType);
             keyStore.load(in, trustStorePassword == null ? null : trustStorePassword.toCharArray());
             return keyStore;
         }
