@@ -250,7 +250,8 @@ public class TestingEndpoints
                                 firstTool.tool().inputSchema(),
                                 firstTool.tool().outputSchema(),
                                 firstTool.tool().annotations(),
-                                firstTool.tool().icons());
+                                firstTool.tool().icons(),
+                                firstTool.tool().meta());
                         entities.addTool(alteredTool, firstTool.toolHandler());
                     }
 
