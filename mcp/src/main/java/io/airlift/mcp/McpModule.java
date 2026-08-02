@@ -327,7 +327,7 @@ public class McpModule
         metadataBinding.accept(binder.bind(McpMetadataMapper.class));
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
         legacyOperationsBinding.accept(binder.bind(LegacyOperations.class));
-        binder.bind(Operations.class).to(OperationsSelector.class).in(SINGLETON);
+        newOptionalBinder(binder, Operations.class).setDefault().to(OperationsSelector.class).in(SINGLETON);
         binder.bind(ValidationMode.class).toInstance(validationMode);
 
         configBinder(binder).bindConfig(McpConfig.class);
