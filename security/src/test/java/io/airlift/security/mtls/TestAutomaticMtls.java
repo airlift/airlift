@@ -23,6 +23,7 @@ import java.security.KeyStore;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.HexFormat;
 import java.util.List;
 
 import static io.airlift.security.mtls.AutomaticMtls.addCertificateAndKeyForCurrentNode;
@@ -43,6 +44,23 @@ class TestAutomaticMtls
     private static final String SHARED_SECRET = "shared-secret-value-with-enough-entropy-0123456789";
     private static final String WRONG_SHARED_SECRET = "wrong-secret-value-with-enough-entropy-0123456789";
     private static final String ENVIRONMENT = "commonName";
+
+    @Test
+    public void testCaDerivationIsDeterministicAndBoundToEnvironment()
+            throws Exception
+    {
+        // Same secret + same environment must always derive the same CA public key: independently
+        // started nodes derive the same CA and therefore trust each other. This is also a "known
+        // answer" vector that fails if the derivation algorithm silently changes.
+        String expectedCaPublicKey = "3059301306072a8648ce3d020106082a8648ce3d030107034200045ce3bf4163eb83e851347e4aa756ed06a992572ee8690a1823d5054217938ba899694b345eb88a4d244748569395fd37de6967534c91fe4f8b4076d344c88a26";
+        assertThat(caPublicKeyHex(SHARED_SECRET, "test-environment"))
+                .isEqualTo(caPublicKeyHex(SHARED_SECRET, "test-environment"))
+                .isEqualTo(expectedCaPublicKey);
+
+        // A different environment (used as the KDF salt) must derive a different CA.
+        assertThat(caPublicKeyHex(SHARED_SECRET, "other-environment"))
+                .isNotEqualTo(expectedCaPublicKey);
+    }
 
     @Test
     public void testShortSharedSecretIsRejected()
@@ -138,6 +156,12 @@ class TestAutomaticMtls
                     .rootCause()
                     .isInstanceOf(CertificateException.class);
         }
+    }
+
+    private static String caPublicKeyHex(String sharedSecret, String environment)
+            throws Exception
+    {
+        return HexFormat.of().formatHex(caCertificate(sharedSecret, environment).getPublicKey().getEncoded());
     }
 
     private static class HelloWorldHandler
