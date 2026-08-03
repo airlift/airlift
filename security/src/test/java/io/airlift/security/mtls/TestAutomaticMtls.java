@@ -13,20 +13,21 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
 import static io.airlift.security.mtls.AutomaticMtls.addCertificateAndKeyForCurrentNode;
-import static io.airlift.security.mtls.AutomaticMtls.addCertificateToKeyStore;
-import static io.airlift.security.mtls.AutomaticMtls.certificateBuilder;
+import static io.airlift.security.mtls.AutomaticMtls.addNodeCertificateAndKey;
+import static io.airlift.security.mtls.AutomaticMtls.caCertificate;
 import static io.airlift.security.mtls.AutomaticMtls.createSSLContext;
 import static io.airlift.security.mtls.AutomaticMtls.inMemoryKeyStore;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
@@ -38,47 +39,44 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class TestAutomaticMtls
 {
     private static final String KEYSTORE_PASSWORD = "123456";
+    private static final String SHARED_SECRET = "shared-secret-value-with-enough-entropy-0123456789";
+    private static final String WRONG_SHARED_SECRET = "wrong-secret-value-with-enough-entropy-0123456789";
+    private static final String ENVIRONMENT = "commonName";
 
     @Test
-    public void testTrustManager()
-            throws GeneralSecurityException
+    public void testLeafIsSignedByDerivedCa()
+            throws Exception
     {
-        X509Certificate certificate = certificateBuilder("sharedSecret", "commonName")
-                .addSanDnsNames(List.of("localhost"))
-                .buildSelfSigned();
+        KeyStore keyStore = inMemoryKeyStore();
+        X509Certificate leaf = addCertificateAndKeyForCurrentNode(SHARED_SECRET, ENVIRONMENT, keyStore, KEYSTORE_PASSWORD);
 
-        // This should pass as the certificate is self-signed and matches the trust manager's expectations
-        checkCertificate(certificate, "sharedSecret", "commonName");
+        // The leaf is issued by the CA derived from the same secret...
+        leaf.verify(caCertificate(SHARED_SECRET, ENVIRONMENT).getPublicKey());
 
-        assertThatThrownBy(() -> checkCertificate(certificate, "wrongSharedSecret", "commonName"))
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Peer cert public key doesn't match trusted key");
-
-        assertThatThrownBy(() -> checkCertificate(certificate, "sharedSecret", "wrongCommonName"))
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Peer certificate subject 'CN=commonName' does not match expected subject: 'CN=wrongCommonName'");
+        // ...but not by a CA derived from a different secret.
+        assertThatThrownBy(() -> leaf.verify(caCertificate(WRONG_SHARED_SECRET, ENVIRONMENT).getPublicKey()))
+                .isInstanceOf(SignatureException.class);
     }
 
     @Test
     public void testMutualAuthentication()
             throws Exception
     {
+        InetAddress loopback = InetAddress.getByName("127.0.0.1");
+
         KeyStore serverKeyStore = inMemoryKeyStore();
-        X509Certificate serverCert = addCertificateAndKeyForCurrentNode("sharedSecret", "commonName", serverKeyStore, KEYSTORE_PASSWORD);
-        SSLContext serverSSLContext = createSSLContext("sharedSecret", "commonName", serverKeyStore, KEYSTORE_PASSWORD);
+        X509Certificate serverCert = addNodeCertificateAndKey(SHARED_SECRET, ENVIRONMENT, serverKeyStore, KEYSTORE_PASSWORD, List.of(loopback), List.of());
+        SSLContext serverSSLContext = createSSLContext(SHARED_SECRET, ENVIRONMENT, serverKeyStore, KEYSTORE_PASSWORD);
 
         KeyStore clientKeyStore = inMemoryKeyStore();
-        X509Certificate clientCert = certificateBuilder("sharedSecret", "commonName")
-                .addSanDnsNames(List.of("client-address"))
-                .buildSelfSigned();
+        X509Certificate clientCert = addNodeCertificateAndKey(SHARED_SECRET, ENVIRONMENT, clientKeyStore, KEYSTORE_PASSWORD, List.of(), List.of("client-address"));
+        SSLContext clientSSLContext = createSSLContext(SHARED_SECRET, ENVIRONMENT, clientKeyStore, KEYSTORE_PASSWORD);
 
-        addCertificateToKeyStore("sharedSecret", "commonName", clientCert, clientKeyStore, KEYSTORE_PASSWORD);
-        SSLContext clientSSLContext = createSSLContext("sharedSecret", "commonName", clientKeyStore, KEYSTORE_PASSWORD);
+        // Every node has its own randomly generated leaf key pair.
+        assertThat(serverCert).isNotEqualTo(clientCert);
+        assertThat(serverCert.getPublicKey()).isNotEqualTo(clientCert.getPublicKey());
 
-        assertThat(serverCert)
-                .isNotEqualTo(clientCert);
-
-        HttpsServer server = HttpsServer.create(new InetSocketAddress(0), 0);
+        HttpsServer server = HttpsServer.create(new InetSocketAddress(loopback, 0), 0);
         server.setHttpsConfigurator(new HttpsConfigurator(serverSSLContext)
         {
             @Override
@@ -108,24 +106,19 @@ class TestAutomaticMtls
         }
 
         try (HttpClient authenticatedClient = HttpClient.newBuilder().sslContext(clientSSLContext).build()) {
-            // Will pass
             HttpResponse<String> response = authenticatedClient.send(request, ofString());
             assertThat(response.statusCode())
                     .isEqualTo(200);
             assertThat(response.body())
                     .isEqualTo("Hello, client serial: " + clientCert.getSerialNumber() + ", server serial " + serverCert.getSerialNumber() + ", san dns: [[2, client-address]]");
 
-            // Will fail as the certificate is not trusted
+            // Fails hostname verification: the server leaf has no SAN matching localhost. Assert on
+            // the exception type rather than the message, which varies across JDK/provider versions.
             assertThatThrownBy(() -> authenticatedClient.send(HttpRequest.newBuilder(new URI("https://localhost:%d/hello".formatted(serverPort))).GET().build(), discarding()))
                     .isInstanceOf(SSLHandshakeException.class)
-                    .hasMessageContaining("(certificate_unknown) No subject alternative DNS name matching localhost found");
+                    .rootCause()
+                    .isInstanceOf(CertificateException.class);
         }
-    }
-
-    private void checkCertificate(X509Certificate certificate, String sharedSecret, String commonName)
-            throws CertificateException
-    {
-        AutomaticMtls.createTrustManager(sharedSecret, commonName).checkClientTrusted(new X509Certificate[] {certificate}, "ECDSA");
     }
 
     private static class HelloWorldHandler
