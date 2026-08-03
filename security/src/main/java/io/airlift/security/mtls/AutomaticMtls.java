@@ -30,6 +30,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.security.KeyStore.getDefaultType;
@@ -54,6 +56,7 @@ import static javax.net.ssl.KeyManagerFactory.getDefaultAlgorithm;
 public final class AutomaticMtls
 {
     private static final String CURVE_NAME = "secp256r1";
+    private static final int MIN_SHARED_SECRET_LENGTH = 32;
 
     private AutomaticMtls() {}
 
@@ -74,6 +77,7 @@ public final class AutomaticMtls
             return addNodeCertificateAndKey(sharedSecret, environment, keyStore, keyStorePassword, allLocalIpAddresses, ipAddressMappedNames);
         }
         catch (Exception e) {
+            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
@@ -105,6 +109,7 @@ public final class AutomaticMtls
             return leafCertificate;
         }
         catch (Exception e) {
+            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
@@ -119,6 +124,7 @@ public final class AutomaticMtls
             keyStore.setCertificateEntry(environment, caCertificate(sharedSecret, environment));
         }
         catch (Exception e) {
+            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
@@ -141,6 +147,7 @@ public final class AutomaticMtls
                     .orElseThrow(() -> new IllegalStateException("No X509TrustManager available"));
         }
         catch (Exception e) {
+            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
@@ -156,6 +163,7 @@ public final class AutomaticMtls
             return context;
         }
         catch (Exception e) {
+            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
@@ -243,6 +251,9 @@ public final class AutomaticMtls
      */
     private static KeyPair deriveCertificateAuthorityKeyPair(String sharedSecret, String environment)
     {
+        checkArgument(sharedSecret.length() >= MIN_SHARED_SECRET_LENGTH,
+                "automatic HTTPS shared secret must be at least %s characters; use a randomly generated high-entropy value",
+                MIN_SHARED_SECRET_LENGTH);
         try {
             byte[] seed = sharedSecret.getBytes(UTF_8);
             SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
@@ -253,6 +264,7 @@ public final class AutomaticMtls
             return generator.generateKeyPair();
         }
         catch (Exception e) {
+            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
