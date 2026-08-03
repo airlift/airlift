@@ -9,15 +9,15 @@ import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class OpenTelemetryExporterConfig
 {
-    private String endpoint = "http://localhost:4317";
+    private URI endpoint = URI.create("http://localhost:4317");
     private Protocol protocol = Protocol.GRPC;
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
     private Optional<Integer> spanMaxExportBatchSize = Optional.empty();
@@ -26,6 +26,7 @@ public class OpenTelemetryExporterConfig
     private Optional<Integer> logMaxExportBatchSize = Optional.empty();
     private Optional<Integer> logMaxQueueSize = Optional.empty();
     private Optional<Duration> logScheduleDelay = Optional.empty();
+    private Optional<Duration> logExportTimeout = Optional.empty();
     private Optional<Path> trustedCertificatesPath = Optional.empty();
     private Optional<String> trustedCertificatesPem = Optional.empty();
     private Optional<Path> clientCertificatePath = Optional.empty();
@@ -35,15 +36,14 @@ public class OpenTelemetryExporterConfig
     private Optional<String> clientKeyPassword = Optional.empty();
 
     @NotNull
-    @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
-    public String getEndpoint()
+    public URI getEndpoint()
     {
         return endpoint;
     }
 
     @Config("otel.exporter.endpoint")
     @LegacyConfig("tracing.exporter.endpoint")
-    public OpenTelemetryExporterConfig setEndpoint(String endpoint)
+    public OpenTelemetryExporterConfig setEndpoint(URI endpoint)
     {
         this.endpoint = endpoint;
         return this;
@@ -165,6 +165,18 @@ public class OpenTelemetryExporterConfig
         return this;
     }
 
+    public Optional<@MinDuration("1ms") Duration> getLogExportTimeout()
+    {
+        return logExportTimeout;
+    }
+
+    @Config("otel.exporter.log.export-timeout")
+    public OpenTelemetryExporterConfig setLogExportTimeout(Duration logExportTimeout)
+    {
+        this.logExportTimeout = Optional.ofNullable(logExportTimeout);
+        return this;
+    }
+
     public Optional<@FileExists Path> getTrustedCertificatesPath()
     {
         return trustedCertificatesPath;
@@ -255,6 +267,12 @@ public class OpenTelemetryExporterConfig
     public boolean isClientTlsValid()
     {
         return hasClientCertificate() == hasClientKey();
+    }
+
+    @AssertTrue(message = "must start with http:// or https://")
+    public boolean isEndpointProtocolValid()
+    {
+        return endpoint == null || "http".equalsIgnoreCase(endpoint.getScheme()) || "https".equalsIgnoreCase(endpoint.getScheme());
     }
 
     @AssertTrue(message = "client key password requires client key")

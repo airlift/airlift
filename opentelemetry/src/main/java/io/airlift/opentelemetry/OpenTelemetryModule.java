@@ -1,7 +1,9 @@
 package io.airlift.opentelemetry;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.airlift.node.NodeInfo;
@@ -34,6 +36,7 @@ import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.OsIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ProcessIncubatingAttributes;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.StandardSystemProperty.JAVA_VM_NAME;
@@ -44,6 +47,7 @@ import static com.google.common.base.StandardSystemProperty.OS_NAME;
 import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.alwaysOn;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
@@ -70,6 +74,12 @@ public class OpenTelemetryModule
         newSetBinder(binder, MetricReader.class);
         newSetBinder(binder, MetricProducer.class);
         newSetBinder(binder, LogRecordProcessor.class);
+        newOptionalBinder(binder, OpenTelemetryLogHandler.class);
+        // SdkLoggerProvider may be created during logging bootstrap in the OpenTelemetryLoggingModule
+        newOptionalBinder(binder, SdkLoggerProvider.class)
+                .setDefault()
+                .toProvider(DefaultLoggerProviderProvider.class)
+                .in(Singleton.class);
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
         configBinder(binder).bindConfig(BaggageConfig.class);
     }
@@ -81,12 +91,13 @@ public class OpenTelemetryModule
             Set<MetricReader> metricReaders,
             Set<MetricProducer> metricProducers,
             Set<LogRecordProcessor> logRecordProcessors,
+            Optional<OpenTelemetryLogHandler> logHandler,
             SdkTracerProvider tracerProvider,
             SdkMeterProvider meterProvider,
             SdkLoggerProvider loggerProvider,
             BaggageConfig baggageConfig)
     {
-        if (spanProcessors.isEmpty() && metricReaders.isEmpty() && metricProducers.isEmpty() && logRecordProcessors.isEmpty()) {
+        if (spanProcessors.isEmpty() && metricReaders.isEmpty() && metricProducers.isEmpty() && logRecordProcessors.isEmpty() && logHandler.isEmpty()) {
             return OpenTelemetry.noop();
         }
 
@@ -103,6 +114,11 @@ public class OpenTelemetryModule
     @Provides
     @Singleton
     public Resource createResource(NodeInfo nodeInfo)
+    {
+        return createResource(serviceName, serviceVersion, nodeInfo);
+    }
+
+    static Resource createResource(String serviceName, String serviceVersion, NodeInfo nodeInfo)
     {
         AttributesBuilder attributes = Attributes.builder()
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
@@ -159,16 +175,6 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public SdkLoggerProvider createLoggerProvider(Resource resource, Set<LogRecordProcessor> logRecordProcessors)
-    {
-        SdkLoggerProviderBuilder builder = SdkLoggerProvider.builder()
-                .setResource(resource);
-        logRecordProcessors.forEach(builder::addLogRecordProcessor);
-        return builder.build();
-    }
-
-    @Provides
-    @Singleton
     public Meter createMeter(Set<MetricReader> metricReaders, Set<MetricProducer> metricProducers, SdkMeterProvider meterProvider)
     {
         if (metricReaders.isEmpty() && metricProducers.isEmpty()) {
@@ -205,5 +211,28 @@ public class OpenTelemetryModule
             case "ppc64le" -> "ppc64";
             default -> null;
         };
+    }
+
+    private static class DefaultLoggerProviderProvider
+            implements Provider<SdkLoggerProvider>
+    {
+        private final Resource resource;
+        private final Set<LogRecordProcessor> logRecordProcessors;
+
+        @Inject
+        public DefaultLoggerProviderProvider(Resource resource, Set<LogRecordProcessor> logRecordProcessors)
+        {
+            this.resource = requireNonNull(resource, "resource is null");
+            this.logRecordProcessors = requireNonNull(logRecordProcessors, "logRecordProcessors is null");
+        }
+
+        @Override
+        public SdkLoggerProvider get()
+        {
+            SdkLoggerProviderBuilder builder = SdkLoggerProvider.builder()
+                    .setResource(resource);
+            logRecordProcessors.forEach(builder::addLogRecordProcessor);
+            return builder.build();
+        }
     }
 }

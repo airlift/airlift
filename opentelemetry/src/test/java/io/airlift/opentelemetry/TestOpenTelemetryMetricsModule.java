@@ -15,12 +15,12 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TestOpenTelemetryMetricsExporterModule
+class TestOpenTelemetryMetricsModule
 {
     @Test
     void testBindings()
     {
-        List<Element> elements = Elements.getElements(new OpenTelemetryMetricsExporterModule());
+        List<Element> elements = Elements.getElements(new OpenTelemetryMetricsModule());
 
         assertThat(hasBinding(elements, Key.get(MetricsCollector.class))).isTrue();
         assertThat(hasBinding(elements, Key.get(OpenTelemetryMetricDataConverter.class))).isTrue();

@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
@@ -95,6 +96,11 @@ public class Logging
         }
 
         return instance;
+    }
+
+    public ErrorManager createErrorManager()
+    {
+        return new BufferedHandlerErrorManager(stdErr);
     }
 
     private Logging()

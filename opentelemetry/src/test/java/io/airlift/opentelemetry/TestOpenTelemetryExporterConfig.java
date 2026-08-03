@@ -6,6 +6,7 @@ import io.airlift.units.Duration;
 import jakarta.validation.constraints.AssertTrue;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +25,7 @@ public class TestOpenTelemetryExporterConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(OpenTelemetryExporterConfig.class)
-                .setEndpoint("http://localhost:4317")
+                .setEndpoint(URI.create("http://localhost:4317"))
                 .setProtocol(GRPC)
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
                 .setSpanMaxExportBatchSize(null)
@@ -33,6 +34,7 @@ public class TestOpenTelemetryExporterConfig
                 .setLogMaxExportBatchSize(null)
                 .setLogMaxQueueSize(null)
                 .setLogScheduleDelay(null)
+                .setLogExportTimeout(null)
                 .setTrustedCertificatesPath(null)
                 .setTrustedCertificatesPem(null)
                 .setClientCertificatePath(null)
@@ -55,6 +57,7 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.log.max-export-batch-size", "64")
                 .put("otel.exporter.log.max-queue-size", "1024")
                 .put("otel.exporter.log.schedule-delay", "5s")
+                .put("otel.exporter.log.export-timeout", "10s")
                 .put("otel.exporter.tls.trusted-certificates-path", "./pom.xml")
                 .put("otel.exporter.tls.client-certificate-path", "./pom.xml")
                 .put("otel.exporter.tls.client-key-path", "./pom.xml")
@@ -62,7 +65,7 @@ public class TestOpenTelemetryExporterConfig
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
-                .setEndpoint("http://example.com:1234")
+                .setEndpoint(URI.create("http://example.com:1234"))
                 .setProtocol(HTTP_PROTOBUF)
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
                 .setSpanMaxExportBatchSize(128)
@@ -71,6 +74,7 @@ public class TestOpenTelemetryExporterConfig
                 .setLogMaxExportBatchSize(64)
                 .setLogMaxQueueSize(1024)
                 .setLogScheduleDelay(new Duration(5, TimeUnit.SECONDS))
+                .setLogExportTimeout(new Duration(10, TimeUnit.SECONDS))
                 .setTrustedCertificatesPath(Path.of("./pom.xml"))
                 .setClientCertificatePath(Path.of("./pom.xml"))
                 .setClientKeyPath(Path.of("./pom.xml"))
@@ -114,6 +118,7 @@ public class TestOpenTelemetryExporterConfig
                         "otel.exporter.log.max-export-batch-size",
                         "otel.exporter.log.max-queue-size",
                         "otel.exporter.log.schedule-delay",
+                        "otel.exporter.log.export-timeout",
                         "otel.exporter.tls.trusted-certificates-path",
                         "otel.exporter.tls.client-certificate-path",
                         "otel.exporter.tls.client-key-path"));
@@ -127,6 +132,17 @@ public class TestOpenTelemetryExporterConfig
                         .setClientCertificatePath(Path.of("/certs/client.pem")),
                 "clientTlsValid",
                 "client certificate and key must be set together",
+                AssertTrue.class);
+    }
+
+    @Test
+    public void testEndpointProtocolFailsValidation()
+    {
+        assertFailsValidation(
+                new OpenTelemetryExporterConfig()
+                        .setEndpoint(URI.create("ftp://example.com")),
+                "endpointProtocolValid",
+                "must start with http:// or https://",
                 AssertTrue.class);
     }
 

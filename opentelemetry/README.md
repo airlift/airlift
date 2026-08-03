@@ -1,4 +1,4 @@
-# OpenTelemetry Metrics
+# OpenTelemetry
 
 The OpenTelemetry metrics exporter converts objects exported through jmxutils into OpenTelemetry
 `MetricData`. In normal Airlift applications, metrics are exposed by marking Java objects and
@@ -18,22 +18,80 @@ data to an OpenTelemetry collector:
 new Bootstrap(
         new OpenTelemetryModule("trino", nodeVersion),
         new OpenTelemetryExporterModule(),
-        new OpenTelemetryMetricsExporterModule(),
+        new OpenTelemetryMetricsModule(),
         ...);
 ```
 
 `OpenTelemetryModule` creates the OpenTelemetry SDK objects and resource attributes.
-`OpenTelemetryExporterModule` configures OTLP export for traces, metrics, and logs.
-`OpenTelemetryMetricsExporterModule` adds the jmxutils managed-metrics producer to the
+`OpenTelemetryExporterModule` configures OTLP export for traces, metrics, and OpenTelemetry SDK log
+records. Airlift application log export uses the same exporter configuration and factory code during
+logging bootstrap, but it is enabled by `OpenTelemetryLoggingModule`.
+`OpenTelemetryMetricsModule` adds the jmxutils managed-metrics producer to the
 OpenTelemetry meter provider.
 
-Common exporter configuration:
+The default exporter protocol is gRPC and the default endpoint is `http://localhost:4317`.
+For OTLP HTTP/protobuf, configure the base collector URL and protocol:
 
 ```properties
-otel.exporter.endpoint=http://otel-collector.example.com:4317
-otel.exporter.protocol=grpc
+otel.exporter.endpoint=http://otel-collector.example.com:4318
+otel.exporter.protocol=http/protobuf
 otel.exporter.interval=10s
 ```
+
+For HTTP/protobuf, `otel.exporter.endpoint` is the base collector URL. Airlift derives the
+signal-specific OTLP paths `/v1/traces`, `/v1/metrics`, and `/v1/logs`.
+
+## Airlift Application Logs
+
+To export ordinary Airlift/JUL application logs written through `io.airlift.log.Logger`, install an
+`OpenTelemetryLoggingModule` as a top-level `Bootstrap` module. This lets Airlift start the OTLP
+log handler during logging initialization, before the normal Guice injector has been created:
+
+```java
+OpenTelemetryLoggingModule otlpLogging =
+        new OpenTelemetryLoggingModule("trino", nodeVersion);
+
+new Bootstrap(
+        otlpLogging,
+        ...)
+        .initialize();
+```
+
+Applications that also use Airlift's OpenTelemetry SDK should install `OpenTelemetryModule`; its
+SDK logger provider binding uses the provider created during logging initialization.
+`OpenTelemetryExporterModule` is not required for the Airlift application log handler itself. Add it
+for the normal Guice-created OTLP span and metric exporter bindings, and for SDK log export when the
+early Airlift application log handler is not enabled.
+
+Enable the bridge explicitly:
+
+```properties
+node.id=trino-coordinator-1
+log.otlp.enabled=true
+```
+
+`node.id` must be configured when OTLP application log export is enabled, so early logging uses a
+stable `service.instance.id`. With the default gRPC exporter settings, this sends logs to
+`http://localhost:4317`. For HTTP/protobuf:
+
+```properties
+node.id=trino-coordinator-1
+log.otlp.enabled=true
+otel.exporter.endpoint=http://localhost:4318
+otel.exporter.protocol=http/protobuf
+otel.exporter.log.max-queue-size=2048
+otel.exporter.log.max-export-batch-size=512
+otel.exporter.log.export-timeout=30s
+```
+
+The recommended production topology is application to local OpenTelemetry Collector over OTLP,
+then collector to the logging backend. This replaces the older pattern of `log.path=tcp://...`
+plus a collector `tcplog` receiver. The OTLP handler submits log records to the OpenTelemetry SDK
+batch processor, which handles asynchronous bounded export, batching, and exporter timeouts. When
+`OpenTelemetryModule` is also installed with `log.otlp.enabled=true`, the Guice-created SDK logger
+provider binding uses the provider created by `OpenTelemetryLoggingModule`, so Airlift does not
+create a second SDK logger provider for application logs. Logs written before Airlift logging is
+configured remain on the early console path and are not replayed.
 
 ## Native OpenTelemetry Stats
 

@@ -8,7 +8,7 @@ import io.opentelemetry.sdk.metrics.export.MetricProducer;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
-public class OpenTelemetryMetricsExporterModule
+public class OpenTelemetryMetricsModule
         implements Module
 {
     @Override
