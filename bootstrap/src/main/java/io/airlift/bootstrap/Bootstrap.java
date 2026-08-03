@@ -364,6 +364,7 @@ public class Bootstrap
     public Injector initialize()
     {
         List<BootstrapListener> listeners = List.copyOf(Bootstrap.listeners);
+        LifeCycleModule lifeCycleModule = new LifeCycleModule(name);
         try {
             checkState(state != State.INITIALIZED, "Already initialized");
             if (state == State.UNINITIALIZED) {
@@ -373,7 +374,7 @@ public class Bootstrap
 
             // system modules
             Builder<Module> moduleList = ImmutableList.builder();
-            moduleList.add(new LifeCycleModule(name));
+            moduleList.add(lifeCycleModule);
             moduleList.add(new ConfigurationModule(configurationFactory));
             moduleList.add(binder -> closingBinder(binder).registerCloseable(configurationFactory));
             moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
@@ -394,6 +395,12 @@ public class Bootstrap
             return injector;
         }
         catch (RuntimeException failure) {
+            try {
+                lifeCycleModule.stopAfterInitializationFailure();
+            }
+            catch (RuntimeException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
             notifyFailed(listeners, failure);
             throw failure;
         }
