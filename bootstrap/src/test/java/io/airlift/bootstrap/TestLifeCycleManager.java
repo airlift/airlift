@@ -28,6 +28,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.Stage;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -41,6 +43,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
@@ -311,6 +314,26 @@ public class TestLifeCycleManager
     }
 
     @Test
+    public void testInitializationFailureStopsEarlierAccumulatedInstances()
+    {
+        DependentInstance dependentInstance = new DependentInstance();
+        LifeCycleModule lifeCycleModule = new LifeCycleModule(List.of(
+                dependentInstance,
+                new FailingDependentInstance(dependentInstance)));
+
+        assertThatThrownBy(lifeCycleModule::getLifeCycleManager)
+                .isInstanceOf(LifeCycleStartException.class)
+                .hasRootCauseMessage("expected failure");
+        lifeCycleModule.stopAfterInitializationFailure();
+
+        assertThat(stateLog).containsExactly(
+                "postDependentInstance",
+                "postFailingDependentInstance",
+                "preFailingDependentInstance",
+                "preDependentInstance");
+    }
+
+    @Test
     public void testNoPreDestroy()
     {
         Injector injector = Guice.createInjector(
@@ -433,5 +456,23 @@ public class TestLifeCycleManager
         lifeCycleManager.stop();
 
         assertThat(injector.getInstance(BarInstance.class)).isNull();
+    }
+
+    public static class FailingDependentInstance
+    {
+        public FailingDependentInstance(DependentInstance dependentInstance) {}
+
+        @PostConstruct
+        public void start()
+        {
+            note("postFailingDependentInstance");
+            throw new IllegalStateException("expected failure");
+        }
+
+        @PreDestroy
+        public void stop()
+        {
+            note("preFailingDependentInstance");
+        }
     }
 }

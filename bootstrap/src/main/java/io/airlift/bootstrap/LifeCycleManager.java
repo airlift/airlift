@@ -138,8 +138,20 @@ public final class LifeCycleManager
     public void stopWithoutFailureLogging()
             throws LifeCycleStopException
     {
+        stopWithoutFailureLogging(false);
+    }
+
+    void stopAfterInitializationFailure()
+            throws LifeCycleStopException
+    {
+        stopWithoutFailureLogging(true);
+    }
+
+    private void stopWithoutFailureLogging(boolean stopBeforeStarted)
+            throws LifeCycleStopException
+    {
         List<Exception> failures = new ArrayList<>();
-        stop((_, _, exception) -> failures.add(exception));
+        stop((_, _, exception) -> failures.add(exception), stopBeforeStarted);
         if (!failures.isEmpty()) {
             LifeCycleStopException stopException = new LifeCycleStopException();
             for (Exception e : failures) {
@@ -178,7 +190,24 @@ public final class LifeCycleManager
      */
     private void stop(LifeCycleStopFailureHandler handler)
     {
-        if (!state.compareAndSet(State.STARTED, State.STOPPING)) {
+        stop(handler, false);
+    }
+
+    private void stop(LifeCycleStopFailureHandler handler, boolean stopBeforeStarted)
+    {
+        if (stopBeforeStarted) {
+            State currentState;
+            // Failed initialization can leave the manager in any nonterminal state. Claim cleanup
+            // atomically while allowing another cleanup attempt to win the race.
+            do {
+                currentState = state.get();
+                if ((currentState == State.STOPPING) || (currentState == State.STOPPED)) {
+                    return;
+                }
+            }
+            while (!state.compareAndSet(currentState, State.STOPPING));
+        }
+        else if (!state.compareAndSet(State.STARTED, State.STOPPING)) {
             return;
         }
 

@@ -23,11 +23,14 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.spi.Message;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigPropertyMetadata;
 import io.airlift.configuration.ConfigSecuritySensitive;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -185,6 +188,42 @@ public class TestBootstrap
             Bootstrap.removeListener(selfSuppressingListener);
             Bootstrap.removeListener(failingListener);
         }
+    }
+
+    @Test
+    public void testInitializationFailureStopsStartedInstances()
+    {
+        AtomicReference<String> state = new AtomicReference<>("new");
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            binder.bind(new TypeLiteral<AtomicReference<String>>() {}).toInstance(state);
+            binder.bind(StartedInstance.class).asEagerSingleton();
+            binder.bind(FailingInstance.class).asEagerSingleton();
+        });
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOf(CreationException.class)
+                .hasMessageContaining("expected failure");
+        assertThat(state).hasValue("stopped");
+    }
+
+    @Test
+    public void testInitializationFailureRetainsCleanupFailureAsSuppressed()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            binder.bind(FailingStopInstance.class).asEagerSingleton();
+            binder.bind(FailingAfterStopInstance.class).asEagerSingleton();
+        });
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(CreationException.class, failure -> {
+                    assertThat(failure).hasMessageContaining("expected bootstrap failure");
+                    assertThat(failure.getSuppressed())
+                            .singleElement()
+                            .isInstanceOfSatisfying(LifeCycleStopException.class, cleanupFailure -> assertThat(cleanupFailure.getSuppressed())
+                                    .singleElement()
+                                    .isInstanceOfSatisfying(IllegalStateException.class, suppressed -> assertThat(suppressed)
+                                            .hasMessage("expected cleanup failure")));
+                });
     }
 
     @Test
@@ -497,6 +536,60 @@ public class TestBootstrap
     }
 
     public static class Instance {}
+
+    public static class StartedInstance
+    {
+        private final AtomicReference<String> state;
+
+        @Inject
+        public StartedInstance(AtomicReference<String> state)
+        {
+            this.state = state;
+        }
+
+        @PostConstruct
+        public void start()
+        {
+            state.set("started");
+        }
+
+        @PreDestroy
+        public void stop()
+        {
+            if (!state.compareAndSet("started", "stopped")) {
+                throw new IllegalStateException("instance was not started");
+            }
+        }
+    }
+
+    public static class FailingInstance
+    {
+        @Inject
+        public FailingInstance(@SuppressWarnings("UnusedVariable") StartedInstance startedInstance)
+        {
+            throw new IllegalStateException("expected failure");
+        }
+    }
+
+    public static class FailingStopInstance
+    {
+        @PreDestroy
+        public void stop()
+        {
+            throw new IllegalStateException("expected cleanup failure");
+        }
+    }
+
+    public static class FailingAfterStopInstance
+    {
+        @Inject
+        public FailingAfterStopInstance(
+                @SuppressWarnings("UnusedVariable") FailingStopInstance instance,
+                @SuppressWarnings("UnusedVariable") LifeCycleManager lifeCycleManager)
+        {
+            throw new IllegalStateException("expected bootstrap failure");
+        }
+    }
 
     public static class InstanceA
     {

@@ -50,6 +50,13 @@ public class LifeCycleModule
         this("LifeCycleManager");
     }
 
+    @VisibleForTesting
+    LifeCycleModule(List<Object> injectedInstances)
+    {
+        this();
+        this.injectedInstances.addAll(requireNonNull(injectedInstances, "injectedInstances is null"));
+    }
+
     public LifeCycleModule(String name)
     {
         this.name = requireNonNull(name, "name is null");
@@ -89,9 +96,21 @@ public class LifeCycleModule
     @Singleton
     public LifeCycleManager getLifeCycleManager()
     {
-        LifeCycleManager lifeCycleManager = new LifeCycleManager(name, injectedInstances, lifeCycleMethodsMap);
+        LifeCycleManager lifeCycleManager = new LifeCycleManager(name, List.of(), lifeCycleMethodsMap);
+        // Publish the manager before adding instances so cleanup can reach instances added before a later failure.
         this.lifeCycleManager.set(lifeCycleManager);
+        for (Object instance : injectedInstances) {
+            lifeCycleManager.addInstance(instance);
+        }
         return lifeCycleManager;
+    }
+
+    void stopAfterInitializationFailure()
+    {
+        LifeCycleManager manager = lifeCycleManager.get();
+        if (manager != null) {
+            manager.stopAfterInitializationFailure();
+        }
     }
 
     private boolean isLifeCycleClass(Class<?> clazz)
