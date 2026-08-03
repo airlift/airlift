@@ -25,6 +25,8 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -39,7 +41,10 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.EllipticCurve;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -77,7 +82,15 @@ public final class AutomaticMtls
     private static final int MODULO_BIAS_MARGIN_BITS = 64; // keeps scalar reduction bias below 2^-64
     private static final int MIN_SHARED_SECRET_LENGTH = 32;
 
+    // The CA key pair is a pure, expensive (PBKDF2) function of (environment, sharedSecret). Memoize
+    // it so repeated SSL context reloads do not repeat the derivation. The key stores a digest of the
+    // shared secret rather than the secret itself, so the plaintext secret is not retained in this
+    // long-lived static map.
+    private static final Map<CacheKey, KeyPair> CA_KEY_PAIR_CACHE = new ConcurrentHashMap<>();
+
     private AutomaticMtls() {}
+
+    private record CacheKey(String environment, String sharedSecretDigest) {}
 
     /**
      * Generates a random leaf key pair for the current node, issues it a CA-signed certificate that
@@ -111,7 +124,7 @@ public final class AutomaticMtls
             List<String> dnsSubjectAltNames)
     {
         try {
-            KeyPair caKeyPair = deriveCertificateAuthorityKeyPair(sharedSecret, environment);
+            KeyPair caKeyPair = certificateAuthorityKeyPair(sharedSecret, environment);
             X509Certificate caCertificate = buildCaCertificate(caKeyPair, environment);
 
             KeyPair leafKeyPair = generateRandomEcKeyPair();
@@ -191,7 +204,29 @@ public final class AutomaticMtls
     static X509Certificate caCertificate(String sharedSecret, String environment)
             throws GeneralSecurityException
     {
-        return buildCaCertificate(deriveCertificateAuthorityKeyPair(sharedSecret, environment), environment);
+        return buildCaCertificate(certificateAuthorityKeyPair(sharedSecret, environment), environment);
+    }
+
+    private static KeyPair certificateAuthorityKeyPair(String sharedSecret, String environment)
+    {
+        // Validate before hitting the cache so a short secret always fails fast with the original
+        // IllegalArgumentException rather than being memoized or masked.
+        checkArgument(sharedSecret.length() >= MIN_SHARED_SECRET_LENGTH,
+                "automatic HTTPS shared secret must be at least %s characters; use a randomly generated high-entropy value",
+                MIN_SHARED_SECRET_LENGTH);
+        return CA_KEY_PAIR_CACHE.computeIfAbsent(
+                new CacheKey(environment, sha256Base64(sharedSecret)),
+                _ -> deriveCertificateAuthorityKeyPair(sharedSecret, environment));
+    }
+
+    private static String sha256Base64(String value)
+    {
+        try {
+            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(value.getBytes(UTF_8)));
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static X509Certificate buildCaCertificate(KeyPair caKeyPair, String environment)
