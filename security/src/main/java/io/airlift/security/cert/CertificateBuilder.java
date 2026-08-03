@@ -189,6 +189,25 @@ public class CertificateBuilder
                 .map(address -> encodeContextSpecificTag(7, address))
                 .forEach(sans::add);
 
+        List<byte[]> extensions = new ArrayList<>();
+        extensions.add(encodeSequence(
+                SUBJECT_KEY_IDENTIFIER_OID,
+                encodeOctetString(encodeOctetString(publicKeyHash))));
+        extensions.add(encodeSequence(
+                AUTHORITY_KEY_IDENTIFIER_OID,
+                encodeOctetString(encodeSequence(encodeContextSpecificTag(0, publicKeyHash)))));
+        extensions.add(encodeSequence(
+                BASIC_CONSTRAINTS_OID,
+                encodeBooleanTrue(),
+                encodeOctetString(encodeSequence(encodeBooleanTrue()))));
+        // Only emit SubjectAltName when there is at least one name: an empty GeneralNames SEQUENCE
+        // is invalid per RFC 5280 and rejected by X.509 parsers.
+        if (!sans.isEmpty()) {
+            extensions.add(encodeSequence(
+                    SUBJECT_ALT_NAME_OID,
+                    encodeOctetString(encodeSequence(sans.toArray(new byte[0][])))));
+        }
+
         byte[] rawCertificate = encodeSequence(
                 // version: 2
                 encodeContextSpecificSequence(0, encodeInteger(2)),
@@ -211,21 +230,7 @@ public class CertificateBuilder
                 // public key
                 publicKey.getEncoded(),
                 // extensions
-                encodeContextSpecificSequence(3, encodeSequence(
-                        encodeSequence(
-                                SUBJECT_KEY_IDENTIFIER_OID,
-                                encodeOctetString(encodeOctetString(publicKeyHash))),
-                        encodeSequence(
-                                AUTHORITY_KEY_IDENTIFIER_OID,
-                                encodeOctetString(encodeSequence(encodeContextSpecificTag(0, publicKeyHash)))),
-                        encodeSequence(
-                                BASIC_CONSTRAINTS_OID,
-                                encodeBooleanTrue(),
-                                encodeOctetString(encodeSequence(encodeBooleanTrue()))),
-                        encodeSequence(
-                                SUBJECT_ALT_NAME_OID,
-                                encodeOctetString(
-                                        encodeSequence(sans.toArray(new byte[0][])))))));
+                encodeContextSpecificSequence(3, encodeSequence(extensions.toArray(new byte[0][]))));
 
         byte[] signature = signCertificate(rawCertificate);
 
