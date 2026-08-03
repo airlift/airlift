@@ -26,6 +26,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 import static io.airlift.security.mtls.AutomaticMtls.addCertificateAndKeyForCurrentNode;
+import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
 import static io.airlift.security.mtls.AutomaticMtls.addNodeCertificateAndKey;
 import static io.airlift.security.mtls.AutomaticMtls.caCertificate;
 import static io.airlift.security.mtls.AutomaticMtls.createSSLContext;
@@ -42,6 +43,24 @@ class TestAutomaticMtls
     private static final String SHARED_SECRET = "shared-secret-value-with-enough-entropy-0123456789";
     private static final String WRONG_SHARED_SECRET = "wrong-secret-value-with-enough-entropy-0123456789";
     private static final String ENVIRONMENT = "commonName";
+
+    @Test
+    public void testShortSharedSecretIsRejected()
+    {
+        // caCertificate does not catch, and the wrapping helpers must also surface the original
+        // IllegalArgumentException rather than re-wrapping it in a RuntimeException.
+        assertThatThrownBy(() -> caCertificate("too-short", ENVIRONMENT))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("automatic HTTPS shared secret must be at least 32 characters");
+
+        assertThatThrownBy(() -> addClientTrust("too-short", inMemoryKeyStore(), ENVIRONMENT))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("automatic HTTPS shared secret must be at least 32 characters");
+
+        assertThatThrownBy(() -> addCertificateAndKeyForCurrentNode("too-short", ENVIRONMENT, inMemoryKeyStore(), KEYSTORE_PASSWORD))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("automatic HTTPS shared secret must be at least 32 characters");
+    }
 
     @Test
     public void testLeafIsSignedByDerivedCa()
