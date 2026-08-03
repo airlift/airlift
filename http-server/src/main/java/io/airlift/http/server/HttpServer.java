@@ -85,6 +85,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
@@ -556,13 +558,53 @@ public class HttpServer
 
         log.debug("Server %s stopping in %s, %d active requests to complete", server.getName(), Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
 
-        server.stop();
-
-        if (scheduledExecutorService != null) {
-            scheduledExecutorService.shutdown();
-        }
+        stopServer(server, scheduledExecutorService);
 
         log.info("Server %s shutdown complete", server.getName());
+    }
+
+    @VisibleForTesting
+    static void stopServer(Server server, ScheduledExecutorService scheduledExecutorService)
+            throws Exception
+    {
+        Throwable failure = null;
+        try {
+            server.stop();
+        }
+        catch (Throwable stopFailure) {
+            failure = stopFailure;
+        }
+        try {
+            server.destroy();
+        }
+        catch (Throwable destroyFailure) {
+            failure = addFailure(failure, destroyFailure);
+        }
+        try {
+            if (scheduledExecutorService != null) {
+                scheduledExecutorService.shutdown();
+            }
+        }
+        catch (Throwable shutdownFailure) {
+            failure = addFailure(failure, shutdownFailure);
+        }
+
+        if (failure != null) {
+            throwIfInstanceOf(failure, Exception.class);
+            throwIfUnchecked(failure);
+            throw new RuntimeException(failure);
+        }
+    }
+
+    private static Throwable addFailure(Throwable failure, Throwable newFailure)
+    {
+        if (failure == null) {
+            return newFailure;
+        }
+        if (failure != newFailure) {
+            failure.addSuppressed(newFailure);
+        }
+        return failure;
     }
 
     @VisibleForTesting

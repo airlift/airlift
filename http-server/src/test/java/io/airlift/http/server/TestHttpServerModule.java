@@ -23,6 +23,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.bootstrap.ApplicationConfigurationException;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.HttpUriBuilder;
@@ -37,14 +38,18 @@ import io.airlift.tracing.TracingModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InOrder;
 
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +58,8 @@ import java.lang.annotation.Target;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
@@ -75,6 +82,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
@@ -167,6 +177,77 @@ public class TestHttpServerModule
 
         assertThat(primaryServer).isNotEqualTo(secondaryServer);
         assertThat(primaryInfo.getHttpUri()).isNotEqualTo(secondaryInfo.getHttpUri());
+    }
+
+    @Test
+    public void testStopUnregistersJettyMBeans()
+    {
+        MBeanServer mBeanServer = MBeanServerFactory.createMBeanServer();
+        try {
+            Set<ObjectName> initialMBeans = mBeanServer.queryNames(null, null);
+            Bootstrap app = new Bootstrap(
+                    new HttpServerModule(),
+                    new TestingNodeModule(),
+                    new TracingModule("airlift.http-server", "1.0"),
+                    binder -> {
+                        binder.bind(Servlet.class).to(DummyServlet.class);
+                        binder.bind(MBeanServer.class).toInstance(mBeanServer);
+                    });
+
+            Injector injector = app
+                    .setRequiredConfigurationProperties(Map.of(
+                            "http-server.http.port", "0",
+                            "http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath()))
+                    .doNotInitializeLogging()
+                    .quiet()
+                    .initialize();
+
+            LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+            try {
+                assertThat(mBeanServer.queryNames(null, null)).hasSizeGreaterThan(initialMBeans.size());
+            }
+            finally {
+                lifeCycleManager.stop();
+            }
+
+            assertThat(mBeanServer.queryNames(null, null)).containsExactlyInAnyOrderElementsOf(initialMBeans);
+        }
+        finally {
+            MBeanServerFactory.releaseMBeanServer(mBeanServer);
+        }
+    }
+
+    @Test
+    public void testStopCompletesCleanupAndPreservesFailureOrder()
+            throws Exception
+    {
+        Server server = mock(Server.class);
+        ScheduledExecutorService scheduledExecutor = mock(ScheduledExecutorService.class);
+        RuntimeException stopFailure = new RuntimeException("stop failure");
+        RuntimeException destroyFailure = new RuntimeException("destroy failure");
+        RuntimeException shutdownFailure = new RuntimeException("shutdown failure");
+        doThrow(stopFailure).when(server).stop();
+        doThrow(destroyFailure).when(server).destroy();
+        doThrow(shutdownFailure).when(scheduledExecutor).shutdown();
+
+        assertThatThrownBy(() -> HttpServer.stopServer(server, scheduledExecutor))
+                .isSameAs(stopFailure)
+                .hasSuppressedException(destroyFailure)
+                .hasSuppressedException(shutdownFailure);
+
+        InOrder cleanupOrder = inOrder(server, scheduledExecutor);
+        cleanupOrder.verify(server).stop();
+        cleanupOrder.verify(server).destroy();
+        cleanupOrder.verify(scheduledExecutor).shutdown();
+
+        Server selfSuppressingServer = mock(Server.class);
+        RuntimeException repeatedFailure = new RuntimeException("repeated failure");
+        doThrow(repeatedFailure).when(selfSuppressingServer).stop();
+        doThrow(repeatedFailure).when(selfSuppressingServer).destroy();
+
+        assertThatThrownBy(() -> HttpServer.stopServer(selfSuppressingServer, null))
+                .isSameAs(repeatedFailure)
+                .hasNoSuppressedExceptions();
     }
 
     @Test
