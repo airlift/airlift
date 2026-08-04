@@ -159,7 +159,7 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     @Inject(optional = true)
     public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
-        this.keySerializers = keySerializers;
+        this.keySerializers = ImmutableMap.copyOf(keySerializers);
     }
 
     public U withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
@@ -171,7 +171,7 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
     @Inject(optional = true)
     public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
-        this.keyDeserializers = keyDeserializers;
+        this.keyDeserializers = ImmutableMap.copyOf(keyDeserializers);
     }
 
     public U withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
