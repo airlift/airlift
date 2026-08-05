@@ -115,6 +115,7 @@ public class JsonCodec<T>
     private final Supplier<ObjectWriter> writer;
     private final Supplier<ObjectReader> reader;
 
+    @SuppressWarnings("unchecked")
     JsonCodec(JsonMapper mapper, Type type)
     {
         JavaType javaType = mapper.constructType(type);
@@ -272,7 +273,6 @@ public class JsonCodec<T>
         };
     }
 
-    @SuppressWarnings("unchecked")
     TypeToken<T> getTypeToken()
     {
         return typeToken;
