@@ -34,11 +34,14 @@ public class Person
 {
     private String name;
     private boolean rocks;
-    private Optional<String> lastName;
+    // An absent property never reaches the setter. The initializer gets used for an omitted field.
+    // Both null and Optional.empty() serialize to nothing for NON_ABSENT inclusion
+    // so Optional.empty() is the only value that round-trips and can be used for the assertions below.
+    private Optional<String> lastName = Optional.empty();
 
     public static void validatePersonJsonCodec(JsonCodec<Person> jsonCodec)
     {
-        // create object with null lastName
+        // create object with lastName left unset
         Person expected = new Person().setName("dain").setRocks(true);
 
         String json = jsonCodec.toJson(expected);
@@ -52,7 +55,7 @@ public class Person
 
         assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
 
-        // create object with missing lastName
+        // create object with lastName explicitly empty - same wire form as leaving it unset
         expected.setLastName(Optional.empty());
 
         json = jsonCodec.toJson(expected);
@@ -79,6 +82,11 @@ public class Person
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+
+        // an explicit null is never produced by toJson but a client can send one
+        // it should read back as Optional.empty() rather than leaving the field null
+        Person expectedEmpty = new Person().setName("dain").setRocks(true);
+        assertThat(jsonCodec.fromJson("{\"name\":\"dain\",\"rocks\":true,\"lastName\":null}")).isEqualTo(expectedEmpty);
     }
 
     public static void validatePersonListJsonCodec(JsonCodec<List<Person>> jsonCodec)
@@ -167,13 +175,14 @@ public class Person
         }
         Person o = (Person) obj;
         return Objects.equals(this.name, o.name) &&
-                this.rocks == o.rocks;
+                this.rocks == o.rocks &&
+                Objects.equals(this.lastName, o.lastName);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(name, rocks);
+        return Objects.hash(name, rocks, lastName);
     }
 
     @Override
