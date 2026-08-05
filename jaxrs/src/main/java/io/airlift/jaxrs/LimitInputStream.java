@@ -24,6 +24,7 @@ class LimitInputStream
 {
     private final long maxBytes;
     private long bytesRead;
+    private long markedBytesRead = -1;
 
     LimitInputStream(InputStream in, long maxBytes)
     {
@@ -51,6 +52,42 @@ class LimitInputStream
             advance(n);
         }
         return n;
+    }
+
+    // skipped bytes are consumed from the payload just like read ones, so they have to count
+    // against the limit or a caller could skip past it
+    @Override
+    public long skip(long n)
+            throws IOException
+    {
+        long skipped = super.skip(n);
+        if (skipped > 0) {
+            advance(skipped);
+        }
+        return skipped;
+    }
+
+    // without tracking the position at the mark, bytes re-read after a reset would be counted
+    // twice and could trip the limit on a payload that never exceeded it
+    @Override
+    public synchronized void mark(int readLimit)
+    {
+        in.mark(readLimit);
+        markedBytesRead = bytesRead;
+    }
+
+    @Override
+    public synchronized void reset()
+            throws IOException
+    {
+        if (!in.markSupported()) {
+            throw new IOException("mark/reset not supported");
+        }
+        if (markedBytesRead == -1) {
+            throw new IOException("mark not set");
+        }
+        in.reset();
+        bytesRead = markedBytesRead;
     }
 
     private void advance(long n)
