@@ -57,4 +57,13 @@ public class ResourceWithYaml
     {
         return new YamlModel("dain");
     }
+
+    // deliberately declares no @Produces, so the response media type is decided entirely by which
+    // providers claim to be writeable -- see JaxRsYamlMapper.hasMatchingMediaTypeForWriting
+    @GET
+    @Path("/undeclared")
+    public YamlModel getUndeclared()
+    {
+        return new YamlModel("dain");
+    }
 }

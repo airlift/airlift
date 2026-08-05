@@ -137,6 +137,51 @@ public class TestYamlResource
         }
     }
 
+    @Test
+    public void testWildcardAcceptChoosesJson()
+    {
+        try (Harness harness = new Harness(true)) {
+            Request request = Request.Builder.prepareGet().setUri(harness.baseUri.resolve("/both"))
+                    .setHeader(ACCEPT, "*/*")
+                    .build();
+
+            StringResponse response = harness.client.execute(request, createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(response.getHeader(CONTENT_TYPE)).hasValueSatisfying(value -> assertThat(value).startsWith("application/json"));
+        }
+    }
+
+    // A resource without an explicit @Produces leaves the choice entirely to the registered
+    // providers, so this is where JaxRsYamlMapper's "application/yaml;qs=0.5" server quality
+    // keeps JSON the default. Dropping the qs parameter fails the no-Accept case below.
+    @Test
+    public void testUndeclaredProducesDefaultsToJsonForWildcardAccept()
+    {
+        try (Harness harness = new Harness(true)) {
+            Request request = Request.Builder.prepareGet().setUri(harness.baseUri.resolve("/undeclared"))
+                    .setHeader(ACCEPT, "*/*")
+                    .build();
+
+            StringResponse response = harness.client.execute(request, createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(response.getHeader(CONTENT_TYPE)).hasValueSatisfying(value -> assertThat(value).startsWith("application/json"));
+            assertThat(response.getBody()).contains("\"name\"").contains("\"dain\"");
+        }
+    }
+
+    @Test
+    public void testUndeclaredProducesDefaultsToJsonWithoutAcceptHeader()
+    {
+        try (Harness harness = new Harness(true)) {
+            Request request = Request.Builder.prepareGet().setUri(harness.baseUri.resolve("/undeclared")).build();
+
+            StringResponse response = harness.client.execute(request, createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(response.getHeader(CONTENT_TYPE)).hasValueSatisfying(value -> assertThat(value).startsWith("application/json"));
+            assertThat(response.getBody()).contains("\"name\"").contains("\"dain\"");
+        }
+    }
+
     private static final class Harness
             implements AutoCloseable
     {
