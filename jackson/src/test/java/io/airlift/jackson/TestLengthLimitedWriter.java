@@ -11,9 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.jackson;
 
-import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import io.airlift.jackson.LengthLimitedWriter.LengthLimitExceededException;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringWriter;
