@@ -117,7 +117,9 @@ public class JsonCodec<T>
     JsonCodec(JsonMapper mapper, Type type)
     {
         JavaType javaType = mapper.constructType(type);
-        this.typeToken = (TypeToken<T>) TypeToken.of(type);
+        @SuppressWarnings("unchecked")
+        TypeToken<T> typeToken = (TypeToken<T>) TypeToken.of(type);
+        this.typeToken = typeToken;
         this.type = javaType;
         this.writer = Suppliers.memoize(() -> mapper.writerFor(javaType));
         this.reader = Suppliers.memoize(() -> mapper.readerFor(javaType));
@@ -271,7 +273,6 @@ public class JsonCodec<T>
         };
     }
 
-    @SuppressWarnings("unchecked")
     TypeToken<T> getTypeToken()
     {
         return typeToken;
