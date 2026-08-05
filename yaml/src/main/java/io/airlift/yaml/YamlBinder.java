@@ -92,7 +92,7 @@ public class YamlBinder
 
         Class<?> type = jsonSerializer.handledType();
         requireNonNull(type, "jsonSerializer.handledType is null");
-        checkArgument(type == Object.class, "jsonSerializer.handledType can not be Object.class");
+        checkArgument(type != Object.class, "jsonSerializer.handledType can not be Object.class");
         serializerMapBinder.addBinding(type).toInstance(jsonSerializer);
     }
 }

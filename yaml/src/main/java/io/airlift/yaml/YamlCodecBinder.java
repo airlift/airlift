@@ -17,8 +17,9 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
+import com.google.inject.util.Types;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class YamlCodecBinder
     {
         requireNonNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
+        ParameterizedType listType = Types.newParameterizedType(List.class, type);
         binder.bind(getYamlCodecKey(listType)).toProvider(new YamlCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
@@ -65,7 +66,7 @@ public class YamlCodecBinder
     {
         requireNonNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getTypeToken().getType());
+        ParameterizedType listType = Types.newParameterizedType(List.class, type.getTypeToken().getType());
         binder.bind(getYamlCodecKey(listType)).toProvider(new YamlCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
@@ -74,7 +75,7 @@ public class YamlCodecBinder
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
+        ParameterizedType mapType = Types.newParameterizedType(Map.class, keyType, valueType);
         binder.bind(getYamlCodecKey(mapType)).toProvider(new YamlCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
@@ -83,13 +84,13 @@ public class YamlCodecBinder
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getTypeToken().getType());
+        ParameterizedType mapType = Types.newParameterizedType(Map.class, keyType, valueType.getTypeToken().getType());
         binder.bind(getYamlCodecKey(mapType)).toProvider(new YamlCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
     @SuppressWarnings("unchecked")
     private Key<YamlCodec<?>> getYamlCodecKey(Type type)
     {
-        return (Key<YamlCodec<?>>) Key.get(new ParameterizedTypeImpl(null, YamlCodec.class, type));
+        return (Key<YamlCodec<?>>) Key.get(Types.newParameterizedType(YamlCodec.class, type));
     }
 }

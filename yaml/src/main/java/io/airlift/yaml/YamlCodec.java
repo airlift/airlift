@@ -109,6 +109,7 @@ public class YamlCodec<T>
     private final Supplier<ObjectWriter> writer;
     private final Supplier<ObjectReader> reader;
 
+    @SuppressWarnings("unchecked")
     YamlCodec(ObjectMapper mapper, Type type)
     {
         JavaType javaType = mapper.constructType(type);
@@ -213,7 +214,6 @@ public class YamlCodec<T>
         };
     }
 
-    @SuppressWarnings("unchecked")
     TypeToken<T> getTypeToken()
     {
         return typeToken;
