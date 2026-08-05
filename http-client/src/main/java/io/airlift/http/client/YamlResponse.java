@@ -65,6 +65,7 @@ public sealed interface YamlResponse<T>
         public Exception
         {
             requireNonNull(request, "request is null");
+            requireNonNull(headers, "headers is null");
             requireNonNull(throwable, "throwable is null");
         }
 

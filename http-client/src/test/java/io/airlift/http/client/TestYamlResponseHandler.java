@@ -25,6 +25,7 @@ import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.YamlResponseHandler.createYamlResponseHandler;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -71,6 +72,27 @@ public class TestYamlResponseHandler
         assertThatThrownBy(() -> handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello")))
                 .isInstanceOf(UnexpectedResponseException.class)
                 .hasMessageContaining("Expected YAML response from server but got text/plain");
+    }
+
+    @Test
+    public void testYamlWithoutExplicitCharset()
+    {
+        MediaType yamlNoCharset = MediaType.create("application", "yaml");
+        User user = new User("Joe", 25);
+        User response = handler.handle(null, mockResponse(OK, yamlNoCharset, codec.toYaml(user)));
+
+        assertThat(response.getName()).isEqualTo(user.getName());
+    }
+
+    @Test
+    public void testNonUtf8YamlIsRejected()
+    {
+        // the handler decodes bytes as UTF-8, so a response declaring another charset would be
+        // silently mis-decoded rather than merely mangled
+        MediaType latin1Yaml = MediaType.create("application", "yaml").withCharset(ISO_8859_1);
+        assertThatThrownBy(() -> handler.handle(null, mockResponse(OK, latin1Yaml, codec.toYaml(new User("Joe", 25)))))
+                .isInstanceOf(UnexpectedResponseException.class)
+                .hasMessageContaining("Expected YAML response from server but got application/yaml");
     }
 
     @Test

@@ -54,17 +54,19 @@ public final class ResponseHandlerUtils
     {
         return response.getHeader(CONTENT_TYPE)
                 .map(MediaType::parse)
-                // Empty charset is considered UTF-8. Any explicit charset is accepted.
-                .map(ResponseHandlerUtils::isYamlMediaType)
+                .map(ResponseHandlerUtils::isYamlUtf8MediaType)
                 .orElse(false);
     }
 
-    private static boolean isYamlMediaType(MediaType type)
+    private static boolean isYamlUtf8MediaType(MediaType type)
     {
         String major = type.type();
         String sub = type.subtype();
-        return (major.equals("application") && (sub.equals("yaml") || sub.equals("x-yaml")))
-                || (major.equals("text") && (sub.equals("yaml") || sub.equals("x-yaml")));
+        boolean yaml = (major.equals("application") || major.equals("text"))
+                && (sub.equals("yaml") || sub.equals("x-yaml"));
+        // the YAML handlers decode bytes as UTF-8, so anything else would be silently mis-decoded.
+        // Empty charset is considered UTF-8
+        return yaml && type.charset().toJavaUtil().map(UTF_8::equals).orElse(true);
     }
 
     public static InputStream getResponseStream(Response response)
