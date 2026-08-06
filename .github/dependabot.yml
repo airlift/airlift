@@ -7,3 +7,9 @@ updates:
     labels:
       - "dependency"
     open-pull-requests-limit: 5
+    cooldown:
+      # Apply 3 day cooldown to avoid updating dependencies right away. This reduces the opportunity window
+      # when supply chain is compromised. This doesn't apply to the dependencies that we own and release.
+      default-days: 3
+      exclude:
+        - io.airlift:*
