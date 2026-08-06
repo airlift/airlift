@@ -19,8 +19,9 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.internal.MoreTypes.ParameterizedTypeImpl;
+import com.google.inject.util.Types;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,7 @@ public class JsonCodecBinder
     {
         requireNonNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type);
+        ParameterizedType listType = Types.newParameterizedType(List.class, type);
         binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
@@ -67,7 +68,7 @@ public class JsonCodecBinder
     {
         requireNonNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getTypeToken().getType());
+        ParameterizedType listType = Types.newParameterizedType(List.class, type.getTypeToken().getType());
         binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
@@ -76,7 +77,7 @@ public class JsonCodecBinder
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType);
+        ParameterizedType mapType = Types.newParameterizedType(Map.class, keyType, valueType);
         binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
@@ -85,13 +86,13 @@ public class JsonCodecBinder
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getTypeToken().getType());
+        ParameterizedType mapType = Types.newParameterizedType(Map.class, keyType, valueType.getTypeToken().getType());
         binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
     @SuppressWarnings("unchecked")
     private Key<JsonCodec<?>> getJsonCodecKey(Type type)
     {
-        return (Key<JsonCodec<?>>) Key.get(new ParameterizedTypeImpl(null, JsonCodec.class, type));
+        return (Key<JsonCodec<?>>) Key.get(Types.newParameterizedType(JsonCodec.class, type));
     }
 }

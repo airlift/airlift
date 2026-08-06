@@ -1,4 +1,4 @@
-package io.airlift.json;
+package io.airlift.jackson;
 
 import com.google.inject.BindingAnnotation;
 
@@ -13,4 +13,4 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Target({FIELD, PARAMETER, METHOD})
 @BindingAnnotation
-@interface JsonKeySerde {}
+public @interface JacksonKeySerde {}

@@ -17,7 +17,6 @@ package io.airlift.jaxrs;
 
 import com.google.inject.Binder;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
-import io.airlift.jaxrs.JsonParsingFeature.MappingEnabled;
 import io.airlift.jaxrs.tracing.TracingDynamicFeature;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.Servlet;
@@ -30,7 +29,6 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.jaxrs.BinderUtils.qualifiedKey;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-import static io.airlift.jaxrs.JsonParsingFeature.MappingEnabled.ENABLED;
 
 public class JaxrsModule
         extends AbstractConfigurationAwareModule
@@ -60,9 +58,18 @@ public class JaxrsModule
         jaxrsBinder.bind(JaxRsJsonMapper.class);
         jaxrsBinder.bind(JsonParsingFeature.class, new JsonParsingFeature.Provider(qualifier));
 
-        newOptionalBinder(binder, qualifiedKey(qualifier, MappingEnabled.class))
+        newOptionalBinder(binder, qualifiedKey(qualifier, JsonParsingFeature.MappingEnabled.class))
                 .setDefault()
-                .toInstance(ENABLED);
+                .toInstance(JsonParsingFeature.MappingEnabled.ENABLED);
+
+        jaxrsBinder.bind(JaxRsYamlMapper.class);
+        jaxrsBinder.bind(YamlParsingFeature.class, new YamlParsingFeature.Provider(qualifier));
+
+        newOptionalBinder(binder, qualifiedKey(qualifier, YamlParsingFeature.MappingEnabled.class))
+                .setDefault()
+                .toInstance(YamlParsingFeature.MappingEnabled.ENABLED);
+
+        jaxrsBinder.bind(PayloadTooLargeExceptionMapper.class);
 
         if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
             jaxrsBinder.bind(TracingDynamicFeature.class);

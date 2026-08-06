@@ -11,29 +11,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.yaml;
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.google.inject.Binder;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-
-public class JsonSubTypeBinder
+public class YamlModule
+        implements Module
 {
-    private final Multibinder<JsonSubType> subTypeBinder;
-
-    public static JsonSubTypeBinder jsonSubTypeBinder(Binder binder)
+    @Override
+    public void configure(Binder binder)
     {
-        return new JsonSubTypeBinder(binder);
-    }
-
-    public void bindJsonSubType(JsonSubType jsonSubType)
-    {
-        subTypeBinder.addBinding().toInstance(jsonSubType);
-    }
-
-    private JsonSubTypeBinder(Binder binder)
-    {
-        subTypeBinder = newSetBinder(binder, JsonSubType.class);
+        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable. This means
+        // one component could reconfigure the mapper and break all other components.
+        binder.bind(YAMLMapper.class).toProvider(YamlMapperProvider.class);
+        binder.bind(YamlCodecFactory.class).in(Scopes.SINGLETON);
     }
 }
