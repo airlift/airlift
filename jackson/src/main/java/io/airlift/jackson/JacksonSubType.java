@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -54,11 +54,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.Objects.requireNonNull;
 
-public class JsonSubType
+public class JacksonSubType
 {
     private final Set<Module> modules;
 
-    public static JsonSubType.Builder builder()
+    public static JacksonSubType.Builder builder()
     {
         return new Builder();
     }
@@ -81,7 +81,7 @@ public class JsonSubType
 
         <T> SubTypeSubBuilder<T> forBase(Class<T> baseClass, String propertyName);
 
-        JsonSubType build();
+        JacksonSubType build();
     }
 
     public static class Builder
@@ -124,9 +124,9 @@ public class JsonSubType
                 }
 
                 @Override
-                public JsonSubType build()
+                public JacksonSubType build()
                 {
-                    return new JsonSubType(modules.build());
+                    return new JacksonSubType(modules.build());
                 }
             };
         }
@@ -137,7 +137,7 @@ public class JsonSubType
         return modules;
     }
 
-    private JsonSubType(Set<Module> modules)
+    private JacksonSubType(Set<Module> modules)
     {
         this.modules = modules;
     }
