@@ -1,3 +1,16 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
@@ -12,9 +25,9 @@ import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-public sealed interface JsonResponse<T>
+public sealed interface YamlResponse<T>
 {
-    T jsonValue();
+    T yamlValue();
 
     Optional<Throwable> exception();
 
@@ -27,25 +40,16 @@ public sealed interface JsonResponse<T>
         return ImmutableList.copyOf(headers().get(name));
     }
 
-    /**
-     * @deprecated Use {@link #getHeader(HeaderName)} instead
-     */
-    @Deprecated
-    default List<String> getHeader(String name)
-    {
-        return getHeader(HeaderName.of(name));
-    }
-
     int statusCode();
 
-    record JsonValue<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, @Override T jsonValue, long bytesRead)
-            implements JsonResponse<T>
+    record YamlValue<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, @Override T yamlValue, long bytesRead)
+            implements YamlResponse<T>
     {
-        public JsonValue
+        public YamlValue
         {
             requireNonNull(request, "request is null");
-            requireNonNull(headers, "request is null");
-            requireNonNull(jsonValue, "jsonValue is null");
+            requireNonNull(headers, "headers is null");
+            requireNonNull(yamlValue, "yamlValue is null");
         }
 
         @Override
@@ -56,7 +60,7 @@ public sealed interface JsonResponse<T>
     }
 
     record Exception<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, Throwable throwable)
-            implements JsonResponse<T>
+            implements YamlResponse<T>
     {
         public Exception
         {
@@ -66,9 +70,9 @@ public sealed interface JsonResponse<T>
         }
 
         @Override
-        public T jsonValue()
+        public T yamlValue()
         {
-            throw new IllegalStateException("Response does not contain a JSON value", throwable);
+            throw new IllegalStateException("Response does not contain a YAML value", throwable);
         }
 
         @Override
@@ -78,10 +82,10 @@ public sealed interface JsonResponse<T>
         }
     }
 
-    record NonJsonBytes<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, byte[] responseBytes, Throwable throwable)
-            implements JsonResponse<T>
+    record NonYamlBytes<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, byte[] responseBytes, Throwable throwable)
+            implements YamlResponse<T>
     {
-        public NonJsonBytes
+        public NonYamlBytes
         {
             requireNonNull(request, "request is null");
             requireNonNull(headers, "headers is null");
@@ -90,9 +94,9 @@ public sealed interface JsonResponse<T>
         }
 
         @Override
-        public T jsonValue()
+        public T yamlValue()
         {
-            throw new IllegalStateException("Could not decode response to JSON", throwable);
+            throw new IllegalStateException("Could not decode response to YAML", throwable);
         }
 
         @Override

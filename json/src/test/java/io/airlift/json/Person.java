@@ -34,7 +34,9 @@ public class Person
 {
     private String name;
     private boolean rocks;
-    private Optional<String> lastName;
+    // an absent lastName round-trips as Optional.empty(), so start there rather than null
+    // to keep equality meaningful for instances that never set it
+    private Optional<String> lastName = Optional.empty();
 
     public static void validatePersonJsonCodec(JsonCodec<Person> jsonCodec)
     {
@@ -167,13 +169,14 @@ public class Person
         }
         Person o = (Person) obj;
         return Objects.equals(this.name, o.name) &&
-                this.rocks == o.rocks;
+                this.rocks == o.rocks &&
+                Objects.equals(this.lastName, o.lastName);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(name, rocks);
+        return Objects.hash(name, rocks, lastName);
     }
 
     @Override

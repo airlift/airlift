@@ -1,11 +1,11 @@
-package io.airlift.json;
+package io.airlift.jackson;
 
 import java.io.IOException;
 import java.io.Writer;
 
 import static java.util.Objects.requireNonNull;
 
-class LengthLimitedWriter
+public class LengthLimitedWriter
         extends Writer
 {
     private final Writer writer;
