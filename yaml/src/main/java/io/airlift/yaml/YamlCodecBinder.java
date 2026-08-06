@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.json;
+package io.airlift.yaml;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
@@ -28,71 +26,71 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public class JsonCodecBinder
+public class YamlCodecBinder
 {
     private final Binder binder;
 
-    public static JsonCodecBinder jsonCodecBinder(Binder binder)
+    public static YamlCodecBinder yamlCodecBinder(Binder binder)
     {
-        return new JsonCodecBinder(binder);
+        return new YamlCodecBinder(binder);
     }
 
-    private JsonCodecBinder(Binder binder)
+    private YamlCodecBinder(Binder binder)
     {
         this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
     }
 
-    public void bindJsonCodec(Class<?> type)
+    public void bindYamlCodec(Class<?> type)
     {
         requireNonNull(type, "type is null");
 
-        binder.bind(getJsonCodecKey(type)).toProvider(new JsonCodecProvider(type)).in(Scopes.SINGLETON);
+        binder.bind(getYamlCodecKey(type)).toProvider(new YamlCodecProvider(type)).in(Scopes.SINGLETON);
     }
 
-    public void bindJsonCodec(TypeLiteral<?> type)
+    public void bindYamlCodec(TypeLiteral<?> type)
     {
         requireNonNull(type, "type is null");
 
-        binder.bind(getJsonCodecKey(type.getType())).toProvider(new JsonCodecProvider(type.getType())).in(Scopes.SINGLETON);
+        binder.bind(getYamlCodecKey(type.getType())).toProvider(new YamlCodecProvider(type.getType())).in(Scopes.SINGLETON);
     }
 
-    public void bindListJsonCodec(Class<?> type)
+    public void bindListYamlCodec(Class<?> type)
     {
         requireNonNull(type, "type is null");
 
         ParameterizedType listType = Types.newParameterizedType(List.class, type);
-        binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
+        binder.bind(getYamlCodecKey(listType)).toProvider(new YamlCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
-    public void bindListJsonCodec(JsonCodec<?> type)
+    public void bindListYamlCodec(YamlCodec<?> type)
     {
         requireNonNull(type, "type is null");
 
         ParameterizedType listType = Types.newParameterizedType(List.class, type.getTypeToken().getType());
-        binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
+        binder.bind(getYamlCodecKey(listType)).toProvider(new YamlCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
-    public void bindMapJsonCodec(Class<?> keyType, Class<?> valueType)
+    public void bindMapYamlCodec(Class<?> keyType, Class<?> valueType)
     {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
         ParameterizedType mapType = Types.newParameterizedType(Map.class, keyType, valueType);
-        binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
+        binder.bind(getYamlCodecKey(mapType)).toProvider(new YamlCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
-    public void bindMapJsonCodec(Class<?> keyType, JsonCodec<?> valueType)
+    public void bindMapYamlCodec(Class<?> keyType, YamlCodec<?> valueType)
     {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
         ParameterizedType mapType = Types.newParameterizedType(Map.class, keyType, valueType.getTypeToken().getType());
-        binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
+        binder.bind(getYamlCodecKey(mapType)).toProvider(new YamlCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
     @SuppressWarnings("unchecked")
-    private Key<JsonCodec<?>> getJsonCodecKey(Type type)
+    private Key<YamlCodec<?>> getYamlCodecKey(Type type)
     {
-        return (Key<JsonCodec<?>>) Key.get(Types.newParameterizedType(JsonCodec.class, type));
+        return (Key<YamlCodec<?>>) Key.get(Types.newParameterizedType(YamlCodec.class, type));
     }
 }

@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.jackson.JacksonSubType;
 import io.airlift.json.JsonMapperProvider;
-import io.airlift.json.JsonSubType;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.GetPromptRequest;
@@ -50,9 +50,9 @@ public class TestSerializationEdgeCases
 
     public TestSerializationEdgeCases()
     {
-        JsonSubType jsonSubType = McpModule.buildJsonSubType();
+        JacksonSubType jacksonSubType = McpModule.buildJacksonSubType();
         JsonMapperProvider jsonMapperProvider = new JsonMapperProvider()
-                .withJsonSubTypes(ImmutableSet.of(jsonSubType));
+                .withJacksonSubTypes(ImmutableSet.of(jacksonSubType));
         jsonMapper = jsonMapperProvider.get();
     }
 

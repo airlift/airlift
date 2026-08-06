@@ -18,6 +18,7 @@ package io.airlift.json;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.reflect.TypeToken;
+import io.airlift.jackson.RecordAutoDetectModule;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;

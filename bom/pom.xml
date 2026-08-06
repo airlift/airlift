@@ -65,6 +65,12 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>jackson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>jaxrs</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -174,6 +180,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>tracing</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>yaml</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
