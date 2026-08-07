@@ -48,4 +48,90 @@ public class TestDecayCounter
         assertThat(copy.getCount()).isEqualTo(counter.getCount());
         assertThat(copy.getAlpha()).isEqualTo(counter.getAlpha());
     }
+
+    @Test
+    public void testAddsVisibleWithoutTimeAdvance()
+    {
+        TestingTicker ticker = new TestingTicker();
+
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
+        counter.add(1);
+        counter.add(2);
+
+        assertThat(counter.getCount()).isEqualTo(3);
+
+        counter.add(4);
+        assertThat(counter.getCount()).isEqualTo(7);
+    }
+
+    @Test
+    public void testDuplicateWithUnfoldedAdds()
+    {
+        TestingTicker ticker = new TestingTicker();
+
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
+        counter.add(5);
+
+        DecayCounter copy = counter.duplicate();
+        assertThat(copy.getCount()).isEqualTo(5);
+    }
+
+    @Test
+    public void testMergeWithUnfoldedAdds()
+    {
+        TestingTicker ticker = new TestingTicker();
+
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
+        DecayCounter other = new DecayCounter(DecayConfig.oneMinute(ticker));
+        counter.add(1);
+        other.add(2);
+
+        counter.merge(other);
+        assertThat(counter.getCount()).isEqualTo(3);
+    }
+
+    @Test
+    public void testResetDiscardsUnfoldedAdds()
+    {
+        TestingTicker ticker = new TestingTicker();
+
+        DecayCounter counter = new DecayCounter(DecayConfig.oneMinute(ticker));
+        counter.add(42);
+        counter.reset();
+
+        assertThat(counter.getCount()).isEqualTo(0);
+
+        counter.add(1);
+        assertThat(counter.getCount()).isEqualTo(1);
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testResetToResynchronizesPendingSecond()
+    {
+        TestingTicker sourceTicker = new TestingTicker();
+        sourceTicker.increment(10000, TimeUnit.SECONDS);
+        DecayCounter source = new DecayCounter(DecayConfig.oneMinute(sourceTicker));
+        source.add(100);
+
+        // the target's clock is behind the copied landmark; a stale pendingSecond would
+        // make getCount un-decay the copied value by the clock gap
+        DecayCounter target = new DecayCounter(DecayConfig.oneMinute(new TestingTicker()));
+        target.resetTo(source);
+
+        assertThat(Math.abs(target.getCount() - 100)).isLessThan(1e-9);
+    }
+
+    @Test
+    public void testNonDecayingCounter()
+    {
+        DecayCounter counter = new DecayCounter(0.0);
+        counter.add(1);
+        counter.add(2);
+
+        assertThat(counter.getCount()).isEqualTo(3);
+
+        counter.reset();
+        assertThat(counter.getCount()).isEqualTo(0);
+    }
 }
