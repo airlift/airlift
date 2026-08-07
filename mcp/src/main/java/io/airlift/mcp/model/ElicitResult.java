@@ -1,6 +1,8 @@
 package io.airlift.mcp.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +25,12 @@ public record ElicitResult(Action action, Optional<Map<String, Object>> content,
     public ElicitResult withMeta(Map<String, Object> meta)
     {
         return new ElicitResult(action, content, Optional.of(meta));
+    }
+
+    @JsonIgnore
+    public <T> Optional<T> mapContent(JsonMapper jsonMapper, Class<T> type)
+    {
+        return content.map(m -> jsonMapper.convertValue(m, type));
     }
 
     public enum Action

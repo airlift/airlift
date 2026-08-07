@@ -13,6 +13,7 @@ import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
 import io.airlift.mcp.model.Protocol;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.operations.legacy.sessions.BlockingResult;
 import io.airlift.mcp.operations.legacy.sessions.BlockingResult.Fulfilled;
 import io.airlift.mcp.operations.legacy.sessions.Session;
@@ -145,6 +146,12 @@ class LegacyRequestContextImpl
     Session session()
     {
         return session;
+    }
+
+    @Override
+    public Task createTask()
+    {
+        throw new UnsupportedOperationException("Tasks are not supported");
     }
 
     @Override

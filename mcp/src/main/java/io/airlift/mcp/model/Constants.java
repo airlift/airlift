@@ -19,10 +19,14 @@ public interface Constants
     String METHOD_PROMPT_GET = "prompts/get";
     String METHOD_COMPLETION_COMPLETE = "completion/complete";
     String METHOD_LOGGING_SET_LEVEL = "logging/setLevel";
+    String METHOD_ROOTS_LIST = "roots/list";
     String METHOD_SAMPLING_CREATE_MESSAGE = "sampling/createMessage";
     String METHOD_ELICITATION_CREATE = "elicitation/create";
     String METHOD_SERVER_DISCOVER = "server/discover";
     String METHOD_SUBSCRIPTIONS_LISTEN = "subscriptions/listen";
+    String METHOD_TASKS_GET = "tasks/get";
+    String METHOD_TASKS_UPDATE = "tasks/update";
+    String METHOD_TASKS_CANCEL = "tasks/cancel";
 
     String NOTIFICATION_INITIALIZED = "notifications/initialized";
     String NOTIFICATION_PROGRESS = "notifications/progress";
@@ -48,6 +52,7 @@ public interface Constants
     String METADATA_CLIENT_LOG_LEVEL = "io.modelcontextprotocol/logLevel";
     String METADATA_PROGRESS_TOKEN = "progressToken";
     String METADATA_SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId";
+    String METADATA_TASKS = "io.modelcontextprotocol/tasks";
 
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
     String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
