@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -11,13 +12,12 @@ import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
-import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
 import io.airlift.mcp.model.CreateMessageResult;
 import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
-import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Prompt;
@@ -29,20 +29,19 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpSkillBuilder.mcpSkillBuilder;
+import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
+import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static io.airlift.mcp.model.ElicitResult.Action.ACCEPT;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
@@ -52,8 +51,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class TestingEndpoints
 {
+    private final JsonMapper jsonMapper;
     private final McpEntities entities;
-    private final LegacyServerToClientRequest serverToClientRequest;
     private final Set<ToolEntry> tools;
     private final Set<PromptEntry> prompts;
     private final Set<ResourceEntry> resources;
@@ -64,16 +63,16 @@ public class TestingEndpoints
 
     @Inject
     public TestingEndpoints(
+            JsonMapper jsonMapper,
             McpEntities entities,
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             SleepToolController sleepToolController,
-            McpIdentitySupplier<TestingIdentity> testingIdentitySupplier,
-            LegacyServerToClientRequest serverToClientRequest)
+            McpIdentitySupplier<TestingIdentity> testingIdentitySupplier)
     {
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.entities = requireNonNull(entities, "entities is null");
-        this.serverToClientRequest = requireNonNull(serverToClientRequest, "serverToClientRequest is null");
 
         this.tools = ImmutableSet.copyOf(tools);
         this.prompts = ImmutableSet.copyOf(prompts);
@@ -326,59 +325,56 @@ public class TestingEndpoints
     public record Person(String firstName, String lastName) {}
 
     @McpTool(name = "elicitation", description = "Test elicitation")
-    public String elicitation(McpRequestContext requestContext)
+    public CallToolResult elicitation(McpRequestContext requestContext, InputResponses inputResponses)
     {
         if (requestContext.clientCapabilities().elicitation().isEmpty()) {
             throw new RuntimeException("Client does not support elicitation");
         }
 
-        ObjectNode elicitation = new JsonSchemaBuilder().build(Person.class);
-        ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
-        JsonRpcResponse<ElicitResult> response;
-        try {
-            response = serverToClientRequest.serverToClientRequest(requestContext, Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
-        }
-        catch (InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
-        ElicitResult elicitResult = response.result().orElseThrow();
-        if (elicitResult.action() != ACCEPT) {
-            return elicitResult.action().toJsonValue();
-        }
-        return elicitResult.content()
-                .map(contentMap -> "Hello, " + contentMap.get("firstName") + " " + contentMap.get("lastName") + "!")
-                .orElse("No content");
+        return inputResponses.getInputResponse("elicitation")
+                .map(value -> jsonMapper.convertValue(value, ElicitResult.class))
+                .map(elicitResult -> {
+                    if (elicitResult.action() != ACCEPT) {
+                        return new CallToolResult(new TextContent(elicitResult.action().toJsonValue()));
+                    }
+                    return new CallToolResult(new TextContent(elicitResult.content()
+                            .map(contentMap -> "Hello, " + contentMap.get("firstName") + " " + contentMap.get("lastName") + "!")
+                            .orElse("No content")));
+                })
+                .orElseGet(() -> {
+                    ObjectNode elicitation = new JsonSchemaBuilder().build(Person.class);
+                    ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("elicitation", METHOD_ELICITATION_CREATE, elicitRequest)
+                            .build();
+                });
     }
 
     @McpTool(name = "sampling", description = "Test sampling")
-    public String sampling(McpRequestContext requestContext)
+    public CallToolResult sampling(McpRequestContext requestContext, InputResponses inputResponses)
     {
         if (requestContext.clientCapabilities().sampling().isEmpty()) {
             throw new RuntimeException("Client does not support sampling");
         }
 
-        CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
-        JsonRpcResponse<CreateMessageResult> response;
-        try {
-            response = serverToClientRequest.serverToClientRequest(requestContext, Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
-        }
-        catch (InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+        return inputResponses.getInputResponse("sampling")
+                .map(value -> jsonMapper.convertValue(value, CreateMessageResult.class))
+                .map(createMessageResult -> {
+                    if (createMessageResult.stopReason().isPresent()) {
+                        return new CallToolResult(new TextContent("Stopped: " + createMessageResult.stopReason().orElseThrow().toJsonValue()));
+                    }
 
-        if (response.error().isPresent()) {
-            return response.error().orElseThrow().message();
-        }
+                    if (createMessageResult.content() instanceof TextContent(var text, _)) {
+                        return new CallToolResult(new TextContent("Response: " + text));
+                    }
 
-        CreateMessageResult createMessageResult = response.result().orElseThrow();
-        if (createMessageResult.stopReason().isPresent()) {
-            return "Stopped: " + createMessageResult.stopReason().orElseThrow().toJsonValue();
-        }
-
-        if (createMessageResult.content() instanceof TextContent(var text, _)) {
-            return "Response: " + text;
-        }
-
-        return "Response: unknown";
+                    return new CallToolResult(new TextContent("Response: unknown"));
+                })
+                .orElseGet(() -> {
+                    CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("sampling", METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest)
+                            .build();
+                });
     }
 }
