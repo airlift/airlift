@@ -29,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -46,6 +47,7 @@ import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isObject;
 import static io.airlift.mcp.reflection.Predicates.returnsAnything;
+import static io.airlift.mcp.reflection.ReflectionHelper.buildMeta;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
 import static io.airlift.mcp.reflection.ReflectionHelper.requiredArgument;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
@@ -181,7 +183,9 @@ public class ToolHandlerProvider
                     return Optional.empty();
                 });
 
-        return applyApp(new Tool(tool.name(), description, title, inputSchema, outputSchema, toolAnnotations), tool);
+        Optional<Map<String, Object>> meta = buildMeta(tool.meta());
+
+        return applyApp(new Tool(tool.name(), description, title, inputSchema, outputSchema, toolAnnotations, Optional.empty(), meta), tool);
     }
 
     private Optional<ObjectNode> checkMcpSchema(String toolName, McpSchema mcpSchema, JsonSchemaBuilder jsonSchemaBuilder)

@@ -18,6 +18,7 @@ import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -29,6 +30,7 @@ import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isString;
 import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
+import static io.airlift.mcp.reflection.ReflectionHelper.buildMeta;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static java.util.Objects.requireNonNull;
@@ -56,7 +58,9 @@ public class PromptHandlerProvider
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
 
-        prompt = buildPrompt(mcpPrompt, parameters);
+        Optional<Map<String, Object>> meta = buildMeta(mcpPrompt.meta());
+
+        prompt = buildPrompt(mcpPrompt, parameters, meta);
         isGetPromptResult = GetPromptResult.class.isAssignableFrom(method.getReturnType());
     }
 
@@ -99,11 +103,11 @@ public class PromptHandlerProvider
         return new PromptEntry(prompt.withIcons(iconHelper.mapIcons(icons)), promptHandler);
     }
 
-    private static Prompt buildPrompt(McpPrompt prompt, List<MethodParameter> parameters)
+    private static Prompt buildPrompt(McpPrompt prompt, List<MethodParameter> parameters, Optional<Map<String, Object>> meta)
     {
         Optional<String> description = prompt.description().isEmpty() ? Optional.empty() : Optional.of(prompt.description());
 
-        return new Prompt(prompt.name(), description, Optional.of(prompt.role()), toPromptArguments(parameters));
+        return new Prompt(prompt.name(), description, Optional.of(prompt.role()), toPromptArguments(parameters), Optional.empty(), meta);
     }
 
     private static List<Prompt.Argument> toPromptArguments(List<MethodParameter> parameters)
