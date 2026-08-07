@@ -201,16 +201,16 @@ class SchemaBuilder
     Optional<Schema<?>> buildBasicSchema(Class<?> clazz)
     {
         Schema<?> schema = null;
-        if (boolean.class.isAssignableFrom(clazz)) {
+        if (boolean.class.isAssignableFrom(clazz) || Boolean.class.isAssignableFrom(clazz)) {
             schema = new BooleanSchema().nullable(false);
         }
-        else if (int.class.isAssignableFrom(clazz)) {
+        else if (int.class.isAssignableFrom(clazz) || Integer.class.isAssignableFrom(clazz)) {
             schema = new IntegerSchema().nullable(false);
         }
-        else if (long.class.isAssignableFrom(clazz)) {
+        else if (long.class.isAssignableFrom(clazz) || Long.class.isAssignableFrom(clazz)) {
             schema = new IntegerSchema().format("int64").nullable(false);
         }
-        else if (double.class.isAssignableFrom(clazz) || BigDecimal.class.isAssignableFrom(clazz)) {
+        else if (double.class.isAssignableFrom(clazz) || Double.class.isAssignableFrom(clazz) || BigDecimal.class.isAssignableFrom(clazz)) {
             schema = new NumberSchema().format("double").nullable(false);
         }
         else if (ApiResourceVersion.class.isAssignableFrom(clazz)) {
