@@ -9,7 +9,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record CompleteRequest(CompleteReference ref, CompleteArgument argument, Optional<CompleteContext> context, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<CompleteRequest>
 {
     public CompleteRequest
     {

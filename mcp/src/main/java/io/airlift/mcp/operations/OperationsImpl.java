@@ -124,7 +124,7 @@ public class OperationsImpl
     }
 
     public record MetaOnly(Optional<Map<String, Object>> meta)
-            implements Meta
+            implements Meta<MetaOnly>
     {
         public static final MetaOnly EMPTY_META = new MetaOnly(Optional.empty());
 
@@ -134,7 +134,7 @@ public class OperationsImpl
         }
 
         @Override
-        public Object withMeta(Map<String, Object> meta)
+        public MetaOnly withMeta(Map<String, Object> meta)
         {
             return new MetaOnly(Optional.of(meta));
         }
@@ -151,7 +151,7 @@ public class OperationsImpl
         MessageWriter messageWriter = MessageWriter.newMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
-        Meta meta = rpcRequest.params().map(params -> jsonMapper.convertValue(params, MetaOnly.class))
+        Meta<?> meta = rpcRequest.params().map(params -> jsonMapper.convertValue(params, MetaOnly.class))
                 .orElse(MetaOnly.EMPTY_META);
         RequestMetadata requestMetadata = RequestMetadata.fromRequest(jsonMapper, request, meta, method, validationMode);
         RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated);
@@ -175,7 +175,7 @@ public class OperationsImpl
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
-        if (result instanceof Meta resultMeta) {
+        if (result instanceof Meta<?> resultMeta) {
             result = addServerInfo(serverImplementation, resultMeta);
         }
 
@@ -207,7 +207,7 @@ public class OperationsImpl
         response.setStatus(SC_METHOD_NOT_ALLOWED);
     }
 
-    private Meta subscriptionsList(RequestContextImpl requestContext, Object requestId, SubscriptionNotifications subscriptionNotifications)
+    private Meta<?> subscriptionsList(RequestContextImpl requestContext, Object requestId, SubscriptionNotifications subscriptionNotifications)
     {
         SubscriptionLoop subscriptionLoop = new SubscriptionLoop(jsonMapper, requestId, entities, requestContext, subscriptionNotifications.notifications(), streamingTimeout, resourceSubscriptionCachePeriod);
         subscriptionLoop.run();
@@ -329,7 +329,7 @@ public class OperationsImpl
         return clazz.cast(result.withCacheableResult(metadata.cacheableResultValues().ttlMs().orElse(0), metadata.cacheableResultValues().cacheScope().orElse(PRIVATE)));
     }
 
-    private Object addServerInfo(Implementation serverImplementation, Meta resultMeta)
+    private Object addServerInfo(Implementation serverImplementation, Meta<?> resultMeta)
     {
         ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
         resultMeta.meta().ifPresent(builder::putAll);

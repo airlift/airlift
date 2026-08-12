@@ -38,7 +38,7 @@ public class TestRequestMetadata
     @Test
     public void testClientInfoPresent()
     {
-        Meta metadata = metadata(ImmutableMap.<String, Object>builder()
+        Meta<?> metadata = metadata(ImmutableMap.<String, Object>builder()
                 .putAll(requiredMetadata())
                 .put(METADATA_CLIENT_INFO, ImmutableMap.of("name", "test client", "version", "1"))
                 .buildOrThrow());
@@ -66,7 +66,7 @@ public class TestRequestMetadata
     @Test
     public void testClientCapabilitiesRemainRequired()
     {
-        Meta metadata = metadata(ImmutableMap.of(METADATA_PROTOCOL_VERSION, LATEST_PROTOCOL.value()));
+        Meta<?> metadata = metadata(ImmutableMap.of(METADATA_PROTOCOL_VERSION, LATEST_PROTOCOL.value()));
         HttpServletRequest request = request();
 
         assertThatThrownBy(() -> RequestMetadata.fromRequest(JSON_MAPPER, request, metadata, MCP_METHOD, STRICT))
@@ -80,7 +80,7 @@ public class TestRequestMetadata
     @Test
     public void testClientInfoValidatedWhenPresent()
     {
-        Meta metadata = metadata(ImmutableMap.<String, Object>builder()
+        Meta<?> metadata = metadata(ImmutableMap.<String, Object>builder()
                 .putAll(requiredMetadata())
                 .put(METADATA_CLIENT_INFO, "invalid")
                 .buildOrThrow());
@@ -116,7 +116,7 @@ public class TestRequestMetadata
                 METADATA_CLIENT_CAPABILITIES, ImmutableMap.of());
     }
 
-    private static Meta metadata(Map<String, Object> values)
+    private static Meta<?> metadata(Map<String, Object> values)
     {
         return new TestMeta(Optional.of(values));
     }
@@ -138,7 +138,7 @@ public class TestRequestMetadata
     }
 
     private record TestMeta(Optional<Map<String, Object>> meta)
-            implements Meta
+            implements Meta<TestMeta>
     {
         @Override
         public TestMeta withMeta(Map<String, Object> meta)

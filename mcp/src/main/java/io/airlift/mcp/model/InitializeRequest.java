@@ -11,7 +11,7 @@ public record InitializeRequest(
         ClientCapabilities capabilities,
         Implementation clientInfo,
         Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<InitializeRequest>
 {
     public InitializeRequest
     {

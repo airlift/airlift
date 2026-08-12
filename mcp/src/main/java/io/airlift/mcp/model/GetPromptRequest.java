@@ -9,7 +9,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record GetPromptRequest(String name, Map<String, Object> arguments, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<GetPromptRequest>
 {
     public GetPromptRequest
     {

@@ -16,7 +16,7 @@ public record DiscoverResult(
         ServerCapabilities capabilities,
         Optional<String> instructions,
         Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<DiscoverResult>
 {
     public DiscoverResult
     {
@@ -28,7 +28,7 @@ public record DiscoverResult(
     }
 
     @Override
-    public Object withMeta(Map<String, Object> meta)
+    public DiscoverResult withMeta(Map<String, Object> meta)
     {
         return new DiscoverResult(resultType, supportedVersions, capabilities, instructions, Optional.of(meta));
     }

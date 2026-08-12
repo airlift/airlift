@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record SubscriptionNotifications(SubscriptionFilter notifications, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<SubscriptionNotifications>
 {
     public SubscriptionNotifications
     {

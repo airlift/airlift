@@ -53,7 +53,7 @@ public record RequestMetadata(
         requireNonNull(mcpName, "mcpName is null");
     }
 
-    public static RequestMetadata fromRequest(JsonMapper jsonMapper, HttpServletRequest request, Meta metadata, String mcpMethod, ValidationMode validationMode)
+    public static RequestMetadata fromRequest(JsonMapper jsonMapper, HttpServletRequest request, Meta<?> metadata, String mcpMethod, ValidationMode validationMode)
     {
         boolean isStrict = validationMode == ValidationMode.STRICT;
 
@@ -102,13 +102,13 @@ public record RequestMetadata(
         return Optional.ofNullable(request.getHeader(name));
     }
 
-    private static <T> T required(JsonMapper jsonMapper, Meta metadata, String name, Class<T> clazz)
+    private static <T> T required(JsonMapper jsonMapper, Meta<?> metadata, String name, Class<T> clazz)
     {
         return optional(jsonMapper, metadata, name, clazz)
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Missing required metadata: " + name));
     }
 
-    private static <T> Optional<T> optional(JsonMapper jsonMapper, Meta metadata, String name, Class<T> clazz)
+    private static <T> Optional<T> optional(JsonMapper jsonMapper, Meta<?> metadata, String name, Class<T> clazz)
     {
         return metadata.meta()
                 .flatMap(values -> {

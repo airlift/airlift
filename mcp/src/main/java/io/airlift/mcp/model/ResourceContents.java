@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record ResourceContents(Optional<String> name, String uri, String mimeType, Optional<String> text, Optional<String> blob, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<ResourceContents>
 {
     public ResourceContents
     {

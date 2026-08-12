@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record Root(String uri, Optional<String> name, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<Root>
 {
     public Root
     {
