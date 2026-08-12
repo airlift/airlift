@@ -305,7 +305,7 @@ public class OperationsImpl
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 Optional.empty());
 
-        return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(COMPLETE, SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
+        return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(Optional.of(COMPLETE), SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
     }
 
     private <T extends CacheableResult<?>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)

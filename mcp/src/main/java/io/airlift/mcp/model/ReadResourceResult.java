@@ -10,11 +10,12 @@ import java.util.OptionalInt;
 import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNullElse;
 
-public record ReadResourceResult(List<ResourceContents> contents, OptionalInt ttlMs, Optional<CacheScope> cacheScope, Optional<Map<String, Object>> meta)
+public record ReadResourceResult(Optional<ResultType> resultType, List<ResourceContents> contents, OptionalInt ttlMs, Optional<CacheScope> cacheScope, Optional<Map<String, Object>> meta)
         implements CacheableResult<ReadResourceResult>, Meta<ReadResourceResult>
 {
     public ReadResourceResult
     {
+        resultType = requireNonNullElse(resultType, Optional.empty());
         contents = ImmutableList.copyOf(contents);
         ttlMs = requireNonNullElse(ttlMs, OptionalInt.empty());
         cacheScope = requireNonNullElse(cacheScope, Optional.empty());
@@ -23,18 +24,18 @@ public record ReadResourceResult(List<ResourceContents> contents, OptionalInt tt
 
     public ReadResourceResult(List<ResourceContents> contents)
     {
-        this(contents, OptionalInt.empty(), Optional.empty(), Optional.empty());
+        this(Optional.empty(), contents, OptionalInt.empty(), Optional.empty(), Optional.empty());
     }
 
     @Override
     public ReadResourceResult withCacheableResult(int ttlMs, CacheScope cacheScope)
     {
-        return new ReadResourceResult(contents, OptionalInt.of(ttlMs), Optional.of(cacheScope), meta);
+        return new ReadResourceResult(Optional.of(ResultType.COMPLETE), contents, OptionalInt.of(ttlMs), Optional.of(cacheScope), meta);
     }
 
     @Override
     public ReadResourceResult withMeta(Map<String, Object> meta)
     {
-        return new ReadResourceResult(contents, ttlMs, cacheScope, Optional.of(meta));
+        return new ReadResourceResult(resultType, contents, ttlMs, cacheScope, Optional.of(meta));
     }
 }
