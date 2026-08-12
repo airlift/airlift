@@ -54,6 +54,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
@@ -304,7 +305,7 @@ public class OperationsImpl
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 Optional.empty());
 
-        return new DiscoverResult(COMPLETE, SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), Optional.empty());
+        return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(COMPLETE, SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
     }
 
     private <T extends CacheableResult> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
