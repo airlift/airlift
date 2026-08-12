@@ -36,6 +36,7 @@ import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.Meta;
+import io.airlift.mcp.model.MetaOnly;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -86,7 +87,6 @@ import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 
 public class OperationsImpl
         implements Operations
@@ -121,23 +121,6 @@ public class OperationsImpl
         paginationUtil = new PaginationUtil(mcpConfig);
         resourceSubscriptionCachePeriod = mcpConfig.getResourceSubscriptionCachePeriod().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
-    }
-
-    public record MetaOnly(Optional<Map<String, Object>> meta)
-            implements Meta<MetaOnly>
-    {
-        public static final MetaOnly EMPTY_META = new MetaOnly(Optional.empty());
-
-        public MetaOnly
-        {
-            meta = requireNonNullElse(meta, Optional.empty());
-        }
-
-        @Override
-        public MetaOnly withMeta(Map<String, Object> meta)
-        {
-            return new MetaOnly(Optional.of(meta));
-        }
     }
 
     @Override
