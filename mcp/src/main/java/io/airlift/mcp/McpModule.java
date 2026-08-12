@@ -1,6 +1,5 @@
 package io.airlift.mcp;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -23,15 +22,6 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.internal.InternalMcpModule;
-import io.airlift.mcp.model.CompleteReference;
-import io.airlift.mcp.model.CompleteReference.PromptReference;
-import io.airlift.mcp.model.CompleteReference.ResourceReference;
-import io.airlift.mcp.model.Content;
-import io.airlift.mcp.model.Content.AudioContent;
-import io.airlift.mcp.model.Content.EmbeddedResource;
-import io.airlift.mcp.model.Content.ImageContent;
-import io.airlift.mcp.model.Content.ResourceLink;
-import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.JsonRpcMessageDeserializer;
@@ -74,6 +64,7 @@ import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
+import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
@@ -152,22 +143,6 @@ public class McpModule
             requireNonNull(identityType, "identityType is null");
             requireNonNull(identityMapperBinding, "identityMapperBinding is null");
         }
-    }
-
-    @VisibleForTesting
-    public static JacksonSubType buildJacksonSubType()
-    {
-        return JacksonSubType.builder()
-                .forBase(Content.class, "type")
-                .add(TextContent.class, "text")
-                .add(ImageContent.class, "image")
-                .add(AudioContent.class, "audio")
-                .add(EmbeddedResource.class, "resource")
-                .add(ResourceLink.class, "resource_link")
-                .forBase(CompleteReference.class, "type")
-                .add(PromptReference.class, "ref/prompt")
-                .add(ResourceReference.class, "ref/resource")
-                .build();
     }
 
     public interface LegacyBuilder
