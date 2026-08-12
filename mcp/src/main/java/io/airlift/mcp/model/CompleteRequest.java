@@ -16,7 +16,7 @@ public record CompleteRequest(CompleteReference ref, CompleteArgument argument, 
         requireNonNull(ref, "ref is null");
         requireNonNull(argument, "argument is null");
         context = requireNonNullElse(context, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public CompleteRequest(CompleteReference ref, CompleteArgument argument, Optional<CompleteContext> context)

@@ -1,5 +1,7 @@
 package io.airlift.mcp.model;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,7 +13,7 @@ public record ListRequest(Optional<String> cursor, Optional<Map<String, Object>>
     public ListRequest
     {
         cursor = requireNonNullElse(cursor, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     @Override

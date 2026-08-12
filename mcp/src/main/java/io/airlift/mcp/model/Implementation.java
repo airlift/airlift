@@ -17,7 +17,7 @@ public record Implementation(String name, String version, Optional<String> descr
         description = requireNonNullElse(description, Optional.empty());
         title = requireNonNullElse(title, Optional.empty());
         websiteUrl = requireNonNullElse(websiteUrl, Optional.empty());
-        icons = requireNonNullElse(icons, Optional.empty());
+        icons = requireNonNullElse(icons, Optional.<List<Icon>>empty()).map(ImmutableList::copyOf);
     }
 
     public Implementation(String name, String version)

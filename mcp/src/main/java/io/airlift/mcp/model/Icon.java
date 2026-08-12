@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,7 @@ public record Icon(String src, Optional<String> mimeType, Optional<List<String>>
     {
         requireNonNull(src, "src is null");
         mimeType = requireNonNullElse(mimeType, Optional.empty());
-        sizes = requireNonNullElse(sizes, Optional.empty());
+        sizes = requireNonNullElse(sizes, Optional.<List<String>>empty()).map(ImmutableList::copyOf);
         theme = requireNonNullElse(theme, Optional.empty());
     }
 

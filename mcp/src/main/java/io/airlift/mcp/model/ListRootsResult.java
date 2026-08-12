@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ public record ListRootsResult(List<Root> roots, Optional<Map<String, Object>> me
     public ListRootsResult
     {
         roots = ImmutableList.copyOf(roots);
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     @Override

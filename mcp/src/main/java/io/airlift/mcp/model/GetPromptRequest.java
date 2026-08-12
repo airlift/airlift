@@ -14,8 +14,8 @@ public record GetPromptRequest(String name, Map<String, Object> arguments, Optio
     public GetPromptRequest
     {
         requireNonNull(name, "name is null");
-        arguments = requireNonNullElse(arguments, ImmutableMap.of());
-        meta = requireNonNullElse(meta, Optional.empty());
+        arguments = ImmutableMap.copyOf(requireNonNullElse(arguments, ImmutableMap.of()));
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public GetPromptRequest(String name, Map<String, Object> arguments)

@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +17,7 @@ public record ElicitRequestForm(Optional<String> mode, String message, ObjectNod
         mode = requireNonNullElse(mode, Optional.empty());
         requireNonNull(message, "message is null");
         requireNonNull(requestedSchema, "requestedSchema is null");
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public ElicitRequestForm(String message, ObjectNode requestedSchema)

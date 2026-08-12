@@ -1,5 +1,8 @@
 package io.airlift.mcp.model;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,8 +22,8 @@ public record Resource(String name, String uri, Optional<String> description, St
         requireNonNull(mimeType, "mimeType is null");
         size = requireNonNullElse(size, OptionalLong.empty());
         annotations = requireNonNullElse(annotations, Optional.empty());
-        icons = requireNonNullElse(icons, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        icons = requireNonNullElse(icons, Optional.<List<Icon>>empty()).map(ImmutableList::copyOf);
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     @Override

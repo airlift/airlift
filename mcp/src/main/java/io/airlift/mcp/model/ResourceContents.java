@@ -1,5 +1,7 @@
 package io.airlift.mcp.model;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -17,7 +19,7 @@ public record ResourceContents(Optional<String> name, String uri, String mimeTyp
         requireNonNull(mimeType, "mimeType is null");
         text = requireNonNullElse(text, Optional.empty());
         blob = requireNonNullElse(blob, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
 
         verify((text.isPresent() || blob.isPresent()) && (text.isPresent() != blob.isPresent()), "Only one of text or blob must be present");
     }
