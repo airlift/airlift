@@ -1,7 +1,6 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
 
 import java.util.List;
@@ -9,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -30,7 +30,7 @@ public record DiscoverResult(
         instructions = requireNonNullElse(instructions, Optional.empty());
         ttlMs = requireNonNullElse(ttlMs, OptionalInt.empty());
         cacheScope = requireNonNullElse(cacheScope, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     @Override

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
@@ -34,7 +35,7 @@ public record CreateMessageRequest(
         temperature = requireNonNullElse(temperature, OptionalDouble.empty());
         stopSequences = requireNonNullElse(stopSequences, Optional.<List<String>>empty()).map(ImmutableList::copyOf);
         metadata = requireNonNullElse(metadata, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     public CreateMessageRequest(List<SamplingMessage> messages, int maxTokens)

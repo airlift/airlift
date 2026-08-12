@@ -1,7 +1,6 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -9,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -21,7 +21,7 @@ public record CompleteResult(CompleteCompletion completion, Optional<Map<String,
     public CompleteResult
     {
         requireNonNull(completion, "completion is null");
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     public CompleteResult(CompleteCompletion completion)

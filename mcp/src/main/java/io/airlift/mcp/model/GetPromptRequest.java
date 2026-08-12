@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -15,7 +16,7 @@ public record GetPromptRequest(String name, Map<String, Object> arguments, Optio
     {
         requireNonNull(name, "name is null");
         arguments = ImmutableMap.copyOf(requireNonNullElse(arguments, ImmutableMap.of()));
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     public GetPromptRequest(String name, Map<String, Object> arguments)

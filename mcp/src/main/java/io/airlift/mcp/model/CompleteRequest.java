@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -16,7 +17,7 @@ public record CompleteRequest(CompleteReference ref, CompleteArgument argument, 
         requireNonNull(ref, "ref is null");
         requireNonNull(argument, "argument is null");
         context = requireNonNullElse(context, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     public CompleteRequest(CompleteReference ref, CompleteArgument argument, Optional<CompleteContext> context)

@@ -1,10 +1,9 @@
 package io.airlift.mcp.model;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -20,7 +19,7 @@ public record InitializeRequest(
         requireNonNull(protocolVersion, "protocolVersion is null");
         requireNonNull(capabilities, "capabilities is null");
         requireNonNull(clientInfo, "clientInfo is null");
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     public InitializeRequest(String protocolVersion, ClientCapabilities capabilities, Implementation clientInfo)
