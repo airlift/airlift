@@ -7,9 +7,10 @@ import java.util.OptionalInt;
 
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
 
-public interface CacheableResult
+@SuppressWarnings("rawtypes")
+public interface CacheableResult<T extends CacheableResult<T>>
 {
-    CacheableResult DEFAULT = new CacheableResult()
+    CacheableResult<?> DEFAULT = new CacheableResult()
     {
         @Override
         public OptionalInt ttlMs()
@@ -24,7 +25,7 @@ public interface CacheableResult
         }
 
         @Override
-        public Object withCacheableResult(int ttlMs, CacheScope cacheScope)
+        public CacheableResult withCacheableResult(int ttlMs, CacheScope cacheScope)
         {
             throw new UnsupportedOperationException();
         }
@@ -42,5 +43,5 @@ public interface CacheableResult
         return Optional.empty();
     }
 
-    Object withCacheableResult(int ttlMs, CacheScope cacheScope);
+    T withCacheableResult(int ttlMs, CacheScope cacheScope);
 }

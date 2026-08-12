@@ -10,7 +10,7 @@ import java.util.OptionalInt;
 import static java.util.Objects.requireNonNullElse;
 
 public record ListResourceTemplatesResult(List<ResourceTemplate> resourceTemplates, Optional<String> nextCursor, OptionalInt ttlMs, Optional<CacheScope> cacheScope, Optional<Map<String, Object>> meta)
-        implements CacheableResult,
+        implements CacheableResult<ListResourceTemplatesResult>,
                    Meta<ListResourceTemplatesResult>,
                    PaginatedResult
 {

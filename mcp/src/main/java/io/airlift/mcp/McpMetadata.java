@@ -9,7 +9,7 @@ import static io.airlift.mcp.model.Constants.SKILL_INDEX_URI;
 import static io.airlift.mcp.model.Constants.SKILL_MD_FILE;
 import static java.util.Objects.requireNonNull;
 
-public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, CacheableResult cacheableResultValues, boolean autoAddSkillInstructions)
+public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, CacheableResult<?> cacheableResultValues, boolean autoAddSkillInstructions)
 {
     public static final McpMetadata DEFAULT = new McpMetadata("/mcp");
 
@@ -58,7 +58,7 @@ public record McpMetadata(String uriPath, Implementation implementation, Optiona
                 .or(() -> Optional.of(SKILLS_INSTRUCTIONS));
     }
 
-    public McpMetadata withCacheableResultValues(CacheableResult cacheableResultValues)
+    public McpMetadata withCacheableResultValues(CacheableResult<?> cacheableResultValues)
     {
         return new McpMetadata(uriPath, implementation, instructions, cacheableResultValues, autoAddSkillInstructions);
     }
