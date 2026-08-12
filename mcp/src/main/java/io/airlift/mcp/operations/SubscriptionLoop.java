@@ -31,6 +31,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_SUBSCRIPTIONS_ACKNOWLE
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 class SubscriptionLoop
 {
@@ -80,7 +81,7 @@ class SubscriptionLoop
         public Acknowledgment
         {
             requireNonNull(notifications, "notifications is null");
-            requireNonNull(meta, "meta is null");
+            meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
         }
 
         @Override
@@ -127,7 +128,7 @@ class SubscriptionLoop
         public Notification
         {
             requireNonNull(uri, "uri is null");
-            requireNonNull(meta, "meta is null");
+            meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
         }
 
         @Override

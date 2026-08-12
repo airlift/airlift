@@ -1,6 +1,8 @@
 package io.airlift.mcp.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -33,8 +35,8 @@ public record Tool(
         requireNonNull(inputSchema, "inputSchema is null");
         outputSchema = requireNonNullElse(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
-        icons = requireNonNullElse(icons, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        icons = requireNonNullElse(icons, Optional.<List<Icon>>empty()).map(ImmutableList::copyOf);
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
 
         validateName(name);
     }

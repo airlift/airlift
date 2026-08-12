@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ public record ReadResourceResult(List<ResourceContents> contents, OptionalInt tt
         contents = ImmutableList.copyOf(contents);
         ttlMs = requireNonNullElse(ttlMs, OptionalInt.empty());
         cacheScope = requireNonNullElse(cacheScope, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public ReadResourceResult(List<ResourceContents> contents)

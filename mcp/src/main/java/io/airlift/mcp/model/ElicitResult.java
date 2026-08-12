@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +17,7 @@ public record ElicitResult(Action action, Optional<Map<String, Object>> content,
     {
         requireNonNull(action, "action is null");
         content = requireNonNullElse(content, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     @Override

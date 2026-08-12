@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ public record GetPromptResult(Optional<String> description, List<PromptMessage> 
     {
         description = requireNonNullElse(description, Optional.empty());
         messages = ImmutableList.copyOf(messages);
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public GetPromptResult(Optional<String> description, List<PromptMessage> messages)

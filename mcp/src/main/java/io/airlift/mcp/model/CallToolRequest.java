@@ -14,8 +14,8 @@ public record CallToolRequest(String name, Map<String, Object> arguments, Option
     public CallToolRequest
     {
         requireNonNull(name, "name is null");
-        arguments = requireNonNullElse(arguments, ImmutableMap.of());
-        meta = requireNonNullElse(meta, Optional.empty());
+        arguments = ImmutableMap.copyOf(requireNonNullElse(arguments, ImmutableMap.of()));
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public CallToolRequest(String name, Map<String, Object> arguments)

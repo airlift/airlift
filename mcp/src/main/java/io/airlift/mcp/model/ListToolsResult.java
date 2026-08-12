@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ public record ListToolsResult(List<Tool> tools, Optional<String> nextCursor, Opt
         nextCursor = requireNonNullElse(nextCursor, Optional.empty());
         ttlMs = requireNonNullElse(ttlMs, OptionalInt.empty());
         cacheScope = requireNonNullElse(cacheScope, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public ListToolsResult(List<Tool> tools)

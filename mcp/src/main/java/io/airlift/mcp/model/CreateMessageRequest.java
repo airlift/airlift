@@ -2,6 +2,7 @@ package io.airlift.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -31,9 +32,9 @@ public record CreateMessageRequest(
         systemPrompt = requireNonNullElse(systemPrompt, Optional.empty());
         includeContext = requireNonNullElse(includeContext, Optional.empty());
         temperature = requireNonNullElse(temperature, OptionalDouble.empty());
-        stopSequences = requireNonNullElse(stopSequences, Optional.empty());
-        metadata = requireNonNullElse(metadata, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.empty());
+        stopSequences = requireNonNullElse(stopSequences, Optional.<List<String>>empty()).map(ImmutableList::copyOf);
+        metadata = requireNonNullElse(metadata, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public CreateMessageRequest(List<SamplingMessage> messages, int maxTokens)

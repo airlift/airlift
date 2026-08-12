@@ -1,5 +1,7 @@
 package io.airlift.mcp.model;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,7 +17,7 @@ public record ElicitRequestUrl(Optional<String> mode, String elicitationId, Stri
         requireNonNull(elicitationId, "elicitationId is null");
         requireNonNull(message, "message is null");
         requireNonNull(url, "url is null");
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     public ElicitRequestUrl(String elicitationId, String message, String url)

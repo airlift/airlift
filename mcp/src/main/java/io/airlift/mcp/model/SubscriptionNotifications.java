@@ -1,5 +1,7 @@
 package io.airlift.mcp.model;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -12,7 +14,7 @@ public record SubscriptionNotifications(SubscriptionFilter notifications, Option
     public SubscriptionNotifications
     {
         requireNonNull(notifications, "notifications is null");
-        meta = requireNonNullElse(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
     }
 
     @Override
