@@ -10,7 +10,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record GetPromptResult(Optional<String> description, List<PromptMessage> messages, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<GetPromptResult>
 {
     public record PromptMessage(Role role, Content content)
     {

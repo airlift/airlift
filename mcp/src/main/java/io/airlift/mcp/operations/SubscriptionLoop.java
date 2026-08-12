@@ -75,7 +75,7 @@ class SubscriptionLoop
     }
 
     public record Acknowledgment(SubscriptionFilter notifications, Optional<Map<String, Object>> meta)
-            implements Meta
+            implements Meta<Acknowledgment>
     {
         public Acknowledgment
         {
@@ -122,7 +122,7 @@ class SubscriptionLoop
     }
 
     public record Notification(Optional<String> uri, Optional<Map<String, Object>> meta)
-            implements Meta
+            implements Meta<Notification>
     {
         public Notification
         {
@@ -162,7 +162,7 @@ class SubscriptionLoop
         requestContext.sendMessage(message, Optional.of(notification));
     }
 
-    private <T extends Meta> T withSubscriptionId(Class<T> clazz, T instance)
+    private <T extends Meta<?>> T withSubscriptionId(Class<T> clazz, T instance)
     {
         Map<String, Object> meta = ImmutableMap.of(Constants.METADATA_SUBSCRIPTION_ID, subscriptionId.toString());
         return clazz.cast(instance.withMeta(meta));

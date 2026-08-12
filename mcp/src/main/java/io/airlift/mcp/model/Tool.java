@@ -21,7 +21,7 @@ public record Tool(
         ToolAnnotations annotations,
         Optional<List<Icon>> icons,
         Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<Tool>
 {
     private static final Set<Character> ALLOWED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.".chars().mapToObj(i -> (char) i).collect(toImmutableSet());
 

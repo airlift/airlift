@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record CompleteResult(CompleteCompletion completion, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<CompleteResult>
 {
     // see: https://modelcontextprotocol.io/specification/2025-03-26/server/utilities/completion#completeresult
     public static final int MAX_COMPLETIONS = 100;

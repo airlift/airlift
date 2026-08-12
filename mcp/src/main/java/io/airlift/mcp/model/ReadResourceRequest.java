@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record ReadResourceRequest(String uri, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<ReadResourceRequest>
 {
     public ReadResourceRequest
     {

@@ -6,7 +6,7 @@ import java.util.Optional;
 import static java.util.Objects.requireNonNullElse;
 
 public record CancelledNotification(Object requestId, Optional<String> reason, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<CancelledNotification>
 {
     public CancelledNotification
     {

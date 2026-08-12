@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNullElse;
 
 public record ListResourcesResult(List<Resource> resources, Optional<String> nextCursor, OptionalInt ttlMs, Optional<CacheScope> cacheScope, Optional<Map<String, Object>> meta)
         implements CacheableResult,
-                   Meta,
+                   Meta<ListResourcesResult>,
                    PaginatedResult
 {
     public ListResourcesResult

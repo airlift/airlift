@@ -10,7 +10,7 @@ import java.util.OptionalInt;
 import static java.util.Objects.requireNonNullElse;
 
 public record ReadResourceResult(List<ResourceContents> contents, OptionalInt ttlMs, Optional<CacheScope> cacheScope, Optional<Map<String, Object>> meta)
-        implements CacheableResult, Meta
+        implements CacheableResult, Meta<ReadResourceResult>
 {
     public ReadResourceResult
     {

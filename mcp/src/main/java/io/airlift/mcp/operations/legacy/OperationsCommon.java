@@ -128,7 +128,7 @@ public class OperationsCommon
                 .orElseGet(CompleteResult::empty);
     }
 
-    static Optional<Object> progressToken(Meta meta)
+    static Optional<Object> progressToken(Meta<?> meta)
     {
         return meta.meta().flatMap(m -> Optional.ofNullable(m.get(METADATA_PROGRESS_TOKEN)));
     }

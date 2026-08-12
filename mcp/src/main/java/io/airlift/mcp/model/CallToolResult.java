@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta<CallToolResult>
 {
     public CallToolResult
     {
