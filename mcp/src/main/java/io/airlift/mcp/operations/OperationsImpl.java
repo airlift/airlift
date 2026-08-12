@@ -308,7 +308,7 @@ public class OperationsImpl
         return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(COMPLETE, SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
     }
 
-    private <T extends CacheableResult> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
+    private <T extends CacheableResult<?>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
     {
         return clazz.cast(result.withCacheableResult(metadata.cacheableResultValues().ttlMs().orElse(0), metadata.cacheableResultValues().cacheScope().orElse(PRIVATE)));
     }

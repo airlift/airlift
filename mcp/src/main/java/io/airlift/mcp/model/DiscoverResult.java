@@ -19,7 +19,7 @@ public record DiscoverResult(
         OptionalInt ttlMs,
         Optional<CacheScope> cacheScope,
         Optional<Map<String, Object>> meta)
-        implements Meta<DiscoverResult>, CacheableResult
+        implements Meta<DiscoverResult>, CacheableResult<DiscoverResult>
 {
     public DiscoverResult
     {
