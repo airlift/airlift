@@ -1,12 +1,12 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -21,7 +21,7 @@ public record ResourceTemplate(String name, String uriTemplate, Optional<String>
         requireNonNull(mimeType, "mimeType is null");
         annotations = requireNonNullElse(annotations, Optional.empty());
         icons = requireNonNullElse(icons, Optional.<List<Icon>>empty()).map(ImmutableList::copyOf);
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     @Override

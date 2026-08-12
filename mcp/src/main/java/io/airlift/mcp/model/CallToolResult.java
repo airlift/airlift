@@ -1,13 +1,13 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpClientException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -18,7 +18,7 @@ public record CallToolResult(List<Content> content, Optional<StructuredContent<?
     {
         requireNonNull(content, "content is null");
         structuredContent = requireNonNullElse(structuredContent, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     public CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError)

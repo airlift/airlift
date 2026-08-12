@@ -29,9 +29,9 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_SUBSCRIPTIONS_ACKNOWLEDGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 
 class SubscriptionLoop
 {
@@ -81,7 +81,7 @@ class SubscriptionLoop
         public Acknowledgment
         {
             requireNonNull(notifications, "notifications is null");
-            meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+            meta = normalize(meta);
         }
 
         @Override
@@ -128,7 +128,7 @@ class SubscriptionLoop
         public Notification
         {
             requireNonNull(uri, "uri is null");
-            meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+            meta = normalize(meta);
         }
 
         @Override

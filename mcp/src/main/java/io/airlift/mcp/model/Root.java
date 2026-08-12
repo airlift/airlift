@@ -1,10 +1,9 @@
 package io.airlift.mcp.model;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -15,7 +14,7 @@ public record Root(String uri, Optional<String> name, Optional<Map<String, Objec
     {
         requireNonNull(uri, "uri is null");
         name = requireNonNullElse(name, Optional.empty());
-        meta = requireNonNullElse(meta, Optional.<Map<String, Object>>empty()).map(ImmutableMap::copyOf);
+        meta = normalize(meta);
     }
 
     @Override
