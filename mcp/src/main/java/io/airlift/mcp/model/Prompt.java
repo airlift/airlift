@@ -15,7 +15,7 @@ public record Prompt(String name, Optional<String> description, Optional<Role> r
         requireNonNull(name, "name is null");
         description = requireNonNullElse(description, Optional.empty());
         role = requireNonNullElse(role, Optional.empty());
-        arguments = ImmutableList.copyOf(arguments);
+        arguments = ImmutableList.copyOf(requireNonNullElse(arguments, ImmutableList.of()));
         icons = requireNonNullElse(icons, Optional.empty());
     }
 
