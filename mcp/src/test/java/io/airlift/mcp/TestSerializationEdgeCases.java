@@ -37,6 +37,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
 
+import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
 import static java.util.Objects.requireNonNullElse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -50,7 +51,7 @@ public class TestSerializationEdgeCases
 
     public TestSerializationEdgeCases()
     {
-        JacksonSubType jacksonSubType = McpModule.buildJacksonSubType();
+        JacksonSubType jacksonSubType = buildJacksonSubType();
         JsonMapperProvider jsonMapperProvider = new JsonMapperProvider()
                 .withJacksonSubTypes(ImmutableSet.of(jacksonSubType));
         jsonMapper = jsonMapperProvider.get();
