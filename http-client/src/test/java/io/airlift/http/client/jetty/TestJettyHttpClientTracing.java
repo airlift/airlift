@@ -5,13 +5,20 @@ import io.airlift.http.client.EchoServlet;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.Response;
+import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingHttpServer;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -22,6 +29,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.opentelemetry.api.OpenTelemetry.propagating;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestJettyHttpClientTracing
 {
@@ -63,6 +71,65 @@ public class TestJettyHttpClientTracing
             client.execute(request, createStringResponseHandler());
 
             assertThat(servlet.getRequestHeaders(TRACE_HEADER)).isEmpty();
+        }
+    }
+
+    @Test
+    public void testSpanEndedWhenResponseHandlerThrows()
+            throws Exception
+    {
+        InMemorySpanExporter spanExporter = InMemorySpanExporter.create();
+        try (SdkTracerProvider tracerProvider = createTracerProvider(spanExporter)) {
+            try (TestingHttpServer server = new TestingHttpServer(Optional.empty(), new EchoServlet());
+                    JettyHttpClient client = createClient(tracerProvider)) {
+                Request request = prepareGet()
+                        .setUri(server.baseURI())
+                        .build();
+
+                assertThatThrownBy(() -> client.executeAsync(request, new ThrowingResponseHandler()).get())
+                        .cause()
+                        .hasMessage("handler failed");
+            }
+
+            assertThat(spanExporter.getFinishedSpanItems())
+                    .singleElement()
+                    .extracting(span -> span.getStatus().getStatusCode())
+                    .isEqualTo(StatusCode.ERROR);
+        }
+    }
+
+    private static SdkTracerProvider createTracerProvider(InMemorySpanExporter spanExporter)
+    {
+        return SdkTracerProvider.builder()
+                .addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
+                .build();
+    }
+
+    private static JettyHttpClient createClient(SdkTracerProvider tracerProvider)
+    {
+        return new JettyHttpClient(
+                "tracing-test",
+                new HttpClientConfig(),
+                ImmutableList.of(),
+                OpenTelemetry.noop(),
+                tracerProvider.get("testing"),
+                Optional.empty(),
+                Optional.empty());
+    }
+
+    private static final class ThrowingResponseHandler
+            implements ResponseHandler<String, RuntimeException>
+    {
+        @Override
+        public String handleException(Request request, Exception exception)
+        {
+            throw new RuntimeException("handler failed", exception);
+        }
+
+        @Override
+        public String handle(Request request, Response response)
+        {
+            throw new RuntimeException("handler failed");
         }
     }
 
