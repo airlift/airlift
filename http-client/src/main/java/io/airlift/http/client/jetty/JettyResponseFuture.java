@@ -189,6 +189,7 @@ class JettyResponseFuture<T, E extends Exception>
 
         span.setStatus(StatusCode.ERROR, throwable.getMessage());
         span.recordException(throwable, Attributes.of(EXCEPTION_ESCAPED, true));
+        span.end();
     }
 
     @Override
