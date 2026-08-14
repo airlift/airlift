@@ -160,6 +160,10 @@ class JettyResponseFuture<T, E extends Exception>
                 // handler returned a value, store it in the future
                 state.set(JettyAsyncHttpState.DONE);
                 set(value);
+
+                // the request failed, even though the handler recovered
+                span.setStatus(StatusCode.ERROR, throwable.getMessage());
+                span.end();
                 return;
             }
             catch (Throwable newThrowable) {

@@ -21,6 +21,7 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -98,6 +99,27 @@ public class TestJettyHttpClientTracing
         }
     }
 
+    @Test
+    public void testSpanEndedWhenExceptionHandlerReturnsValue()
+            throws Exception
+    {
+        InMemorySpanExporter spanExporter = InMemorySpanExporter.create();
+        try (SdkTracerProvider tracerProvider = createTracerProvider(spanExporter)) {
+            try (JettyHttpClient client = createClient(tracerProvider)) {
+                Request request = prepareGet()
+                        .setUri(URI.create("http://airlift.invalid/"))
+                        .build();
+
+                assertThat(client.executeAsync(request, new RecoveringResponseHandler()).get()).isEqualTo("recovered");
+            }
+
+            assertThat(spanExporter.getFinishedSpanItems())
+                    .singleElement()
+                    .extracting(span -> span.getStatus().getStatusCode())
+                    .isEqualTo(StatusCode.ERROR);
+        }
+    }
+
     private static SdkTracerProvider createTracerProvider(InMemorySpanExporter spanExporter)
     {
         return SdkTracerProvider.builder()
@@ -130,6 +152,22 @@ public class TestJettyHttpClientTracing
         public String handle(Request request, Response response)
         {
             throw new RuntimeException("handler failed");
+        }
+    }
+
+    private static final class RecoveringResponseHandler
+            implements ResponseHandler<String, RuntimeException>
+    {
+        @Override
+        public String handleException(Request request, Exception exception)
+        {
+            return "recovered";
+        }
+
+        @Override
+        public String handle(Request request, Response response)
+        {
+            return "handled";
         }
     }
 
