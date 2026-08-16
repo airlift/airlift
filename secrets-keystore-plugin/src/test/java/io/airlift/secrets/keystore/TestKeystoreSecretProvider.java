@@ -21,10 +21,16 @@ import org.junit.jupiter.api.TestInstance;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
+import java.util.Locale;
+import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -94,5 +100,43 @@ final class TestKeystoreSecretProvider
                         .setKeyStorePassword("invalid_password"))
                         .resolveSecretValue("key"))
                 .hasMessageContaining("Failed PKCS12 integrity checking");
+    }
+
+    @Test
+    public void testSecretKeySpecKeyEntryFormat()
+            throws Exception
+    {
+        Path keystorePath = createSecretKeySpecKeyStore(
+                Map.of("my-service.access.key", "AKIATEST"),
+                "none");
+
+        KeystoreSecretProvider provider = new KeystoreSecretProvider(new KeystoreSecretProviderConfig()
+                .setKeyStoreType("JCEKS")
+                .setKeyStoreFilePath(keystorePath.toString())
+                .setKeyStorePassword("none"));
+
+        assertThat(provider.resolveSecretValue("my-service.access.key")).isEqualTo("AKIATEST");
+    }
+
+    private static Path createSecretKeySpecKeyStore(Map<String, String> aliases, String password)
+            throws Exception
+    {
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+        keyStore.load(null, password.toCharArray());
+        for (Map.Entry<String, String> entry : aliases.entrySet()) {
+            String alias = entry.getKey().toLowerCase(Locale.US);
+            keyStore.setKeyEntry(
+                    alias,
+                    new SecretKeySpec(entry.getValue().getBytes(UTF_8), "AES"),
+                    password.toCharArray(),
+                    null);
+        }
+
+        Path keystorePath = Files.createTempFile("secret-key-spec-keystore", ".jceks");
+        keystorePath.toFile().deleteOnExit();
+        try (FileOutputStream outputStream = new FileOutputStream(keystorePath.toFile())) {
+            keyStore.store(outputStream, password.toCharArray());
+        }
+        return keystorePath;
     }
 }
