@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpException.exceptionWithData;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_METHOD;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.HEADER_PROTOCOL_VERSION;
@@ -87,7 +88,7 @@ public record RequestMetadata(
     {
         // https://modelcontextprotocol.io/specification/draft/basic/lifecycle#protocol-version-negotiation
         Map<String, Object> params = ImmutableMap.of("supported", SUPPORTED_VERSIONS, "requested", protocolVersionHeader);
-        return exception(UNSUPPORTED_PROTOCOL, "Unsupported protocol version", params);
+        return exceptionWithData(UNSUPPORTED_PROTOCOL, "Unsupported protocol version", params);
     }
 
     @SuppressWarnings("SameParameterValue")
