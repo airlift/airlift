@@ -20,13 +20,15 @@ public class McpException
 
     public McpException(JsonRpcErrorDetail errorDetail)
     {
+        super(errorDetail.message());
+
         this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
         isSelfContained = false;
     }
 
     public McpException(Throwable cause, JsonRpcErrorDetail errorDetail)
     {
-        super(cause);
+        super(errorDetail.message(), cause);
 
         this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
         isSelfContained = false;
@@ -34,6 +36,8 @@ public class McpException
 
     private McpException(JsonRpcErrorDetail errorDetail, boolean isSelfContained)
     {
+        super(errorDetail.message());
+
         this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
         this.isSelfContained = isSelfContained;
     }
