@@ -9,7 +9,9 @@ public class McpClientException
 
     public McpClientException(McpException mcpException)
     {
-        this.mcpException = requireNonNull(mcpException, "mcpException is null");
+        super(requireNonNull(mcpException, "mcpException is null").getMessage(), mcpException);
+
+        this.mcpException = mcpException;
     }
 
     public McpException unwrap()
