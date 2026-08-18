@@ -59,6 +59,7 @@ import java.util.Set;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpException.exceptionWithData;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
@@ -207,7 +208,7 @@ public class OperationsImpl
                 .filter(contents -> !contents.isEmpty())
                 .orElseThrow(() -> {
                     Map<String, String> data = ImmutableMap.of("uri", readResourceRequest.uri());
-                    return new McpClientException(exception(INVALID_PARAMS, "Resource not found: " + readResourceRequest.uri(), data));
+                    return new McpClientException(exceptionWithData(INVALID_PARAMS, "Resource not found: " + readResourceRequest.uri(), data));
                 });
 
         return new ReadResourceResult(resourceContents);

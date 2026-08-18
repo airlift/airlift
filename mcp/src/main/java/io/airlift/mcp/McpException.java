@@ -20,22 +20,34 @@ public class McpException
 
     public McpException(JsonRpcErrorDetail errorDetail)
     {
-        this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
+        requireNonNull(errorDetail, "errorDetail is null");
+        super(errorDetail.message());
+
+        this.errorDetail = errorDetail;
         isSelfContained = false;
     }
 
     public McpException(Throwable cause, JsonRpcErrorDetail errorDetail)
     {
-        super(cause);
+        requireNonNull(errorDetail, "errorDetail is null");
+        super(errorDetail.message(), cause);
 
-        this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
+        this.errorDetail = errorDetail;
         isSelfContained = false;
     }
 
     private McpException(JsonRpcErrorDetail errorDetail, boolean isSelfContained)
     {
-        this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
+        requireNonNull(errorDetail, "errorDetail is null");
+        super(errorDetail.message());
+
+        this.errorDetail = errorDetail;
         this.isSelfContained = isSelfContained;
+    }
+
+    public McpClientException asClientException()
+    {
+        return new McpClientException(this);
     }
 
     public boolean isSelfContained()
@@ -48,13 +60,19 @@ public class McpException
         return errorDetail;
     }
 
+    public static McpException exception(JsonRpcErrorCode errorCode, Throwable cause, String message)
+    {
+        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode.code(), message, Optional.empty());
+        return new McpException(cause, detail);
+    }
+
     public static McpException exception(JsonRpcErrorCode errorCode, String message)
     {
         JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode.code(), message, Optional.empty());
         return new McpException(detail);
     }
 
-    public static McpException exception(JsonRpcErrorCode errorCode, String message, Object data)
+    public static McpException exceptionWithData(JsonRpcErrorCode errorCode, String message, Object data)
     {
         JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode.code(), message, Optional.of(data));
         return new McpException(detail);
@@ -68,10 +86,10 @@ public class McpException
 
     public static McpException exception(int code, String message)
     {
-        return exception(code, message, Optional.empty());
+        return exceptionWithData(code, message, Optional.empty());
     }
 
-    public static McpException exception(int code, String message, Optional<Object> data)
+    public static McpException exceptionWithData(int code, String message, Optional<Object> data)
     {
         JsonRpcErrorDetail detail = new JsonRpcErrorDetail(code, message, data);
         return new McpException(detail);
