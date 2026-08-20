@@ -11,11 +11,13 @@ import io.airlift.api.ApiService;
 import io.airlift.api.ApiType;
 import io.airlift.api.ApiUpdate;
 import io.airlift.api.ServiceType;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Request;
 
 import java.util.Optional;
 
+import static jakarta.ws.rs.core.Response.Status.SERVICE_UNAVAILABLE;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -84,6 +86,12 @@ public class StandardService
     public Thing getFromLookup(@ApiParameter LookupId lookupId)
     {
         return new Thing(new ApiResourceVersion(1), new ThingId(), lookupId.toInternal().id(), 0, Optional.empty());
+    }
+
+    @ApiCustom(type = ApiType.GET, verb = "unavailable", description = "Unavailable things")
+    public Thing getUnavailableThing(@ApiParameter ThingId thingId)
+    {
+        throw new WebApplicationException(SERVICE_UNAVAILABLE);
     }
 
     @ApiCreate(description = "dummy")
