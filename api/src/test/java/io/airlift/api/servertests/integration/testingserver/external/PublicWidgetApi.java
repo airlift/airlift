@@ -51,9 +51,9 @@ public class PublicWidgetApi
     }
 
     @ApiList(description = "List all widgets")
-    public ApiPaginatedResult<ExternalWidget> listWidgets(@ApiParameter ApiPagination pagination, @ApiParameter(allowedValues = {"id", "name", "size"}) ApiOrderBy ordering, @ApiParameter ApiFilter name, @ApiParameter ApiFilterList size)
+    public ApiPaginatedResult<ExternalWidget> listWidgets(@ApiParameter ApiPagination pagination, @ApiParameter(allowedValues = {"id", "name", "size"}) ApiOrderBy ordering, @ApiParameter ApiFilter<Object> name, @ApiParameter ApiFilterList<Object> size)
     {
-        return controller.list(pagination.withOrdering(ordering), name, size).map(InternalWidget::map);
+        return controller.list(pagination.withOrdering(ordering), name, size).map(widget -> widget.map());
     }
 
     @ApiGet(description = "Get a widget")

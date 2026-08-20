@@ -135,7 +135,7 @@ public class IntegrationTests
     {
         var pageOfResults = call(prepareGet(), UriBuilder.fromUri(testingServer.baseUri()).path(BASE_WIDGET_PATH).build(), EXTERNAL_WIDGET_LIST_CODEC);
 
-        ApiPaginatedResult<ExternalWidget> expected = internalController.list(new ApiPagination(Optional.empty(), DEFAULT_PAGE_SIZE, Optional.empty()), new ApiFilter(Optional.empty()), new ApiFilterList(ImmutableList.of()))
+        ApiPaginatedResult<ExternalWidget> expected = internalController.list(new ApiPagination(Optional.empty(), DEFAULT_PAGE_SIZE, Optional.empty()), new ApiFilter<>(Optional.empty()), new ApiFilterList<>(ImmutableList.of()))
                 .map(InternalWidget::map);
         assertThat(pageOfResults.getStatusCode()).isEqualTo(200);
         assertThat(pageOfResults.getValue().result()).isEqualTo(expected.result());
@@ -166,7 +166,7 @@ public class IntegrationTests
             URI uri = uriBuilder.build();
             var pageOfResults = call(prepareGet(), uri, EXTERNAL_WIDGET_LIST_CODEC);
 
-            ApiPaginatedResult<ExternalWidget> expected = internalController.list(pagination, new ApiFilter(Optional.empty()), new ApiFilterList(ImmutableList.of()))
+            ApiPaginatedResult<ExternalWidget> expected = internalController.list(pagination, new ApiFilter<>(Optional.empty()), new ApiFilterList<>(ImmutableList.of()))
                     .map(InternalWidget::map);
 
             assertThat(pageOfResults.getStatusCode()).isEqualTo(200);

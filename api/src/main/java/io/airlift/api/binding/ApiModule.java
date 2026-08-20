@@ -306,7 +306,7 @@ public class ApiModule
         Map<ModelServiceType, List<ModelService>> servicesByType = modelApi.modelServices().services().stream().collect(Collectors.groupingBy(modelService -> modelService.service().type()));
         binder.bind(annotatedKey(new TypeLiteral<Set<ModelServiceType>>() {}, bindingAnnotation)).toInstance(servicesByType.keySet());
 
-        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation);
+        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation, enumValueResolver);
         MapBinder<Method, ModelDeprecation> deprecationBinder = newMapBinder(
                 binder,
                 new TypeLiteral<>() {},
