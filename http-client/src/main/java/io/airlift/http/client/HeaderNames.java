@@ -75,6 +75,7 @@ public final class HeaderNames
     public static final HeaderName MAX_FORWARDS = HeaderName.of(HttpHeaders.MAX_FORWARDS);
     public static final HeaderName NO_VARY_SEARCH = HeaderName.of(HttpHeaders.NO_VARY_SEARCH);
     public static final HeaderName OBSERVE_BROWSING_TOPICS = HeaderName.of(HttpHeaders.OBSERVE_BROWSING_TOPICS);
+    public static final HeaderName ON_PREFETCH_ACTIVATION = HeaderName.of(HttpHeaders.ON_PREFETCH_ACTIVATION);
     public static final HeaderName ORIGIN = HeaderName.of(HttpHeaders.ORIGIN);
     public static final HeaderName ORIGIN_ISOLATION = HeaderName.of(HttpHeaders.ORIGIN_ISOLATION);
     public static final HeaderName ORIGIN_TRIAL = HeaderName.of(HttpHeaders.ORIGIN_TRIAL);
