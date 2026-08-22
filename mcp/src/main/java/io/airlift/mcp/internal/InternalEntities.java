@@ -174,6 +174,12 @@ public class InternalEntities
     }
 
     @Override
+    public Optional<ToolEntry> rawToolEntry(String toolName)
+    {
+        return Optional.ofNullable(tools.get(toolName));
+    }
+
+    @Override
     public void validateToolAllowed(McpRequestContext requestContext, String toolName)
     {
         Optional.ofNullable(tools.get(toolName))

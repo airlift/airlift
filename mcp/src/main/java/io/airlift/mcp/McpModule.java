@@ -2,10 +2,13 @@ package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
@@ -22,6 +25,7 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.internal.InternalMcpModule;
+import io.airlift.mcp.internal.InternalTaskController;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.JsonRpcMessageDeserializer;
@@ -323,7 +327,7 @@ public class McpModule
         metadataBinding.accept(binder.bind(McpMetadataMapper.class));
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
         legacyOperationsBinding.accept(binder.bind(LegacyOperations.class));
-        binder.bind(Operations.class).to(OperationsSelector.class).in(SINGLETON);
+        newOptionalBinder(binder, Operations.class).setDefault().to(OperationsSelector.class).in(SINGLETON);
         binder.bind(ValidationMode.class).toInstance(validationMode);
 
         configBinder(binder).bindConfig(McpConfig.class);
@@ -346,6 +350,7 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindIcons(binder);
         bindSchemaBuilder(binder);
+        bindStorageAndTasks(binder);
 
         binder.install(new InternalMcpModule(filterBindingAnnotation));
         binder.install(new OperationsModule());
@@ -355,6 +360,34 @@ public class McpModule
     {
         schemaBuilderBinding.accept(binder.bind(SchemaBuilder.class));
         binder.bind(JsonSchemaBuilder.class).in(SINGLETON);
+    }
+
+    private void bindStorageAndTasks(Binder binder)
+    {
+        storageControllerBinding.ifPresentOrElse(binding -> {
+            binding.accept(binder.bind(StorageController.class));
+            binder.bind(McpTaskController.class).to(InternalTaskController.class).in(SINGLETON);
+            binder.bind(InternalTaskController.class).in(SINGLETON);
+            binder.install(new AbstractModule()
+            {
+                @Provides
+                @Singleton
+                public Optional<McpTaskController> taskController(McpTaskController taskController)
+                {
+                    return Optional.of(taskController);
+                }
+
+                @Provides
+                @Singleton
+                public Optional<InternalTaskController> internalTaskController(InternalTaskController taskController)
+                {
+                    return Optional.of(taskController);
+                }
+            });
+        }, () -> {
+            newOptionalBinder(binder, McpTaskController.class);
+            newOptionalBinder(binder, InternalTaskController.class);
+        });
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
