@@ -16,26 +16,35 @@ package io.airlift.secrets.keystore;
 import com.google.inject.Inject;
 import io.airlift.spi.secrets.SecretProvider;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.Locale;
+
+import static io.airlift.secrets.keystore.KeystoreSecretUtils.readSecretValue;
+import static java.util.Objects.requireNonNull;
 
 public class KeystoreSecretProvider
         implements SecretProvider
 {
     private final KeyStore keyStore;
     private final char[] keystorePassword;
+    private final char[] entryPassword;
 
     @Inject
     public KeystoreSecretProvider(KeystoreSecretProviderConfig config)
             throws GeneralSecurityException, IOException
     {
-        keystorePassword = config.getKeyStorePassword().toCharArray();
+        requireNonNull(config, "config is null");
+        String configuredKeystorePassword = config.getKeyStorePassword();
+        keystorePassword = configuredKeystorePassword.toCharArray();
+        String configuredEntryPassword = config.getKeyStoreEntryPassword() != null
+                ? config.getKeyStoreEntryPassword()
+                : configuredKeystorePassword;
+        entryPassword = configuredEntryPassword.toCharArray();
+
         keyStore = KeyStore.getInstance(config.getKeyStoreType());
         try (InputStream stream = new FileInputStream(config.getKeyStoreFilePath())) {
             keyStore.load(stream, keystorePassword);
@@ -46,14 +55,11 @@ public class KeystoreSecretProvider
     public String resolveSecretValue(String key)
     {
         try {
-            KeyStore.SecretKeyEntry secretKeyEntry = (KeyStore.SecretKeyEntry) keyStore.getEntry(key, new KeyStore.PasswordProtection(keystorePassword));
-
-            if (secretKeyEntry == null) {
+            String alias = key.toLowerCase(Locale.US);
+            if (!keyStore.containsAlias(alias)) {
                 throw new RuntimeException("Key not found in keystore: " + key);
             }
-            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBE");
-            PBEKeySpec keySpec = (PBEKeySpec) factory.getKeySpec(secretKeyEntry.getSecretKey(), PBEKeySpec.class);
-            return new String(keySpec.getPassword());
+            return readSecretValue(keyStore, alias, keystorePassword, entryPassword);
         }
         catch (GeneralSecurityException e) {
             throw new RuntimeException(e);
