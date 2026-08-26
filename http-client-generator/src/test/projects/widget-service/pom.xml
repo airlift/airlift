@@ -16,7 +16,7 @@
         <dep.airlift.version>@project.version@</dep.airlift.version>
         <dep.jackson.version>2.18.9</dep.jackson.version>
         <dep.openapi-generator.version>7.14.0</dep.openapi-generator.version>
-        <dep.guice.version>5.1.0</dep.guice.version>
+        <dep.guice.version>10</dep.guice.version>
     </properties>
 
     <dependencies>
@@ -64,10 +64,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>guice</artifactId>
             <version>${dep.guice.version}</version>
-            <classifier>classes</classifier>
         </dependency>
 
     </dependencies>
