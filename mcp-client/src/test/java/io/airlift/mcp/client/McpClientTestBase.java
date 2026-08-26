@@ -56,6 +56,8 @@ public abstract class McpClientTestBase
                 .withAllInClass(MapApp.class)
                 .withAllInClass(TestingTaskEndpoints.class)
                 .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                // hold the client to the headers the spec requires of it - MCP-Method and Mcp-Name
+                .withStrictValidation()
                 .build();
     }
 

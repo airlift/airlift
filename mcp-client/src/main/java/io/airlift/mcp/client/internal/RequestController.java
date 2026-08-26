@@ -1,7 +1,9 @@
 package io.airlift.mcp.client.internal;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
@@ -17,7 +19,10 @@ import io.airlift.mcp.client.settings.RequestFilter;
 import io.airlift.mcp.client.settings.ResponseFilter;
 import io.airlift.mcp.client.settings.SettingMap;
 import io.airlift.mcp.model.CacheableResult;
+import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.GetTaskRequest;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
@@ -26,11 +31,14 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.PaginatedRequest;
 import io.airlift.mcp.model.Protocol;
+import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.ToolResult;
+import io.airlift.mcp.model.UpdateTaskRequest;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +62,8 @@ import static io.airlift.mcp.client.McpConnectionSetting.EXCEPTION_MAPPER;
 import static io.airlift.mcp.client.McpConnectionSetting.META;
 import static io.airlift.mcp.client.McpConnectionSetting.PROGRESS_TOKEN;
 import static io.airlift.mcp.client.McpMapper.jsonMapper;
+import static io.airlift.mcp.model.Constants.HEADER_MCP_METHOD;
+import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_CAPABILITIES;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_INFO;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_LOG_LEVEL;
@@ -63,6 +73,7 @@ import static io.airlift.mcp.model.Constants.METADATA_TASKS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class RequestController
@@ -259,9 +270,43 @@ public class RequestController
                 .setUri(uri)
                 .addHeader(ACCEPT, "application/json, text/event-stream")
                 .addHeader(CONTENT_TYPE, "application/json")
+                .setHeader(HeaderName.of(HEADER_MCP_METHOD), rpcRequest.method())
                 .setBodyGenerator(jsonBodyGenerator(RPC_REQUEST_CODEC, mappedRequest));
+        mcpName(rpcRequest.params()).ifPresent(name -> requestBuilder.setHeader(HeaderName.of(HEADER_MCP_NAME), headerValue(name)));
+
         RequestFilter requestFilter = settingContainer.getSettingValue(McpConnectionSetting.REQUEST_FILTER);
         return requestFilter.apply(requestBuilder);
+    }
+
+    /**
+     * The subject of a request, for the {@code Mcp-Name} header - the entity the request names, where it names one.
+     */
+    private static Optional<String> mcpName(Optional<?> params)
+    {
+        return params.flatMap(value -> switch (value) {
+            case CallToolRequest callToolRequest -> Optional.of(callToolRequest.name());
+            case GetPromptRequest getPromptRequest -> Optional.of(getPromptRequest.name());
+            case ReadResourceRequest readResourceRequest -> Optional.of(readResourceRequest.uri());
+            case GetTaskRequest getTaskRequest -> Optional.of(getTaskRequest.taskId());
+            case UpdateTaskRequest updateTaskRequest -> Optional.of(updateTaskRequest.taskId());
+            default -> Optional.empty();
+        });
+    }
+
+    /**
+     * A header value, base64 sentinel encoded when it cannot be sent literally. Method names are always safe, but
+     * the subject of a request need not be - a resource URI can hold anything.
+     */
+    @VisibleForTesting
+    static String headerValue(String value)
+    {
+        // a value that already looks like a sentinel would be read back as one, so it is encoded too
+        boolean isLiteral = !value.startsWith("=?") && value.chars().allMatch(character -> (character >= 0x20) && (character < 0x7F));
+        if (isLiteral) {
+            return value;
+        }
+
+        return "=?base64?" + Base64.getEncoder().encodeToString(value.getBytes(UTF_8)) + "?=";
     }
 
     @SuppressWarnings("rawtypes")
