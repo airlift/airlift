@@ -9,6 +9,8 @@ import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.metrics.InstrumentType;
+import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.junit.jupiter.api.Test;
@@ -114,6 +116,7 @@ final class TestOpenTelemetryExporterModule
             metricExporter = OpenTelemetryExporterModule.createMetricExporter(config);
             logRecordExporter = OpenTelemetryExporterModule.createLogRecordExporter(config);
 
+            assertThat(metricExporter.getAggregationTemporality(InstrumentType.COUNTER)).isEqualTo(AggregationTemporality.DELTA);
             if (config.getProtocol() == GRPC) {
                 assertThat(spanExporter).isInstanceOf(OtlpGrpcSpanExporter.class);
                 assertThat(metricExporter).isInstanceOf(OtlpGrpcMetricExporter.class);

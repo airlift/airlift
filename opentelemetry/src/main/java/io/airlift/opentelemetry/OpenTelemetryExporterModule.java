@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.deltaPreferred;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.Files.readAllBytes;
 
@@ -97,6 +98,7 @@ public class OpenTelemetryExporterModule
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcMetricExporter.builder()
+                            .setAggregationTemporalitySelector(deltaPreferred())
                             .setEndpoint(config.getEndpoint()),
                     OtlpGrpcMetricExporterBuilder::setTrustedCertificates,
                     OtlpGrpcMetricExporterBuilder::setClientTls)
@@ -104,6 +106,7 @@ public class OpenTelemetryExporterModule
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpMetricExporter.builder()
+                            .setAggregationTemporalitySelector(deltaPreferred())
                             .setEndpoint(config.getEndpoint()),
                     OtlpHttpMetricExporterBuilder::setTrustedCertificates,
                     OtlpHttpMetricExporterBuilder::setClientTls)
