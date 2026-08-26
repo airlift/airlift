@@ -36,9 +36,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject</groupId>
+            <groupId>io.airlift</groupId>
             <artifactId>guice</artifactId>
-            <classifier>classes</classifier>
         </dependency>
 
         <dependency>

@@ -169,6 +169,12 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>guice</artifactId>
+                <version>${dep.airlift.guice.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>http-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
