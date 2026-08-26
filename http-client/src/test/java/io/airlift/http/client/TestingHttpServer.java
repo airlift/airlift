@@ -45,6 +45,8 @@ import static java.util.Objects.requireNonNull;
 public class TestingHttpServer
         implements AutoCloseable
 {
+    private static final String LOOPBACK_ADDRESS = "127.0.0.1";
+
     static {
         Logging logging = Logging.initialize();
         logging.setLevel("org.eclipse.jetty", Level.ERROR);
@@ -75,6 +77,7 @@ public class TestingHttpServer
         configurationDecorator.accept(httpConfiguration);
 
         ServerConnector connector;
+        String advertisedAddress;
         if (keystore.isPresent()) {
             httpConfiguration.addCustomizer(new SecureRequestCustomizer(false));
 
@@ -82,13 +85,17 @@ public class TestingHttpServer
             sslContextFactory.setKeyStorePath(keystore.orElseThrow());
             sslContextFactory.setKeyStorePassword("changeit");
             connector = new ServerConnector(server, secureFactories(httpConfiguration, sslContextFactory));
+            connector.setName("https");
+            connector.setHost("0.0.0.0");
+            advertisedAddress = "localhost";
         }
         else {
             connector = new ServerConnector(server, insecureFactories(httpConfiguration));
+            connector.setName("http");
+            connector.setHost(LOOPBACK_ADDRESS);
+            advertisedAddress = LOOPBACK_ADDRESS;
         }
-
         connector.setIdleTimeout(30000);
-        connector.setName(keystore.isPresent() ? "https" : "http");
 
         server.addConnector(connector);
 
@@ -115,7 +122,7 @@ public class TestingHttpServer
 
         this.server = server;
         this.server.start();
-        this.hostAndPort = HostAndPort.fromParts("localhost", connector.getLocalPort());
+        this.hostAndPort = HostAndPort.fromParts(advertisedAddress, connector.getLocalPort());
     }
 
     private ConnectionFactory[] insecureFactories(HttpConfiguration httpConfiguration)
