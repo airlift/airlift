@@ -413,8 +413,8 @@ public final class EverythingClient
                 .withSetting(ELICITATION_ENABLED, false)
                 .withDefaultConnectionSetting(
                         McpConnectionSetting.NOTIFICATION_CONSUMER,
-                        notificationConsumer.andThen(progressConsumer.asNotificationConsumer())
-                                .andThen(loggingConsumer.asNotificationConsumer()));
+                        notificationConsumer.andThen(progressConsumer)
+                                .andThen(loggingConsumer));
     }
 
     /**

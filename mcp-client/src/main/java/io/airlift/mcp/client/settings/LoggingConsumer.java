@@ -2,19 +2,21 @@ package io.airlift.mcp.client.settings;
 
 import io.airlift.mcp.model.LoggingMessageNotification;
 
-import static io.airlift.mcp.client.McpMapper.requireLoggingMessageNotification;
+import java.util.Optional;
+
+import static io.airlift.mcp.client.McpMapper.optionalLoggingMessageNotification;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 
 public interface LoggingConsumer
+        extends NotificationConsumer
 {
     void accept(LoggingMessageNotification notification);
 
-    default NotificationConsumer asNotificationConsumer()
+    @Override
+    default void accept(Object id, String method, Optional<Object> params)
     {
-        return (_, method, params) -> {
-            if (method.equals(NOTIFICATION_MESSAGE)) {
-                accept(requireLoggingMessageNotification(params));
-            }
-        };
+        if (method.equals(NOTIFICATION_MESSAGE)) {
+            optionalLoggingMessageNotification(params).ifPresent(this::accept);
+        }
     }
 }

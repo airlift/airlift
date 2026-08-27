@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.json.JsonMapperProvider;
+import io.airlift.log.Logger;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.InputRequest;
@@ -17,11 +18,15 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
 
 public final class McpMapper
 {
+    private static final Logger log = Logger.get(McpMapper.class);
+
     // backdoor in case the JSON mapper needs to be replaced at runtime
     @Inject
     private static volatile JsonMapper jsonMapper;
@@ -41,14 +46,37 @@ public final class McpMapper
 
     public static LoggingMessageNotification requireLoggingMessageNotification(Optional<Object> params)
     {
-        Object value = params.orElseThrow();    // TODO
-        return jsonMapper.convertValue(value, LoggingMessageNotification.class);
+        return optionalLoggingMessageNotification(params)
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Expected %s params".formatted(NOTIFICATION_MESSAGE))
+                        .asClientException());
+    }
+
+    public static Optional<LoggingMessageNotification> optionalLoggingMessageNotification(Optional<Object> params)
+    {
+        return notification(params, LoggingMessageNotification.class, NOTIFICATION_MESSAGE);
     }
 
     public static ProgressNotification requireProgressNotification(Optional<Object> params)
     {
-        Object value = params.orElseThrow();    // TODO
-        return jsonMapper.convertValue(value, ProgressNotification.class);
+        return optionalProgressNotification(params)
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Expected %s params".formatted(NOTIFICATION_PROGRESS))
+                        .asClientException());
+    }
+
+    public static Optional<ProgressNotification> optionalProgressNotification(Optional<Object> params)
+    {
+        return notification(params, ProgressNotification.class, NOTIFICATION_PROGRESS);
+    }
+
+    private static <T> Optional<T> notification(Optional<Object> params, Class<T> notificationType, String method)
+    {
+        try {
+            return params.map(value -> jsonMapper.convertValue(value, notificationType));
+        }
+        catch (RuntimeException e) {
+            log.debug(e, "Ignoring unreadable %s notification", method);
+            return Optional.empty();
+        }
     }
 
     public static CallToolResult requireCallToolResult(ToolResult toolResult)

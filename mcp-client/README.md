@@ -112,11 +112,24 @@ Every setting always has a value; the current value can be read back with `setti
 
 ## Notifications, logging, and progress
 
-`NOTIFICATION_CONSUMER` is the single point where server notifications are delivered.
+`NOTIFICATION_CONSUMER` is the single point where server notifications are delivered. It receives every notification
+as a raw `(id, method, params)` triple.
+
 [LoggingConsumer](src/main/java/io/airlift/mcp/client/settings/LoggingConsumer.java) and
-[ProgressConsumer](src/main/java/io/airlift/mcp/client/settings/ProgressConsumer.java) are typed adapters — they are
-not settings themselves: use `asNotificationConsumer()` to adapt one and `NotificationConsumer.andThen()` to compose
-them into the notification consumer.
+[ProgressConsumer](src/main/java/io/airlift/mcp/client/settings/ProgressConsumer.java) are narrower views of that
+same setting: each extends `NotificationConsumer`, ignores everything but its own notification, and hands it to you
+already converted — a `LoggingMessageNotification` or a `ProgressNotification`. So either can be used as the
+notification consumer directly, and only the ones you care about need writing:
+
+```java
+ProgressConsumer progressConsumer = progressNotification -> System.out.println(progressNotification.message());
+
+McpConnection connection = mcpClient(httpClient)
+        .withDefaultConnectionSetting(McpConnectionSetting.NOTIFICATION_CONSUMER, progressConsumer)
+        .connect(uri);
+```
+
+Use `NotificationConsumer.andThen()` to have more than one of them, in any mixture with a raw consumer:
 
 ```java
 NotificationConsumer notificationConsumer = (_, method, params) -> System.out.printf("%s: %s%n", method, params);
@@ -127,8 +140,7 @@ McpConnection connection = mcpClient(httpClient)
         .withSetting(McpClientSetting.LOGGING_LEVEL, LoggingLevel.DEBUG)
         .withDefaultConnectionSetting(
                 McpConnectionSetting.NOTIFICATION_CONSUMER,
-                notificationConsumer.andThen(progressConsumer.asNotificationConsumer())
-                        .andThen(loggingConsumer.asNotificationConsumer()))
+                notificationConsumer.andThen(progressConsumer).andThen(loggingConsumer))
         .connect(uri);
 ```
 
@@ -137,7 +149,7 @@ Consumers can also be layered on for a single call by composing with the current
 ```java
 connection.withSetting(
                 McpConnectionSetting.NOTIFICATION_CONSUMER,
-                connection.setting(McpConnectionSetting.NOTIFICATION_CONSUMER).andThen(loggingConsumer.asNotificationConsumer()))
+                connection.setting(McpConnectionSetting.NOTIFICATION_CONSUMER).andThen(loggingConsumer))
         .callTool(callToolRequest);
 ```
 
@@ -410,7 +422,9 @@ the `optional*` forms return an `Optional` (and suit the processor mapper parame
   [structured content](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#structured-content)
 - `requireInputRequests(toolResult)` — the input requests of a task awaiting input
 - `requireLoggingMessageNotification(params)`, `requireProgressNotification(params)` — convert raw notification
-  params into their typed form (what `LoggingConsumer`/`ProgressConsumer` do internally)
+  params into their typed form. The `optional*` forms of these are what `LoggingConsumer`/`ProgressConsumer` use
+  internally: a notification the client cannot read is skipped rather than thrown out of, since throwing on the
+  thread reading the notification stream would end the subscription
 - `jsonMapper()` — the underlying mapper, for anything else
 
 ## Tester/Demo

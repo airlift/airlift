@@ -910,14 +910,14 @@ public abstract class TestMcpClient
 
         return createClient()
                 .withSetting(LOGGING_LEVEL, loggingLevel)
-                .withDefaultConnectionSetting(NOTIFICATION_CONSUMER, loggingConsumer.asNotificationConsumer());
+                .withDefaultConnectionSetting(NOTIFICATION_CONSUMER, loggingConsumer);
     }
 
     private McpClient createProgressClient(BlockingQueue<String> progress)
     {
         ProgressConsumer progressConsumer = notification -> progress.add(notification.message());
 
-        return createClient().withDefaultConnectionSetting(NOTIFICATION_CONSUMER, progressConsumer.asNotificationConsumer());
+        return createClient().withDefaultConnectionSetting(NOTIFICATION_CONSUMER, progressConsumer);
     }
 
     private int rawPostStatus(Optional<String> identity)
