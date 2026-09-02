@@ -841,6 +841,25 @@ public abstract class AbstractHttpClientTest
 
     @Test
     @Timeout(30)
+    public void testTruncatedResponseBodyFails()
+            throws Exception
+    {
+        // The server commits headers promising 100 bytes, writes a few and then aborts the
+        // exchange (connection close on HTTP/1.1, stream reset on HTTP/2). The transport
+        // failure must reach the caller instead of a "successful" response with an empty
+        // or truncated body. The async client reports it through handleException; the
+        // sync client delivers the headers and fails while the body is being read.
+        try (CloseableTestHttpServer server = newServerWithServlet(new TruncatedResponseServlet())) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .build();
+            assertThatThrownBy(() -> executeRequest(server, request, new ReadBodyResponseHandler()))
+                    .isInstanceOf(IOException.class);
+        }
+    }
+
+    @Test
+    @Timeout(30)
     public void testEarlyServerResponseIsDelivered()
             throws Exception
     {
@@ -1308,6 +1327,24 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+    public static class ReadBodyResponseHandler
+            implements ResponseHandler<byte[], Exception>
+    {
+        @Override
+        public byte[] handleException(Request request, Exception exception)
+                throws Exception
+        {
+            throw exception;
+        }
+
+        @Override
+        public byte[] handle(Request request, Response response)
+                throws IOException
+        {
+            return response.getInputStream().readAllBytes();
+        }
+    }
+
     private static class PassThroughResponseHandler
             implements ResponseHandler<Response, RuntimeException>
     {
@@ -1645,6 +1682,23 @@ public abstract class AbstractHttpClientTest
                 bytesRead.addAndGet(n);
             }
             return n;
+        }
+    }
+
+    public static final class TruncatedResponseServlet
+            extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws IOException
+        {
+            response.setStatus(200);
+            response.setContentLength(100);
+            response.getOutputStream().print("short");
+            response.flushBuffer();
+            // Throwing after the response is committed makes the container abort the
+            // exchange rather than complete it, truncating the body on the wire.
+            throw new IllegalStateException("simulated failure after commit");
         }
     }
 
