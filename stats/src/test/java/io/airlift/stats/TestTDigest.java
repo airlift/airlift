@@ -243,6 +243,127 @@ public class TestTDigest
     }
 
     @Test
+    public void testCompressedSerializationEmpty()
+    {
+        TDigest digest = new TDigest();
+        TDigest deserialized = TDigest.deserialize(digest.serializeCompressed());
+
+        assertSimilar(deserialized, digest);
+
+        deserialized.add(10);
+        assertThat(deserialized.getCount()).isEqualTo(1.0);
+        assertThat(deserialized.valueAt(0.5)).isEqualTo(10.0);
+    }
+
+    @Test
+    public void testCompressedSerializationSingle()
+    {
+        TDigest digest = new TDigest();
+        digest.add(1);
+
+        TDigest deserialized = TDigest.deserialize(digest.serializeCompressed());
+
+        assertSimilar(deserialized, digest);
+        assertThat(deserialized.valueAt(0)).isEqualTo(digest.valueAt(0));
+        assertThat(deserialized.valueAt(1)).isEqualTo(digest.valueAt(1));
+    }
+
+    @Test
+    public void testCompressedSerializationComplex()
+    {
+        TDigest digest = new TDigest();
+        addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+
+        assertCompressedRoundTrip(digest);
+    }
+
+    @Test
+    public void testCompressedSerializationNegativeAndLargeValues()
+    {
+        TDigest digest = new TDigest();
+        addAll(digest, asList(-1_000_000, -5, -1, 0, 1, 5, 1_000_000));
+
+        assertCompressedRoundTrip(digest);
+    }
+
+    @Test
+    public void testCompressedSerializationFractionalWeights()
+    {
+        // exercises the non-integral weight path, which falls back to fixed-width doubles
+        TDigest digest = new TDigest();
+        digest.add(1, 0.5);
+        digest.add(2, 1.25);
+        digest.add(3, 99999.999999999);
+
+        assertCompressedRoundTrip(digest);
+    }
+
+    @Test
+    public void testSerializeAutoSelectsCompactForIntegerData()
+    {
+        TDigest digest = new TDigest();
+        for (int i = 0; i < 10_000; i++) {
+            digest.add(i);
+        }
+
+        int compressedSize = digest.serializeCompressed().length();
+        assertThat(compressedSize).isLessThan(digest.serializedSizeInBytes());
+
+        // serialize() picks the smaller encoding, so for this data it returns the compact form
+        assertThat(digest.serialize().length()).isEqualTo(compressedSize);
+    }
+
+    @Test
+    public void testLegacySerializationRoundTrip()
+    {
+        TDigest digest = new TDigest();
+        addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
+
+        // the legacy fixed-width encoder remains readable via deserialize()
+        TDigest deserialized = TDigest.deserialize(digest.serializeLegacy());
+
+        assertSimilar(deserialized, digest);
+        for (double quantile = 0; quantile <= 1; quantile += 0.1) {
+            assertThat(deserialized.valueAt(quantile)).isEqualTo(digest.valueAt(quantile));
+        }
+    }
+
+    @RepeatedTest(1000)
+    public void testCompressedSerializationRandom()
+    {
+        TDigest digest = new TDigest();
+
+        List<Integer> values = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            values.add(ThreadLocalRandom.current().nextInt());
+        }
+
+        addAll(digest, values);
+
+        assertCompressedRoundTrip(digest);
+    }
+
+    @Test
+    public void testDeserializeInvalidFormat()
+    {
+        assertThatThrownBy(() -> TDigest.deserialize(Slices.wrappedBuffer((byte) 99)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid format");
+    }
+
+    private void assertCompressedRoundTrip(TDigest digest)
+    {
+        TDigest deserialized = TDigest.deserialize(digest.serializeCompressed());
+
+        assertSimilar(deserialized, digest);
+
+        // the compact format is lossless, so the reconstructed quantiles must match exactly
+        for (double quantile = 0; quantile <= 1; quantile += 0.1) {
+            assertThat(deserialized.valueAt(quantile)).isEqualTo(digest.valueAt(quantile));
+        }
+    }
+
+    @Test
     public void testAddNaN()
     {
         TDigest digest = new TDigest();
