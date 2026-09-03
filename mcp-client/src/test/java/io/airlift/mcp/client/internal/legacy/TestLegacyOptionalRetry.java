@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 
 import static io.airlift.http.client.Request.Builder.preparePost;
-import static io.airlift.mcp.client.internal.legacy.LegacyOptionalConnection.indicatesLegacyProtocol;
+import static io.airlift.mcp.client.internal.legacy.LegacyOptionalSharedState.indicatesLegacyProtocol;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.UNSUPPORTED_PROTOCOL;
