@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static io.airlift.mcp.client.internal.InternalConnection.createInternalConnection;
 import static io.airlift.mcp.client.internal.legacy.LegacyConnection.createLegacyConnection;
+import static io.airlift.mcp.client.internal.legacy.LegacyOptionalSharedState.State.LATENT;
 import static java.util.Objects.requireNonNull;
 
 public class LegacyOptionalConnection
@@ -53,55 +54,55 @@ public class LegacyOptionalConnection
     @Override
     public DiscoverResult serverDiscover()
     {
-        return sharedState.withRetry(() -> connection().serverDiscover());
+        return sharedState.withConnectionResolution(() -> connection().serverDiscover());
     }
 
     @Override
     public ListToolsResult listTools(Optional<String> cursor)
     {
-        return sharedState.withRetry(() -> connection().listTools(cursor));
+        return sharedState.withConnectionResolution(() -> connection().listTools(cursor));
     }
 
     @Override
     public ListPromptsResult listPrompts(Optional<String> cursor)
     {
-        return sharedState.withRetry(() -> connection().listPrompts(cursor));
+        return sharedState.withConnectionResolution(() -> connection().listPrompts(cursor));
     }
 
     @Override
     public ListResourcesResult listResources(Optional<String> cursor)
     {
-        return sharedState.withRetry(() -> connection().listResources(cursor));
+        return sharedState.withConnectionResolution(() -> connection().listResources(cursor));
     }
 
     @Override
     public ListResourceTemplatesResult listResourceTemplates(Optional<String> cursor)
     {
-        return sharedState.withRetry(() -> connection().listResourceTemplates(cursor));
+        return sharedState.withConnectionResolution(() -> connection().listResourceTemplates(cursor));
     }
 
     @Override
     public CallToolResult callTool(CallToolRequest callToolRequest)
     {
-        return sharedState.withRetry(() -> connection().callTool(callToolRequest));
+        return sharedState.withConnectionResolution(() -> connection().callTool(callToolRequest));
     }
 
     @Override
     public ToolResult callToolOrTask(CallToolRequest callToolRequest)
     {
-        return sharedState.withRetry(() -> connection().callToolOrTask(callToolRequest));
+        return sharedState.withConnectionResolution(() -> connection().callToolOrTask(callToolRequest));
     }
 
     @Override
     public ToolResult getTask(GetTaskRequest request)
     {
-        return sharedState.withRetry(() -> connection().getTask(request));
+        return sharedState.withConnectionResolution(() -> connection().getTask(request));
     }
 
     @Override
     public void cancelTask(String taskId)
     {
-        sharedState.withRetry(() -> {
+        sharedState.withConnectionResolution(() -> {
             connection().cancelTask(taskId);
             return null;
         });
@@ -110,7 +111,7 @@ public class LegacyOptionalConnection
     @Override
     public void updateTask(UpdateTaskRequest request)
     {
-        sharedState.withRetry(() -> {
+        sharedState.withConnectionResolution(() -> {
             connection().updateTask(request);
             return null;
         });
@@ -127,25 +128,31 @@ public class LegacyOptionalConnection
     @Override
     public GetPromptResult getPrompt(GetPromptRequest getPromptRequest)
     {
-        return sharedState.withRetry(() -> connection().getPrompt(getPromptRequest));
+        return sharedState.withConnectionResolution(() -> connection().getPrompt(getPromptRequest));
     }
 
     @Override
     public ReadResourceResult readResource(ReadResourceRequest readResourceRequest)
     {
-        return sharedState.withRetry(() -> connection().readResource(readResourceRequest));
+        return sharedState.withConnectionResolution(() -> connection().readResource(readResourceRequest));
     }
 
     @Override
     public CompleteResult completeCompletion(CompleteRequest completeRequest)
     {
-        return sharedState.withRetry(() -> connection().completeCompletion(completeRequest));
+        return sharedState.withConnectionResolution(() -> connection().completeCompletion(completeRequest));
     }
 
     @Override
     public AutoCloseable subscribe(SubscriptionNotifications subscriptionNotifications)
     {
-        return sharedState.withRetry(() -> connection().subscribe(subscriptionNotifications));
+        if (sharedState.state() == LATENT) {
+            // connection hasn't been resolved yet, and subscriptions are background tasks
+            // use serverDiscover() to force connection resolution
+            serverDiscover();
+        }
+        // retry is not needed as above code is guaranteed to resolve the connection
+        return connection().subscribe(subscriptionNotifications);
     }
 
     @Override

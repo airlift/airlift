@@ -11,6 +11,8 @@ import io.airlift.mcp.client.settings.ResponseFilter;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.SubscriptionFilter;
+import io.airlift.mcp.model.SubscriptionNotifications;
 import io.airlift.mcp.model.UnsupportedProtocolVersionError;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -330,6 +332,27 @@ public class TestLegacyOptionalFallback
             assertThat(requests.get() - before).isEqualTo(1);
 
             assertThat(connection.serverDiscover().supportedVersions()).contains(PROTOCOL_MCP_2026_07_28.value());
+        }
+    }
+
+    @Test
+    public void testSubscribeFirstStillResolvesTheProtocol()
+            throws Exception
+    {
+        AtomicBoolean rejected = new AtomicBoolean();
+
+        try (McpConnection connection = client(rejected).connect(uri())) {
+            // subscribing is the first thing this connection does. A listen stream is driven on a background
+            // thread, so its outcome cannot serve as the protocol probe - the protocol has to be settled by a
+            // request whose result is actually observed, or a legacy only server would never be detected
+            SubscriptionFilter filter = new SubscriptionFilter(Optional.of(true), Optional.of(true), Optional.of(true), Optional.empty());
+            try (AutoCloseable subscription = connection.subscribe(new SubscriptionNotifications(filter, Optional.empty()))) {
+                assertThat(subscription).isNotNull();
+                assertThat(rejected).isTrue();
+
+                // the fallback happened, so the subscription was opened against the legacy connection
+                assertThat(connection.serverDiscover().supportedVersions()).containsExactly(PROTOCOL_MCP_2025_11_25.value());
+            }
         }
     }
 

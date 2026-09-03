@@ -76,7 +76,7 @@ final class LegacyOptionalSharedState
         return legacyConnectionSupplier.get();
     }
 
-    <R> R withRetry(Supplier<R> proc)
+    <R> R withConnectionResolution(Supplier<R> proc)
     {
         if (state.get() == LATENT) {
             transitionLock.lock();
