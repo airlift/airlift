@@ -65,7 +65,7 @@ final class LegacyOptionalSharedState
         state.set(newState);
     }
 
-    LegacyConnection rewLegacyConnection()
+    LegacyConnection legacyConnection()
     {
         return legacyConnectionSupplier.get();
     }

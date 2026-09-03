@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
-class LegacyOptionalThunk
+class LegacyOptionalConnectionState
         implements Closeable
 {
     private final InternalConnection internalConnection;
     private final AtomicReference<LegacyConnection> legacyConnection = new AtomicReference<>();
 
-    LegacyOptionalThunk(InternalConnection internalConnection)
+    LegacyOptionalConnectionState(InternalConnection internalConnection)
     {
         this.internalConnection = requireNonNull(internalConnection, "internalConnection is null");
     }
@@ -34,11 +34,11 @@ class LegacyOptionalThunk
         };
     }
 
-    <V> LegacyOptionalThunk withSetting(McpConnectionSetting<V> setting, V value)
+    <V> LegacyOptionalConnectionState withSetting(McpConnectionSetting<V> setting, V value)
     {
         // internalConnection is source of truth for settings
-        // the new LegacyOptionalThunk's legacyConnection will be created lazily when needed and will use the settings from internalConnection
-        return new LegacyOptionalThunk(internalConnection.withSetting(setting, value));
+        // the new LegacyOptionalConnectionState's legacyConnection will be created lazily when needed and will use the settings from internalConnection
+        return new LegacyOptionalConnectionState(internalConnection.withSetting(setting, value));
     }
 
     void transition(LegacyOptionalSharedState sharedState, State newState)
@@ -70,7 +70,8 @@ class LegacyOptionalThunk
                 return current;
             }
 
-            return sharedState.rewLegacyConnection().withMergedSettingContainer(internalConnection.settingContainer());
+            return sharedState.legacyConnection()
+                    .withMergedSettingContainer(internalConnection.settingContainer());
         });
     }
 }

@@ -49,19 +49,19 @@ public class LegacyOptionalConnection
         implements McpTasksConnection
 {
     private final LegacyOptionalSharedState sharedState;
-    private final LegacyOptionalThunk thunk;
+    private final LegacyOptionalConnectionState connectionState;
 
     public static LegacyOptionalConnection createLegacyOptionalConnection(InternalClient client, URI uri, SettingContainer settingContainer, boolean tasksEnabled)
     {
         InternalConnection internalConnection = createInternalConnection(client, uri, settingContainer, tasksEnabled);
         LegacyOptionalSharedState sharedState = new LegacyOptionalSharedState(() -> createLegacyConnection(internalConnection.requestController()));
-        return new LegacyOptionalConnection(sharedState, new LegacyOptionalThunk(internalConnection));
+        return new LegacyOptionalConnection(sharedState, new LegacyOptionalConnectionState(internalConnection));
     }
 
-    private LegacyOptionalConnection(LegacyOptionalSharedState sharedState, LegacyOptionalThunk thunk)
+    private LegacyOptionalConnection(LegacyOptionalSharedState sharedState, LegacyOptionalConnectionState connectionState)
     {
         this.sharedState = requireNonNull(sharedState, "sharedState is null");
-        this.thunk = requireNonNull(thunk, "thunk is null");
+        this.connectionState = requireNonNull(connectionState, "connectionState is null");
     }
 
     @Override
@@ -135,7 +135,7 @@ public class LegacyOptionalConnection
             throws InterruptedException
     {
         // no need for a retry here. InternalConnection merely sleeps
-        thunk.internalConnection().sleepTask(task);
+        connectionState.internalConnection().sleepTask(task);
     }
 
     @Override
@@ -165,27 +165,27 @@ public class LegacyOptionalConnection
     @Override
     public URI uri()
     {
-        return thunk.internalConnection().uri();
+        return connectionState.internalConnection().uri();
     }
 
     @Override
     public <V> V setting(McpConnectionSetting<V> setting)
     {
-        return thunk.get(sharedState).setting(setting);
+        return connectionState.get(sharedState).setting(setting);
     }
 
     @Override
     public <V> McpTasksConnection withSetting(McpConnectionSetting<V> setting, V value)
     {
-        LegacyOptionalThunk newThunk = thunk.withSetting(setting, value);
-        return new LegacyOptionalConnection(sharedState, newThunk);
+        LegacyOptionalConnectionState newConnectionState = connectionState.withSetting(setting, value);
+        return new LegacyOptionalConnection(sharedState, newConnectionState);
     }
 
     @SuppressWarnings("EmptyTryBlock")
     @Override
     public void close()
     {
-        try (sharedState; thunk) {
+        try (sharedState; connectionState) {
             // NOP
         }
     }
@@ -203,18 +203,18 @@ public class LegacyOptionalConnection
                 // essentially a double-checked lock to avoid unnecessary locking in the common case
                 if (sharedState.state() == LATENT) {
                     try {
-                        R result = proc.call(thunk.get(sharedState));
-                        thunk.transition(sharedState, CURRENT);
+                        R result = proc.call(connectionState.get(sharedState));
+                        connectionState.transition(sharedState, CURRENT);
                         return result;
                     }
                     catch (McpException mcpException) {
                         if (indicatesLegacyProtocol(mcpException)) {
-                            thunk.transition(sharedState, LEGACY);
+                            connectionState.transition(sharedState, LEGACY);
                             // will retry with the legacy connection below
                         }
                         else {
                             // the current protocol is fine - this failure was about something else
-                            thunk.transition(sharedState, CURRENT);
+                            connectionState.transition(sharedState, CURRENT);
                             throw mcpException;
                         }
                     }
@@ -225,7 +225,7 @@ public class LegacyOptionalConnection
             }
         }
 
-        return proc.call(thunk.get(sharedState));
+        return proc.call(connectionState.get(sharedState));
     }
 
     @VisibleForTesting
