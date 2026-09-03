@@ -151,7 +151,8 @@ public class LegacyOptionalConnection
             // use serverDiscover() to force connection resolution
             serverDiscover();
         }
-        // retry is not needed as above code is guaranteed to resolve the connection
+
+        // withConnectionResolution() is not needed here as above code is guaranteed to resolve the connection
         return connection().subscribe(subscriptionNotifications);
     }
 
