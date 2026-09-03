@@ -59,6 +59,7 @@ import java.util.Set;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpException.exceptionWithData;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
@@ -207,7 +208,7 @@ public class OperationsImpl
                 .filter(contents -> !contents.isEmpty())
                 .orElseThrow(() -> {
                     Map<String, String> data = ImmutableMap.of("uri", readResourceRequest.uri());
-                    return new McpClientException(exception(INVALID_PARAMS, "Resource not found: " + readResourceRequest.uri(), data));
+                    return new McpClientException(exceptionWithData(INVALID_PARAMS, "Resource not found: " + readResourceRequest.uri(), data));
                 });
 
         return new ReadResourceResult(resourceContents);
@@ -238,7 +239,11 @@ public class OperationsImpl
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
         try {
-            return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+            CallToolResult callToolResult = toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+            if (callToolResult.resultType().isEmpty()) {
+                return callToolResult.withResultType(COMPLETE);
+            }
+            return callToolResult;
         }
         catch (McpClientException mcpClientException) {
             return CallToolResult.forError(mcpClientException);
@@ -259,7 +264,11 @@ public class OperationsImpl
         PromptEntry promptEntry = entities.promptEntry(requestContext, getPromptRequest.name())
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name()));
 
-        return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
+        GetPromptResult getPromptResult = promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
+        if (getPromptResult.resultType().isEmpty()) {
+            return getPromptResult.withResultType(COMPLETE);
+        }
+        return getPromptResult;
     }
 
     private ListResourcesResult listResources(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
