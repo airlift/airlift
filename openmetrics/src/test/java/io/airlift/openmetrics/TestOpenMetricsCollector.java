@@ -7,12 +7,15 @@ import io.airlift.metrics.MetricSource.JmxMetricSource;
 import io.airlift.metrics.MetricSource.ManagedMetricSource;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
+import io.airlift.openmetrics.types.ExponentialHistogramMetric;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.Distribution;
 import io.airlift.stats.DistributionStat;
+import io.airlift.stats.ExponentialHistogram.Buckets;
+import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import io.airlift.stats.TimeDistribution;
 import io.airlift.stats.TimeStat;
 import io.airlift.testing.TestingTicker;
@@ -201,6 +204,124 @@ public class TestOpenMetricsCollector
             assertThat(summary.quantiles()).containsKeys(0.01, 0.5, 0.99);
             assertThat(summary.labels()).isEqualTo(LABELS);
             assertThat(summary.help()).isEqualTo("metric help");
+        });
+    }
+
+    @Test
+    public void testConvertDistributionToProtobufExponentialHistogram()
+    {
+        ExponentialHistogramSnapshot snapshot = new ExponentialHistogramSnapshot(
+                12,
+                2,
+                300,
+                100,
+                200,
+                0,
+                new Buckets(0, new long[] {1, 1}),
+                new Buckets(0, new long[0]));
+        Distribution distribution = new Distribution()
+        {
+            @Override
+            public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
+            {
+                return Optional.of(snapshot);
+            }
+        };
+
+        Optional<Metric> metric = OpenMetricsCollector.toPrometheusProtobufMetric(
+                new Attribute(List.of("metric_name"), distribution, "metric help"),
+                LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(ExponentialHistogramMetric.class, histogram -> {
+            assertThat(histogram.metricName()).isEqualTo("metric_name");
+            assertThat(histogram.snapshot().scale()).isEqualTo(8);
+            assertThat(histogram.snapshot().count()).isEqualTo(2);
+            assertThat(histogram.labels()).isEqualTo(LABELS);
+            assertThat(histogram.help()).isEqualTo("metric help");
+            assertThat(histogram.unit()).isNull();
+        });
+    }
+
+    @Test
+    public void testConvertDistributionWithoutExponentialHistogramToProtobufSummary()
+    {
+        Distribution distribution = new Distribution()
+        {
+            @Override
+            public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
+            {
+                return Optional.empty();
+            }
+        };
+        distribution.add(100);
+        distribution.add(200);
+
+        Optional<Metric> metric = OpenMetricsCollector.toPrometheusProtobufMetric(
+                new Attribute(List.of("metric_name"), distribution, "metric help"),
+                LABELS);
+
+        assertThat(metric.orElseThrow()).isInstanceOf(Summary.class);
+    }
+
+    @Test
+    public void testDropProtobufExponentialHistogramBelowPrometheusMinimumScale()
+    {
+        ExponentialHistogramSnapshot snapshot = new ExponentialHistogramSnapshot(
+                -5,
+                2,
+                300,
+                100,
+                200,
+                0,
+                new Buckets(0, new long[] {1, 1}),
+                new Buckets(0, new long[0]));
+        Distribution distribution = new Distribution()
+        {
+            @Override
+            public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
+            {
+                return Optional.of(snapshot);
+            }
+        };
+
+        Optional<Metric> metric = OpenMetricsCollector.toPrometheusProtobufMetric(
+                new Attribute(List.of("metric_name"), distribution, "metric help"),
+                LABELS);
+
+        assertThat(metric).isEmpty();
+    }
+
+    @Test
+    public void testConvertTimeStatToProtobufExponentialHistogram()
+    {
+        ExponentialHistogramSnapshot snapshot = new ExponentialHistogramSnapshot(
+                8,
+                1,
+                100,
+                100,
+                100,
+                0,
+                new Buckets(0, new long[] {1}),
+                new Buckets(0, new long[0]));
+        TimeStat timeStat = new TimeStat()
+        {
+            @Override
+            public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
+            {
+                return Optional.of(snapshot);
+            }
+        };
+
+        Optional<Metric> metric = OpenMetricsCollector.toPrometheusProtobufMetric(
+                new Attribute(List.of("metric_name"), timeStat, "metric help"),
+                LABELS);
+
+        assertThat(metric).isPresent();
+        assertThat(metric.orElseThrow()).isInstanceOfSatisfying(ExponentialHistogramMetric.class, histogram -> {
+            assertThat(histogram.metricName()).isEqualTo("metric_name");
+            assertThat(histogram.snapshot()).isEqualTo(snapshot);
+            assertThat(histogram.unit()).isEqualTo("ns");
         });
     }
 

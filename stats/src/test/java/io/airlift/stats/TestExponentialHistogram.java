@@ -287,6 +287,42 @@ class TestExponentialHistogram
     }
 
     @Test
+    public void testSnapshotDownscaleToAtMost()
+    {
+        ExponentialHistogramSnapshot snapshot = new ExponentialHistogramSnapshot(
+                2,
+                22,
+                4,
+                -4,
+                4,
+                2,
+                new Buckets(4, new long[] {1, 2, 3, 4}),
+                new Buckets(-4, new long[] {4, 3, 2, 1}));
+
+        ExponentialHistogramSnapshot downscaled = snapshot.downscaleToAtMost(0);
+
+        assertThat(downscaled.scale()).isEqualTo(0);
+        assertThat(downscaled.count()).isEqualTo(22);
+        assertThat(downscaled.sum()).isEqualTo(4);
+        assertThat(downscaled.min()).isEqualTo(-4);
+        assertThat(downscaled.max()).isEqualTo(4);
+        assertThat(downscaled.zeroCount()).isEqualTo(2);
+        assertThat(downscaled.positiveBuckets()).isEqualTo(new Buckets(1, new long[] {10}));
+        assertThat(downscaled.negativeBuckets()).isEqualTo(new Buckets(-1, new long[] {10}));
+        assertThat(downscaled.downscaleToAtMost(1)).isSameAs(downscaled);
+    }
+
+    @Test
+    public void testSnapshotDownscaleToAtMostValidatesScale()
+    {
+        ExponentialHistogramSnapshot snapshot = new ExponentialHistogram().snapshot();
+
+        assertThatThrownBy(() -> snapshot.downscaleToAtMost(ExponentialHistogram.MIN_SCALE - 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("targetScale must be between -10 and 20");
+    }
+
+    @Test
     public void testReset()
     {
         ExponentialHistogram histogram = new ExponentialHistogram(1, 3);

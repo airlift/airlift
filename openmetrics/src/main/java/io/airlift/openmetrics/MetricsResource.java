@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import static io.airlift.openmetrics.MetricsUtils.groupMetricFamilies;
-import static io.airlift.openmetrics.MetricsUtils.writeMetricFamilies;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -37,6 +36,8 @@ import static java.util.Objects.requireNonNull;
 public class MetricsResource
 {
     private static final String OPENMETRICS_CONTENT_TYPE = "application/openmetrics-text; version=1.0.0; charset=utf-8";
+    // OpenMetrics text is the default; protobuf is selected only after explicit negotiation.
+    private static final String PROMETHEUS_PROTOBUF_CONTENT_TYPE = "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited; qs=0.9";
 
     private final OpenMetricsCollector collector;
 
@@ -55,10 +56,18 @@ public class MetricsResource
         // metrics write directly to the response stream, so the exposition is never held in memory
         return output -> {
             Writer writer = new BufferedWriter(new OutputStreamWriter(output, UTF_8));
-            writeMetricFamilies(writer, metricFamilies);
+            MetricsUtils.writeMetricFamilies(writer, metricFamilies);
             writer.write("# EOF\n");
             writer.flush();
         };
+    }
+
+    @GET
+    @Produces(PROMETHEUS_PROTOBUF_CONTENT_TYPE)
+    public StreamingOutput getPrometheusProtobufMetrics(@QueryParam("name[]") List<String> filter)
+    {
+        Map<String, List<Metric>> metricFamilies = groupMetricFamilies(collector.collectPrometheusProtobuf(filter));
+        return output -> PrometheusProtobufWriter.writeMetricFamilies(output, metricFamilies);
     }
 
     @VisibleForTesting
