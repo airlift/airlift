@@ -17,6 +17,7 @@ import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.ApiTrait;
 import io.airlift.api.ApiType;
 import io.airlift.api.ApiValidateOnly;
+import io.airlift.api.TypedApiOrderBy;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
 import io.airlift.api.model.ModelResource;
@@ -29,6 +30,7 @@ import jakarta.ws.rs.core.Context;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.HashSet;
@@ -36,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.airlift.api.builders.MethodBuilder.OPTIONAL_PARAMETER_MAP;
+import static io.airlift.api.builders.MethodBuilder.optionalParameterFor;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
@@ -54,9 +56,9 @@ public interface MethodValidator
 
     Map<ApiType, Collection<Class<?>>> ALLOWED_PARAMETER_TYPES = ImmutableMap.of(
             ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class /*, ApiOrderBy.class*/),
-            ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),
+            ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
             ApiType.CREATE, ImmutableSet.of(ApiValidateOnly.class, ApiModifier.class, ApiHeader.class),
-            ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),
+            ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class, TypedApiOrderBy.class),
             ApiType.DELETE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class));
 
     static void validateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits)
@@ -161,18 +163,23 @@ public interface MethodValidator
         if (optionalParameter.location() != QUERY) {
             return Stream.empty();
         }
-        if (optionalParameter.type().equals(ApiFilter.class) || optionalParameter.type().equals(ApiFilterList.class)) {
+        if (isFilterType(optionalParameter.type())) {
             return optionalParameter.externalParameters().stream().map(ModelOptionalParameter.ExternalParameter::name);
         }
-        if (optionalParameter.type().equals(ApiOrderBy.class)) {
+        if (optionalParameter.type().equals(ApiOrderBy.class) || rawTypeEquals(optionalParameter.type(), TypedApiOrderBy.class)) {
             return optionalParameter.limitedValues().stream();
         }
         return Stream.empty();
     }
 
+    private static boolean rawTypeEquals(Type type, Class<?> expectedRawType)
+    {
+        return (type instanceof ParameterizedType parameterizedType) && parameterizedType.getRawType().equals(expectedRawType);
+    }
+
     private static void validateOptionalParameter(ModelMethod method, Parameter parameter, Collection<Class<?>> allowedParameterTypes, ApiParameter apiParameter)
     {
-        ModelOptionalParameter optionalParameter = OPTIONAL_PARAMETER_MAP.get(parameter.getType());
+        ModelOptionalParameter optionalParameter = optionalParameterFor(parameter);
 
         validateApiParameter(method.method(), parameter, allowedParameterTypes, apiParameter, optionalParameter.metadata().contains(MULTIPLE_ALLOWED));
 
@@ -181,6 +188,20 @@ public interface MethodValidator
         if (optionalParameter.metadata().contains(REQUIRES_ALLOWED_VALUES) && !hasAllowedValues) {
             throw new ValidatorException("%s parameter requires allowedValues".formatted(optionalParameter.type()));
         }
+    }
+
+    private static boolean isFilterType(Type type)
+    {
+        Class<?> rawType = null;
+        if (type instanceof Class<?> clazz) {
+            rawType = clazz;
+        }
+        else if ((type instanceof ParameterizedType parameterizedType) && (parameterizedType.getRawType() instanceof Class<?> clazz)) {
+            rawType = clazz;
+        }
+        return rawType != null &&
+                (rawType.equals(ApiFilter.class) ||
+                        rawType.equals(ApiFilterList.class));
     }
 
     private static void validateApiParameter(Method method, Parameter parameter, Collection<Class<?>> allowedParameterTypes, ApiParameter apiParameter, boolean multipleAllowed)
