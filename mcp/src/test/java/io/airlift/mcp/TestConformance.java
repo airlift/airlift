@@ -24,9 +24,33 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 public class TestConformance
 {
     private static final List<String> SCENARIOS = List.of(
+            "tasks-lifecycle",
+            "tasks-capability-negotiation",
+            "tasks-wire-fields",
+            "tasks-request-state-removal",
+            "tasks-mrtr-input",
+            "tasks-request-headers",
+            "tasks-dispatch-and-envelope",
+            "tasks-status-notifications",
+            "tasks-required-task-error",
+            "tasks-mrtr-composition",
             "http-header-validation",
             "server-stateless",
             "caching",
+            "input-required-result-validate-input",
+            "input-required-result-ignore-extra-params",
+            "input-required-result-capability-check",
+            "input-required-result-tampered-state",
+            "input-required-result-result-type",
+            "input-required-result-missing-input-response",
+            "input-required-result-multi-round",
+            "input-required-result-multiple-input-requests",
+            "input-required-result-basic-elicitation",
+            "input-required-result-basic-sampling",
+            "input-required-result-basic-list-roots",
+            "input-required-result-request-state",
+            "input-required-result-non-tool-request",
+            "input-required-result-unsupported-methods",
             "sep-2164-resource-not-found",
             "server-initialize",
             "logging-set-level",
@@ -93,7 +117,7 @@ public class TestConformance
     public void testConformance(String scenario)
     {
         // see: https://github.com/modelcontextprotocol/conformance?tab=readme-ov-file#testing-servers
-        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@0.2.0-alpha.10", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
+        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@0.2.0-alpha.11", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
         assertThat(result).contains("0 failed, 0 warnings");
     }
 

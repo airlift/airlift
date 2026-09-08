@@ -11,8 +11,10 @@ import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpMetadataMapper;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.McpTaskController.SetStatus;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ToolEntry;
+import io.airlift.mcp.internal.InternalTaskController;
 import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.CacheableResult;
 import io.airlift.mcp.model.CallToolRequest;
@@ -23,6 +25,7 @@ import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.DiscoverResult;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetTaskRequest;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
@@ -46,6 +49,8 @@ import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscriptionNotifications;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolResult;
+import io.airlift.mcp.model.UpdateTaskRequest;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,13 +62,18 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
+import static io.airlift.mcp.McpTaskController.SetStatus.TASK_NOT_FOUND;
+import static io.airlift.mcp.internal.InternalTaskController.validateClientCapabilities;
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
+import static io.airlift.mcp.model.CallToolResult.forError;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METADATA_SERVER_INFO;
+import static io.airlift.mcp.model.Constants.METADATA_TASKS;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
@@ -72,12 +82,16 @@ import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SERVER_DISCOVER;
 import static io.airlift.mcp.model.Constants.METHOD_SUBSCRIPTIONS_LISTEN;
+import static io.airlift.mcp.model.Constants.METHOD_TASKS_CANCEL;
+import static io.airlift.mcp.model.Constants.METHOD_TASKS_GET;
+import static io.airlift.mcp.model.Constants.METHOD_TASKS_UPDATE;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.ResultType.COMPLETE;
+import static io.airlift.mcp.model.TaskErrorState.CANCELLATION_REQUESTED;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_METHOD_NAME;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_RESOURCE_URI;
@@ -99,6 +113,7 @@ public class OperationsImpl
     private final McpEntities entities;
     private final ValidationMode validationMode;
     private final PaginationUtil paginationUtil;
+    private final Optional<InternalTaskController> taskController;
     private final Duration resourceSubscriptionCachePeriod;
     private final Duration streamingTimeout;
 
@@ -110,18 +125,23 @@ public class OperationsImpl
             IconHelper iconHelper,
             @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
             McpEntities entities,
-            ValidationMode validationMode)
+            ValidationMode validationMode,
+            Optional<InternalTaskController> taskController)
     {
         this.metadataMapper = requireNonNull(metadataMapper, "metadataMapper is null");
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.iconHelper = requireNonNull(iconHelper, "iconHelper is null");
         this.serverIcons = requireNonNull(serverIcons, "serverIcons is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.validationMode = requireNonNull(validationMode, "validationMode is null");
+        this.taskController = requireNonNull(taskController, "taskController is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
         resourceSubscriptionCachePeriod = mcpConfig.getResourceSubscriptionCachePeriod().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
+
+        this.jsonMapper = jsonMapper.rebuild()
+                .disable(FAIL_ON_EMPTY_BEANS)
+                .build();
     }
 
     @Override
@@ -138,7 +158,7 @@ public class OperationsImpl
         Meta<?> meta = rpcRequest.params().map(params -> jsonMapper.convertValue(params, MetaOnly.class))
                 .orElse(MetaOnly.EMPTY_META);
         RequestMetadata requestMetadata = RequestMetadata.fromRequest(jsonMapper, request, meta, method, validationMode);
-        RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated);
+        RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated, taskController);
 
         McpMetadata workMetadata = metadataMapper.map(requestContext.request());
         Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> workMetadata.implementation().withAdditionalIcons(icons))
@@ -156,6 +176,9 @@ public class OperationsImpl
             case METHOD_COMPLETION_COMPLETE -> completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
             case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, metadata, requestMetadata);
             case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
+            case METHOD_TASKS_GET -> getTask(requestMetadata, convertParams(jsonMapper, rpcRequest, GetTaskRequest.class));
+            case METHOD_TASKS_CANCEL -> cancelTask(requestMetadata, convertParams(jsonMapper, rpcRequest, GetTaskRequest.class));
+            case METHOD_TASKS_UPDATE -> updateTask(requestMetadata, convertParams(jsonMapper, rpcRequest, UpdateTaskRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
@@ -217,7 +240,7 @@ public class OperationsImpl
     {
         if (validationMode == ValidationMode.STRICT) {
             String mcpName = requestMetadata.mcpName().orElse("");
-            if (!mcpName.strip().equals(name)) {
+            if (!mcpName.strip().equals(name.strip())) {
                 throw exception(HEADER_MISMATCH, "%s does not match request name: %s".formatted(HEADER_MCP_NAME, name));
             }
         }
@@ -229,7 +252,7 @@ public class OperationsImpl
         return paginationUtil.paginate(listRequest, localTools, Tool::name, (tools, newCursor) -> withCacheableResult(metadata, ListToolsResult.class, new ListToolsResult(tools, newCursor)));
     }
 
-    private CallToolResult callTool(RequestContextImpl requestContext, RequestMetadata requestMetadata, CallToolRequest callToolRequest)
+    private ToolResult callTool(RequestContextImpl requestContext, RequestMetadata requestMetadata, CallToolRequest callToolRequest)
     {
         validateMcpName(requestMetadata, callToolRequest.name());
         entities.validateToolAllowed(requestContext, callToolRequest.name());
@@ -238,10 +261,14 @@ public class OperationsImpl
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
         try {
-            return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+            ToolResult toolResult = toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+            if ((toolResult instanceof CallToolResult callToolResult) && callToolResult.resultType().isEmpty()) {
+                return callToolResult.withResultType(COMPLETE);
+            }
+            return toolResult;
         }
         catch (McpClientException mcpClientException) {
-            return CallToolResult.forError(mcpClientException);
+            return forError(mcpClientException);
         }
     }
 
@@ -259,7 +286,11 @@ public class OperationsImpl
         PromptEntry promptEntry = entities.promptEntry(requestContext, getPromptRequest.name())
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name()));
 
-        return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
+        GetPromptResult getPromptResult = promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
+        if (getPromptResult.resultType().isEmpty()) {
+            return getPromptResult.withResultType(COMPLETE);
+        }
+        return getPromptResult;
     }
 
     private ListResourcesResult listResources(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
@@ -303,12 +334,56 @@ public class OperationsImpl
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(true, true)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
+                taskController.isPresent() ? Optional.of(ImmutableMap.of(METADATA_TASKS, new Object())) : Optional.empty(),
                 Optional.empty());
 
         return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(Optional.of(COMPLETE), SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
     }
 
-    private <T extends CacheableResult<?>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
+    private ToolResult getTask(RequestMetadata requestMetadata, GetTaskRequest getTaskRequest)
+    {
+        validateMcpName(requestMetadata, getTaskRequest.taskId());
+        validateClientCapabilities(requestMetadata.clientCapabilities());
+
+        return taskController.map(controller -> controller.currentTaskResult(getTaskRequest.taskId())
+                        .orElseThrow(() -> exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId())))
+                .orElseThrow(() -> new IllegalStateException("Tasks are not configured in this server"));
+    }
+
+    private Object cancelTask(RequestMetadata requestMetadata, GetTaskRequest getTaskRequest)
+    {
+        validateMcpName(requestMetadata, getTaskRequest.taskId());
+        validateClientCapabilities(requestMetadata.clientCapabilities());
+
+        taskController.ifPresentOrElse(controller -> {
+            if (controller.setErrorState(getTaskRequest.taskId(), CANCELLATION_REQUESTED, Optional.empty()) == TASK_NOT_FOUND) {
+                throw exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId());
+            }
+        }, () -> {
+            throw new IllegalStateException("Tasks are not configured in this server");
+        });
+        return ImmutableMap.of("resultType", COMPLETE);
+    }
+
+    private Object updateTask(RequestMetadata requestMetadata, UpdateTaskRequest updateTaskRequest)
+    {
+        validateMcpName(requestMetadata, updateTaskRequest.taskId());
+        validateClientCapabilities(requestMetadata.clientCapabilities());
+
+        taskController.ifPresentOrElse(controller -> {
+            SetStatus setStatus = controller.setTaskInputResponses(updateTaskRequest.taskId(), Optional.of(updateTaskRequest.inputResponses()));
+            switch (setStatus) {
+                case TASK_NOT_FOUND -> throw exception(INVALID_PARAMS, "Task not found: " + updateTaskRequest.taskId());
+                case TASK_COMPLETED -> throw exception(INVALID_PARAMS, "Task is already completed: " + updateTaskRequest.taskId());
+                case SUCCESS -> {}
+            }
+        }, () -> {
+            throw new IllegalStateException("Tasks are not configured in this server");
+        });
+        return ImmutableMap.of("resultType", COMPLETE);
+    }
+
+    private <T extends CacheableResult<T>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
     {
         return clazz.cast(result.withCacheableResult(metadata.cacheableResultValues().ttlMs().orElse(0), metadata.cacheableResultValues().cacheScope().orElse(PRIVATE)));
     }

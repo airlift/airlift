@@ -1,7 +1,5 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.model.JsonSchemaBuilder;
-
 /**
  * IMPORTANT: all attributes of this annotation are mutually
  * exclusive. Only one attribute can be specified at a time.
