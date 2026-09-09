@@ -13,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record DiscoverResult(
-        Optional<ResultType> resultType,
         List<String> supportedVersions,
         ServerCapabilities capabilities,
         Optional<String> instructions,
@@ -24,7 +23,6 @@ public record DiscoverResult(
 {
     public DiscoverResult
     {
-        resultType = requireNonNullElse(resultType, Optional.empty());
         supportedVersions = ImmutableList.copyOf(supportedVersions);
         requireNonNull(capabilities, "capabilities is null");
         instructions = requireNonNullElse(instructions, Optional.empty());
@@ -36,12 +34,12 @@ public record DiscoverResult(
     @Override
     public DiscoverResult withMeta(Map<String, Object> meta)
     {
-        return new DiscoverResult(resultType, supportedVersions, capabilities, instructions, ttlMs, cacheScope, Optional.of(meta));
+        return new DiscoverResult(supportedVersions, capabilities, instructions, ttlMs, cacheScope, Optional.of(meta));
     }
 
     @Override
     public DiscoverResult withCacheableResult(int ttlMs, CacheScope cacheScope)
     {
-        return new DiscoverResult(Optional.of(ResultType.COMPLETE), supportedVersions, capabilities, instructions, OptionalInt.of(ttlMs), Optional.of(cacheScope), meta);
+        return new DiscoverResult(supportedVersions, capabilities, instructions, OptionalInt.of(ttlMs), Optional.of(cacheScope), meta);
     }
 }
