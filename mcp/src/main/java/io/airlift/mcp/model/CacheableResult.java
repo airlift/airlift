@@ -32,12 +32,6 @@ public interface CacheableResult<T extends CacheableResult<T>>
     };
 
     @JsonProperty
-    default Optional<ResultType> resultType()
-    {
-        return Optional.empty();
-    }
-
-    @JsonProperty
     default OptionalInt ttlMs()
     {
         return OptionalInt.empty();

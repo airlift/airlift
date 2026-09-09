@@ -43,6 +43,7 @@ import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.ResultType;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscriptionNotifications;
 import io.airlift.mcp.model.Tool;
@@ -77,7 +78,6 @@ import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
-import static io.airlift.mcp.model.ResultType.COMPLETE;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_METHOD_NAME;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_RESOURCE_URI;
@@ -161,6 +161,10 @@ public class OperationsImpl
 
         if (result instanceof Meta<?> resultMeta) {
             result = addServerInfo(serverImplementation, resultMeta);
+        }
+
+        if (!(result instanceof MetaOnly)) {
+            result = new ResultTypeWrapper(ResultType.COMPLETE, result);
         }
 
         writeResult(jsonMapper, messageWriter, response, requestId, result);
@@ -305,7 +309,7 @@ public class OperationsImpl
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 Optional.empty());
 
-        return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(Optional.of(COMPLETE), SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
+        return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
     }
 
     private <T extends CacheableResult<?>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
