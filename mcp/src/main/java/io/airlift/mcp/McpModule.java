@@ -364,8 +364,7 @@ public class McpModule
 
     private void bindStorageAndTasks(Binder binder)
     {
-        storageControllerBinding.ifPresentOrElse(binding -> {
-            binding.accept(binder.bind(StorageController.class));
+        storageControllerBinding.ifPresentOrElse(_ -> {
             binder.bind(McpTaskController.class).to(InternalTaskController.class).in(SINGLETON);
             binder.bind(InternalTaskController.class).in(SINGLETON);
             binder.install(new AbstractModule()
