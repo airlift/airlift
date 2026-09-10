@@ -180,9 +180,9 @@ public class OperationsImpl
             case METHOD_COMPLETION_COMPLETE -> completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
             case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, metadata, requestMetadata);
             case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
-            case METHOD_TASKS_GET -> getTask(requestMetadata, convertParams(jsonMapper, rpcRequest, GetTaskRequest.class));
-            case METHOD_TASKS_CANCEL -> cancelTask(requestMetadata, convertParams(jsonMapper, rpcRequest, GetTaskRequest.class));
-            case METHOD_TASKS_UPDATE -> updateTask(requestMetadata, convertParams(jsonMapper, rpcRequest, UpdateTaskRequest.class));
+            case METHOD_TASKS_GET -> getTask(requestMetadata, authenticated, convertParams(jsonMapper, rpcRequest, GetTaskRequest.class));
+            case METHOD_TASKS_CANCEL -> cancelTask(requestMetadata, authenticated, convertParams(jsonMapper, rpcRequest, GetTaskRequest.class));
+            case METHOD_TASKS_UPDATE -> updateTask(requestMetadata, authenticated, convertParams(jsonMapper, rpcRequest, UpdateTaskRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
@@ -354,22 +354,26 @@ public class OperationsImpl
         return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
     }
 
-    private ToolResult getTask(RequestMetadata requestMetadata, GetTaskRequest getTaskRequest)
+    private ToolResult getTask(RequestMetadata requestMetadata, McpIdentity.Authenticated<?> identity, GetTaskRequest getTaskRequest)
     {
         validateMcpName(requestMetadata, getTaskRequest.taskId());
         validateClientCapabilities(requestMetadata.clientCapabilities());
 
-        return taskController.map(controller -> controller.getTask(getTaskRequest.taskId())
-                        .orElseThrow(() -> exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId())))
+        return taskController.map(controller -> {
+                    requireOwnedTask(controller, getTaskRequest.taskId(), identity);
+                    return controller.getTask(getTaskRequest.taskId())
+                            .orElseThrow(() -> exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId()));
+                })
                 .orElseThrow(() -> new IllegalStateException("Tasks are not configured in this server"));
     }
 
-    private Object cancelTask(RequestMetadata requestMetadata, GetTaskRequest getTaskRequest)
+    private Object cancelTask(RequestMetadata requestMetadata, McpIdentity.Authenticated<?> identity, GetTaskRequest getTaskRequest)
     {
         validateMcpName(requestMetadata, getTaskRequest.taskId());
         validateClientCapabilities(requestMetadata.clientCapabilities());
 
         taskController.ifPresentOrElse(controller -> {
+            requireOwnedTask(controller, getTaskRequest.taskId(), identity);
             if (controller.setErrorState(getTaskRequest.taskId(), CANCELLATION_REQUESTED, Optional.empty()) == TASK_NOT_FOUND) {
                 throw exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId());
             }
@@ -379,12 +383,13 @@ public class OperationsImpl
         return ImmutableMap.of("resultType", COMPLETE);
     }
 
-    private Object updateTask(RequestMetadata requestMetadata, UpdateTaskRequest updateTaskRequest)
+    private Object updateTask(RequestMetadata requestMetadata, McpIdentity.Authenticated<?> identity, UpdateTaskRequest updateTaskRequest)
     {
         validateMcpName(requestMetadata, updateTaskRequest.taskId());
         validateClientCapabilities(requestMetadata.clientCapabilities());
 
         taskController.ifPresentOrElse(controller -> {
+            requireOwnedTask(controller, updateTaskRequest.taskId(), identity);
             SetStatus setStatus = controller.setTaskInputResponses(updateTaskRequest.taskId(), Optional.of(updateTaskRequest.inputResponses()));
             switch (setStatus) {
                 case TASK_NOT_FOUND -> throw exception(INVALID_PARAMS, "Task not found: " + updateTaskRequest.taskId());
@@ -396,6 +401,14 @@ public class OperationsImpl
             throw new IllegalStateException("Tasks are not configured in this server");
         });
         return ImmutableMap.of("resultType", COMPLETE);
+    }
+
+    // treat a task owned by another caller the same as a non-existent task, to avoid leaking task existence via IDOR
+    private static void requireOwnedTask(InternalTaskController controller, String taskId, McpIdentity.Authenticated<?> identity)
+    {
+        if (!controller.isOwnedBy(taskId, identity)) {
+            throw exception(INVALID_PARAMS, "Task not found: " + taskId);
+        }
     }
 
     private <T extends CacheableResult<T>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)

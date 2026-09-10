@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 // public for Jackson
 public record InternalTask(
+        String owner,
         TaskErrorState errorState,
         Instant createdAt,
         Instant updatedAt,
@@ -23,6 +24,7 @@ public record InternalTask(
 {
     public InternalTask
     {
+        requireNonNull(owner, "owner is null");
         requireNonNull(errorState, "errorState is null");
         requireNonNull(createdAt, "createdAt is null");
         requireNonNull(updatedAt, "updatedAt is null");
@@ -35,21 +37,21 @@ public record InternalTask(
 
     InternalTask withErrorState(TaskErrorState errorState, Optional<JsonRpcErrorDetail> errorDetail)
     {
-        return new InternalTask(errorState, createdAt, Instant.now(), errorDetail.map(JsonRpcErrorDetail::message), inputResponses, result, errorDetail, execution);
+        return new InternalTask(owner, errorState, createdAt, Instant.now(), errorDetail.map(JsonRpcErrorDetail::message), inputResponses, result, errorDetail, execution);
     }
 
     InternalTask withResult(Optional<CallToolResult> result, Optional<String> statusMessage)
     {
-        return new InternalTask(errorState, createdAt, Instant.now(), statusMessage, Optional.empty(), result, error, execution);
+        return new InternalTask(owner, errorState, createdAt, Instant.now(), statusMessage, Optional.empty(), result, error, execution);
     }
 
     InternalTask withInputResponses(Optional<Map<String, Object>> inputResponses)
     {
-        return new InternalTask(errorState, createdAt, Instant.now(), statusMessage, inputResponses, result, error, execution);
+        return new InternalTask(owner, errorState, createdAt, Instant.now(), statusMessage, inputResponses, result, error, execution);
     }
 
     InternalTask withExecution(InternalTaskExecution execution)
     {
-        return new InternalTask(errorState, createdAt, Instant.now(), statusMessage, inputResponses, result, error, Optional.of(execution));
+        return new InternalTask(owner, errorState, createdAt, Instant.now(), statusMessage, inputResponses, result, error, Optional.of(execution));
     }
 }

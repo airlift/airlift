@@ -1,5 +1,6 @@
 package io.airlift.mcp.internal;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
@@ -10,6 +11,7 @@ import io.airlift.json.JsonCodecFactory;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.McpTaskController;
 import io.airlift.mcp.model.CallToolResult;
@@ -30,6 +32,7 @@ import io.airlift.mcp.storage.StorageGroupId;
 import io.airlift.mcp.storage.StorageKeyId;
 import jakarta.annotation.PreDestroy;
 
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -79,11 +82,13 @@ public class InternalTaskController
     private final JsonCodec<InternalTask> taskEntryCodec;
     private final ExecutorService executorService;
     private final Duration staleTaskExecutionTimeout;
+    private final JsonMapper jsonMapper;
 
     @Inject
     public InternalTaskController(StorageController storageController, McpConfig mcpConfig, JsonMapper jsonMapper)
     {
         this.storageController = requireNonNull(storageController, "storageController is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         taskTtlMs = toIntExact(mcpConfig.getTaskTtl().toMillis());
         pollIntervalMs = toIntExact(mcpConfig.getTaskPollInterval().toMillis());
@@ -162,9 +167,35 @@ public class InternalTaskController
         StorageGroupId storageGroupId = new StorageGroupId(UUID.randomUUID().toString());
         storageController.createGroup(storageGroupId, Duration.ofMillis(taskTtlMs));
 
-        InternalTask taskEntry = new InternalTask(NONE, now, now, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        String owner = serializeOwner(requestContext.identity());
+        InternalTask taskEntry = new InternalTask(owner, NONE, now, now, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         storageController.setValue(storageGroupId, KEY_ID, taskEntryCodec.toJson(taskEntry));
         return toTask(storageGroupId, taskEntry);
+    }
+
+    /**
+     * @return {@code true} if the task exists and was created by the given identity. Used to enforce
+     *         that {@code tasks/get}, {@code tasks/cancel} and {@code tasks/update} can only operate
+     *         on tasks belonging to the caller.
+     */
+    public boolean isOwnedBy(String taskId, Authenticated<?> identity)
+    {
+        StorageGroupId storageGroupId = toStorageGroupId(taskId);
+        return storageController.getValue(storageGroupId, KEY_ID)
+                .map(taskEntryCodec::fromJson)
+                .map(InternalTask::owner)
+                .map(owner -> owner.equals(serializeOwner(identity)))
+                .orElse(false);
+    }
+
+    private String serializeOwner(Authenticated<?> identity)
+    {
+        try {
+            return jsonMapper.writeValueAsString(identity.identity());
+        }
+        catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public static void validateClientCapabilities(ClientCapabilities clientCapabilities)
