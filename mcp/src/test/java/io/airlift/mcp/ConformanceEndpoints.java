@@ -500,11 +500,8 @@ public class ConformanceEndpoints
 
     @McpTool(name = "slow_compute", description = "test")
     public ToolResult slowCompute(McpRequestContext requestContext, int seconds)
+            throws InterruptedException
     {
-        if (seconds == 60) {
-            System.out.println();
-        }
-
         if (requestContext.clientCapabilities().supportsTasks()) {
             Task task = requestContext.createTask();
             taskController.executeCancelable(task.taskId(), () -> {
@@ -514,6 +511,7 @@ public class ConformanceEndpoints
             return task;
         }
 
+        TimeUnit.SECONDS.sleep(seconds);
         return new CallToolResult(new TextContent("It worked"));
     }
 
