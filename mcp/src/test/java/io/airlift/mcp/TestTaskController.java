@@ -22,6 +22,7 @@ import io.airlift.mcp.model.TaskStatus;
 import io.airlift.mcp.storage.MemoryStorageController;
 import io.airlift.mcp.storage.StorageGroupId;
 import io.airlift.units.Duration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -57,6 +58,12 @@ public class TestTaskController
     private static final McpRequestContext REQUEST_CONTEXT = new MockRequestContext(
             new Authenticated<>(UUID.randomUUID()),
             new ClientCapabilities(Optional.of(new ListChanged(true)), Optional.of(new Sampling()), Optional.of(new Elicitation()), Optional.of(ImmutableMap.of(METADATA_TASKS, new Object())), Optional.empty()));
+
+    @AfterEach
+    void tearDown()
+    {
+        controller.close();
+    }
 
     private static InternalTaskController createController()
     {
