@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import io.airlift.configuration.Config;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -162,5 +163,11 @@ public class McpConfig
     {
         this.staleTaskExecutionTimeout = staleTaskExecutionTimeout;
         return this;
+    }
+
+    @AssertTrue(message = "mcp.task.poll-interval must be less than mcp.task.stale-execution-timeout")
+    public boolean isTaskPollIntervalLessThanStaleExecutionTimeout()
+    {
+        return taskPollInterval.compareTo(staleTaskExecutionTimeout) < 0;
     }
 }
