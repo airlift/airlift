@@ -27,6 +27,7 @@ import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
@@ -40,6 +41,8 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.opentelemetry.sdk.metrics.InstrumentType.HISTOGRAM;
+import static io.opentelemetry.sdk.metrics.data.AggregationTemporality.DELTA;
 import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.alwaysCumulative;
 import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.deltaPreferred;
 import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.lowMemory;
@@ -87,10 +90,19 @@ public class OpenTelemetryExporterModule
         };
     }
 
-    @ProvidesIntoSet
     public static MetricReader createMetricReader(OpenTelemetryExporterConfig config)
     {
-        return PeriodicMetricReader.builder(createMetricExporter(config))
+        return createMetricReader(config, Resource.getDefault());
+    }
+
+    @ProvidesIntoSet
+    public static MetricReader createMetricReader(OpenTelemetryExporterConfig config, Resource resource)
+    {
+        MetricExporter exporter = createMetricExporter(config);
+        if (exporter.getAggregationTemporality(HISTOGRAM) == DELTA) {
+            exporter = new ExponentialHistogramDeltaExporter(exporter, config, resource);
+        }
+        return PeriodicMetricReader.builder(exporter)
                 .setInterval(config.getInterval().toJavaTime())
                 .build();
     }

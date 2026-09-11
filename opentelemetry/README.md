@@ -74,14 +74,15 @@ The `otel.exporter.metrics.temporality-preference` property selects the SDK temp
 Temporality describes whether a point contains measurements for an interval or a cumulative total.
 The default is `DELTA`.
 
-| Preference   | SDK counters | SDK observable counters | SDK histograms            | SDK up/down counters |
+| Preference   | SDK counters | SDK observable counters | SDK and native histograms | SDK up/down counters |
 | ------------ | ------------ | ----------------------- | ------------------------- | -------------------- |
 | `DELTA`      | Delta        | Delta                   | Delta                     | Cumulative           |
 | `CUMULATIVE` | Cumulative   | Cumulative              | Cumulative                | Cumulative           |
 | `LOWMEMORY`  | Delta        | Cumulative              | Delta                     | Cumulative           |
 
 Both synchronous and observable up/down counters remain cumulative in every mode.
-Native Airlift statistics bypass SDK aggregation and retain their existing temporality.
+Native `CounterStat` values bypass SDK aggregation and remain cumulative in every mode.
+The `LOWMEMORY` preference changes SDK observable counters, but uses the same native histogram conversion as `DELTA`.
 
 To export cumulative metrics directly or convert them in an OpenTelemetry Collector, set:
 
@@ -89,7 +90,67 @@ To export cumulative metrics directly or convert them in an OpenTelemetry Collec
 otel.exporter.metrics.temporality-preference=CUMULATIVE
 ```
 
+Cumulative mode bypasses native histogram conversion and allocates no conversion history.
 A Collector that converts cumulative metrics needs enough memory for its history and consistent routing of each series to the same instance.
+
+## Histogram Intervals
+
+Native statistics retain cumulative histograms.
+When the exporter requests delta histograms, each exporter converts these snapshots independently and retains its own bounded history.
+Source timestamps identify creation and reset, including resets that refill the same buckets.
+The following behavior and history limits apply to native histograms in both `DELTA` and `LOWMEMORY` modes.
+
+The converter follows the OpenTelemetry Collector's `auto` policy for an unknown series.
+It exports the first snapshot when the source start timestamp is at least the exporter start timestamp.
+If the source starts earlier, or its start and observation timestamps match, the converter retains the snapshot without exporting it.
+Later snapshots produce differences from the retained snapshot.
+
+History survives collection gaps and expires after the configured `otel.exporter.histogram.max-staleness` without an observation.
+The default is one hour.
+In `DELTA` and `LOWMEMORY`, max staleness must exceed `otel.exporter.interval`.
+Leave headroom above the export interval for delayed or missed collections.
+Otherwise, expiry can suppress older sources indefinitely or repeatedly export cumulative totals as deltas.
+`CUMULATIVE` does not require this constraint because it allocates no conversion history.
+
+Expiry occurs during the next export, and shutdown clears all history.
+After expiry, the first-snapshot policy applies again and can resend totals from sources that started after the exporter.
+Failed exports do not restore previous history or replay an interval.
+
+The following properties control history limits:
+
+| Property                                                | Default  | Minimum |
+| ------------------------------------------------------- | -------- | ------- |
+| `otel.exporter.histogram.max-tracked-series`            | `100000` | `1`     |
+| `otel.exporter.histogram.max-tracked-series-per-metric` | `2000`   | `1`     |
+| `otel.exporter.histogram.max-staleness`                 | `1h`     | `1s`    |
+
+A metric family combines resource, instrumentation scope, metric name, and unit.
+When either series limit is reached, the converter drops new series until retained entries expire.
+Size both limits for active series and recently disappeared series whose history has not expired.
+For example, replacing every identity in a full metric family excludes all replacements until the old history expires.
+With the default staleness, this delay can reach one hour.
+An aggregate warning reports these drops at most once per minute.
+
+The cumulative counter `opentelemetry_metrics_exporter_dropped_points` counts each input point rejected by a history or bucket limit once.
+After the first drop, the exporter includes this counter in every export, including collections without histograms.
+Warnings and failed exports do not reset its total.
+The counter uses the application resource and the existing Airlift instrumentation scope.
+
+Its only point attributes are `otel.component.type` and `otel.component.name`.
+The type is `airlift_histogram_delta_exporter`, and the SDK assigns a distinct component name to each exporter.
+The counter retains no labels from metric names, series attributes, or endpoints.
+The existing `opentelemetry_metrics_dropped_points` counter continues to measure only producer-side losses.
+
+Admitted series continue to export, and each histogram uses at most 160 buckets per sign after downscaling.
+Downscaling merges adjacent buckets and preserves counts at lower precision.
+If either bucket range still exceeds 160 buckets at minimum scale, the converter drops that point and continues exporting.
+The rejection leaves any previous valid baseline and its expiry unchanged.
+These drops also contribute to the aggregate warning and exporter drop counter.
+
+The converter preserves SDK data reuse and owns the bucket arrays that it retains.
+The global limit bounds additional conversion history across metric families, not total application memory.
+Custom producers and changing series identities can consume history independently of native histogram allocation.
+The converter uses the existing reader concurrency guard, transport timeout, and retry policy.
 
 ## jmxutils Managed Exports
 
