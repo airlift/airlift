@@ -3,7 +3,9 @@ package io.airlift.opentelemetry;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.validation.FileExists;
 import io.airlift.units.Duration;
+import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Min;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -30,6 +32,9 @@ public class TestOpenTelemetryExporterConfig
                 .setProtocol(GRPC)
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
                 .setMetricsTemporalityPreference(DELTA)
+                .setHistogramMaxTrackedSeries(100_000)
+                .setHistogramMaxTrackedSeriesPerMetric(2_000)
+                .setHistogramMaxStaleness(new Duration(1, TimeUnit.HOURS))
                 .setSpanMaxExportBatchSize(null)
                 .setSpanMaxQueueSize(null)
                 .setSpanScheduleDelay(null)
@@ -53,6 +58,9 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.protocol", "http/protobuf")
                 .put("otel.exporter.interval", "5m")
                 .put("otel.exporter.metrics.temporality-preference", "cumulative")
+                .put("otel.exporter.histogram.max-tracked-series", "500")
+                .put("otel.exporter.histogram.max-tracked-series-per-metric", "50")
+                .put("otel.exporter.histogram.max-staleness", "10m")
                 .put("otel.exporter.span.max-export-batch-size", "128")
                 .put("otel.exporter.span.max-queue-size", "4096")
                 .put("otel.exporter.span.schedule-delay", "2s")
@@ -70,6 +78,9 @@ public class TestOpenTelemetryExporterConfig
                 .setProtocol(HTTP_PROTOBUF)
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
                 .setMetricsTemporalityPreference(CUMULATIVE)
+                .setHistogramMaxTrackedSeries(500)
+                .setHistogramMaxTrackedSeriesPerMetric(50)
+                .setHistogramMaxStaleness(new Duration(10, TimeUnit.MINUTES))
                 .setSpanMaxExportBatchSize(128)
                 .setSpanMaxQueueSize(4096)
                 .setSpanScheduleDelay(new Duration(2, TimeUnit.SECONDS))
@@ -88,6 +99,23 @@ public class TestOpenTelemetryExporterConfig
                         "otel.exporter.tls.trusted-certificates-pem",
                         "otel.exporter.tls.client-certificate-pem",
                         "otel.exporter.tls.client-key-pem"));
+    }
+
+    @Test
+    public void testHistoryLimitsMustBePositive()
+    {
+        assertFailsValidation(new OpenTelemetryExporterConfig().setHistogramMaxTrackedSeries(0),
+                "histogramMaxTrackedSeries",
+                "must be greater than or equal to 1",
+                Min.class);
+        assertFailsValidation(new OpenTelemetryExporterConfig().setHistogramMaxTrackedSeriesPerMetric(0),
+                "histogramMaxTrackedSeriesPerMetric",
+                "must be greater than or equal to 1",
+                Min.class);
+        assertFailsValidation(new OpenTelemetryExporterConfig().setHistogramMaxStaleness(new Duration(0, TimeUnit.SECONDS)),
+                "histogramMaxStaleness",
+                "must be greater than or equal to 1s",
+                MinDuration.class);
     }
 
     @Test
@@ -114,6 +142,9 @@ public class TestOpenTelemetryExporterConfig
                         "otel.exporter.protocol",
                         "otel.exporter.interval",
                         "otel.exporter.metrics.temporality-preference",
+                        "otel.exporter.histogram.max-tracked-series",
+                        "otel.exporter.histogram.max-tracked-series-per-metric",
+                        "otel.exporter.histogram.max-staleness",
                         "otel.exporter.span.max-export-batch-size",
                         "otel.exporter.span.max-queue-size",
                         "otel.exporter.span.schedule-delay",

@@ -4,6 +4,8 @@ import io.airlift.metrics.CollectedMetricGroup;
 import io.airlift.metrics.MetricSource;
 import io.airlift.metrics.MetricSource.JmxMetricSource;
 import io.airlift.metrics.MetricSource.ManagedMetricSource;
+import io.airlift.metrics.MetricsCollector;
+import io.airlift.metrics.MetricsConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.Distribution;
@@ -19,17 +21,25 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.metrics.data.SummaryPointData;
 import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
+import io.opentelemetry.sdk.testing.time.TestClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.Managed;
+import org.weakref.jmx.Nested;
 
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -246,6 +256,40 @@ class TestOpenTelemetryMetricDataConverter
     }
 
     @Test
+    void testExportTimeStatIntervals()
+    {
+        StatsBackendFactory.setBackend(OPENTELEMETRY);
+        TimeStat timer = new TimeStat();
+        timer.addNanos(100);
+        timer.addNanos(200);
+        CollectedMetricGroup group = new CollectedMetricGroup(
+                new ManagedMetricSource("timer"),
+                Map.of("node", "test"),
+                List.of(new CollectedMetricGroup.Attribute(List.of(), timer, "timer help")));
+        OpenTelemetryMetricDataConverter converter = new OpenTelemetryMetricDataConverter();
+        InMemoryMetricExporter sink = InMemoryMetricExporter.create(AggregationTemporality.DELTA);
+        try (ExponentialHistogramDeltaExporter exporter = new ExponentialHistogramDeltaExporter(sink, new OpenTelemetryExporterConfig(), TestClock.create(Instant.EPOCH))) {
+            assertThat(exporter.export(converter.convertWithDroppedPoints(List.of(group), RESOURCE, START_EPOCH_NANOS, EPOCH_NANOS).metricData()).isSuccess()).isTrue();
+            timer.addNanos(50);
+            assertThat(exporter.export(converter.convertWithDroppedPoints(List.of(group), RESOURCE, START_EPOCH_NANOS, EPOCH_NANOS + 1_000).metricData()).isSuccess()).isTrue();
+
+            assertThat(sink.getFinishedMetricItems()).hasSize(2);
+            MetricData second = sink.getFinishedMetricItems().getLast();
+            assertThat(second.getName()).isEqualTo("timer");
+            assertThat(second.getUnit()).isEqualTo("ns");
+            assertThat(second.getExponentialHistogramData().getAggregationTemporality()).isEqualTo(AggregationTemporality.DELTA);
+            assertThat(second.getExponentialHistogramData().getPoints()).singleElement().satisfies(point -> {
+                assertThat(point.getCount()).isEqualTo(1);
+                assertThat(point.getSum()).isEqualTo(50);
+                assertThat(point.getStartEpochNanos()).isEqualTo(sink.getFinishedMetricItems().getFirst().getExponentialHistogramData().getPoints().iterator().next().getEpochNanos());
+                assertThat(point.getEpochNanos()).isGreaterThanOrEqualTo(point.getStartEpochNanos());
+                assertThat(point.getAttributes().get(AttributeKey.stringKey("node"))).isEqualTo("test");
+            });
+            assertThat(timer.getAllTime().getCount()).isEqualTo(3);
+        }
+    }
+
+    @Test
     void testDistributionStatWithExponentialHistogram()
     {
         StatsBackendFactory.setBackend(OPENTELEMETRY);
@@ -348,6 +392,64 @@ class TestOpenTelemetryMetricDataConverter
         assertThat(pointIds(reverseOrder)).containsExactly("a", "b");
     }
 
+    @Test
+    void testNativeResetGenerations()
+    {
+        StatsBackendFactory.setBackend(OPENTELEMETRY);
+        for (boolean timer : List.of(false, true)) {
+            for (int count : List.of(1, 2)) {
+                Object stat = timer ? new TimeStat() : new Distribution();
+                Runnable record = timer ? () -> ((TimeStat) stat).addNanos(10) : () -> ((Distribution) stat).add(10);
+                Runnable reset = timer ? () -> ((TimeStat) stat).reset() : () -> ((Distribution) stat).reset();
+                InMemoryMetricExporter sink = InMemoryMetricExporter.create(AggregationTemporality.DELTA);
+                try (ExponentialHistogramDeltaExporter exporter = new ExponentialHistogramDeltaExporter(sink, new OpenTelemetryExporterConfig(), TestClock.create(Instant.EPOCH))) {
+                    record.run();
+                    assertThat(exporter.export(convert("stat", stat, Map.of(), "")).isSuccess()).isTrue();
+                    ExponentialHistogramPointData initial = sink.getFinishedMetricItems().getFirst().getExponentialHistogramData().getPoints().iterator().next();
+                    reset.run();
+                    for (int i = 0; i < count; i++) {
+                        record.run();
+                    }
+                    sink.reset();
+                    assertThat(exporter.export(convert("stat", stat, Map.of(), "")).isSuccess()).isTrue();
+                    assertThat(sink.getFinishedMetricItems()).singleElement().satisfies(metric ->
+                            assertThat(metric.getExponentialHistogramData().getPoints()).singleElement().satisfies(point -> {
+                                assertThat(point.getStartEpochNanos()).isGreaterThan(initial.getStartEpochNanos());
+                                assertThat(point.getCount()).isEqualTo(count);
+                                assertThat(point.getSum()).isEqualTo(count * 10);
+                            }));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testLateManagedHistogramRegistration()
+            throws Exception
+    {
+        StatsBackendFactory.setBackend(OPENTELEMETRY);
+        MBeanServer server = MBeanServerFactory.newMBeanServer();
+        MBeanExporter registry = new MBeanExporter(server);
+        MetricsCollector collector = new MetricsCollector(server, registry, new MetricsConfig(), new NodeInfo("test"));
+        OpenTelemetryMetricProducer producer = new OpenTelemetryMetricProducer(collector, new OpenTelemetryMetricDataConverter());
+        InMemoryMetricExporter sink = InMemoryMetricExporter.create(AggregationTemporality.DELTA);
+        try (ExponentialHistogramDeltaExporter exporter = new ExponentialHistogramDeltaExporter(sink, new OpenTelemetryExporterConfig())) {
+            ManagedTimer first = new ManagedTimer();
+            first.getTime().addNanos(10);
+            registry.export(new ObjectName("test:type=First"), first);
+            assertThat(exporter.export(producer.produce(RESOURCE)).isSuccess()).isTrue();
+            ManagedTimer second = new ManagedTimer();
+            second.getTime().addNanos(50);
+            registry.export(new ObjectName("test:type=Second"), second);
+            sink.reset();
+            assertThat(exporter.export(producer.produce(RESOURCE)).isSuccess()).isTrue();
+            assertThat(sink.getFinishedMetricItems().stream()
+                    .filter(metric -> metric.getType() == MetricDataType.EXPONENTIAL_HISTOGRAM)
+                    .flatMap(metric -> metric.getExponentialHistogramData().getPoints().stream())
+                    .map(ExponentialHistogramPointData::getSum)).containsExactlyInAnyOrder(0.0, 50.0);
+        }
+    }
+
     private static List<MetricData> convert(String metricName, Object value, Map<String, String> labels, String description)
     {
         return convert(new ManagedMetricSource(metricName), List.of(), value, labels, description);
@@ -396,6 +498,18 @@ class TestOpenTelemetryMetricDataConverter
     private static ManagedMetricSource managedSource(String objectName, Class<?> exportedType, Map<String, String> originalProperties)
     {
         return new ManagedMetricSource(objectName, Optional.of(exportedType), Optional.empty(), originalProperties);
+    }
+
+    public static class ManagedTimer
+    {
+        private final TimeStat time = new TimeStat();
+
+        @Managed
+        @Nested
+        public TimeStat getTime()
+        {
+            return time;
+        }
     }
 
     private static void resetStatsBackend()
