@@ -71,13 +71,10 @@ public class TestConformance
             "prompts-get-with-image");
 
     private final Closer closer = Closer.create();
-    private final TestingNodeContainer nodeContainer;
-    private final String mcpUri;
+    private final ConformanceTestRunner conformanceTestRunner;
 
     public TestConformance()
     {
-        nodeContainer = closer.register(new TestingNodeContainer());
-
         Map<String, String> properties = ImmutableMap.of("mcp.resource-subscription.cache-period", "1ms");
 
         TestingServer testingServer = closer.register(new TestingServer(properties, Optional.empty(), builder -> builder
@@ -88,11 +85,13 @@ public class TestConformance
                 .withAllInClass(ConformanceEndpoints.class)
                 .build()));
 
-        mcpUri = testingServer.injector()
+        String mcpUri = testingServer.injector()
                 .getInstance(TestingHttpServer.class)
                 .getBaseUrl()
                 .resolve("/mcp")
                 .toString();
+
+        conformanceTestRunner = new ConformanceTestRunner(mcpUri);
     }
 
     @AfterAll
@@ -106,8 +105,7 @@ public class TestConformance
     @MethodSource("scenarioProvider")
     public void testConformance(String scenario)
     {
-        // see: https://github.com/modelcontextprotocol/conformance?tab=readme-ov-file#testing-servers
-        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@0.2.0-alpha.11", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
+        String result = conformanceTestRunner.runTest(scenario);
         assertThat(result).contains("0 failed, 0 warnings");
     }
 
