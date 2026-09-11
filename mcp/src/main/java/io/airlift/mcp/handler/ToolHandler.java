@@ -2,9 +2,9 @@ package io.airlift.mcp.handler;
 
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
-import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.ToolResult;
 
 public interface ToolHandler
 {
-    CallToolResult callTool(McpRequestContext requestContext, CallToolRequest toolRequest);
+    ToolResult callTool(McpRequestContext requestContext, CallToolRequest toolRequest);
 }

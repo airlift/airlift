@@ -11,7 +11,8 @@ public sealed interface InputResponses<T extends InputResponses<T>>
         permits CallToolRequest,
                 EmptyInputResponses,
                 GetPromptRequest,
-                ReadResourceRequest
+                ReadResourceRequest,
+                TaskInputResponses
 {
     InputResponses<?> EMPTY = new EmptyInputResponses();
 

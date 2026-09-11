@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import io.airlift.configuration.Config;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -18,6 +19,9 @@ public class McpConfig
     private Duration resourceSubscriptionCachePeriod = new Duration(1, MINUTES);
     private int maxResumableMessages = 100;
     private int maxSessionCache = 10000;
+    private Duration taskTtl = new Duration(15, MINUTES);
+    private Duration taskPollInterval = new Duration(15, SECONDS);
+    private Duration staleTaskExecutionTimeout = new Duration(5, MINUTES);
 
     @Min(1)
     public int getDefaultPageSize()
@@ -120,5 +124,50 @@ public class McpConfig
     {
         this.resourceSubscriptionCachePeriod = resourceSubscriptionCachePeriod;
         return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getTaskTtl()
+    {
+        return taskTtl;
+    }
+
+    @Config("mcp.task.ttl")
+    public McpConfig setTaskTtl(Duration taskTtl)
+    {
+        this.taskTtl = taskTtl;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getTaskPollInterval()
+    {
+        return taskPollInterval;
+    }
+
+    @Config("mcp.task.poll-interval")
+    public McpConfig setTaskPollInterval(Duration taskPollInterval)
+    {
+        this.taskPollInterval = taskPollInterval;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getStaleTaskExecutionTimeout()
+    {
+        return staleTaskExecutionTimeout;
+    }
+
+    @Config("mcp.task.stale-execution-timeout")
+    public McpConfig setStaleTaskExecutionTimeout(Duration staleTaskExecutionTimeout)
+    {
+        this.staleTaskExecutionTimeout = staleTaskExecutionTimeout;
+        return this;
+    }
+
+    @AssertTrue(message = "mcp.task.poll-interval must be less than mcp.task.stale-execution-timeout")
+    public boolean isTaskPollIntervalLessThanStaleExecutionTimeout()
+    {
+        return taskPollInterval.compareTo(staleTaskExecutionTimeout) < 0;
     }
 }
