@@ -50,6 +50,11 @@ sealed interface DistributionImplementation
 
     Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot();
 
+    default Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return Optional.empty();
+    }
+
     static double average(double sum, long count)
     {
         return count == 0 ? Double.NaN : sum / count;
