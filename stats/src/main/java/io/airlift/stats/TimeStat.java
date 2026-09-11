@@ -176,6 +176,11 @@ public class TimeStat
         return getAllTime().exponentialHistogramSnapshot();
     }
 
+    public Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return getAllTime().timedExponentialHistogramSnapshot();
+    }
+
     @Managed
     public void reset()
     {

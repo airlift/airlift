@@ -180,6 +180,11 @@ public class Distribution
         return implementation.exponentialHistogramSnapshot();
     }
 
+    public Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return implementation.timedExponentialHistogramSnapshot();
+    }
+
     public record DistributionSnapshot(
             double count,
             double total,

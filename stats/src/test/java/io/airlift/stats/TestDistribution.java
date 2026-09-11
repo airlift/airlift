@@ -112,6 +112,22 @@ public class TestDistribution
     }
 
     @Test
+    public void testDuplicatePreservesGeneration()
+    {
+        StatsBackendFactory.setBackend(OPENTELEMETRY);
+        Distribution distribution = new Distribution();
+        distribution.add(10);
+        long startEpochNanos = distribution.timedExponentialHistogramSnapshot().orElseThrow().startEpochNanos();
+        Distribution copy = distribution.duplicate();
+        TimedHistogramSnapshot snapshot = copy.timedExponentialHistogramSnapshot().orElseThrow();
+        assertThat(snapshot.startEpochNanos()).isEqualTo(startEpochNanos);
+        assertThat(snapshot.histogram().count()).isEqualTo(1);
+        copy.reset();
+        assertThat(copy.timedExponentialHistogramSnapshot().orElseThrow().startEpochNanos()).isGreaterThan(startEpochNanos);
+        assertThat(distribution.timedExponentialHistogramSnapshot().orElseThrow().startEpochNanos()).isEqualTo(startEpochNanos);
+    }
+
+    @Test
     public void testOpenTelemetryBackendCachesSnapshots()
     {
         StatsBackendFactory.setBackend(OPENTELEMETRY);

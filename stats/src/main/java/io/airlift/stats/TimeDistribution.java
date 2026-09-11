@@ -150,6 +150,11 @@ public class TimeDistribution
         return implementation.exponentialHistogramSnapshot();
     }
 
+    public Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return implementation.timedExponentialHistogramSnapshot();
+    }
+
     @Managed
     public void reset()
     {
