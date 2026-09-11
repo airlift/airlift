@@ -22,6 +22,9 @@ public class OpenTelemetryExporterConfig
     private Protocol protocol = Protocol.GRPC;
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
     private TemporalityPreference metricsTemporalityPreference = TemporalityPreference.DELTA;
+    private int histogramMaxTrackedSeries = 100_000;
+    private int histogramMaxTrackedSeriesPerMetric = 2_000;
+    private Duration histogramMaxStaleness = new Duration(1, TimeUnit.HOURS);
     private Optional<Integer> spanMaxExportBatchSize = Optional.empty();
     private Optional<Integer> spanMaxQueueSize = Optional.empty();
     private Optional<Duration> spanScheduleDelay = Optional.empty();
@@ -101,7 +104,7 @@ public class OpenTelemetryExporterConfig
     }
 
     @Config("otel.exporter.metrics.temporality-preference")
-    @ConfigDescription("Temporality preference for SDK metrics")
+    @ConfigDescription("Temporality preference for SDK metrics and native histograms")
     public OpenTelemetryExporterConfig setMetricsTemporalityPreference(TemporalityPreference metricsTemporalityPreference)
     {
         this.metricsTemporalityPreference = metricsTemporalityPreference;
@@ -113,6 +116,46 @@ public class OpenTelemetryExporterConfig
         DELTA,
         CUMULATIVE,
         LOWMEMORY,
+    }
+
+    @Min(1)
+    public int getHistogramMaxTrackedSeries()
+    {
+        return histogramMaxTrackedSeries;
+    }
+
+    @Config("otel.exporter.histogram.max-tracked-series")
+    public OpenTelemetryExporterConfig setHistogramMaxTrackedSeries(int histogramMaxTrackedSeries)
+    {
+        this.histogramMaxTrackedSeries = histogramMaxTrackedSeries;
+        return this;
+    }
+
+    @Min(1)
+    public int getHistogramMaxTrackedSeriesPerMetric()
+    {
+        return histogramMaxTrackedSeriesPerMetric;
+    }
+
+    @Config("otel.exporter.histogram.max-tracked-series-per-metric")
+    public OpenTelemetryExporterConfig setHistogramMaxTrackedSeriesPerMetric(int histogramMaxTrackedSeriesPerMetric)
+    {
+        this.histogramMaxTrackedSeriesPerMetric = histogramMaxTrackedSeriesPerMetric;
+        return this;
+    }
+
+    @NotNull
+    @MinDuration("1s")
+    public Duration getHistogramMaxStaleness()
+    {
+        return histogramMaxStaleness;
+    }
+
+    @Config("otel.exporter.histogram.max-staleness")
+    public OpenTelemetryExporterConfig setHistogramMaxStaleness(Duration histogramMaxStaleness)
+    {
+        this.histogramMaxStaleness = histogramMaxStaleness;
+        return this;
     }
 
     public Optional<@Min(1) Integer> getSpanMaxExportBatchSize()
@@ -272,6 +315,15 @@ public class OpenTelemetryExporterConfig
     {
         this.clientKeyPassword = Optional.ofNullable(clientKeyPassword);
         return this;
+    }
+
+    @AssertTrue(message = "otel.exporter.histogram.max-staleness must exceed otel.exporter.interval for DELTA and LOWMEMORY")
+    public boolean isHistogramMaxStalenessValid()
+    {
+        if (metricsTemporalityPreference == null || metricsTemporalityPreference == TemporalityPreference.CUMULATIVE || interval == null || histogramMaxStaleness == null) {
+            return true;
+        }
+        return histogramMaxStaleness.compareTo(interval) > 0;
     }
 
     @AssertTrue(message = "client certificate and key must be set together")
