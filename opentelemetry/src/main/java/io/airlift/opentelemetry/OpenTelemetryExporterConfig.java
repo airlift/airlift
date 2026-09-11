@@ -1,6 +1,7 @@
 package io.airlift.opentelemetry;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.validation.FileExists;
@@ -20,6 +21,7 @@ public class OpenTelemetryExporterConfig
     private String endpoint = "http://localhost:4317";
     private Protocol protocol = Protocol.GRPC;
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
+    private TemporalityPreference metricsTemporalityPreference = TemporalityPreference.DELTA;
     private Optional<Integer> spanMaxExportBatchSize = Optional.empty();
     private Optional<Integer> spanMaxQueueSize = Optional.empty();
     private Optional<Duration> spanScheduleDelay = Optional.empty();
@@ -90,6 +92,27 @@ public class OpenTelemetryExporterConfig
     {
         this.interval = interval;
         return this;
+    }
+
+    @NotNull
+    public TemporalityPreference getMetricsTemporalityPreference()
+    {
+        return metricsTemporalityPreference;
+    }
+
+    @Config("otel.exporter.metrics.temporality-preference")
+    @ConfigDescription("Temporality preference for SDK metrics")
+    public OpenTelemetryExporterConfig setMetricsTemporalityPreference(TemporalityPreference metricsTemporalityPreference)
+    {
+        this.metricsTemporalityPreference = metricsTemporalityPreference;
+        return this;
+    }
+
+    public enum TemporalityPreference
+    {
+        DELTA,
+        CUMULATIVE,
+        LOWMEMORY,
     }
 
     public Optional<@Min(1) Integer> getSpanMaxExportBatchSize()

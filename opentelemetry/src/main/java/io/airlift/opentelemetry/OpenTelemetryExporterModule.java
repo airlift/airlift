@@ -23,6 +23,7 @@ import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessorBuilder;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
@@ -39,7 +40,9 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.alwaysCumulative;
 import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.deltaPreferred;
+import static io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector.lowMemory;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.Files.readAllBytes;
 
@@ -94,11 +97,16 @@ public class OpenTelemetryExporterModule
 
     static MetricExporter createMetricExporter(OpenTelemetryExporterConfig config)
     {
+        AggregationTemporalitySelector temporalitySelector = switch (config.getMetricsTemporalityPreference()) {
+            case DELTA -> deltaPreferred();
+            case CUMULATIVE -> alwaysCumulative();
+            case LOWMEMORY -> lowMemory();
+        };
         return switch (config.getProtocol()) {
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcMetricExporter.builder()
-                            .setAggregationTemporalitySelector(deltaPreferred())
+                            .setAggregationTemporalitySelector(temporalitySelector)
                             .setEndpoint(config.getEndpoint()),
                     OtlpGrpcMetricExporterBuilder::setTrustedCertificates,
                     OtlpGrpcMetricExporterBuilder::setClientTls)
@@ -106,7 +114,7 @@ public class OpenTelemetryExporterModule
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpMetricExporter.builder()
-                            .setAggregationTemporalitySelector(deltaPreferred())
+                            .setAggregationTemporalitySelector(temporalitySelector)
                             .setEndpoint(config.getEndpoint()),
                     OtlpHttpMetricExporterBuilder::setTrustedCertificates,
                     OtlpHttpMetricExporterBuilder::setClientTls)

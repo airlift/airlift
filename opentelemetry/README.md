@@ -68,6 +68,29 @@ metric type: exponential histogram
 unit: ns
 ```
 
+## Metric Temporality
+
+The `otel.exporter.metrics.temporality-preference` property selects the SDK temporality preference for both OTLP transports.
+Temporality describes whether a point contains measurements for an interval or a cumulative total.
+The default is `DELTA`.
+
+| Preference   | SDK counters | SDK observable counters | SDK histograms            | SDK up/down counters |
+| ------------ | ------------ | ----------------------- | ------------------------- | -------------------- |
+| `DELTA`      | Delta        | Delta                   | Delta                     | Cumulative           |
+| `CUMULATIVE` | Cumulative   | Cumulative              | Cumulative                | Cumulative           |
+| `LOWMEMORY`  | Delta        | Cumulative              | Delta                     | Cumulative           |
+
+Both synchronous and observable up/down counters remain cumulative in every mode.
+Native Airlift statistics bypass SDK aggregation and retain their existing temporality.
+
+To export cumulative metrics directly or convert them in an OpenTelemetry Collector, set:
+
+```properties
+otel.exporter.metrics.temporality-preference=CUMULATIVE
+```
+
+A Collector that converts cumulative metrics needs enough memory for its history and consistent routing of each series to the same instance.
+
 ## jmxutils Managed Exports
 
 Managed exports are objects exported through jmxutils `MBeanExporter`. For these metrics, jmxutils
