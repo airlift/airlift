@@ -34,10 +34,13 @@ public class JaxrsStatusValidator
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
     {
-        if ((responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
-            findApiServiceMethod(requestContext, modelServices).ifPresent(modelMethod ->
-                    validateApiError(modelMethod, requestContext.getMethod(), responseContext.getStatus(), requestContext.getUriInfo().getRequestUri()));
+        Response.Status.Family family = responseContext.getStatusInfo().getFamily();
+        if ((family == Response.Status.Family.SUCCESSFUL) || (family == Response.Status.Family.SERVER_ERROR)) {
+            return;
         }
+
+        findApiServiceMethod(requestContext, modelServices).ifPresent(modelMethod ->
+                validateApiError(modelMethod, requestContext.getMethod(), responseContext.getStatus(), requestContext.getUriInfo().getRequestUri()));
     }
 
     private void validateApiError(ModelMethod modelMethod, String httpMethod, int statusCode, URI uri)
