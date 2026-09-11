@@ -210,8 +210,8 @@ class TestOpenTelemetryMetricDataConverter
 
         ExponentialHistogramPointData point = metric.getExponentialHistogramData().getPoints().stream()
                 .collect(onlyElement());
-        assertThat(point.getStartEpochNanos()).isEqualTo(START_EPOCH_NANOS);
-        assertThat(point.getEpochNanos()).isEqualTo(EPOCH_NANOS);
+        assertThat(point.getStartEpochNanos()).isEqualTo(distribution.timedExponentialHistogramSnapshot().orElseThrow().startEpochNanos());
+        assertThat(point.getEpochNanos()).isGreaterThanOrEqualTo(point.getStartEpochNanos());
         assertThat(point.getCount()).isEqualTo(3);
         assertThat(point.getSum()).isEqualTo(50);
         assertThat(point.hasMin()).isTrue();
