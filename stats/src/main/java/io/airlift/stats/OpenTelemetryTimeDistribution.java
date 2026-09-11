@@ -127,6 +127,12 @@ final class OpenTelemetryTimeDistribution
     }
 
     @Override
+    public Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return Optional.of(snapshotCache.timedSnapshot(true));
+    }
+
+    @Override
     public void reset()
     {
         snapshotCache.reset();

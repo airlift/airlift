@@ -37,6 +37,11 @@ sealed interface TimeDistributionImplementation
 
     Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot();
 
+    default Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return Optional.empty();
+    }
+
     void reset();
 
     static double convertToUnit(double nanos, TimeUnit unit)

@@ -101,6 +101,11 @@ public class DistributionStat
         return getAllTime().exponentialHistogramSnapshot();
     }
 
+    public Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return getAllTime().timedExponentialHistogramSnapshot();
+    }
+
     public record DistributionStatSnapshot(
             @Nullable
             DistributionSnapshot oneMinute,

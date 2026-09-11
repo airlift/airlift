@@ -19,6 +19,7 @@ import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import io.airlift.stats.TimeDistribution;
 import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 import io.airlift.stats.TimeStat;
+import io.airlift.stats.TimedHistogramSnapshot;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -177,7 +178,7 @@ public class OpenTelemetryMetricDataConverter
             case DOUBLE_GAUGE -> toDoubleGauge(metricFamilyKey.name(), selectedMetricFamily, firstMetric, resource, startEpochNanos, epochNanos);
             case LONG_SUM -> toLongSum(metricFamilyKey.name(), selectedMetricFamily, firstMetric, resource, startEpochNanos, epochNanos);
             case SUMMARY -> toSummary(metricFamilyKey.name(), selectedMetricFamily, firstMetric, resource, startEpochNanos, epochNanos);
-            case EXPONENTIAL_HISTOGRAM -> toExponentialHistogram(metricFamilyKey.name(), selectedMetricFamily, firstMetric, resource, startEpochNanos, epochNanos);
+            case EXPONENTIAL_HISTOGRAM -> toExponentialHistogram(metricFamilyKey.name(), selectedMetricFamily, firstMetric, resource);
         };
     }
 
@@ -214,10 +215,10 @@ public class OpenTelemetryMetricDataConverter
         return createMetricData(ImmutableMetricData::createDoubleSummary, metricName, firstMetric, resource, SummaryData.create(points));
     }
 
-    private static MetricData toExponentialHistogram(String metricName, List<MetricPoint> metricFamily, MetricPoint firstMetric, Resource resource, long startEpochNanos, long epochNanos)
+    private static MetricData toExponentialHistogram(String metricName, List<MetricPoint> metricFamily, MetricPoint firstMetric, Resource resource)
     {
         List<ExponentialHistogramPointData> points = metricFamily.stream()
-                .map(metric -> toExponentialHistogramPoint((ExponentialHistogramSnapshot) metric.value(), metric.attributes(), startEpochNanos, epochNanos))
+                .map(metric -> toExponentialHistogramPoint((TimedHistogramSnapshot) metric.value(), metric.attributes()))
                 .collect(toImmutableList());
         return createMetricData(ImmutableMetricData::createExponentialHistogram, metricName, firstMetric, resource, ExponentialHistogramData.create(AggregationTemporality.CUMULATIVE, points));
     }
@@ -228,11 +229,10 @@ public class OpenTelemetryMetricDataConverter
     }
 
     private static ExponentialHistogramPointData toExponentialHistogramPoint(
-            ExponentialHistogramSnapshot snapshot,
-            Attributes attributes,
-            long startEpochNanos,
-            long epochNanos)
+            TimedHistogramSnapshot timedSnapshot,
+            Attributes attributes)
     {
+        ExponentialHistogramSnapshot snapshot = timedSnapshot.histogram();
         boolean hasMinMax = snapshot.count() > 0;
         return ExponentialHistogramPointData.create(
                 snapshot.scale(),
@@ -244,8 +244,8 @@ public class OpenTelemetryMetricDataConverter
                 hasMinMax ? snapshot.max() : 0,
                 toExponentialHistogramBuckets(snapshot.scale(), snapshot.positiveBuckets()),
                 toExponentialHistogramBuckets(snapshot.scale(), snapshot.negativeBuckets()),
-                startEpochNanos,
-                epochNanos,
+                timedSnapshot.startEpochNanos(),
+                timedSnapshot.epochNanos(),
                 attributes,
                 List.of());
     }
@@ -380,16 +380,16 @@ public class OpenTelemetryMetricDataConverter
             case CompositeData compositeData -> flattenedDataPoints(metricName, compositeData, attributes, description);
             case TabularData tabularData -> flattenedDataPoints(metricName, tabularData, attributes, description);
             case CounterStat counterStat -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.LONG_SUM, ""), counterStat.getTotalCount(), attributes, description));
-            case TimeDistribution timeDistribution -> timeDistribution.exponentialHistogramSnapshot()
+            case TimeDistribution timeDistribution -> timeDistribution.timedExponentialHistogramSnapshot()
                     .map(snapshot -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.EXPONENTIAL_HISTOGRAM, NANOSECOND_UNIT), snapshot, attributes, description)))
                     .orElseGet(() -> Stream.of(timeSummary(metricName, timeDistribution, attributes, description)));
-            case TimeStat timeStat -> timeStat.exponentialHistogramSnapshot()
+            case TimeStat timeStat -> timeStat.timedExponentialHistogramSnapshot()
                     .map(snapshot -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.EXPONENTIAL_HISTOGRAM, NANOSECOND_UNIT), snapshot, attributes, description)))
                     .orElseGet(() -> timeStatSummaries(metricName, timeStat, attributes, description));
-            case Distribution distribution -> distribution.exponentialHistogramSnapshot()
+            case Distribution distribution -> distribution.timedExponentialHistogramSnapshot()
                     .map(snapshot -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.EXPONENTIAL_HISTOGRAM, ""), snapshot, attributes, description)))
                     .orElseGet(() -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.SUMMARY, ""), toSummary(distribution), attributes, description)));
-            case DistributionStat distributionStat -> distributionStat.exponentialHistogramSnapshot()
+            case DistributionStat distributionStat -> distributionStat.timedExponentialHistogramSnapshot()
                     .map(snapshot -> Stream.of(new MetricPoint(new MetricFamilyKey(metricName, MetricKind.EXPONENTIAL_HISTOGRAM, ""), snapshot, attributes, description)))
                     .orElseGet(() -> distributionStatSummaries(metricName, distributionStat, attributes, description));
             case null, default -> Stream.of();

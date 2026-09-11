@@ -68,6 +68,67 @@ metric type: exponential histogram
 unit: ns
 ```
 
+## Metric Temporality
+
+The `otel.exporter.metrics.temporality-preference` property selects the SDK temporality preference for both OTLP transports.
+Temporality describes whether a point contains measurements for an interval or a cumulative total.
+The default is `DELTA`.
+
+| Preference   | SDK counters | SDK observable counters | SDK and native histograms | SDK up/down counters |
+| ------------ | ------------ | ----------------------- | ------------------------- | -------------------- |
+| `DELTA`      | Delta        | Delta                   | Delta                     | Cumulative           |
+| `CUMULATIVE` | Cumulative   | Cumulative              | Cumulative                | Cumulative           |
+| `LOWMEMORY`  | Delta        | Cumulative              | Delta                     | Cumulative           |
+
+Both synchronous and observable up/down counters remain cumulative in every mode.
+Native `CounterStat` values bypass SDK aggregation and remain cumulative in every mode.
+The `LOWMEMORY` preference changes SDK observable counters, but uses the same native histogram conversion as `DELTA`.
+
+To export cumulative metrics directly or convert them in an OpenTelemetry Collector, set:
+
+```properties
+otel.exporter.metrics.temporality-preference=CUMULATIVE
+```
+
+Cumulative mode bypasses native histogram conversion and allocates no conversion history.
+A Collector that converts cumulative metrics needs enough memory for its history and consistent routing of each series to the same instance.
+
+## Histogram Intervals
+
+Native statistics retain cumulative histograms.
+When the exporter requests delta histograms, each exporter converts these snapshots independently and retains its own bounded history.
+Source timestamps identify creation and reset, including resets that refill the same buckets.
+The following behavior and history limits apply to native histograms in both `DELTA` and `LOWMEMORY` modes.
+
+The converter follows the OpenTelemetry Collector's `auto` policy for an unknown series.
+It exports the first snapshot when the source start timestamp is at least the exporter start timestamp.
+If the source starts earlier, or its start and observation timestamps match, the converter retains the snapshot without exporting it.
+Later snapshots produce differences from the retained snapshot.
+
+History survives collection gaps and expires after the configured `otel.exporter.histogram.max-staleness` without an observation.
+The default is one hour.
+Expiry occurs during the next export, and shutdown clears all history.
+After expiry, the first-snapshot policy applies again and can resend totals from sources that started after the exporter.
+Failed exports do not restore previous history or replay an interval.
+
+The following properties control history limits:
+
+| Property                                                | Default  | Minimum |
+| ------------------------------------------------------- | -------- | ------- |
+| `otel.exporter.histogram.max-tracked-series`            | `100000` | `1`     |
+| `otel.exporter.histogram.max-tracked-series-per-metric` | `2000`   | `1`     |
+| `otel.exporter.histogram.max-staleness`                 | `1h`     | `1s`    |
+
+A metric family combines resource, instrumentation scope, metric name, and unit.
+When either series limit is reached, the converter drops new series until retained entries expire.
+An aggregate warning reports these drops at most once per minute.
+Admitted series continue to export, and each histogram uses at most 160 buckets per sign after downscaling.
+Downscaling merges adjacent buckets and preserves counts at lower precision.
+
+The converter preserves SDK data reuse and owns the bucket arrays that it retains.
+These limits bound added history, but they do not limit all memory allocated by custom metric producers.
+The converter uses the existing reader concurrency guard, transport timeout, and retry policy.
+
 ## jmxutils Managed Exports
 
 Managed exports are objects exported through jmxutils `MBeanExporter`. For these metrics, jmxutils

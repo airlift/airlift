@@ -25,10 +25,10 @@ final class OpenTelemetryDistribution
         snapshotCache = new CachingHistogramSnapshot(histogram, ticker, Distribution.MERGE_THRESHOLD_NANOS);
     }
 
-    private OpenTelemetryDistribution(ExponentialHistogramSnapshot snapshot)
+    private OpenTelemetryDistribution(TimedHistogramSnapshot snapshot)
     {
-        histogram = new StripedExponentialHistogram(snapshot, ExponentialHistogram.DEFAULT_MAX_BUCKETS);
-        snapshotCache = new CachingHistogramSnapshot(histogram, systemTicker(), Distribution.MERGE_THRESHOLD_NANOS);
+        histogram = new StripedExponentialHistogram(snapshot.histogram(), ExponentialHistogram.DEFAULT_MAX_BUCKETS);
+        snapshotCache = new CachingHistogramSnapshot(histogram, systemTicker(), Distribution.MERGE_THRESHOLD_NANOS, snapshot.startEpochNanos());
     }
 
     @Override
@@ -46,7 +46,7 @@ final class OpenTelemetryDistribution
     @Override
     public DistributionImplementation duplicate()
     {
-        return new OpenTelemetryDistribution(histogram.snapshot());
+        return new OpenTelemetryDistribution(snapshotCache.uncachedSnapshot());
     }
 
     @Override
@@ -173,6 +173,12 @@ final class OpenTelemetryDistribution
     public Optional<ExponentialHistogramSnapshot> exponentialHistogramSnapshot()
     {
         return Optional.of(snapshot(true));
+    }
+
+    @Override
+    public Optional<TimedHistogramSnapshot> timedExponentialHistogramSnapshot()
+    {
+        return Optional.of(snapshotCache.timedSnapshot(true));
     }
 
     private double valueAt(double percentile)
