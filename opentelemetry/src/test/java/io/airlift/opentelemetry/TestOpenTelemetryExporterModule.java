@@ -1,5 +1,7 @@
 package io.airlift.opentelemetry;
 
+import io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol;
+import io.airlift.opentelemetry.OpenTelemetryExporterConfig.TemporalityPreference;
 import io.airlift.security.cert.CertificateBuilder;
 import io.airlift.security.pem.PemWriter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
@@ -12,6 +14,7 @@ import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +63,32 @@ final class TestOpenTelemetryExporterModule
                 .setEndpoint("http://localhost:4317");
 
         assertExportersCreated(config);
+    }
+
+    @Test
+    void testMetricsTemporalityPreference()
+            throws Exception
+    {
+        for (Protocol protocol : Protocol.values()) {
+            for (TemporalityPreference preference : TemporalityPreference.values()) {
+                OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
+                        .setProtocol(protocol)
+                        .setMetricsTemporalityPreference(preference);
+                try (MetricReader reader = OpenTelemetryExporterModule.createMetricReader(config)) {
+                    AggregationTemporality synchronousTemporality = preference == TemporalityPreference.CUMULATIVE
+                            ? AggregationTemporality.CUMULATIVE
+                            : AggregationTemporality.DELTA;
+                    AggregationTemporality observableTemporality = preference == TemporalityPreference.DELTA
+                            ? AggregationTemporality.DELTA
+                            : AggregationTemporality.CUMULATIVE;
+                    assertThat(reader.getAggregationTemporality(InstrumentType.HISTOGRAM)).isEqualTo(synchronousTemporality);
+                    assertThat(reader.getAggregationTemporality(InstrumentType.COUNTER)).isEqualTo(synchronousTemporality);
+                    assertThat(reader.getAggregationTemporality(InstrumentType.OBSERVABLE_COUNTER)).isEqualTo(observableTemporality);
+                    assertThat(reader.getAggregationTemporality(InstrumentType.UP_DOWN_COUNTER)).isEqualTo(AggregationTemporality.CUMULATIVE);
+                    assertThat(reader.getAggregationTemporality(InstrumentType.OBSERVABLE_UP_DOWN_COUNTER)).isEqualTo(AggregationTemporality.CUMULATIVE);
+                }
+            }
+        }
     }
 
     @Test
@@ -117,6 +146,7 @@ final class TestOpenTelemetryExporterModule
             logRecordExporter = OpenTelemetryExporterModule.createLogRecordExporter(config);
 
             assertThat(metricExporter.getAggregationTemporality(InstrumentType.COUNTER)).isEqualTo(AggregationTemporality.DELTA);
+            assertThat(metricExporter.getAggregationTemporality(InstrumentType.HISTOGRAM)).isEqualTo(AggregationTemporality.DELTA);
             if (config.getProtocol() == GRPC) {
                 assertThat(spanExporter).isInstanceOf(OtlpGrpcSpanExporter.class);
                 assertThat(metricExporter).isInstanceOf(OtlpGrpcMetricExporter.class);

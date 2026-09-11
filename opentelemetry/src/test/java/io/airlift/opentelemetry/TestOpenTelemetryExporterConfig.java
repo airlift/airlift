@@ -16,6 +16,8 @@ import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDe
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
 import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol.GRPC;
 import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol.HTTP_PROTOBUF;
+import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.TemporalityPreference.CUMULATIVE;
+import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.TemporalityPreference.DELTA;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestOpenTelemetryExporterConfig
@@ -27,6 +29,7 @@ public class TestOpenTelemetryExporterConfig
                 .setEndpoint("http://localhost:4317")
                 .setProtocol(GRPC)
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
+                .setMetricsTemporalityPreference(DELTA)
                 .setSpanMaxExportBatchSize(null)
                 .setSpanMaxQueueSize(null)
                 .setSpanScheduleDelay(null)
@@ -49,6 +52,7 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.endpoint", "http://example.com:1234")
                 .put("otel.exporter.protocol", "http/protobuf")
                 .put("otel.exporter.interval", "5m")
+                .put("otel.exporter.metrics.temporality-preference", "cumulative")
                 .put("otel.exporter.span.max-export-batch-size", "128")
                 .put("otel.exporter.span.max-queue-size", "4096")
                 .put("otel.exporter.span.schedule-delay", "2s")
@@ -65,6 +69,7 @@ public class TestOpenTelemetryExporterConfig
                 .setEndpoint("http://example.com:1234")
                 .setProtocol(HTTP_PROTOBUF)
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
+                .setMetricsTemporalityPreference(CUMULATIVE)
                 .setSpanMaxExportBatchSize(128)
                 .setSpanMaxQueueSize(4096)
                 .setSpanScheduleDelay(new Duration(2, TimeUnit.SECONDS))
@@ -108,6 +113,7 @@ public class TestOpenTelemetryExporterConfig
                         "otel.exporter.endpoint",
                         "otel.exporter.protocol",
                         "otel.exporter.interval",
+                        "otel.exporter.metrics.temporality-preference",
                         "otel.exporter.span.max-export-batch-size",
                         "otel.exporter.span.max-queue-size",
                         "otel.exporter.span.schedule-delay",
