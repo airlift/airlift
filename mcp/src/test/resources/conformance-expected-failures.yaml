@@ -1,0 +1,18 @@
+# Checks that the conformance suite reports but that are not defects in this server.
+#
+# wire-schema-valid validates every tools/call response against the core 2026-07-28
+# schema, which requires CallToolResult.content. The Tasks extension answers a
+# tools/call that creates a task with a CreateTaskResult instead - a flat Result & Task
+# with resultType "task" and no content - so the check reports every scenario that
+# creates a task. The task scenarios in the same suite require exactly that shape.
+#
+# See: https://github.com/modelcontextprotocol/ext-tasks (Polymorphic Results)
+server:
+  - tasks-lifecycle:wire-schema-valid
+  - tasks-capability-negotiation:wire-schema-valid
+  - tasks-wire-fields:wire-schema-valid
+  - tasks-request-state-removal:wire-schema-valid
+  - tasks-mrtr-input:wire-schema-valid
+  - tasks-request-headers:wire-schema-valid
+  - tasks-dispatch-and-envelope:wire-schema-valid
+  - tasks-mrtr-composition:wire-schema-valid

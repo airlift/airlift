@@ -7,10 +7,12 @@ import com.google.inject.name.Named;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
+import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpMetadataMapper;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.McpTasks;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.messages.MessageWriter;
@@ -21,9 +23,11 @@ import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.DiscoverResult;
+import io.airlift.mcp.model.EmptyResult;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.Implementation;
+import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
@@ -43,10 +47,14 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
-import io.airlift.mcp.model.ResultType;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscriptionNotifications;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.model.TaskRequest;
+import io.airlift.mcp.model.TaskSupport;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolResult;
+import io.airlift.mcp.model.UpdateTaskRequest;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -59,10 +67,12 @@ import java.util.OptionalInt;
 import java.util.Set;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
+import static io.airlift.mcp.McpException.clientCapabilityError;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpException.exceptionWithData;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.model.CacheScope.PRIVATE;
+import static io.airlift.mcp.model.Constants.EXTENSION_TASKS;
 import static io.airlift.mcp.model.Constants.HEADER_MCP_NAME;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METADATA_SERVER_INFO;
@@ -74,11 +84,18 @@ import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SERVER_DISCOVER;
 import static io.airlift.mcp.model.Constants.METHOD_SUBSCRIPTIONS_LISTEN;
+import static io.airlift.mcp.model.Constants.METHOD_TASKS_CANCEL;
+import static io.airlift.mcp.model.Constants.METHOD_TASKS_GET;
+import static io.airlift.mcp.model.Constants.METHOD_TASKS_UPDATE;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
+import static io.airlift.mcp.model.EmptyResult.EMPTY_RESULT;
 import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
+import static io.airlift.mcp.model.ResultType.COMPLETE;
+import static io.airlift.mcp.model.ResultType.INPUT_REQUIRED;
+import static io.airlift.mcp.model.ResultType.TASK;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_METHOD_NAME;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.operations.McpTracingAttributes.MCP_RESOURCE_URI;
@@ -100,8 +117,11 @@ public class OperationsImpl
     private final McpEntities entities;
     private final ValidationMode validationMode;
     private final PaginationUtil paginationUtil;
+    private final Optional<McpTasks> tasks;
     private final Duration resourceSubscriptionCachePeriod;
     private final Duration streamingTimeout;
+    private final Duration taskTtl;
+    private final Duration taskPollInterval;
 
     @Inject
     OperationsImpl(
@@ -111,7 +131,8 @@ public class OperationsImpl
             IconHelper iconHelper,
             @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
             McpEntities entities,
-            ValidationMode validationMode)
+            ValidationMode validationMode,
+            Optional<McpTasks> tasks)
     {
         this.metadataMapper = requireNonNull(metadataMapper, "metadataMapper is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
@@ -119,10 +140,13 @@ public class OperationsImpl
         this.serverIcons = requireNonNull(serverIcons, "serverIcons is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.validationMode = requireNonNull(validationMode, "validationMode is null");
+        this.tasks = requireNonNull(tasks, "tasks is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
         resourceSubscriptionCachePeriod = mcpConfig.getResourceSubscriptionCachePeriod().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
+        taskTtl = mcpConfig.getTaskTtl().toJavaTime();
+        taskPollInterval = mcpConfig.getTaskPollInterval().toJavaTime();
     }
 
     @Override
@@ -139,7 +163,7 @@ public class OperationsImpl
         Meta<?> meta = rpcRequest.params().map(params -> jsonMapper.convertValue(params, MetaOnly.class))
                 .orElse(MetaOnly.EMPTY_META);
         RequestMetadata requestMetadata = RequestMetadata.fromRequest(jsonMapper, request, meta, method, validationMode);
-        RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated);
+        RequestContextImpl requestContext = new RequestContextImpl(request, requestMetadata, jsonMapper, messageWriter, authenticated, tasks, taskTtl, taskPollInterval);
 
         McpMetadata workMetadata = metadataMapper.map(requestContext.request());
         Implementation serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> workMetadata.implementation().withAdditionalIcons(icons))
@@ -156,7 +180,10 @@ public class OperationsImpl
             case METHOD_RESOURCES_READ -> readResources(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class));
             case METHOD_COMPLETION_COMPLETE -> completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
             case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, metadata, requestMetadata);
-            case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
+            case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestMetadata, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
+            case METHOD_TASKS_GET -> getTask(requestContext, requestMetadata, convertParams(jsonMapper, rpcRequest, TaskRequest.class));
+            case METHOD_TASKS_UPDATE -> updateTask(requestContext, requestMetadata, convertParams(jsonMapper, rpcRequest, UpdateTaskRequest.class));
+            case METHOD_TASKS_CANCEL -> cancelTask(requestContext, requestMetadata, convertParams(jsonMapper, rpcRequest, TaskRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
@@ -165,9 +192,10 @@ public class OperationsImpl
         }
 
         result = switch (result) {
-            case Object obj when isInputRequired(obj) -> new ResultTypeWrapper(ResultType.INPUT_REQUIRED, result);
+            case Object obj when isInputRequired(obj) -> new ResultTypeWrapper(INPUT_REQUIRED, result);
             case MetaOnly _ -> result;
-            default -> new ResultTypeWrapper(ResultType.COMPLETE, result);
+            case Task task when method.equals(METHOD_TOOLS_CALL) -> new ResultTypeWrapper(TASK, task);
+            default -> new ResultTypeWrapper(COMPLETE, result);
         };
 
         writeResult(jsonMapper, messageWriter, response, requestId, result);
@@ -198,9 +226,13 @@ public class OperationsImpl
         response.setStatus(SC_METHOD_NOT_ALLOWED);
     }
 
-    private Meta<?> subscriptionsList(RequestContextImpl requestContext, Object requestId, SubscriptionNotifications subscriptionNotifications)
+    private Meta<?> subscriptionsList(RequestContextImpl requestContext, RequestMetadata requestMetadata, Object requestId, SubscriptionNotifications subscriptionNotifications)
     {
-        SubscriptionLoop subscriptionLoop = new SubscriptionLoop(jsonMapper, requestId, entities, requestContext, subscriptionNotifications.notifications(), streamingTimeout, resourceSubscriptionCachePeriod);
+        if (subscriptionNotifications.notifications().taskIds().isPresent()) {
+            validateTasksExtension(requestMetadata);
+        }
+
+        SubscriptionLoop subscriptionLoop = new SubscriptionLoop(jsonMapper, requestId, entities, requestContext, subscriptionNotifications.notifications(), tasks, streamingTimeout, resourceSubscriptionCachePeriod);
         subscriptionLoop.run();
 
         return new MetaOnly(Optional.empty());
@@ -243,7 +275,7 @@ public class OperationsImpl
         return paginationUtil.paginate(listRequest, localTools, Tool::name, (tools, newCursor) -> withCacheableResult(metadata, ListToolsResult.class, new ListToolsResult(tools, newCursor)));
     }
 
-    private CallToolResult callTool(RequestContextImpl requestContext, RequestMetadata requestMetadata, CallToolRequest callToolRequest)
+    private ToolResult callTool(RequestContextImpl requestContext, RequestMetadata requestMetadata, CallToolRequest callToolRequest)
     {
         validateMcpName(requestMetadata, callToolRequest.name());
         entities.validateToolAllowed(requestContext, callToolRequest.name());
@@ -251,11 +283,83 @@ public class OperationsImpl
         ToolEntry toolEntry = entities.toolEntry(requestContext, callToolRequest.name())
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
+        if (toolEntry.taskSupport() == TaskSupport.REQUIRED) {
+            validateTasksExtension(requestMetadata);
+        }
+
         try {
             return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
         }
         catch (McpClientException mcpClientException) {
             return CallToolResult.forError(mcpClientException);
+        }
+    }
+
+    private Task getTask(RequestContextImpl requestContext, RequestMetadata requestMetadata, TaskRequest taskRequest)
+    {
+        McpTasks mcpTasks = requireTasks();
+        validateMcpName(requestMetadata, taskRequest.taskId());
+        validateTasksExtension(requestMetadata);
+        validateTaskAccess(mcpTasks, requestContext, taskRequest.taskId());
+
+        return mcpTasks.getTask(taskRequest.taskId())
+                .orElseThrow(() -> taskNotFound(taskRequest.taskId()));
+    }
+
+    private EmptyResult updateTask(RequestContextImpl requestContext, RequestMetadata requestMetadata, UpdateTaskRequest updateTaskRequest)
+    {
+        McpTasks mcpTasks = requireTasks();
+        validateMcpName(requestMetadata, updateTaskRequest.taskId());
+        validateTasksExtension(requestMetadata);
+        validateTaskAccess(mcpTasks, requestContext, updateTaskRequest.taskId());
+
+        if (!mcpTasks.updateTask(updateTaskRequest.taskId(), updateTaskRequest.inputResponsesMap())) {
+            throw taskNotFound(updateTaskRequest.taskId());
+        }
+        return EMPTY_RESULT;
+    }
+
+    private EmptyResult cancelTask(RequestContextImpl requestContext, RequestMetadata requestMetadata, TaskRequest taskRequest)
+    {
+        McpTasks mcpTasks = requireTasks();
+        validateMcpName(requestMetadata, taskRequest.taskId());
+        validateTasksExtension(requestMetadata);
+        validateTaskAccess(mcpTasks, requestContext, taskRequest.taskId());
+
+        if (!mcpTasks.cancelTask(taskRequest.taskId())) {
+            throw taskNotFound(taskRequest.taskId());
+        }
+        return EMPTY_RESULT;
+    }
+
+    private McpTasks requireTasks()
+    {
+        // a server without tasks does not implement these methods
+        return tasks.orElseThrow(() -> exception(METHOD_NOT_FOUND, "Tasks are not supported by this server"));
+    }
+
+    // a task that belongs to another caller is reported exactly as a task that does not exist
+    private static void validateTaskAccess(McpTasks tasks, McpRequestContext requestContext, String taskId)
+    {
+        if (!tasks.validateTaskAccess(requestContext, taskId)) {
+            throw taskNotFound(taskId);
+        }
+    }
+
+    private static McpException taskNotFound(String taskId)
+    {
+        return exception(INVALID_PARAMS, "Task not found: " + taskId);
+    }
+
+    private static boolean hasTasksExtension(RequestMetadata requestMetadata)
+    {
+        return requestMetadata.clientCapabilities().hasExtension(EXTENSION_TASKS);
+    }
+
+    private static void validateTasksExtension(RequestMetadata requestMetadata)
+    {
+        if (!hasTasksExtension(requestMetadata)) {
+            throw clientCapabilityError(ClientCapabilities.requiredExtension(EXTENSION_TASKS));
         }
     }
 
@@ -317,7 +421,7 @@ public class OperationsImpl
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(true, true)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
-                Optional.empty(),
+                tasks.map(_ -> ImmutableMap.<String, Object>of(EXTENSION_TASKS, ImmutableMap.of())),
                 Optional.empty());
 
         return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
