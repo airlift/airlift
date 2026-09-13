@@ -147,6 +147,7 @@ public class SessionlessOperations
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(false, false)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
+                Optional.empty(),
                 Optional.empty());
 
         McpMetadata thisMetadata = metadata.map(requestContext.request());
