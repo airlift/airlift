@@ -119,6 +119,17 @@ public class TestTaskSerialization
     }
 
     @Test
+    public void testUpdateTaskRequestKeepsAbsentApartFromEmpty()
+    {
+        // the extension requires inputResponses, so tasks/update without it must be told apart from one answering nothing
+        UpdateTaskRequest absent = jsonMapper.convertValue(ImmutableMap.of("taskId", "the-task"), UpdateTaskRequest.class);
+        assertThat(absent.inputResponses()).isEmpty();
+
+        UpdateTaskRequest empty = jsonMapper.convertValue(ImmutableMap.of("taskId", "the-task", "inputResponses", ImmutableMap.of()), UpdateTaskRequest.class);
+        assertThat(empty.inputResponses()).contains(ImmutableMap.of());
+    }
+
+    @Test
     public void testStatusPayloadIsValidated()
     {
         assertThatThrownBy(() -> new Task("the-task", TaskStatus.COMPLETED, Optional.empty(), CREATED_AT, LAST_UPDATED_AT, OptionalLong.empty(), OptionalLong.empty(), Optional.empty(), Optional.empty(), Optional.empty()))

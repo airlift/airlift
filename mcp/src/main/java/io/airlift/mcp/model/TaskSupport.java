@@ -8,7 +8,8 @@ package io.airlift.mcp.model;
 public enum TaskSupport
 {
     /**
-     * The tool never creates a task. This is the default.
+     * The tool never creates a task: {@link io.airlift.mcp.McpRequestContext#createTask} throws if
+     * it tries. This is the default.
      */
     NONE,
 

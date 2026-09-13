@@ -1,6 +1,7 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.model.OptionalBoolean;
+import io.airlift.mcp.model.TaskSupport;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -25,6 +26,12 @@ public @interface McpTool
      * via {@link McpModule.Builder#addIcon(String, Consumer)}.
      */
     String[] icons() default {};
+
+    /**
+     * Whether the tool can be executed as an MCP task. The tool creates its own tasks - see
+     * {@link McpRequestContext#createTask} - and this declares what the server does for it.
+     */
+    TaskSupport taskSupport() default TaskSupport.NONE;
 
     OptionalBoolean readOnlyHint() default UNDEFINED;
 
