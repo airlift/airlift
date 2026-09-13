@@ -1,6 +1,7 @@
 package io.airlift.mcp.operations.legacy;
 
 import com.google.inject.Inject;
+import io.airlift.log.Logger;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
@@ -26,7 +27,10 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.model.TaskSupport;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolResult;
 import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
 
@@ -35,6 +39,7 @@ import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.EXTENSION_TASKS;
 import static io.airlift.mcp.model.Constants.METADATA_PROGRESS_TOKEN;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
@@ -42,6 +47,8 @@ import static java.util.Objects.requireNonNull;
 
 public class OperationsCommon
 {
+    private static final Logger log = Logger.get(OperationsCommon.class);
+
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
     private final MrtrEmulator mrtrEmulator;
@@ -76,19 +83,38 @@ public class OperationsCommon
         ToolEntry toolEntry = entities.toolEntry(requestContext, callToolRequest.name())
                 .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
 
+        // taskSupport is not on the legacy wire, so a client of it can ask for a tool that can only run as a
+        // task. Refuse before the tool is entered, in band: an out-of-band error invalidates the client's session
+        if (toolEntry.taskSupport() == TaskSupport.REQUIRED) {
+            return CallToolResult.errorResult("Tool %s can only be called by a client that supports the %s extension".formatted(callToolRequest.name(), EXTENSION_TASKS));
+        }
+
         try {
             ToolHandler toolHandler = toolEntry.toolHandler();
             LegacyRequestContextImpl processTokenRequestContext = requestContext.withProgressToken(progressToken(callToolRequest));
 
-            CallToolResult callToolResult = toolHandler.callTool(processTokenRequestContext, callToolRequest);
+            CallToolResult callToolResult = legacyToolResult(callToolRequest.name(), toolHandler.callTool(processTokenRequestContext, callToolRequest));
             return mrtrEmulator.emulate(processTokenRequestContext, callToolResult, (requestState, inputResponses) -> {
                 CallToolRequest adjustedCallToolRequest = callToolRequest.withInputResponses(requestState, inputResponses);
-                return toolHandler.callTool(processTokenRequestContext, adjustedCallToolRequest);
+                return legacyToolResult(callToolRequest.name(), toolHandler.callTool(processTokenRequestContext, adjustedCallToolRequest));
             });
         }
         catch (McpClientException mcpClientException) {
             return CallToolResult.forError(mcpClientException);
         }
+    }
+
+    // tasks are a 2026 extension - the legacy protocols cannot carry one, and saying so out of band
+    // would invalidate the client's session
+    private static CallToolResult legacyToolResult(String toolName, ToolResult toolResult)
+    {
+        return switch (toolResult) {
+            case CallToolResult callToolResult -> callToolResult;
+            case Task _ -> {
+                log.warn("Tool %s created a task for a client of a protocol version that cannot carry one", toolName);
+                yield CallToolResult.errorResult("Tool %s cannot be called by a client of this protocol version".formatted(toolName));
+            }
+        };
     }
 
     ListPromptsResult listPrompts(LegacyRequestContextImpl requestContext, ListRequest listRequest)

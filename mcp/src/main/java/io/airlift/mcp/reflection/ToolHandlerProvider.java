@@ -23,6 +23,7 @@ import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolResult;
 import io.airlift.mcp.model.UiToolVisibility;
 
 import java.io.UncheckedIOException;
@@ -80,8 +81,8 @@ public class ToolHandlerProvider
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
         }
-        else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
-            returnType = ReturnType.CALL_TOOL_RESULT;
+        else if (ToolResult.class.isAssignableFrom(method.getReturnType())) {
+            returnType = ReturnType.TOOL_RESULT;
         }
         else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.STRUCTURED_RESULT;
@@ -114,7 +115,7 @@ public class ToolHandlerProvider
     private enum ReturnType
     {
         VOID,
-        CALL_TOOL_RESULT,
+        TOOL_RESULT,
         CONTENT,
         STRUCTURED,
         STRUCTURED_RESULT,
@@ -127,27 +128,29 @@ public class ToolHandlerProvider
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
         IconHelper iconHelper = injector.getInstance(IconHelper.class);
 
-        ToolHandler toolHandler = (requestContext, toolRequest) -> {
-            Object result = methodInvoker.builder(requestContext)
-                    .withArguments(toolRequest.arguments())
-                    .withCallToolRequest(toolRequest)
-                    .invoke();
-            if (result == null && returnType != ReturnType.VOID) {
-                throw exception(INTERNAL_ERROR, "Tool %s returned null".formatted(method.getName()));
-            }
-
-            return switch (returnType) {
-                case VOID -> new CallToolResult(ImmutableList.of());
-                case CONTENT -> new CallToolResult(mapToContent(result));
-                case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
-                case CALL_TOOL_RESULT -> (CallToolResult) result;
-                case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
-            };
-        };
+        ToolHandler toolHandler = (requestContext, toolRequest) -> invoke(methodInvoker.builder(requestContext)
+                .withArguments(toolRequest.arguments())
+                .withCallToolRequest(toolRequest));
 
         JsonSchemaBuilder jsonSchemaBuilder = injector.getInstance(JsonSchemaBuilder.class);
         Tool tool = buildTool(mcpTool, method, parameters, jsonSchemaBuilder);
-        return new ToolEntry(tool.withIcons(iconHelper.mapIcons(icons)), toolHandler);
+        return new ToolEntry(tool.withIcons(iconHelper.mapIcons(icons)), toolHandler, mcpTool.taskSupport());
+    }
+
+    private ToolResult invoke(MethodInvoker.Builder builder)
+    {
+        Object result = builder.invoke();
+        if ((result == null) && (returnType != ReturnType.VOID)) {
+            throw exception(INTERNAL_ERROR, "Tool %s returned null".formatted(method.getName()));
+        }
+
+        return switch (returnType) {
+            case VOID -> new CallToolResult(ImmutableList.of());
+            case CONTENT -> new CallToolResult(mapToContent(result));
+            case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
+            case TOOL_RESULT -> (ToolResult) result;
+            case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
+        };
     }
 
     private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)

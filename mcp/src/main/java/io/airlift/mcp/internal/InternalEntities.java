@@ -79,7 +79,7 @@ public class InternalEntities
         this.capabilityFilter = requireNonNull(capabilityFilter, "capabilityFilter is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
-        tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
+        tools.forEach(this::addTool);
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
         resources.forEach(resource -> addResource(resource.resource(), resource.handler(), resource.isSkill()));
         resourceTemplates.forEach(resourceTemplate -> addResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler(), resourceTemplate.isSkill()));
@@ -89,7 +89,13 @@ public class InternalEntities
     @Override
     public void addTool(Tool tool, ToolHandler toolHandler)
     {
-        tools.put(tool.name(), new ToolEntry(tool, toolHandler));
+        addTool(new ToolEntry(tool, toolHandler));
+    }
+
+    @Override
+    public void addTool(ToolEntry toolEntry)
+    {
+        tools.put(toolEntry.tool().name(), toolEntry);
     }
 
     @Override
