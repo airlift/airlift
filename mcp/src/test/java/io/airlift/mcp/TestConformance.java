@@ -6,6 +6,7 @@ import com.google.inject.Scopes;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.tasks.memory.MemoryTaskEngine;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,6 +25,16 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 public class TestConformance
 {
     private static final List<String> SCENARIOS = List.of(
+            "tasks-lifecycle",
+            "tasks-capability-negotiation",
+            "tasks-wire-fields",
+            "tasks-request-state-removal",
+            "tasks-mrtr-input",
+            "tasks-request-headers",
+            "tasks-dispatch-and-envelope",
+            "tasks-status-notifications",
+            "tasks-required-task-error",
+            "tasks-mrtr-composition",
             "http-header-validation",
             "server-stateless",
             "caching",
@@ -81,6 +92,7 @@ public class TestConformance
                 .withStrictValidation()
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
                 .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
                 .withAllInClass(ConformanceEndpoints.class)
                 .build()));
@@ -105,8 +117,9 @@ public class TestConformance
     @MethodSource("scenarioProvider")
     public void testConformance(String scenario)
     {
-        String result = conformanceTestRunner.runTest(scenario);
-        assertThat(result).contains("0 failed, 0 warnings");
+        ConformanceTestRunner.Result result = conformanceTestRunner.runTest(scenario);
+        assertThat(result.exitCode()).describedAs(result.output()).isZero();
+        assertThat(result.output()).contains("0 warnings");
     }
 
     static List<String> scenarioProvider()

@@ -20,6 +20,7 @@ public record CallToolResult(
         Optional<Map<String, Object>> meta)
         implements InputRequests,
                    Meta<CallToolResult>,
+                   TaskResult,
                    ToolResult
 {
     private static final Factory<CallToolResult> FACTORY = (requestState, inputRequests) -> new CallToolResult(
