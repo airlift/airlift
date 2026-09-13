@@ -64,6 +64,7 @@ public class CertificateBuilder
     private Instant notBefore;
     private Instant notAfter;
     private X500Principal subject;
+    private boolean certificateAuthority = true;
     private final List<String> sanDnsNames = new ArrayList<>();
     private final List<InetAddress> sanIpAddresses = new ArrayList<>();
 
@@ -141,6 +142,16 @@ public class CertificateBuilder
         return this;
     }
 
+    /**
+     * Controls the basic constraints {@code cA} flag. Defaults to {@code true}. Set to {@code false}
+     * for end-entity (leaf) certificates that must not be able to issue further certificates.
+     */
+    public CertificateBuilder setCertificateAuthority(boolean certificateAuthority)
+    {
+        this.certificateAuthority = certificateAuthority;
+        return this;
+    }
+
     public CertificateBuilder addSanIpAddress(InetAddress address)
     {
         this.sanIpAddresses.add(requireNonNull(address, "address is null"));
@@ -170,15 +181,35 @@ public class CertificateBuilder
     public X509Certificate buildSelfSigned()
             throws GeneralSecurityException
     {
-        checkState(publicKey != null, "publicKey is not set");
         checkState(privateKey != null, "privateKey is not set");
+        return build(privateKey, publicKey);
+    }
+
+    /**
+     * Builds a certificate signed by the given issuing (CA) key pair rather than self-signed. The
+     * {@link #setIssuer(X500Principal) issuer} must be set to the CA's subject and
+     * {@code caPublicKey} is used to populate the authority key identifier.
+     */
+    public X509Certificate buildIssuedBy(ECPrivateKey caPrivateKey, ECPublicKey caPublicKey)
+            throws GeneralSecurityException
+    {
+        requireNonNull(caPrivateKey, "caPrivateKey is null");
+        requireNonNull(caPublicKey, "caPublicKey is null");
+        return build(caPrivateKey, caPublicKey);
+    }
+
+    private X509Certificate build(ECPrivateKey signingKey, ECPublicKey authorityKey)
+            throws GeneralSecurityException
+    {
+        checkState(publicKey != null, "publicKey is not set");
         checkState(issuer != null, "issuer is not set");
         checkState(notBefore != null, "notBefore is not set");
         checkState(notAfter != null, "notAfter is not set");
         checkState(!notBefore.isAfter(notAfter), "notAfter is before notBefore");
         checkState(subject != null, "subject is not set");
 
-        byte[] publicKeyHash = hashPublicKey();
+        byte[] subjectKeyHash = hashPublicKey(publicKey);
+        byte[] authorityKeyHash = hashPublicKey(authorityKey);
 
         List<byte[]> sans = new ArrayList<>();
         sanDnsNames.stream()
@@ -188,6 +219,31 @@ public class CertificateBuilder
                 .map(InetAddress::getAddress)
                 .map(address -> encodeContextSpecificTag(7, address))
                 .forEach(sans::add);
+
+        // BasicConstraints value: for a CA, SEQUENCE { cA TRUE }; for a leaf, the empty SEQUENCE
+        // (cA defaults to FALSE).
+        byte[] basicConstraintsValue = certificateAuthority
+                ? encodeSequence(encodeBooleanTrue())
+                : encodeSequence();
+
+        List<byte[]> extensions = new ArrayList<>();
+        extensions.add(encodeSequence(
+                SUBJECT_KEY_IDENTIFIER_OID,
+                encodeOctetString(encodeOctetString(subjectKeyHash))));
+        extensions.add(encodeSequence(
+                AUTHORITY_KEY_IDENTIFIER_OID,
+                encodeOctetString(encodeSequence(encodeContextSpecificTag(0, authorityKeyHash)))));
+        extensions.add(encodeSequence(
+                BASIC_CONSTRAINTS_OID,
+                encodeBooleanTrue(),
+                encodeOctetString(basicConstraintsValue)));
+        // Only emit SubjectAltName when there is at least one name: an empty GeneralNames SEQUENCE
+        // is invalid per RFC 5280 and rejected by X.509 parsers.
+        if (!sans.isEmpty()) {
+            extensions.add(encodeSequence(
+                    SUBJECT_ALT_NAME_OID,
+                    encodeOctetString(encodeSequence(sans.toArray(new byte[0][])))));
+        }
 
         byte[] rawCertificate = encodeSequence(
                 // version: 2
@@ -211,23 +267,9 @@ public class CertificateBuilder
                 // public key
                 publicKey.getEncoded(),
                 // extensions
-                encodeContextSpecificSequence(3, encodeSequence(
-                        encodeSequence(
-                                SUBJECT_KEY_IDENTIFIER_OID,
-                                encodeOctetString(encodeOctetString(publicKeyHash))),
-                        encodeSequence(
-                                AUTHORITY_KEY_IDENTIFIER_OID,
-                                encodeOctetString(encodeSequence(encodeContextSpecificTag(0, publicKeyHash)))),
-                        encodeSequence(
-                                BASIC_CONSTRAINTS_OID,
-                                encodeBooleanTrue(),
-                                encodeOctetString(encodeSequence(encodeBooleanTrue()))),
-                        encodeSequence(
-                                SUBJECT_ALT_NAME_OID,
-                                encodeOctetString(
-                                        encodeSequence(sans.toArray(new byte[0][])))))));
+                encodeContextSpecificSequence(3, encodeSequence(extensions.toArray(new byte[0][]))));
 
-        byte[] signature = signCertificate(rawCertificate);
+        byte[] signature = signCertificate(signingKey, rawCertificate);
 
         byte[] encodedCertificate = encodeSequence(
                 rawCertificate,
@@ -242,16 +284,16 @@ public class CertificateBuilder
         return (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(encodedCertificate));
     }
 
-    private byte[] signCertificate(byte[] rawCertificate)
+    private static byte[] signCertificate(ECPrivateKey signingKey, byte[] rawCertificate)
             throws GeneralSecurityException
     {
         Signature signature = Signature.getInstance("SHA256withECDSA");
-        signature.initSign(privateKey);
+        signature.initSign(signingKey);
         signature.update(rawCertificate);
         return signature.sign();
     }
 
-    private byte[] hashPublicKey()
+    private static byte[] hashPublicKey(ECPublicKey publicKey)
             throws NoSuchAlgorithmException
     {
         byte[] rawKey = encodeSequence(
