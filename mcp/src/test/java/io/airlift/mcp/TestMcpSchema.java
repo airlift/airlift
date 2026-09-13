@@ -4,8 +4,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
 import com.google.inject.Module;
 import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.tasks.memory.MemoryTaskEngine;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,7 @@ import java.util.function.Function;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.mcp.TestingClient.buildClient;
+import static io.airlift.mcp.model.TaskSupport.REQUIRED;
 import static java.util.function.Function.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -119,6 +123,15 @@ public class TestMcpSchema
     }
 
     @Test
+    public void testTaskReturnTypeHasNoOutputSchema()
+    {
+        Tool tool = tool("task-output");
+
+        // a Task is the handle for a result to come - its own record is not the result's structured content
+        assertThat(tool.outputSchema()).isNull();
+    }
+
+    @Test
     public void testRawSchemaAndSchemaClassAreMutuallyExclusive()
     {
         assertThatThrownBy(() -> buildServer(RawAndClassEndpoint.class).close())
@@ -178,6 +191,7 @@ public class TestMcpSchema
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
                 .withAllInClass(endpointsClass)
                 .build();
         return new TestingServer(ImmutableMap.of(), Optional.empty(), applicator);
@@ -240,6 +254,12 @@ public class TestMcpSchema
         public String classOutput()
         {
             return "ok";
+        }
+
+        @McpTool(name = "task-output", description = "task output", taskSupport = REQUIRED)
+        public Task taskOutput(McpRequestContext requestContext, CallToolRequest callToolRequest)
+        {
+            return requestContext.createTask(callToolRequest);
         }
     }
 

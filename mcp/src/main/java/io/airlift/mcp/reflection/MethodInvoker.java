@@ -1,20 +1,17 @@
 package io.airlift.mcp.reflection;
 
 import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.airlift.mcp.McpClientException;
-import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.InputResponses;
-import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
@@ -32,21 +29,19 @@ import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static io.airlift.mcp.InvocationExceptions.mapInvocationException;
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static java.util.Objects.requireNonNull;
 
 public class MethodInvoker
@@ -182,7 +177,7 @@ public class MethodInvoker
                                 case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case ResourceTemplateValuesParameter _ -> resourceTemplateValues.orElseThrow(() -> new IllegalStateException("ResourceTemplateValues is required"));
-                                case IdentityParameter _ -> ReflectionHelper.retrieveIdentityValue(requestContext.request());
+                                case IdentityParameter _ -> requestContext.identity().identity();
                                 case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
                                 case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
@@ -192,21 +187,7 @@ public class MethodInvoker
                     return methodHandle.get().invokeWithArguments(methodArguments);
                 }
                 catch (Throwable e) {
-                    Throwable rootCause = Throwables.getRootCause(e);
-                    throw switch (rootCause) {
-                        case McpException mcpException -> mcpException.isSelfContained() ? mcpException : new McpClientException(mcpException);
-                        // Jackson 3 exceptions are unchecked; keep reporting them as protocol errors as with Jackson 2's checked exceptions
-                        case JacksonException jacksonException -> new McpException(jacksonException, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
-                        case RuntimeException runtimeException -> new McpClientException(exception(runtimeException));
-                        case InvocationTargetException invocationTargetException -> {
-                            Throwable targetException = invocationTargetException.getTargetException();
-                            if (targetException instanceof McpException mcpException) {
-                                yield mcpException;
-                            }
-                            yield new McpClientException(exception(targetException));
-                        }
-                        default -> new McpException(rootCause, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
-                    };
+                    throw mapInvocationException(e, "Failed to invoke method: " + methodName);
                 }
             }
 

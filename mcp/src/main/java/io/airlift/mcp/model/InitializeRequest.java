@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static io.airlift.mcp.model.Meta.normalize;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
@@ -62,6 +63,18 @@ public record InitializeRequest(
         public boolean hasExtension(String extension)
         {
             return extensions.map(extensions -> extensions.containsKey(extension)).orElse(false);
+        }
+
+        public ClientCapabilities withoutExtension(String extension)
+        {
+            if (!hasExtension(extension)) {
+                return this;
+            }
+
+            Optional<Map<String, Object>> remaining = extensions.map(extensions -> extensions.entrySet().stream()
+                    .filter(entry -> !entry.getKey().equals(extension))
+                    .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)));
+            return new ClientCapabilities(roots, sampling, elicitation, remaining, experimental);
         }
     }
 

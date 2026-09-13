@@ -6,6 +6,7 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpEntities;
+import io.airlift.mcp.McpTasks;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Meta;
@@ -13,6 +14,8 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.SubscriptionFilter;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.model.TaskNotification;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
@@ -22,11 +25,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_SUBSCRIPTIONS_ACKNOWLEDGED;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_TASKS;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
 import static io.airlift.mcp.model.Meta.normalize;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -46,11 +51,12 @@ class SubscriptionLoop
     private final McpEntities entities;
     private final RequestContextImpl requestContext;
     private final SubscriptionFilter subscriptionFilter;
+    private final Optional<McpTasks> tasks;
     private final Duration streamingTimeout;
     private final Duration resourceSubscriptionCachePeriod;
     private final UUID subscriptionId;
 
-    private Map<Object, String> hashes;
+    private Snapshot snapshot;
 
     SubscriptionLoop(
             JsonMapper jsonMapper,
@@ -58,6 +64,7 @@ class SubscriptionLoop
             McpEntities entities,
             RequestContextImpl requestContext,
             SubscriptionFilter subscriptionFilter,
+            Optional<McpTasks> tasks,
             Duration streamingTimeout,
             Duration resourceSubscriptionCachePeriod)
     {
@@ -65,13 +72,14 @@ class SubscriptionLoop
         this.requestId = requireNonNull(requestId, "requestId is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.requestContext = requireNonNull(requestContext, "requestContext is null");
-        this.subscriptionFilter = requireNonNull(subscriptionFilter, "subscriptionFilter is null");
+        this.tasks = requireNonNull(tasks, "tasks is null");
+        this.subscriptionFilter = withAccessibleTasks(requireNonNull(subscriptionFilter, "subscriptionFilter is null"));
         this.streamingTimeout = requireNonNull(streamingTimeout, "streamingTimeout is null");
         this.resourceSubscriptionCachePeriod = requireNonNull(resourceSubscriptionCachePeriod, "resourceSubscriptionCachePeriod is null");
 
         subscriptionId = UUID.randomUUID();
 
-        hashes = buildHashes();
+        snapshot = buildSnapshot();
     }
 
     public record Acknowledgment(SubscriptionFilter notifications, Optional<Map<String, Object>> meta)
@@ -98,6 +106,10 @@ class SubscriptionLoop
         Acknowledgment acknowledgment = withSubscriptionId(Acknowledgment.class, new Acknowledgment(subscriptionFilter, Optional.empty()));
         requestContext.sendMessage(NOTIFICATION_SUBSCRIPTIONS_ACKNOWLEDGED, Optional.of(acknowledgment));
 
+        // a task's state is sent at once - one that settled before the subscription would otherwise never be reported. It is
+        // the state the snapshot holds, so a change since is sent once, by the next poll, rather than now and again then
+        snapshot.tasks().values().forEach(this::sendTask);
+
         while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
             try {
                 Thread.sleep(resourceSubscriptionCachePeriod.toMillis());
@@ -108,13 +120,14 @@ class SubscriptionLoop
                 break;
             }
 
-            Map<Object, String> newHashes = buildHashes();
-            newHashes.forEach((key, hash) -> {
-                if (!hash.equals(hashes.get(key))) {
-                    sendChange(key);
+            // a changed task is sent as this snapshot read it, so the state sent is the one remembered as seen
+            Snapshot newSnapshot = buildSnapshot();
+            newSnapshot.hashes().forEach((key, hash) -> {
+                if (!hash.equals(snapshot.hashes().get(key))) {
+                    sendChange(key, newSnapshot);
                 }
             });
-            hashes = newHashes;
+            snapshot = newSnapshot;
         }
 
         CancelledNotification cancelledNotification = withSubscriptionId(CancelledNotification.class, new CancelledNotification(requestId, Optional.empty(), Optional.empty()));
@@ -137,8 +150,25 @@ class SubscriptionLoop
         }
     }
 
-    private void sendChange(Object key)
+    private record TaskKey(String taskId) {}
+
+    // the hashes compared from one poll to the next, and the tasks as read for them
+    private record Snapshot(Map<Object, String> hashes, Map<TaskKey, Task> tasks)
     {
+        private Snapshot
+        {
+            hashes = ImmutableMap.copyOf(hashes);
+            tasks = ImmutableMap.copyOf(tasks);
+        }
+    }
+
+    private void sendChange(Object key, Snapshot snapshot)
+    {
+        if (key instanceof TaskKey taskKey) {
+            Optional.ofNullable(snapshot.tasks().get(taskKey)).ifPresent(this::sendTask);
+            return;
+        }
+
         String message;
         Optional<String> uri;
         if (key.equals(TOOLS_LIST_KEY)) {
@@ -162,15 +192,45 @@ class SubscriptionLoop
         requestContext.sendMessage(message, Optional.of(notification));
     }
 
+    private void sendTask(Task task)
+    {
+        TaskNotification notification = withSubscriptionId(TaskNotification.class, new TaskNotification(task, Optional.empty()));
+        requestContext.sendMessage(NOTIFICATION_TASKS, Optional.of(notification));
+    }
+
+    // the acknowledgement must list only the task ids notifications will be sent for - an
+    // unknown, expired or another caller's task is dropped, indistinguishably, as tasks/get would
+    private SubscriptionFilter withAccessibleTasks(SubscriptionFilter subscriptionFilter)
+    {
+        Optional<List<String>> taskIds = subscriptionFilter.taskIds().map(requested -> requested.stream()
+                .filter(taskId -> tasks.map(tasks -> tasks.validateTaskAccess(requestContext, taskId)).orElse(false))
+                .distinct()
+                .collect(toImmutableList()));
+
+        return new SubscriptionFilter(
+                subscriptionFilter.toolsListChanged(),
+                subscriptionFilter.promptsListChanged(),
+                subscriptionFilter.resourcesListChanged(),
+                subscriptionFilter.resourceSubscriptions(),
+                taskIds);
+    }
+
+    private Optional<Task> currentTask(String taskId)
+    {
+        return tasks.filter(tasks -> tasks.validateTaskAccess(requestContext, taskId))
+                .flatMap(tasks -> tasks.getTask(taskId));
+    }
+
     private <T extends Meta<?>> T withSubscriptionId(Class<T> clazz, T instance)
     {
         Map<String, Object> meta = ImmutableMap.of(Constants.METADATA_SUBSCRIPTION_ID, subscriptionId.toString());
         return clazz.cast(instance.withMeta(meta));
     }
 
-    private Map<Object, String> buildHashes()
+    private Snapshot buildSnapshot()
     {
         ImmutableMap.Builder<Object, String> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<TaskKey, Task> tasksBuilder = ImmutableMap.builder();
         if (subscriptionFilter.toolsListChanged().orElse(false)) {
             builder.put(TOOLS_LIST_KEY, listHash(entities.tools(requestContext).stream()));
         }
@@ -189,7 +249,13 @@ class SubscriptionLoop
                     .orElse("");
             builder.put(uri, hash);
         }));
-        return builder.build();
+        subscriptionFilter.taskIds().ifPresent(taskIds -> taskIds.forEach(taskId -> {
+            TaskKey key = new TaskKey(taskId);
+            Optional<Task> task = currentTask(taskId);
+            task.ifPresent(value -> tasksBuilder.put(key, value));
+            builder.put(key, task.map(this::asJson).orElse(""));
+        }));
+        return new Snapshot(builder.build(), tasksBuilder.build());
     }
 
     @SuppressWarnings("UnstableApiUsage")
