@@ -317,6 +317,7 @@ public class OperationsImpl
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(true, true)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
+                Optional.empty(),
                 Optional.empty());
 
         return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));

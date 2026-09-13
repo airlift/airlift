@@ -1,5 +1,7 @@
 package io.airlift.mcp.model;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,17 +35,33 @@ public record InitializeRequest(
         return new InitializeRequest(protocolVersion, capabilities, clientInfo, Optional.of(meta));
     }
 
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
+    public record ClientCapabilities(
+            Optional<ListChanged> roots,
+            Optional<Sampling> sampling,
+            Optional<Elicitation> elicitation,
+            Optional<Map<String, Object>> extensions,
+            Optional<Map<String, Object>> experimental)
             implements Experimental
     {
-        public static final ClientCapabilities EMPTY = new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        public static final ClientCapabilities EMPTY = new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
 
         public ClientCapabilities
         {
             roots = requireNonNullElse(roots, Optional.empty());
             sampling = requireNonNullElse(sampling, Optional.empty());
             elicitation = requireNonNullElse(elicitation, Optional.empty());
-            experimental = requireNonNullElse(experimental, Optional.empty());
+            extensions = normalize(extensions);
+            experimental = normalize(experimental);
+        }
+
+        public static ClientCapabilities requiredExtension(String extension)
+        {
+            return new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(ImmutableMap.of(extension, ImmutableMap.of())), Optional.empty());
+        }
+
+        public boolean hasExtension(String extension)
+        {
+            return extensions.map(extensions -> extensions.containsKey(extension)).orElse(false);
         }
     }
 
