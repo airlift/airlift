@@ -100,7 +100,7 @@
         <project.build.targetJdk>25</project.build.targetJdk>
 
         <dep.brotli4j.version>1.23.0</dep.brotli4j.version>
-        <dep.bouncycastle.version>1.85</dep.bouncycastle.version>
+        <dep.bouncycastle.version>1.86</dep.bouncycastle.version>
         <dep.mcp.sdk.version>2.0.1</dep.mcp.sdk.version>
         <dep.openapi-generator.version>7.25.0</dep.openapi-generator.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
