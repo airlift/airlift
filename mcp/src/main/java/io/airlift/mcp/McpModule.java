@@ -40,6 +40,7 @@ import io.airlift.mcp.operations.legacy.SessionlessOperations;
 import io.airlift.mcp.operations.legacy.sessions.CachingSessionController;
 import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.storage.StorageController;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
@@ -48,7 +49,6 @@ import io.airlift.mcp.reflection.ReflectionHelper;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
-import io.airlift.mcp.storage.StorageController;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
