@@ -242,9 +242,10 @@ McpModule.builder()
     .build();
 ```
 
-Sessions are kept in a [StorageController](src/main/java/io/airlift/mcp/storage/StorageController.java). For
-Production, a DB-backed, resilient implementation should be used; for testing, an in-memory implementation is
-provided: [MemoryStorageController](src/main/java/io/airlift/mcp/storage/MemoryStorageController.java).
+Sessions are kept in a
+[StorageController](src/main/java/io/airlift/mcp/operations/legacy/storage/StorageController.java). For Production, a
+DB-backed, resilient implementation should be used; for testing, an in-memory implementation is provided:
+[MemoryStorageController](src/main/java/io/airlift/mcp/operations/legacy/storage/MemoryStorageController.java).
 
 ## Apps
 

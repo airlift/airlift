@@ -15,7 +15,7 @@ import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
 import io.airlift.mcp.operations.legacy.sessions.SessionId;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
