@@ -9,7 +9,7 @@ import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.operations.legacy.ResourceVersions;
 import io.airlift.mcp.operations.legacy.SystemListVersions;
-import io.airlift.mcp.storage.StorageKeyId;
+import io.airlift.mcp.operations.legacy.storage.StorageKeyId;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
