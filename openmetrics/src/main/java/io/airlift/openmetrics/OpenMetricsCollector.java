@@ -25,12 +25,14 @@ import io.airlift.metrics.MetricsCollector;
 import io.airlift.metrics.StatWindows;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
+import io.airlift.openmetrics.types.ExponentialHistogramMetric;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.Distribution;
 import io.airlift.stats.DistributionStat;
+import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import io.airlift.stats.TimeDistribution;
 import io.airlift.stats.TimeStat;
 
@@ -42,8 +44,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.openmetrics.types.ExponentialHistogramMetric.MIN_PROMETHEUS_SCALE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -77,10 +81,20 @@ public class OpenMetricsCollector
 
     public List<Metric> collect(List<String> filters)
     {
+        return collect(filters, false);
+    }
+
+    public List<Metric> collectPrometheusProtobuf(List<String> filters)
+    {
+        return collect(filters, true);
+    }
+
+    private List<Metric> collect(List<String> filters, boolean exponentialHistograms)
+    {
         if (filters == null || filters.isEmpty()) {
-            return collect();
+            return toOpenMetrics(collector.collect(), exponentialHistograms);
         }
-        return filterMetrics(toOpenMetrics(collector.collect()), ImmutableSet.copyOf(filters));
+        return filterMetrics(toOpenMetrics(collector.collect(), exponentialHistograms), ImmutableSet.copyOf(filters));
     }
 
     public Optional<Metric> findMetric(String metricName)
@@ -114,10 +128,15 @@ public class OpenMetricsCollector
     @VisibleForTesting
     static List<Metric> toOpenMetrics(List<CollectedMetricGroup> collectedMetricGroups)
     {
+        return toOpenMetrics(collectedMetricGroups, false);
+    }
+
+    private static List<Metric> toOpenMetrics(List<CollectedMetricGroup> collectedMetricGroups, boolean exponentialHistograms)
+    {
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
         collectedMetricGroups.stream()
                 .flatMap(group -> group.attributes().stream()
-                        .map(attribute -> toOpenMetric(openMetricsMetricName(group, attribute), attribute, group.labels())))
+                        .map(attribute -> toOpenMetric(openMetricsMetricName(group, attribute), attribute, group.labels(), exponentialHistograms)))
                 .flatMap(Optional::stream)
                 .forEach(metrics::add);
         return metrics.build();
@@ -150,10 +169,16 @@ public class OpenMetricsCollector
     @VisibleForTesting
     static Optional<Metric> toOpenMetric(Attribute attribute, Map<String, String> labels)
     {
-        return toOpenMetric(openMetricsMetricName(attribute.path()), attribute, labels);
+        return toOpenMetric(openMetricsMetricName(attribute.path()), attribute, labels, false);
     }
 
-    private static Optional<Metric> toOpenMetric(String metricName, Attribute attribute, Map<String, String> labels)
+    @VisibleForTesting
+    static Optional<Metric> toPrometheusProtobufMetric(Attribute attribute, Map<String, String> labels)
+    {
+        return toOpenMetric(openMetricsMetricName(attribute.path()), attribute, labels, true);
+    }
+
+    private static Optional<Metric> toOpenMetric(String metricName, Attribute attribute, Map<String, String> labels, boolean exponentialHistograms)
     {
         Object value = attribute.value();
         return switch (value) {
@@ -162,12 +187,61 @@ public class OpenMetricsCollector
             case CompositeData compositeData -> Optional.of(CompositeMetric.from(metricName, compositeData, labels, attribute.description()));
             case TabularData tabularData -> Optional.of(CompositeMetric.from(metricName, tabularData, labels, attribute.description()));
             case CounterStat counterStat -> Optional.of(Counter.from(metricName, counterStat, labels, attribute.description()));
+            case TimeDistribution timeDistribution when exponentialHistograms -> toPrometheusExponentialHistogram(
+                    metricName,
+                    timeDistribution.exponentialHistogramSnapshot(),
+                    labels,
+                    attribute.description(),
+                    "ns",
+                    () -> Summary.from(metricName, timeDistribution, labels, attribute.description()));
             case TimeDistribution timeDistribution -> Optional.of(Summary.from(metricName, timeDistribution, labels, attribute.description()));
+            case TimeStat timeStat when exponentialHistograms -> toPrometheusExponentialHistogram(
+                    metricName,
+                    timeStat.exponentialHistogramSnapshot(),
+                    labels,
+                    attribute.description(),
+                    "ns",
+                    () -> timeStatToOpenMetrics(metricName, timeStat, attribute, labels));
             case TimeStat timeStat -> Optional.of(timeStatToOpenMetrics(metricName, timeStat, attribute, labels));
+            case Distribution distribution when exponentialHistograms -> toPrometheusExponentialHistogram(
+                    metricName,
+                    distribution.exponentialHistogramSnapshot(),
+                    labels,
+                    attribute.description(),
+                    null,
+                    () -> Summary.from(metricName, distribution, labels, attribute.description()));
             case Distribution distribution -> Optional.of(Summary.from(metricName, distribution, labels, attribute.description()));
+            case DistributionStat distributionStat when exponentialHistograms -> toPrometheusExponentialHistogram(
+                    metricName,
+                    distributionStat.exponentialHistogramSnapshot(),
+                    labels,
+                    attribute.description(),
+                    null,
+                    () -> distributionStatToOpenMetrics(metricName, distributionStat, attribute, labels));
             case DistributionStat distributionStat -> Optional.of(distributionStatToOpenMetrics(metricName, distributionStat, attribute, labels));
             case null, default -> Optional.empty();
         };
+    }
+
+    private static Optional<Metric> toPrometheusExponentialHistogram(
+            String metricName,
+            Optional<ExponentialHistogramSnapshot> snapshot,
+            Map<String, String> labels,
+            String help,
+            String unit,
+            Supplier<Metric> fallback)
+    {
+        if (snapshot.isEmpty()) {
+            return Optional.of(fallback.get());
+        }
+
+        ExponentialHistogramSnapshot exponentialHistogram = snapshot.orElseThrow();
+        // Downscaling can reduce an overly high scale, but raising a scale would require inventing
+        // how each existing bucket's count is distributed between finer buckets.
+        if (exponentialHistogram.scale() < MIN_PROMETHEUS_SCALE) {
+            return Optional.empty();
+        }
+        return Optional.of(new ExponentialHistogramMetric(metricName, exponentialHistogram, labels, help, unit));
     }
 
     private static CompositeMetric timeStatToOpenMetrics(String metricName, TimeStat timeStat, Attribute attribute, Map<String, String> labels)
