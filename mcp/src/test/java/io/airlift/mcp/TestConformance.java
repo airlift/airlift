@@ -91,9 +91,10 @@ public class TestConformance
         TestingServer testingServer = closer.register(new TestingServer(properties, Optional.empty(), builder -> builder
                 .withStrictValidation()
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
-                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
+                .withLegacyBindings()
+                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
                 .withAllInClass(ConformanceEndpoints.class)
                 .build()));
 

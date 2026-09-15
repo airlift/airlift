@@ -148,11 +148,6 @@ public class McpModule
         }
     }
 
-    public interface LegacyBuilder
-    {
-        Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding);
-    }
-
     public static class Builder
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
@@ -194,16 +189,12 @@ public class McpModule
             return this;
         }
 
+        /**
+         * The bindings only the 2025-11-25 and earlier protocols use.
+         */
         public LegacyBuilder withLegacyBindings()
         {
-            return sessionControllerBinding -> {
-                checkState(Builder.this.storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
-                checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
-
-                Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-                Builder.this.legacyOperationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
-                return Builder.this;
-            };
+            return new LegacyBuilder();
         }
 
         public Builder withCapabilityFilter(Consumer<LinkedBindingBuilder<McpCapabilityFilter>> filterBinding)
@@ -217,14 +208,6 @@ public class McpModule
         {
             checkState(filterBindingAnnotation.isEmpty(), "HTTP server binding annotation is already set");
             filterBindingAnnotation = Optional.of(requireNonNull(annotation, "annotation is null"));
-            return this;
-        }
-
-        public Builder withStorage(Consumer<LinkedBindingBuilder<StorageController>> storageControllerBinding)
-        {
-            checkArgument(this.storageControllerBinding.isEmpty(), "Storage controller binding is already set");
-
-            this.storageControllerBinding = Optional.of(storageControllerBinding);
             return this;
         }
 
@@ -267,6 +250,32 @@ public class McpModule
         {
             validationMode = ValidationMode.STRICT;
             return this;
+        }
+
+        public class LegacyBuilder
+        {
+            private LegacyBuilder() {}
+
+            /**
+             * The storage legacy sessions are kept in.
+             */
+            public LegacyBuilder withStorage(Consumer<LinkedBindingBuilder<StorageController>> storageControllerBinding)
+            {
+                checkArgument(Builder.this.storageControllerBinding.isEmpty(), "Storage controller binding is already set");
+
+                Builder.this.storageControllerBinding = Optional.of(storageControllerBinding);
+                return this;
+            }
+
+            public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
+            {
+                checkState(Builder.this.storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
+                checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
+
+                Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+                Builder.this.legacyOperationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
+                return Builder.this;
+            }
         }
 
         public Module build()

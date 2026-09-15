@@ -32,6 +32,7 @@ import io.airlift.mcp.operations.legacy.sessions.SessionId;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.airlift.mcp.operations.legacy.storage.StorageController;
+import io.airlift.mcp.operations.legacy.storage.TestingDatabaseStorageController;
 import io.modelcontextprotocol.client.transport.McpHttpClientTransportAuthorizationException;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
@@ -164,12 +165,13 @@ public abstract class TestMcp
         Function<McpModule.Builder, Module> mcpModuleBuilder = builder -> {
             builder = builder
                     .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                    .withStorage(binding -> binding.to(storageControllerClass).in(SINGLETON))
                     .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                     .withAllInClass(TestingEndpoints.class)
                     .withAllInClass(MapApp.class);
             if (mode != Mode.SESSIONLESS) {
-                builder = builder.withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
+                builder = builder.withLegacyBindings()
+                        .withStorage(binding -> binding.to(storageControllerClass).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
             }
             return builder.build();
         };
