@@ -189,8 +189,9 @@ public class TestMcpSchema
     {
         Function<McpModule.Builder, Module> applicator = builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withLegacyBindings(legacy -> legacy
+                        .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON)))
                 .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
                 .withAllInClass(endpointsClass)
                 .build();

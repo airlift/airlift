@@ -1,8 +1,9 @@
-package io.airlift.mcp;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import io.airlift.json.JsonMapperProvider;
-import io.airlift.mcp.operations.legacy.sessions.SessionController;
-import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
+import io.airlift.mcp.McpConfig;
+import io.airlift.mcp.TestingDatabaseServer;
+import io.airlift.mcp.operations.legacy.storage.TestingDatabaseStorageController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 import tools.jackson.databind.json.JsonMapper;

@@ -1,11 +1,6 @@
-package io.airlift.mcp;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import io.airlift.mcp.McpIdentity.Authenticated;
-import io.airlift.mcp.operations.legacy.sessions.BlockingResult;
-import io.airlift.mcp.operations.legacy.sessions.BlockingResult.TimedOut;
-import io.airlift.mcp.operations.legacy.sessions.SessionController;
-import io.airlift.mcp.operations.legacy.sessions.SessionId;
-import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -44,7 +39,7 @@ public abstract class TestSessionController
         });
 
         BlockingResult<String> blockingResult = controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
-        assertThat(blockingResult).isInstanceOf(TimedOut.class);
+        assertThat(blockingResult).isInstanceOf(BlockingResult.TimedOut.class);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Future<Void> future = newVirtualThreadPerTaskExecutor().submit(() -> {
