@@ -26,7 +26,9 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolResult;
 import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
 
@@ -36,6 +38,7 @@ import java.util.Optional;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.METADATA_PROGRESS_TOKEN;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
 import static java.util.Objects.requireNonNull;
@@ -80,15 +83,24 @@ public class OperationsCommon
             ToolHandler toolHandler = toolEntry.toolHandler();
             LegacyRequestContextImpl processTokenRequestContext = requestContext.withProgressToken(progressToken(callToolRequest));
 
-            CallToolResult callToolResult = toolHandler.callTool(processTokenRequestContext, callToolRequest);
+            CallToolResult callToolResult = legacyToolResult(toolHandler.callTool(processTokenRequestContext, callToolRequest));
             return mrtrEmulator.emulate(processTokenRequestContext, callToolResult, (requestState, inputResponses) -> {
                 CallToolRequest adjustedCallToolRequest = callToolRequest.withInputResponses(requestState, inputResponses);
-                return toolHandler.callTool(processTokenRequestContext, adjustedCallToolRequest);
+                return legacyToolResult(toolHandler.callTool(processTokenRequestContext, adjustedCallToolRequest));
             });
         }
         catch (McpClientException mcpClientException) {
             return CallToolResult.forError(mcpClientException);
         }
+    }
+
+    // tasks are a 2026 extension - the legacy protocols cannot carry one
+    private static CallToolResult legacyToolResult(ToolResult toolResult)
+    {
+        return switch (toolResult) {
+            case CallToolResult callToolResult -> callToolResult;
+            case Task _ -> throw exception(INTERNAL_ERROR, "Tasks are not supported by this protocol version");
+        };
     }
 
     ListPromptsResult listPrompts(LegacyRequestContextImpl requestContext, ListRequest listRequest)

@@ -13,7 +13,8 @@ import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
+import io.airlift.mcp.tasks.memory.MemoryTaskEngine;
 import io.airlift.node.NodeModule;
 
 import java.util.Optional;
@@ -40,11 +41,14 @@ public class LocalServer
 
         Module mcpModule = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class)
+                .withAllInClass(ConformanceEndpoints.class)
                 .withAllInClass(MapApp.class)
                 .withAllInClass(DebugApp.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
+                .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
+                .withLegacyBindings()
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withServerIcons(ImmutableSet.of("google"))
                 .build();

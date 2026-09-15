@@ -18,7 +18,7 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
@@ -69,8 +69,9 @@ public class TestMcpCapabilityFiltering
                 Optional.empty(),
                 builder -> builder
                         .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                        .withLegacyBindings()
                         .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                        .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                         .withAllInClass(TestFilteringEnabledEndpoints.class)
                         .build());
         closer.register(testingServer);
@@ -115,8 +116,9 @@ public class TestMcpCapabilityFiltering
                 Optional.empty(),
                 builder -> builder
                         .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                        .withLegacyBindings()
                         .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                        .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                         .withCapabilityFilter(binding -> binding.toInstance(new TestMcpCapabilityFilter()))
                         .withAllInClass(TestFilteringEnabledEndpoints.class)
                         .build());
@@ -159,8 +161,9 @@ public class TestMcpCapabilityFiltering
                 Optional.empty(),
                 builder -> builder
                         .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                        .withLegacyBindings()
                         .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                        .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                         .withCapabilityFilter(binding -> binding.toInstance(new TestMcpCapabilityFilter()))
                         .withAllInClass(TestFilteringEnabledEndpoints.class)
                         .build());
@@ -203,8 +206,9 @@ public class TestMcpCapabilityFiltering
                 Optional.empty(),
                 builder -> builder
                         .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                        .withLegacyBindings()
                         .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                        .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                         .withCapabilityFilter(binding -> binding.toInstance(new TestMcpCapabilityFilter()))
                         .withAllInClass(TestFilteringEnabledEndpoints.class)
                         .build());
@@ -255,8 +259,9 @@ public class TestMcpCapabilityFiltering
                 Optional.empty(),
                 builder -> builder
                         .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                        .withLegacyBindings()
                         .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                        .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                         .withCapabilityFilter(binding -> binding.toInstance(new TestMcpCapabilityFilter()))
                         .withAllInClass(TestFilteringEnabledEndpoints.class)
                         .build());
@@ -299,8 +304,9 @@ public class TestMcpCapabilityFiltering
                 Optional.empty(),
                 builder -> builder
                         .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                        .withLegacyBindings()
                         .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                        .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                         .withCapabilityFilter(binding -> binding.toInstance(new TestMcpCapabilityFilter()))
                         .withAllInClass(TestFilteringEnabledEndpoints.class)
                         .build());

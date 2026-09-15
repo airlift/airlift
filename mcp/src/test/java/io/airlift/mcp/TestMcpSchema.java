@@ -5,7 +5,7 @@ import com.google.common.io.Closer;
 import com.google.inject.Module;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -176,8 +176,9 @@ public class TestMcpSchema
     {
         Function<McpModule.Builder, Module> applicator = builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                .withLegacyBindings()
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                 .withAllInClass(endpointsClass)
                 .build();
         return new TestingServer(ImmutableMap.of(), Optional.empty(), applicator);
