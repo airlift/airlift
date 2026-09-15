@@ -237,8 +237,9 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 ```java
 McpModule.builder()
-    .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-    .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+    .withLegacyBindings(legacy -> legacy
+            .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+            .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON)))
     .build();
 ```
 
