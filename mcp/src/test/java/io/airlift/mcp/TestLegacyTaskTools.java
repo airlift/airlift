@@ -9,7 +9,7 @@ import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.ToolResult;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.airlift.mcp.tasks.memory.MemoryTaskEngine;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.AfterAll;
