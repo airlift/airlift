@@ -5,8 +5,8 @@ import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity;
-import io.airlift.mcp.storage.StorageController;
-import io.airlift.mcp.storage.StorageGroupId;
+import io.airlift.mcp.operations.legacy.storage.StorageController;
+import io.airlift.mcp.operations.legacy.storage.StorageGroupId;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 

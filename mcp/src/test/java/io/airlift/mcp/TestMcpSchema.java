@@ -7,7 +7,7 @@ import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.Task;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.airlift.mcp.tasks.memory.MemoryTaskEngine;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.AfterEach;
