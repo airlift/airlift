@@ -7,6 +7,7 @@ import org.glassfish.jersey.server.spi.internal.ValueParamProvider;
 
 import java.util.function.Function;
 
+import static io.airlift.api.internals.ContextParameters.hasApiContextAnnotation;
 import static io.airlift.api.internals.Mappers.buildPagination;
 
 class PaginationValueParamProvider
@@ -15,6 +16,9 @@ class PaginationValueParamProvider
     @Override
     public Function<ContainerRequest, ?> getValueProvider(Parameter parameter)
     {
+        if (hasApiContextAnnotation(parameter.getAnnotations())) {
+            return null;
+        }
         if (ApiPagination.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> buildPagination(containerRequest.getUriInfo());
         }

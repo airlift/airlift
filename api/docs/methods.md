@@ -39,3 +39,31 @@ Methods can be tagged with optional traits. There are currently two traits:
 |-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `PRIVATE` | The method will not show in the OpenAPI documentation or JSON                                                                                           |
 | `BETA`    | The method will have a Beta message added to its OpenAPI description. Additionally, the method will _not_ be validated by the API Compatibility checker |
+
+## Custom context parameters
+
+Annotate an application-defined parameter annotation with `@ApiContext` to supply
+context without also adding `@Context`:
+
+```java
+@ApiContext
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface RequestId {}
+
+@ApiCreate(description = "Create a widget")
+public Widget createWidget(@RequestId UUID requestId, NewWidget widget)
+{
+    // ...
+}
+```
+
+The application supplies the value using its own Jersey `ValueParamProvider`.
+Jersey receives the original parameter annotation, including its attributes.
+API Builder excludes the context parameter from public API parameters, generated
+contracts, and request-body inference. In the example, `NewWidget` remains the
+request body.
+
+An annotated parameter must have exactly one supported annotation: `@ApiParameter`, `@Context`,
+`@Suspended`, or an annotation marked with `@ApiContext`. Combining these annotations
+or adding unknown parameter annotations is rejected.

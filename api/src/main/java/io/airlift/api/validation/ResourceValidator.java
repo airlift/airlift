@@ -30,6 +30,7 @@ import static io.airlift.api.ApiServiceTrait.DESCRIPTIONS_REQUIRED;
 import static io.airlift.api.binding.JaxrsUtil.isApiResource;
 import static io.airlift.api.builders.ResourceBuilder.isBasic;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+import static io.airlift.api.internals.ContextParameters.isContextParameter;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.validateMap;
 import static io.airlift.api.internals.Mappers.buildResourceId;
@@ -252,7 +253,10 @@ public interface ResourceValidator
 
     private static void validatePatch(Method method, ModelResource requestBodyResource)
     {
-        long count = Stream.of(method.getParameterTypes()).filter(ApiPatch.class::isAssignableFrom).count();
+        long count = Stream.of(method.getParameters())
+                .filter(parameter -> !isContextParameter(parameter))
+                .filter(parameter -> ApiPatch.class.isAssignableFrom(parameter.getType()))
+                .count();
         if (count > 1) {
             throw new ValidatorException("Method has multiple %s parameters".formatted(ApiPatch.class.getSimpleName()));
         }

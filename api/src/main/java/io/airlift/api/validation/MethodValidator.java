@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static io.airlift.api.builders.MethodBuilder.OPTIONAL_PARAMETER_MAP;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+import static io.airlift.api.internals.ContextParameters.isContextParameter;
 import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.REQUIRES_ALLOWED_VALUES;
@@ -89,10 +90,9 @@ public interface MethodValidator
                 throw new ValidatorException("Method parameter %s has JAX-RS annotations".formatted(parameter.getName()));
             }
 
-            Context context = parameter.getDeclaredAnnotation(Context.class);
-            Suspended suspended = parameter.getDeclaredAnnotation(Suspended.class);
+            boolean isContext = isContextParameter(parameter);
             ApiParameter apiParameter = parameter.getDeclaredAnnotation(ApiParameter.class);
-            int expectedAnnotationCount = ((context != null) || (apiParameter != null) || (suspended != null)) ? 1 : 0;
+            int expectedAnnotationCount = (isContext || (apiParameter != null)) ? 1 : 0;
 
             if (parameter.getDeclaredAnnotations().length != expectedAnnotationCount) {
                 throw new ValidatorException("Invalid annotations on parameter %s".formatted(parameter.getName()));
@@ -106,7 +106,7 @@ public interface MethodValidator
                     validateOptionalParameter(modelMethod, parameter, allowedParameterTypes, apiParameter);
                 }
             }
-            else if ((context == null) && (suspended == null)) {
+            else if (!isContext) {
                 modelMethod.requestBody().ifPresent(requestBody -> validateRequestBody(modelMethod.methodType(), requestBody, serviceTraits));
             }
         }
@@ -194,7 +194,10 @@ public interface MethodValidator
         }
 
         if (!multipleAllowed) {
-            long parametersOfThisType = Stream.of(method.getParameterTypes()).filter(type -> type.equals(parameter.getType())).count();
+            long parametersOfThisType = Stream.of(method.getParameters())
+                    .filter(other -> !isContextParameter(other))
+                    .filter(other -> other.getType().equals(parameter.getType()))
+                    .count();
             if (parametersOfThisType > 1) {
                 throw new ValidatorException("Method has multiple %s parameters".formatted(parameter.getType().getSimpleName()));
             }
