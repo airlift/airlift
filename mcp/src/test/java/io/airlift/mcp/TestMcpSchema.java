@@ -5,7 +5,7 @@ import com.google.common.io.Closer;
 import com.google.inject.Module;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
