@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
@@ -389,6 +390,38 @@ public class TestMemoryTaskEngine
         engine.close();
 
         assertThat(cancelled).isTrue();
+    }
+
+    @Test
+    public void testOneAttemptAtATime()
+            throws InterruptedException
+    {
+        // a second executeTask() must not run the tool again while an attempt owns the task
+        CountDownLatch running = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicInteger attempts = new AtomicInteger();
+        Task handle = createTask((_, _, _) -> {
+            attempts.incrementAndGet();
+            running.countDown();
+            release.await();
+            return new CallToolResult(new TextContent("done"));
+        });
+
+        assertThat(running.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
+        engine.executeTask(handle.taskId(), executor);
+        release.countDown();
+
+        waitFor(() -> getTask(handle).status().isTerminal());
+        assertThat(attempts).hasValue(1);
+    }
+
+    @Test
+    public void testAnExecutorReturningNothingFailsTheTask()
+    {
+        Task handle = createTask((_, _, _) -> null);
+
+        waitFor(() -> getTask(handle).status().isTerminal());
+        assertThat(getTask(handle).status()).isEqualTo(TaskStatus.FAILED);
     }
 
     @Test

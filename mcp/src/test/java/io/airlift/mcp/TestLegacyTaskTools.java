@@ -48,8 +48,9 @@ public class TestLegacyTaskTools
         TestingServer testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
-                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withLegacyBindings(legacyBuilder -> legacyBuilder
+                        .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON)))
                 .withAllInClass(TaskTools.class)
                 .build());
         closer.register(testingServer);

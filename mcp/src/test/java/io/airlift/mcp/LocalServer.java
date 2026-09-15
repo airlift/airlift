@@ -45,9 +45,10 @@ public class LocalServer
                 .withAllInClass(MapApp.class)
                 .withAllInClass(DebugApp.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
-                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withTasks(binding -> binding.to(MemoryTaskEngine.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withLegacyBindings(legacy -> legacy
+                        .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON)))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withServerIcons(ImmutableSet.of("google"))
                 .build();
