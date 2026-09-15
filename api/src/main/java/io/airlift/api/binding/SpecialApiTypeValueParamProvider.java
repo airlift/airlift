@@ -32,6 +32,7 @@ import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOrderBy.ORDER_BY_PARAMETER_NAME;
+import static io.airlift.api.internals.ContextParameters.hasApiContextAnnotation;
 import static io.airlift.api.internals.Mappers.buildFilter;
 import static io.airlift.api.internals.Mappers.buildFilterList;
 import static io.airlift.api.internals.Mappers.buildHeader;
@@ -62,6 +63,9 @@ class SpecialApiTypeValueParamProvider
     @Override
     public Function<ContainerRequest, ?> getValueProvider(Parameter parameter)
     {
+        if (hasApiContextAnnotation(parameter.getAnnotations())) {
+            return null;
+        }
         if (ApiValidateOnly.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> buildValidateOnly(containerRequest.getUriInfo());
         }

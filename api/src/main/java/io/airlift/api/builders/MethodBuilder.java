@@ -39,8 +39,6 @@ import io.airlift.api.responses.ApiForbidden;
 import io.airlift.api.responses.ApiNotFound;
 import io.airlift.api.responses.ApiUnauthorized;
 import io.airlift.api.validation.ValidatorException;
-import jakarta.ws.rs.container.Suspended;
-import jakarta.ws.rs.core.Context;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -68,6 +66,7 @@ import static io.airlift.api.ApiPagination.PAGE_SIZE_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiPagination.PAGE_TOKEN_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiValidateOnly.VALIDATE_ONLY_PARAMETER_NAME;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+import static io.airlift.api.internals.ContextParameters.isContextParameter;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
 import static io.airlift.api.internals.Mappers.openApiName;
@@ -231,7 +230,9 @@ public class MethodBuilder
     private Optional<ModelMethod> applyRequestBody(Method method, Optional<ModelMethod> modelMethod, ModelResource requestBodyResource)
     {
         if (requestBodyResource != null) {
-            boolean isPatch = Arrays.stream(method.getParameterTypes()).anyMatch(ApiPatch.class::isAssignableFrom);
+            boolean isPatch = Arrays.stream(method.getParameters())
+                    .filter(parameter -> !isContextParameter(parameter))
+                    .anyMatch(parameter -> ApiPatch.class.isAssignableFrom(parameter.getType()));
 
             return modelMethod.map(model -> {
                 if (isPatch) {
@@ -310,10 +311,9 @@ public class MethodBuilder
         List<ModelResource> parameters = new ArrayList<>();
         List<ModelOptionalParameter> optionalParameters = new ArrayList<>();
         for (Parameter parameter : method.getParameters()) {
-            Context context = parameter.getAnnotation(Context.class);
-            Suspended suspended = parameter.getAnnotation(Suspended.class);
+            boolean isContext = isContextParameter(parameter);
             ApiParameter apiParameter = parameter.getAnnotation(ApiParameter.class);
-            int expectedAnnotationCount = ((context != null) || (apiParameter != null) || (suspended != null)) ? 1 : 0;
+            int expectedAnnotationCount = (isContext || (apiParameter != null)) ? 1 : 0;
 
             if (parameter.getAnnotations().length != expectedAnnotationCount) {
                 throw new ValidatorException("Invalid annotations on parameter %s".formatted(parameter.getName()));
@@ -335,9 +335,8 @@ public class MethodBuilder
                 }
             }
             else {
-                boolean isContextOrSuspended = (context != null) || (suspended != null);
                 boolean isCreateOrUpdate = (apiType == ApiType.CREATE) || (apiType == ApiType.UPDATE);
-                if (!isContextOrSuspended && isCreateOrUpdate) {
+                if (!isContext && isCreateOrUpdate) {
                     requestBody.set(buildRequestBody(requestBody, parameter));
                 }
             }
