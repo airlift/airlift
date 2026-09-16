@@ -45,6 +45,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -77,7 +78,6 @@ import static io.airlift.api.model.ModelOptionalParameter.Metadata.REQUIRES_ALLO
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.VALIDATES_ARGUMENT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
 import static io.airlift.api.model.ModelResourceModifier.IS_STREAMING_RESPONSE;
-import static io.airlift.api.model.ModelResourceModifier.PATCH;
 import static io.airlift.api.model.ModelResourceModifier.VOID;
 import static java.util.Objects.requireNonNull;
 
@@ -182,7 +182,7 @@ public class MethodBuilder
             default -> throw new ValidatorException("API method has multiple @Api* annotations");
         };
 
-        return applyRequestBody(maybeModelMethod, modelResource.get()).map(this::applyQuotas);
+        return applyRequestBody(method, maybeModelMethod, modelResource.get()).map(this::applyQuotas);
     }
 
     private record Parameters(List<ModelResource> parameters, List<ModelOptionalParameter> optionalParameters) {}
@@ -227,12 +227,14 @@ public class MethodBuilder
         return modelMethod;
     }
 
-    private Optional<ModelMethod> applyRequestBody(Optional<ModelMethod> modelMethod, ModelResource requestBodyResource)
+    private Optional<ModelMethod> applyRequestBody(Method method, Optional<ModelMethod> modelMethod, ModelResource requestBodyResource)
     {
         if (requestBodyResource != null) {
+            boolean isPatch = Arrays.stream(method.getParameterTypes()).anyMatch(ApiPatch.class::isAssignableFrom);
+
             return modelMethod.map(model -> {
-                if (requestBodyResource.modifiers().contains(PATCH)) {
-                    return addPatchHelpToDescription(model.withRequestBody(requestBodyResource));
+                if (isPatch) {
+                    return addPatchHelpToDescription(model.withRequestBody(requestBodyResource.asPatchRequestBody()));
                 }
                 return model.withRequestBody(requestBodyResource);
             });
@@ -357,8 +359,7 @@ public class MethodBuilder
             parameterizedType = parameter.getParameterizedType();
         }
 
-        ModelResource resource = resourceBuilder.apply(parameterizedType).build();
-        return isPatch ? resource.asPatchRequestBody() : resource;
+        return resourceBuilder.apply(parameterizedType).build();
     }
 
     private Optional<ModelOptionalParameter> buildOptionalParameter(Parameter parameter, ApiParameter apiParameter)
