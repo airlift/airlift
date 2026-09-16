@@ -194,10 +194,7 @@ public interface MethodValidator
         }
 
         if (!multipleAllowed) {
-            long parametersOfThisType = Stream.of(method.getParameters())
-                    .filter(other -> !isContextOrSuspendedParameter(other))
-                    .filter(other -> other.getType().equals(parameter.getType()))
-                    .count();
+            long parametersOfThisType = Stream.of(method.getParameterTypes()).filter(type -> type.equals(parameter.getType())).count();
             if (parametersOfThisType > 1) {
                 throw new ValidatorException("Method has multiple %s parameters".formatted(parameter.getType().getSimpleName()));
             }

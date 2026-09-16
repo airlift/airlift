@@ -1,9 +1,6 @@
 package io.airlift.api.servertests;
 
 import com.google.inject.Injector;
-import io.airlift.api.ApiPagination;
-import io.airlift.api.ApiPatch;
-import io.airlift.api.ApiValidateOnly;
 import io.airlift.api.TestApiContext.ContextService;
 import io.airlift.api.TestApiContext.Injected;
 import io.airlift.api.TestApiContext.Payload;
@@ -25,7 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -74,7 +70,7 @@ public class TestContextInjection
                     .setBodyGenerator(jsonBodyGenerator(jsonCodec(Payload.class), new Payload("created")))
                     .build();
             assertThat(client.execute(create, createJsonResponseHandler(jsonCodec(Payload.class))))
-                    .isEqualTo(new Payload(requestId + ":created:true:false:17"));
+                    .isEqualTo(new Payload(requestId + ":created:true"));
 
             Request update = preparePut()
                     .setUri(baseUri.resolve("/public/api/v1/payload?validateOnly=true"))
@@ -83,7 +79,7 @@ public class TestContextInjection
                     .setBodyGenerator(jsonBodyGenerator(jsonCodec(Payload.class), new Payload("updated")))
                     .build();
             assertThat(client.execute(update, createJsonResponseHandler(jsonCodec(Payload.class))))
-                    .isEqualTo(new Payload(requestId + ":updated:true:0"));
+                    .isEqualTo(new Payload(requestId + ":updated:true"));
         }
         finally {
             injector.getInstance(LifeCycleManager.class).stop();
@@ -102,15 +98,6 @@ public class TestContextInjection
             }
             if (parameter.getRawType() == UUID.class) {
                 return request -> UUID.fromString(request.getHeaderString(annotation.value()));
-            }
-            if (parameter.getRawType() == ApiValidateOnly.class) {
-                return _ -> new ApiValidateOnly(false);
-            }
-            if (parameter.getRawType() == ApiPagination.class) {
-                return _ -> new ApiPagination(Optional.empty(), 17, Optional.empty());
-            }
-            if (parameter.getRawType() == ApiPatch.class) {
-                return _ -> new ApiPatch<>(Map.of());
             }
             throw new AssertionError("Unexpected context parameter: " + parameter);
         }

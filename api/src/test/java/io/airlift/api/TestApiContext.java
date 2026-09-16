@@ -84,7 +84,7 @@ public class TestApiContext
                     .satisfies(parameter -> assertThat(parameter.getName()).isEqualTo("validateOnly"));
             assertThat(operation.getRequestBody().getContent().getMediaTypes().get("application/json").getSchema().get$ref()).contains("Payload");
         }
-        assertThat(openApi.getComponents().getSchemas()).doesNotContainKeys("UUID", "ApiPatch", "ApiPagination", "ApiValidateOnly");
+        assertThat(openApi.getComponents().getSchemas()).doesNotContainKey("UUID");
     }
 
     @ParameterizedTest
@@ -162,19 +162,19 @@ public class TestApiContext
         }
 
         @ApiCreate(description = "Create with context")
-        public Payload create(@Injected("X-Request-Id") UUID requestId, Payload payload, @ApiParameter ApiValidateOnly validateOnly, @Injected ApiValidateOnly internalValidateOnly, @Injected ApiPagination pagination)
+        public Payload create(@Injected("X-Request-Id") UUID requestId, Payload payload, @ApiParameter ApiValidateOnly validateOnly)
         {
-            return new Payload(requestId + ":" + payload.value() + ":" + validateOnly.requested() + ":" + internalValidateOnly.requested() + ":" + pagination.pageSize());
+            return new Payload(requestId + ":" + payload.value() + ":" + validateOnly.requested());
         }
 
         @ApiUpdate(description = "Update with context")
-        public Payload update(Payload payload, @Injected("X-Request-Id") UUID requestId, @ApiParameter ApiValidateOnly validateOnly, @Injected ApiPatch<Payload> internalPatch)
+        public Payload update(Payload payload, @Injected("X-Request-Id") UUID requestId, @ApiParameter ApiValidateOnly validateOnly)
         {
-            return new Payload(requestId + ":" + payload.value() + ":" + validateOnly.requested() + ":" + internalPatch.fields().size());
+            return new Payload(requestId + ":" + payload.value() + ":" + validateOnly.requested());
         }
 
         @ApiCustom(type = ApiType.UPDATE, verb = "patch", description = "Patch with context")
-        public void patch(@Injected ApiPatch<Payload> internalPatch, ApiPatch<Payload> patch, @ApiParameter ApiValidateOnly validateOnly) {}
+        public void patch(@Injected UUID requestId, ApiPatch<Payload> patch, @ApiParameter ApiValidateOnly validateOnly) {}
     }
 
     @SuppressWarnings("unused")
