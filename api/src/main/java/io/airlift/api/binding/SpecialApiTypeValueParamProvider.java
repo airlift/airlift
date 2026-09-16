@@ -33,7 +33,6 @@ import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOrderBy.ORDER_BY_PARAMETER_NAME;
-import static io.airlift.api.internals.ContextParameters.hasApiContextAnnotation;
 import static io.airlift.api.internals.Mappers.buildFilter;
 import static io.airlift.api.internals.Mappers.buildFilterList;
 import static io.airlift.api.internals.Mappers.buildHeader;
@@ -44,6 +43,7 @@ import static io.airlift.api.internals.Mappers.buildPagination;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.buildValidateOnly;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
+import static io.airlift.api.internals.ParameterAnnotations.hasApiContextAnnotation;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static io.airlift.api.responses.ApiException.internalError;
 import static io.airlift.api.responses.ApiException.notFound;

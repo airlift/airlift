@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 
 import static io.airlift.api.builders.MethodBuilder.OPTIONAL_PARAMETER_MAP;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
-import static io.airlift.api.internals.ContextParameters.isContextParameter;
+import static io.airlift.api.internals.ParameterAnnotations.isContextOrSuspendedParameter;
 import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.REQUIRES_ALLOWED_VALUES;
@@ -90,9 +90,9 @@ public interface MethodValidator
                 throw new ValidatorException("Method parameter %s has JAX-RS annotations".formatted(parameter.getName()));
             }
 
-            boolean isContext = isContextParameter(parameter);
+            boolean isContextOrSuspended = isContextOrSuspendedParameter(parameter);
             ApiParameter apiParameter = parameter.getDeclaredAnnotation(ApiParameter.class);
-            int expectedAnnotationCount = (isContext || (apiParameter != null)) ? 1 : 0;
+            int expectedAnnotationCount = (isContextOrSuspended || (apiParameter != null)) ? 1 : 0;
 
             if (parameter.getDeclaredAnnotations().length != expectedAnnotationCount) {
                 throw new ValidatorException("Invalid annotations on parameter %s".formatted(parameter.getName()));
@@ -106,7 +106,7 @@ public interface MethodValidator
                     validateOptionalParameter(modelMethod, parameter, allowedParameterTypes, apiParameter);
                 }
             }
-            else if (!isContext) {
+            else if (!isContextOrSuspended) {
                 modelMethod.requestBody().ifPresent(requestBody -> validateRequestBody(modelMethod.methodType(), requestBody, serviceTraits));
             }
         }
@@ -195,7 +195,7 @@ public interface MethodValidator
 
         if (!multipleAllowed) {
             long parametersOfThisType = Stream.of(method.getParameters())
-                    .filter(other -> !isContextParameter(other))
+                    .filter(other -> !isContextOrSuspendedParameter(other))
                     .filter(other -> other.getType().equals(parameter.getType()))
                     .count();
             if (parametersOfThisType > 1) {

@@ -8,11 +8,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Parameter;
 import java.util.stream.Stream;
 
-public final class ContextParameters
+public final class ParameterAnnotations
 {
-    private ContextParameters() {}
+    private ParameterAnnotations() {}
 
-    public static boolean isContextParameter(Parameter parameter)
+    public static boolean isContextOrSuspendedParameter(Parameter parameter)
     {
         return parameter.isAnnotationPresent(Context.class) ||
                 parameter.isAnnotationPresent(Suspended.class) ||

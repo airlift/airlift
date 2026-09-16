@@ -30,11 +30,11 @@ import static io.airlift.api.ApiServiceTrait.DESCRIPTIONS_REQUIRED;
 import static io.airlift.api.binding.JaxrsUtil.isApiResource;
 import static io.airlift.api.builders.ResourceBuilder.isBasic;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
-import static io.airlift.api.internals.ContextParameters.isContextParameter;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.validateMap;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
+import static io.airlift.api.internals.ParameterAnnotations.isContextOrSuspendedParameter;
 import static io.airlift.api.internals.Strings.capitalize;
 import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
@@ -254,7 +254,7 @@ public interface ResourceValidator
     private static void validatePatch(Method method, ModelResource requestBodyResource)
     {
         long count = Stream.of(method.getParameters())
-                .filter(parameter -> !isContextParameter(parameter))
+                .filter(parameter -> !isContextOrSuspendedParameter(parameter))
                 .filter(parameter -> ApiPatch.class.isAssignableFrom(parameter.getType()))
                 .count();
         if (count > 1) {
