@@ -6,7 +6,6 @@ import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiMultiPart.ApiMultiPartForm;
 import io.airlift.api.ApiPagination;
-import io.airlift.api.ApiPatch;
 import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResourceVersion;
@@ -17,12 +16,10 @@ import io.airlift.api.model.ModelPolyResource;
 import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelServiceMetadata;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static io.airlift.api.ApiResourceVersion.PUBLIC_NAME;
 import static io.airlift.api.ApiServiceTrait.ALLOW_OBJECT_ELEMENTS;
@@ -34,7 +31,6 @@ import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.validateMap;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
-import static io.airlift.api.internals.ParameterAnnotations.isContextOrSuspendedParameter;
 import static io.airlift.api.internals.Strings.capitalize;
 import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
@@ -69,7 +65,7 @@ public interface ResourceValidator
         context.inContext("Method: %s, request body %s".formatted(modelMethod.method(), modelResource.type().getTypeName()),
                 subContext -> {
                     if (modelResource.modifiers().contains(PATCH)) {
-                        validatePatch(modelMethod.method(), modelResource);
+                        validatePatch(modelResource);
                     }
                     internalValidate(subContext, service, Optional.empty(), modelResource, ResourceValidationState.create(), enumValueResolver);
                 });
@@ -251,23 +247,8 @@ public interface ResourceValidator
         });
     }
 
-    private static void validatePatch(Method method, ModelResource requestBodyResource)
+    private static void validatePatch(ModelResource requestBodyResource)
     {
-        long count = Stream.of(method.getParameters())
-                .filter(parameter -> !isContextOrSuspendedParameter(parameter))
-                .filter(parameter -> ApiPatch.class.isAssignableFrom(parameter.getType()))
-                .count();
-        if (count > 1) {
-            throw new ValidatorException("Method has multiple %s parameters".formatted(ApiPatch.class.getSimpleName()));
-        }
-
-/*
-TODO why this?
-        if (isPartialPatch) {
-            return;
-        }
-*/
-
         if (!canBePatched(requestBodyResource, new HashMap<>())) {
             throw new ValidatorException("%s is or contains resources that cannot be patched".formatted(requestBodyResource.type()));
         }
