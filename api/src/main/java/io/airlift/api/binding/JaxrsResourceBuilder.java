@@ -98,8 +98,6 @@ class JaxrsResourceBuilder
         newOptionalBinder(binder, annotatedKey(OpenApiMetadata.class, bindingAnnotation));
 
         bindAnnotated(PatchFieldsBuilder.class);
-        // These providers match by type. Adding a supported type can create a collision with
-        // application context parameters; see the ApiContext contract before extending them.
         jaxrsBinder.bind(SpecialApiTypeValueParamProvider.class, specialApiTypeValueParamProvider());
         jaxrsBinder.bind(PaginationValueParamProvider.class);
         jaxrsBinder.bind(JaxrsBindingBridge.class, jaxrsBindingBridgeProvider());
