@@ -13,6 +13,7 @@
  */
 package io.airlift.jackson;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -199,10 +200,45 @@ public class JacksonSubType
         @Override
         public Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated annotated)
         {
-            if (annotated.getRawType().equals(baseClass)) {
+            Class<?> rawType = annotated.getRawType();
+            if (rawType.equals(baseClass)) {
                 return value;
             }
-            return super.findPolymorphicTypeInfo(config, annotated);
+            if (subClassPropertyValues.containsKey(rawType)) {
+                Value declared = super.findPolymorphicTypeInfo(config, annotated);
+                if (declared == null) {
+                    // a subtype of an unannotated base stays a plain type that deserializes directly
+                    return null;
+                }
+                if (!(annotated instanceof AnnotatedClass) || declaresTypeInfoBelowBase(config, rawType)) {
+                    // a declaration on the subtype, on a type between it and the base, or on a property is not the base's and is kept
+                    return declared;
+                }
+                // a registered subtype that inherits its base's declaration reuses the registry discriminator
+                // instead of writing both
+                return value;
+            }
+            // not part of this registry: defer to the registry that owns the type, or to Jackson's own introspection,
+            // so the answer does not depend on the order in which registries were installed
+            return null;
+        }
+
+        private boolean declaresTypeInfoBelowBase(MapperConfig<?> config, Class<?> type)
+        {
+            // every declaration Jackson would see for the subtype counts as its own except the registry base's;
+            // stop at the base so its declaration and its ancestors' are never taken for the subtype's
+            if (type == null || type.equals(baseClass) || type.isAssignableFrom(baseClass)) {
+                return false;
+            }
+            // a declaration written on the type, or supplied for it through a mix-in, is the type's own
+            Class<?> mixIn = config.findMixInClassFor(type);
+            if (type.getDeclaredAnnotation(JsonTypeInfo.class) != null || (mixIn != null && mixIn.getDeclaredAnnotation(JsonTypeInfo.class) != null)) {
+                return true;
+            }
+            if (declaresTypeInfoBelowBase(config, type.getSuperclass())) {
+                return true;
+            }
+            return Arrays.stream(type.getInterfaces()).anyMatch(candidate -> declaresTypeInfoBelowBase(config, candidate));
         }
 
         @Override
