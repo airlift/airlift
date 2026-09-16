@@ -289,6 +289,7 @@ public class LegacySessionOperations
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                Optional.empty(),
                 Optional.empty());
 
         McpMetadata thisMetadata = metadata.map(requestContext.request());

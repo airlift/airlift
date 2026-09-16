@@ -8,7 +8,8 @@ import static java.util.Locale.ROOT;
 public enum ResultType
 {
     COMPLETE,
-    INPUT_REQUIRED;
+    INPUT_REQUIRED,
+    TASK;
 
     @JsonValue
     public String toJsonValue()

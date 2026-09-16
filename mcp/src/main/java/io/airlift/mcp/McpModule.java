@@ -38,6 +38,7 @@ import io.airlift.mcp.operations.legacy.SessionlessOperations;
 import io.airlift.mcp.operations.legacy.sessions.CachingSessionController;
 import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.storage.StorageController;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
@@ -46,7 +47,6 @@ import io.airlift.mcp.reflection.ReflectionHelper;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
-import io.airlift.mcp.storage.StorageController;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
@@ -88,6 +88,7 @@ public class McpModule
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
     private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
+    private final Optional<Consumer<LinkedBindingBuilder<McpTasks>>> taskEngineBinding;
     private final Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding;
     private final Optional<Class<? extends Annotation>> filterBindingAnnotation;
     private final Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding;
@@ -112,6 +113,7 @@ public class McpModule
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons,
             Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding,
+            Optional<Consumer<LinkedBindingBuilder<McpTasks>>> taskEngineBinding,
             Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding,
             Optional<Class<? extends Annotation>> filterBindingAnnotation,
             Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding,
@@ -130,6 +132,7 @@ public class McpModule
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
+        this.taskEngineBinding = requireNonNull(taskEngineBinding, "taskEngineBinding is null");
         this.legacyOperationsBinding = requireNonNull(legacyOperationsBinding, "legacyOperationsBinding is null");
         this.filterBindingAnnotation = requireNonNull(filterBindingAnnotation, "filterBindingAnnotation is null");
         this.schemaBuilderBinding = requireNonNull(schemaBuilderBinding, "schemaBuilderBinding is null");
@@ -145,11 +148,6 @@ public class McpModule
         }
     }
 
-    public interface LegacyBuilder
-    {
-        Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding);
-    }
-
     public static class Builder
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
@@ -160,6 +158,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
+        private Optional<Consumer<LinkedBindingBuilder<McpTasks>>> taskEngineBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding = binding -> binding.to(SessionlessOperations.class).in(SINGLETON);
         private Optional<Class<? extends Annotation>> filterBindingAnnotation = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<SchemaBuilder>>> schemaBuilderBinding = Optional.empty();
@@ -190,16 +189,13 @@ public class McpModule
             return this;
         }
 
-        public LegacyBuilder withLegacyBindings()
+        /**
+         * The bindings only the 2025-11-25 and earlier protocols use.
+         */
+        public Builder withLegacyBindings(Consumer<LegacyBuilder> legacyBuilder)
         {
-            return sessionControllerBinding -> {
-                checkState(Builder.this.storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
-                checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
-
-                Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-                Builder.this.legacyOperationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
-                return Builder.this;
-            };
+            legacyBuilder.accept(new LegacyBuilder());
+            return this;
         }
 
         public Builder withCapabilityFilter(Consumer<LinkedBindingBuilder<McpCapabilityFilter>> filterBinding)
@@ -216,11 +212,17 @@ public class McpModule
             return this;
         }
 
-        public Builder withStorage(Consumer<LinkedBindingBuilder<StorageController>> storageControllerBinding)
+        /**
+         * Enables the MCP Tasks extension, keeping tasks in the given engine. For production, an
+         * engine whose tasks survive a restart and are visible to every instance of the server
+         * should be used. {@link io.airlift.mcp.tasks.memory.MemoryTaskEngine} keeps tasks in
+         * this process only.
+         */
+        public Builder withTasks(Consumer<LinkedBindingBuilder<McpTasks>> taskEngineBinding)
         {
-            checkArgument(this.storageControllerBinding.isEmpty(), "Storage controller binding is already set");
+            checkArgument(this.taskEngineBinding.isEmpty(), "Task engine binding is already set");
 
-            this.storageControllerBinding = Optional.of(storageControllerBinding);
+            this.taskEngineBinding = Optional.of(taskEngineBinding);
             return this;
         }
 
@@ -251,8 +253,36 @@ public class McpModule
             return this;
         }
 
+        public class LegacyBuilder
+        {
+            private LegacyBuilder() {}
+
+            /**
+             * The storage legacy sessions are kept in.
+             */
+            public LegacyBuilder withStorage(Consumer<LinkedBindingBuilder<StorageController>> storageControllerBinding)
+            {
+                checkArgument(Builder.this.storageControllerBinding.isEmpty(), "Storage controller binding is already set");
+
+                Builder.this.storageControllerBinding = Optional.of(storageControllerBinding);
+                return this;
+            }
+
+            public LegacyBuilder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
+            {
+                checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
+
+                Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+                Builder.this.legacyOperationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
+                return this;
+            }
+        }
+
         public Module build()
         {
+            // checked here so that the legacy bindings can be made in any order
+            checkState(sessionControllerBinding.isEmpty() || storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
+
             Set<Class<?>> classesSet = classes.build();
 
             ImmutableSet.Builder<Provider<ToolEntry>> tools = ImmutableSet.builder();
@@ -310,6 +340,7 @@ public class McpModule
                     icons.build(),
                     serverIcons.build(),
                     storageControllerBinding,
+                    taskEngineBinding,
                     legacyOperationsBinding,
                     filterBindingAnnotation,
                     localSchemaBuilderBinding,
@@ -346,9 +377,16 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindIcons(binder);
         bindSchemaBuilder(binder);
+        bindTasks(binder);
 
         binder.install(new InternalMcpModule(filterBindingAnnotation));
         binder.install(new OperationsModule());
+    }
+
+    private void bindTasks(Binder binder)
+    {
+        OptionalBinder<McpTasks> tasksBinder = newOptionalBinder(binder, McpTasks.class);
+        taskEngineBinding.ifPresent(binding -> binding.accept(tasksBinder.setBinding()));
     }
 
     private void bindSchemaBuilder(Binder binder)
