@@ -13,7 +13,11 @@
  */
 package io.airlift.json.subtype;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -31,6 +35,8 @@ import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -210,6 +216,139 @@ public class TestJacksonSubType
         assertThat(programmer2Json).isEqualTo("{\"name\":\"Joe\",\"category\":\"Programmer\"}");
         assertThat(manager2Json).isEqualTo("{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"category\":\"Programmer\"},{\"name\":\"Rachel\",\"category\":\"Programmer\"}],\"category\":\"Manager\"}");
     }
+
+    @Test
+    public void testAnnotatedSubtypeHasOneDiscriminator()
+            throws Exception
+    {
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
+                .forBase(AnnotatedValue.class, "type")
+                .add(FirstValue.class, "first")
+                .add(SecondValue.class, "second")
+                .build();
+        JsonMapper jsonMapper = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType)).get();
+
+        for (AnnotatedValue value : ImmutableList.of(new FirstValue("first"), new SecondValue("second"))) {
+            String expectedJson = "{\"value\":\"" + value.value() + "\",\"type\":\"" + value.value() + "\"}";
+            for (String json : ImmutableList.of(
+                    jsonMapper.writeValueAsString(value),
+                    jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value),
+                    jsonMapper.writerFor(value.getClass()).writeValueAsString(value))) {
+                assertThat(json).isEqualTo(expectedJson);
+                assertThat((Object) jsonMapper.readerFor(AnnotatedValue.class)
+                        .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .readValue(json)).isEqualTo(value);
+                assertThat((Object) jsonMapper.readerFor(value.getClass())
+                        .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .readValue(json)).isEqualTo(value);
+            }
+        }
+        assertThatThrownBy(() -> jsonMapper.readValue("{\"type\":\"unknown\",\"value\":\"first\"}", AnnotatedValue.class))
+                .isInstanceOf(InvalidTypeIdException.class);
+    }
+
+    @Test
+    public void testAnnotatedSubtypeHasOneDiscriminatorWithOtherRegistries()
+            throws Exception
+    {
+        JacksonSubType annotatedRegistry = JacksonSubType.builder()
+                .forBase(AnnotatedValue.class, "type")
+                .add(FirstValue.class, "first")
+                .add(SecondValue.class, "second")
+                .build();
+        JacksonSubType employeeRegistry = JacksonSubType.builder()
+                .forBase(Employee.class, "type")
+                .add(Programmer.class)
+                .add(Manager.class)
+                .build();
+
+        // the answer must not depend on which registry's introspector is installed last (and thus consulted first)
+        for (List<JacksonSubType> order : ImmutableList.of(
+                ImmutableList.of(annotatedRegistry, employeeRegistry),
+                ImmutableList.of(employeeRegistry, annotatedRegistry))) {
+            // like JsonMapperProvider, tolerate the visible discriminator when the subtype declares no such property
+            JsonMapper.Builder builder = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            order.forEach(registry -> registry.modules().forEach(builder::addModule));
+            JsonMapper jsonMapper = builder.build();
+
+            AnnotatedValue value = new FirstValue("first");
+            String expectedJson = "{\"value\":\"first\",\"type\":\"first\"}";
+            for (String json : ImmutableList.of(
+                    jsonMapper.writeValueAsString(value),
+                    jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value),
+                    jsonMapper.writerFor(FirstValue.class).writeValueAsString(value))) {
+                assertThat(json).isEqualTo(expectedJson);
+                assertThat((Object) jsonMapper.readerFor(AnnotatedValue.class)
+                        .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .readValue(json)).isEqualTo(value);
+            }
+
+            // the unannotated registry keeps working: one discriminator, and subtypes still deserialize directly
+            Programmer programmer = new Programmer("Joe");
+            String programmerJson = jsonMapper.writeValueAsString(programmer);
+            assertThat(programmerJson).isEqualTo("{\"name\":\"Joe\",\"type\":\"Programmer\"}");
+            assertThat(jsonMapper.writerFor(Employee.class).writeValueAsString(programmer)).isEqualTo(programmerJson);
+            assertThat((Object) jsonMapper.readerFor(Employee.class)
+                    .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                    .readValue(programmerJson)).isEqualTo(programmer);
+            assertThat(jsonMapper.readValue("{\"name\":\"Joe\"}", Programmer.class)).isEqualTo(programmer);
+        }
+    }
+
+    @Test
+    public void testSubtypeKeepsItsOwnTypeInfo()
+            throws Exception
+    {
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
+                .forBase(AnnotatedValue.class, "type")
+                .add(FirstValue.class, "first")
+                .add(SecondValue.class, "second")
+                .add(OwnKindValue.class, "own")
+                .add(InheritedKindValue.class, "inherited")
+                .build();
+        JsonMapper jsonMapper = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType)).get();
+
+        OwnKindValue value = new OwnKindValue("own");
+        // through the base, the registry discriminator applies; on its own, the subtype's declaration is not replaced
+        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"value\":\"own\",\"type\":\"own\"}");
+        String ownJson = jsonMapper.writerFor(OwnKindValue.class).writeValueAsString(value);
+        assertThat(ownJson).isEqualTo("{\"kind\":\"TestJacksonSubType$OwnKindValue\",\"value\":\"own\",\"type\":\"own\"}");
+        assertThat((Object) jsonMapper.readerFor(OwnKindValue.class).readValue(ownJson)).isEqualTo(value);
+
+        // a declaration on a type between the subtype and the base belongs to the subtype as well
+        InheritedKindValue inherited = new InheritedKindValue("inherited");
+        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(inherited)).isEqualTo("{\"value\":\"inherited\",\"type\":\"inherited\"}");
+        String inheritedJson = jsonMapper.writerFor(InheritedKindValue.class).writeValueAsString(inherited);
+        assertThat(inheritedJson).isEqualTo("{\"kind\":\"TestJacksonSubType$InheritedKindValue\",\"value\":\"inherited\",\"type\":\"inherited\"}");
+        assertThat((Object) jsonMapper.readerFor(InheritedKindValue.class).readValue(inheritedJson)).isEqualTo(inherited);
+    }
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = FirstValue.class, name = "first"),
+            @JsonSubTypes.Type(value = SecondValue.class, name = "second"),
+    })
+    public sealed interface AnnotatedValue
+    {
+        String value();
+    }
+
+    public record FirstValue(String value)
+            implements AnnotatedValue {}
+
+    public record SecondValue(String value)
+            implements AnnotatedValue {}
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "kind")
+    public record OwnKindValue(String value)
+            implements AnnotatedValue {}
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "kind")
+    public sealed interface KindValue
+            extends AnnotatedValue {}
+
+    public record InheritedKindValue(String value)
+            implements KindValue {}
 
     private static void internalTest(JsonMapper jsonMapper)
             throws JsonProcessingException
