@@ -19,7 +19,7 @@ public final class ParameterAnnotations
                 hasApiContextAnnotation(parameter.getAnnotations());
     }
 
-    public static boolean hasApiContextAnnotation(Annotation[] annotations)
+    private static boolean hasApiContextAnnotation(Annotation[] annotations)
     {
         return Stream.of(annotations)
                 .anyMatch(annotation -> annotation.annotationType().isAnnotationPresent(ApiContext.class));
