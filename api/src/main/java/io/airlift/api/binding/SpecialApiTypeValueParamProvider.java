@@ -17,6 +17,7 @@ import io.airlift.api.ApiIdSupportsLookup;
 import io.airlift.api.ApiModifier;
 import io.airlift.api.ApiMultiPart;
 import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiPagination;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResponseHeaders;
 import io.airlift.api.ApiValidateOnly;
@@ -39,6 +40,7 @@ import static io.airlift.api.internals.Mappers.buildHeader;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
 import static io.airlift.api.internals.Mappers.buildModifier;
 import static io.airlift.api.internals.Mappers.buildOrderBy;
+import static io.airlift.api.internals.Mappers.buildPagination;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.buildValidateOnly;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
@@ -65,6 +67,9 @@ class SpecialApiTypeValueParamProvider
     {
         if (hasApiContextAnnotation(parameter.getAnnotations())) {
             return null;
+        }
+        if (ApiPagination.class.isAssignableFrom(parameter.getRawType())) {
+            return containerRequest -> buildPagination(containerRequest.getUriInfo());
         }
         if (ApiValidateOnly.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> buildValidateOnly(containerRequest.getUriInfo());

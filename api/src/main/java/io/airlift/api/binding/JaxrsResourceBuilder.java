@@ -99,7 +99,6 @@ class JaxrsResourceBuilder
 
         bindAnnotated(PatchFieldsBuilder.class);
         jaxrsBinder.bind(SpecialApiTypeValueParamProvider.class, specialApiTypeValueParamProvider());
-        jaxrsBinder.bind(PaginationValueParamProvider.class);
         jaxrsBinder.bind(JaxrsBindingBridge.class, jaxrsBindingBridgeProvider());
         jaxrsBinder.bind(JaxrsMapper.class, jaxrsMapperProvider());
         jaxrsBinder.bind(ApiStreamResponseWriter.class);
