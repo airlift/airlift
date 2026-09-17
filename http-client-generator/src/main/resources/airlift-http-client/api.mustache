@@ -91,6 +91,9 @@ import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 {{/x_uses_map_codec}}
 import static java.util.Objects.requireNonNull;
+{{#x_uses_joined_array_params}}
+import static java.util.stream.Collectors.joining;
+{{/x_uses_joined_array_params}}
 
 {{#operations}}
 public class {{classname}}
@@ -111,7 +114,7 @@ public class {{classname}}
 
 {{/x_uses_json_body}}
 {{#x_codecs}}
-    private static final JsonCodec<{{{type}}}> {{name}} = {{{init}}};
+    private static final JsonCodec<{{{type}}}> {{{name}}} = {{{init}}};
 {{/x_codecs}}
 
     @Inject
@@ -176,7 +179,17 @@ public class {{classname}}
                         .replace("{{=<% %>=}}{<%baseName%>}<%={{ }}=%>", String.valueOf({{paramName}})){{/pathParams}});
 {{#queryParams}}
         if ({{paramName}} != null) {
-            uriBuilder.addParameter("{{baseName}}", String.valueOf({{paramName}}));
+{{#isArray}}
+{{#vendorExtensions.x_explode}}
+            {{paramName}}.forEach(value -> uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
+{{/vendorExtensions.x_explode}}
+{{^vendorExtensions.x_explode}}
+            uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+{{/vendorExtensions.x_explode}}
+{{/isArray}}
+{{^isArray}}
+            uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
+{{/isArray}}
         }
 {{/queryParams}}
         URI uri = uriBuilder.build();
@@ -197,7 +210,7 @@ public class {{classname}}
             authenticationAlternative = {{index}};
 {{#vendorExtensions.x_has_bearer_auth}}
 {{#hasBearer}}
-            authenticationBearerTokenProvider = credentials.bearerTokenProvider("{{bearerSchemeName}}");
+            authenticationBearerTokenProvider = credentials.bearerTokenProvider("{{{bearerSchemeName}}}");
 {{/hasBearer}}
 {{^hasBearer}}
             authenticationBearerTokenProvider = NO_BEARER_TOKEN;
@@ -264,19 +277,19 @@ public class {{classname}}
             if (requireNonNull({{paramName}}, "{{paramName}} is null").isEmpty()) {
                 throw new IllegalArgumentException("{{paramName}} is empty");
             }
-            {{paramName}}.forEach(value -> form.addField("{{baseName}}", String.valueOf(value)));
+            {{paramName}}.forEach(value -> form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
 {{/isArray}}
 {{^isArray}}
-            form.addField("{{baseName}}", String.valueOf(requireNonNull({{paramName}}, "{{paramName}} is null")));
+            form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(requireNonNull({{paramName}}, "{{paramName}} is null")));
 {{/isArray}}
 {{/required}}
 {{^required}}
             if ({{paramName}} != null) {
 {{#isArray}}
-                {{paramName}}.forEach(value -> form.addField("{{baseName}}", String.valueOf(value)));
+                {{paramName}}.forEach(value -> form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
 {{/isArray}}
 {{^isArray}}
-                form.addField("{{baseName}}", String.valueOf({{paramName}}));
+                form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
 {{/isArray}}
             }
 {{/required}}
@@ -287,7 +300,12 @@ public class {{classname}}
                     .setHeader(ACCEPT, "text/event-stream"){{/vendorExtensions.x_server_sent_events}};
 {{#headerParams}}
             if ({{paramName}} != null) {
-                requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
+{{#isArray}}
+                requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+{{/isArray}}
+{{^isArray}}
+                requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
+{{/isArray}}
             }
 {{/headerParams}}
 {{#vendorExtensions.x_has_auth_requirements}}
@@ -296,13 +314,13 @@ public class {{classname}}
                 case {{index}} -> {
 {{#schemes}}
 {{#isBearer}}
-                    credentials.applyBearerToken("{{name}}", bearerToken, requestBuilder);
+                    credentials.applyBearerToken("{{{name}}}", bearerToken, requestBuilder);
 {{/isBearer}}
 {{#isBasic}}
-                    credentials.applyBasicAuth("{{name}}", requestBuilder);
+                    credentials.applyBasicAuth("{{{name}}}", requestBuilder);
 {{/isBasic}}
 {{#isHeaderApiKey}}
-                    credentials.applyHeaderApiKey("{{name}}", "{{headerName}}", requestBuilder);
+                    credentials.applyHeaderApiKey("{{{name}}}", "{{{headerName}}}", requestBuilder);
 {{/isHeaderApiKey}}
 {{/schemes}}
                 }

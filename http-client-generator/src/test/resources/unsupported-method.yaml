@@ -1,0 +1,12 @@
+openapi: 3.0.1
+info:
+  title: Unsupported Method API
+  version: 1.0.0
+paths:
+  /status:
+    head:
+      tags: [status]
+      operationId: statusHead
+      responses:
+        '204':
+          description: Success

@@ -1,0 +1,40 @@
+openapi: 3.0.1
+info:
+  title: Array Parameters API
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      tags: [items]
+      operationId: listItems
+      parameters:
+        - name: filter
+          in: query
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: ids
+          in: query
+          explode: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: X-Trace
+          in: header
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '204':
+          description: Success

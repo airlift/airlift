@@ -18,10 +18,13 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.openapitools.codegen.CodegenDiscriminator;
+import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenResponse;
@@ -29,6 +32,7 @@ import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.languages.JavaClientCodegen;
 import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.ModelsMap;
 import org.openapitools.codegen.model.OperationMap;
 import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.utils.ModelUtils;
@@ -45,6 +49,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -221,6 +226,42 @@ public class AirliftHttpClientCodegen
     }
 
     @Override
+    public Map<String, ModelsMap> postProcessAllModels(Map<String, ModelsMap> objs)
+    {
+        objs = super.postProcessAllModels(objs);
+        // JSON wire names go into Java string literals; Mustache would HTML-escape them otherwise
+        for (ModelsMap modelsMap : objs.values()) {
+            for (ModelMap modelMap : modelsMap.getModels()) {
+                CodegenModel model = modelMap.getModel();
+                model.vars.forEach(property -> property.vendorExtensions.put("x_java_base_name", javaString(property.baseName)));
+                if (model.discriminator != null) {
+                    model.vendorExtensions.put("x_java_discriminator_property", javaString(model.discriminator.getPropertyBaseName()));
+                    List<Map<String, String>> mappedModels = new ArrayList<>();
+                    Set<CodegenDiscriminator.MappedModel> discriminatorModels = model.discriminator.getMappedModels();
+                    for (CodegenDiscriminator.MappedModel mappedModel : discriminatorModels == null ? Set.<CodegenDiscriminator.MappedModel>of() : discriminatorModels) {
+                        mappedModels.add(Map.of(
+                                "modelName", mappedModel.getModelName(),
+                                "mappingName", javaString(mappedModel.getMappingName())));
+                    }
+                    model.vendorExtensions.put("x_java_mapped_models", List.copyOf(mappedModels));
+                }
+            }
+        }
+        return objs;
+    }
+
+    @Override
+    public CodegenParameter fromParameter(Parameter parameter, Set<String> imports)
+    {
+        CodegenParameter codegenParameter = super.fromParameter(parameter, imports);
+        // form style parameters explode unless the contract says otherwise; openapi-generator records only an explicit flag
+        boolean formStyle = parameter.getStyle() == null || parameter.getStyle() == Parameter.StyleEnum.FORM;
+        boolean explode = parameter.getExplode() != null ? parameter.getExplode() : formStyle;
+        codegenParameter.vendorExtensions.put("x_explode", explode);
+        return codegenParameter;
+    }
+
+    @Override
     public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels)
     {
         objs = super.postProcessOperationsWithModels(objs, allModels);
@@ -246,6 +287,7 @@ public class AirliftHttpClientCodegen
         boolean usesStatusResponse = false;
         boolean usesSuccessfulStatusResponse = false;
         boolean usesQueryParams = false;
+        boolean usesJoinedArrayParams = false;
         boolean usesServerSentEvents = false;
         boolean hasAuth = false;
         boolean hasBearerAuth = false;
@@ -293,7 +335,19 @@ public class AirliftHttpClientCodegen
                 case "PUT" -> usesPut = true;
                 case "DELETE" -> usesDelete = true;
                 case "PATCH" -> usesPatch = true;
+                default -> throw new IllegalArgumentException("Operation '%s' uses unsupported HTTP method %s".formatted(operation.operationId, httpMethod));
             }
+
+            validateParameterSerialization(operation);
+            // wire names go into Java string literals; Mustache would HTML-escape them otherwise
+            // (openapi-generator copies parameters into each per-location list, so mark every list)
+            Stream.of(operation.allParams, operation.pathParams, operation.queryParams, operation.headerParams, operation.formParams)
+                    .flatMap(List::stream)
+                    .forEach(parameter -> parameter.vendorExtensions.put("x_java_base_name", javaString(parameter.baseName)));
+            usesListType |= operation.queryParams.stream().anyMatch(parameter -> parameter.isArray) ||
+                    operation.headerParams.stream().anyMatch(parameter -> parameter.isArray);
+            usesJoinedArrayParams |= operation.headerParams.stream().anyMatch(parameter -> parameter.isArray) ||
+                    operation.queryParams.stream().anyMatch(parameter -> parameter.isArray && !Boolean.TRUE.equals(parameter.vendorExtensions.get("x_explode")));
 
             boolean hasJsonBody = operation.bodyParam != null;
             boolean hasFormBody = operation.getHasFormParams();
@@ -423,6 +477,7 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_status_response", usesStatusResponse);
         objs.put("x_uses_successful_status_response", usesSuccessfulStatusResponse);
         objs.put("x_uses_query_params", usesQueryParams);
+        objs.put("x_uses_joined_array_params", usesJoinedArrayParams);
         objs.put("x_uses_json_codec", !codecs.isEmpty());
         objs.put("x_uses_server_sent_events", usesServerSentEvents);
         objs.put("x_uses_list_codec", usesListCodec);
@@ -900,6 +955,34 @@ public class AirliftHttpClientCodegen
                 "Form field '%s' in operation '%s' must be a scalar or an array of scalars",
                 name,
                 operationName);
+    }
+
+    private static void validateParameterSerialization(CodegenOperation operation)
+    {
+        checkArgument(operation.cookieParams.isEmpty(), "Operation '%s' uses unsupported cookie parameters", operation.operationId);
+        operation.pathParams.stream()
+                .filter(parameter -> parameter.isArray)
+                .forEach(parameter -> {
+                    throw new IllegalArgumentException("Path parameter '%s' in operation '%s' must not be an array".formatted(parameter.baseName, operation.operationId));
+                });
+        // arrays are sent one value per query parameter (form style, exploded) or comma-joined
+        // (form style, not exploded; simple style headers); other styles have no generated form
+        operation.queryParams.stream()
+                .filter(parameter -> parameter.isArray)
+                .forEach(parameter -> checkArgument(
+                        parameter.style == null || "form".equals(parameter.style),
+                        "Query parameter '%s' in operation '%s' uses unsupported array style '%s'",
+                        parameter.baseName,
+                        operation.operationId,
+                        parameter.style));
+        operation.headerParams.stream()
+                .filter(parameter -> parameter.isArray)
+                .forEach(parameter -> checkArgument(
+                        parameter.style == null || "simple".equals(parameter.style),
+                        "Header parameter '%s' in operation '%s' uses unsupported array style '%s'",
+                        parameter.baseName,
+                        operation.operationId,
+                        parameter.style));
     }
 
     private static void validateFormParameters(CodegenOperation operation)

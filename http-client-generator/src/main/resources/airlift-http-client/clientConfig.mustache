@@ -113,20 +113,20 @@ public class {{clientName}}ClientConfig
 {{#x_auth_schemes}}
 {{#isBearer}}
         if ({{propertyName}}Token != null) {
-            builder.bearerToken("{{name}}", () -> {{propertyName}}Token);
+            builder.bearerToken("{{{name}}}", () -> {{propertyName}}Token);
         }
 {{/isBearer}}
 {{#isBasic}}
         if (({{propertyName}}Username == null) != ({{propertyName}}Password == null)) {
-            throw new IllegalStateException("Both username and password must be configured for security scheme '{{name}}'");
+            throw new IllegalStateException("Both username and password must be configured for security scheme '{{{name}}}'");
         }
         if ({{propertyName}}Username != null) {
-            builder.basicAuth("{{name}}", {{propertyName}}Username, {{propertyName}}Password);
+            builder.basicAuth("{{{name}}}", {{propertyName}}Username, {{propertyName}}Password);
         }
 {{/isBasic}}
 {{#isHeaderApiKey}}
         if ({{propertyName}}ApiKey != null) {
-            builder.headerApiKey("{{name}}", {{propertyName}}ApiKey);
+            builder.headerApiKey("{{{name}}}", {{propertyName}}ApiKey);
         }
 {{/isHeaderApiKey}}
 {{/x_auth_schemes}}

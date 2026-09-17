@@ -549,11 +549,87 @@ class AirliftHttpClientCodegenIntegrationTest
     }
 
     @Test
+    void testRejectsUnsupportedHttpMethod(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("unsupported-method.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'statusHead' uses unsupported HTTP method HEAD");
+    }
+
+    @Test
     void testRejectsDigitLeadingAuthenticationName(@TempDir Path outputPath)
     {
         assertThatThrownBy(() -> generate("digit-authentication-name.yaml", outputPath))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Security scheme name '1key' does not generate a valid Java identifier");
+    }
+
+    @Test
+    void testGeneratesArrayParameterSerialization(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("array-parameters.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/ItemsClient.java"));
+        // form style explodes by default, so filter and tags repeat the parameter while ids is comma-joined
+        assertThat(client).contains("filter.forEach(value -> uriBuilder.addParameter(\"filter\", String.valueOf(value)));");
+        assertThat(client).contains("tags.forEach(value -> uriBuilder.addParameter(\"tags\", String.valueOf(value)));");
+        assertThat(client).contains("uriBuilder.addParameter(\"ids\", ids.stream().map(String::valueOf).collect(joining(\",\")));");
+        assertThat(client).contains("requestBuilder.setHeader(\"X-Trace\", xTrace.stream().map(String::valueOf).collect(joining(\",\")));");
+        assertThat(client).doesNotContain("String.valueOf(filter)", "String.valueOf(ids)", "String.valueOf(tags)", "String.valueOf(xTrace)");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsUnsupportedArrayParameterStyle(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("unsupported-array-style.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Query parameter 'ids' in operation 'listItems' uses unsupported array style 'pipeDelimited'");
+    }
+
+    @Test
+    void testWireNamesAreNotHtmlEscaped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("ampersand-authentication.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java"));
+        assertThat(client).contains("requestBuilder.setHeader(\"X-Trace&Id\", ");
+        assertThat(client).contains("credentials.applyHeaderApiKey(\"serviceKey\", \"X-Service&Key\", requestBuilder)");
+        assertThat(client).doesNotContain("&amp;");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testInlineEnumPropertyCompiles(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("inline-enum-model.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Job.java")))
+                .contains("public enum StateEnum");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsCookieParameters(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("cookie-parameter.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'status' uses unsupported cookie parameters");
+    }
+
+    @Test
+    void testRejectsArrayPathParameters(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("path-array-parameter.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Path parameter 'ids' in operation 'getItems' must not be an array");
     }
 
     @Test
@@ -573,6 +649,22 @@ class AirliftHttpClientCodegenIntegrationTest
 
         assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java")))
                 .contains("public ServerSentEventStream<Event> streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testModelWireNamesAreNotHtmlEscaped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("ampersand-model.yaml", outputPath);
+
+        String shape = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Shape.java"));
+        assertThat(shape).contains("property = \"kind&type\"");
+        assertThat(shape).contains("name = \"round&\"");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Circle.java")))
+                .contains("@JsonProperty(\"kind&type\")")
+                .contains("@JsonProperty(\"radius&size\")");
+        assertThat(shape).doesNotContain("&amp;");
         verifyGeneratedCodeCompiles(outputPath);
     }
 
