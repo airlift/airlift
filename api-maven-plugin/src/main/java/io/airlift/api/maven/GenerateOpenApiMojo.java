@@ -38,6 +38,7 @@ import org.apache.maven.project.MavenProject;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -69,6 +70,9 @@ public class GenerateOpenApiMojo
 
     @Parameter(property = "api.serviceTypeClass", defaultValue = "io.airlift.api.maven.DefaultServiceType")
     private String serviceTypeClass;
+
+    @Parameter(property = "api.contextAnnotations")
+    private List<String> contextAnnotations;
 
     @Parameter(property = "api.outputFile", defaultValue = "${project.build.directory}/openapi/openapi.json")
     private File outputFile;
@@ -111,7 +115,7 @@ public class GenerateOpenApiMojo
             ApiServiceType serviceType = loadServiceType(classLoader);
             getLog().info("Using service type: " + serviceType.getClass().getName());
 
-            String openApiJson = generateOpenApi(serviceClassList, serviceType);
+            String openApiJson = generateOpenApi(serviceClassList, serviceType, buildConfig(classLoader));
 
             writeOutput(openApiJson);
             getLog().info("OpenAPI specification written to: " + outputFile.getAbsolutePath());
@@ -230,10 +234,39 @@ public class GenerateOpenApiMojo
         }
     }
 
-    private String generateOpenApi(List<Class<?>> serviceClassList, ApiServiceType serviceType)
+    private ApiBuilderConfig buildConfig(URLClassLoader classLoader)
             throws MojoExecutionException
     {
         ApiBuilderConfig config = ApiBuilderConfig.jackson();
+        if (contextAnnotations == null) {
+            return config;
+        }
+
+        for (String className : contextAnnotations) {
+            Class<?> loadedClass;
+            try {
+                loadedClass = classLoader.loadClass(className);
+            }
+            catch (ClassNotFoundException e) {
+                throw new MojoExecutionException("Context annotation class not found: " + className, e);
+            }
+            if (!loadedClass.isAnnotation()) {
+                throw new MojoExecutionException("Context annotation class is not an annotation: " + className);
+            }
+            try {
+                config = config.withAdditionalContextAnnotation(loadedClass.asSubclass(Annotation.class));
+            }
+            catch (IllegalArgumentException e) {
+                throw new MojoExecutionException("Invalid context annotation: " + e.getMessage(), e);
+            }
+            getLog().info("Registered context annotation: " + className);
+        }
+        return config;
+    }
+
+    private String generateOpenApi(List<Class<?>> serviceClassList, ApiServiceType serviceType, ApiBuilderConfig config)
+            throws MojoExecutionException
+    {
         ApiBuilder apiBuilder = apiBuilder(config);
         for (Class<?> serviceClass : serviceClassList) {
             apiBuilder.add(serviceClass);

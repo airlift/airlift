@@ -23,8 +23,6 @@ import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelResourceModifier;
 import io.airlift.api.model.ModelResourceType;
 import io.airlift.log.Logger;
-import jakarta.ws.rs.container.Suspended;
-import jakarta.ws.rs.core.Context;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -59,14 +57,14 @@ public interface MethodValidator
             ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),
             ApiType.DELETE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class));
 
-    static void validateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits)
+    static void validateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits, Set<Class<? extends Annotation>> contextAnnotations)
     {
-        validationContext.inContext("Method %s".formatted(modelMethod.method()), context -> internalValidateMethod(context, modelMethod, serviceTraits));
+        validationContext.inContext("Method %s".formatted(modelMethod.method()), context -> internalValidateMethod(context, modelMethod, serviceTraits, contextAnnotations));
     }
 
-    private static void internalValidateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits)
+    private static void internalValidateMethod(ValidationContext validationContext, ModelMethod modelMethod, Set<ApiServiceTrait> serviceTraits, Set<Class<? extends Annotation>> contextAnnotations)
     {
-        if (hasJaxRsAnnotation(modelMethod.method().getDeclaredAnnotations(), false)) {
+        if (hasJaxRsAnnotation(modelMethod.method().getDeclaredAnnotations(), false, contextAnnotations)) {
             throw new ValidatorException("Method %s has JAX-RS annotations".formatted(modelMethod.method()));
         }
 
@@ -85,14 +83,13 @@ public interface MethodValidator
         Collection<Class<?>> allowedParameterTypes = ALLOWED_PARAMETER_TYPES.getOrDefault(modelMethod.methodType(), ImmutableSet.of());
 
         for (Parameter parameter : modelMethod.method().getParameters()) {
-            if (hasJaxRsAnnotation(parameter.getDeclaredAnnotations(), true)) {
+            if (hasJaxRsAnnotation(parameter.getDeclaredAnnotations(), true, contextAnnotations)) {
                 throw new ValidatorException("Method parameter %s has JAX-RS annotations".formatted(parameter.getName()));
             }
 
-            Context context = parameter.getDeclaredAnnotation(Context.class);
-            Suspended suspended = parameter.getDeclaredAnnotation(Suspended.class);
+            boolean isContext = contextAnnotations.stream().anyMatch(contextAnnotation -> parameter.getDeclaredAnnotation(contextAnnotation) != null);
             ApiParameter apiParameter = parameter.getDeclaredAnnotation(ApiParameter.class);
-            int expectedAnnotationCount = ((context != null) || (apiParameter != null) || (suspended != null)) ? 1 : 0;
+            int expectedAnnotationCount = (isContext || (apiParameter != null)) ? 1 : 0;
 
             if (parameter.getDeclaredAnnotations().length != expectedAnnotationCount) {
                 throw new ValidatorException("Invalid annotations on parameter %s".formatted(parameter.getName()));
@@ -106,7 +103,7 @@ public interface MethodValidator
                     validateOptionalParameter(modelMethod, parameter, allowedParameterTypes, apiParameter);
                 }
             }
-            else if ((context == null) && (suspended == null)) {
+            else if (!isContext) {
                 modelMethod.requestBody().ifPresent(requestBody -> validateRequestBody(modelMethod.methodType(), requestBody, serviceTraits));
             }
         }
@@ -252,10 +249,10 @@ public interface MethodValidator
         }
     }
 
-    private static boolean hasJaxRsAnnotation(Annotation[] annotations, boolean allowContextSuspended)
+    private static boolean hasJaxRsAnnotation(Annotation[] annotations, boolean allowContextSuspended, Set<Class<? extends Annotation>> contextAnnotations)
     {
         return Stream.of(annotations)
-                .filter(not(annotation -> allowContextSuspended && (annotation.annotationType().equals(Context.class) || annotation.annotationType().equals(Suspended.class))))
+                .filter(not(annotation -> allowContextSuspended && contextAnnotations.contains(annotation.annotationType())))
                 .anyMatch(annotation -> annotation.annotationType().getPackageName().startsWith("jakarta.ws.rs"));
     }
 }

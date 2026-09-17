@@ -14,7 +14,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import io.airlift.api.ApiBuilderConfig;
-import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiIdLookup;
 import io.airlift.api.ApiIdSupportsLookup;
@@ -74,7 +73,7 @@ public class ApiModule
     private final Optional<ApiCompatibilityTester> compatibilityTester;
     private final boolean withApiLogging;
     private final ApiMode apiMode;
-    private final ApiEnumValueResolver enumValueResolver;
+    private final ApiBuilderConfig apiBuilderConfig;
 
     private ApiModule(
             ModelApi modelApi,
@@ -88,7 +87,7 @@ public class ApiModule
             Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
             ApiMode apiMode,
-            ApiEnumValueResolver enumValueResolver)
+            ApiBuilderConfig apiBuilderConfig)
     {
         this.modelApi = requireNonNull(modelApi, "api is null");
         this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
@@ -101,7 +100,7 @@ public class ApiModule
         this.compatibilityTester = requireNonNull(compatibilityTester, "compatibilityTester is null");
         this.withApiLogging = withApiLogging;
         this.apiMode = requireNonNull(apiMode, "apiMode is null");
-        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
+        this.apiBuilderConfig = requireNonNull(apiBuilderConfig, "apiBuilderConfig is null");
     }
 
     public static Builder builder()
@@ -123,7 +122,7 @@ public class ApiModule
         private Optional<ApiCompatibilityTester> compatibilityTester = Optional.empty();
         private boolean withApiLogging;
         private ApiMode apiMode = ApiMode.DEBUG;
-        private ApiEnumValueResolver enumValueResolver = ApiBuilderConfig.jackson().enumValueResolver();
+        private ApiBuilderConfig apiBuilderConfig = ApiBuilderConfig.jackson();
 
         private Builder() {}
 
@@ -159,7 +158,7 @@ public class ApiModule
 
         public Builder withApiBuilderConfig(ApiBuilderConfig config)
         {
-            this.enumValueResolver = requireNonNull(config, "config is null").enumValueResolver();
+            this.apiBuilderConfig = requireNonNull(config, "config is null");
             return this;
         }
 
@@ -250,7 +249,7 @@ public class ApiModule
                     compatibilityTester,
                     withApiLogging,
                     apiMode,
-                    enumValueResolver);
+                    apiBuilderConfig);
         }
 
         private ModelApi mergeApis()
@@ -259,7 +258,7 @@ public class ApiModule
             apis.addAll(modelApis.build());
             apiConsumers.build().stream()
                     .map(consumer -> {
-                        ApiBuilder apiBuilder = ApiBuilder.apiBuilder(enumValueResolver);
+                        ApiBuilder apiBuilder = ApiBuilder.apiBuilder(apiBuilderConfig);
                         consumer.accept(apiBuilder);
                         return apiBuilder.build();
                     })
@@ -318,7 +317,7 @@ public class ApiModule
         modelApi.modelServices().services().forEach(jaxrsResourceBuilder::bindService);
         jaxrsResourceBuilder.bindFeatures();
 
-        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), bindingAnnotation, openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
+        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), bindingAnnotation, openApi, openApiFilterBinding, extensionFilter, apiBuilderConfig.enumValueResolver())));
 
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 

@@ -16,7 +16,8 @@ specification and generates standard JAX-RS/Jersey API classes. The opinions and
 | `@ApiParameter`                                                               | `@QueryParam`, `@PathParam` or `@HeaderParam` | API Builder has a set of objects that reference various parameters.                                       |
 
 All JAX-RS annotations are prohibited except `@Context` and `@Suspended`. API Builder automatically generates API paths, path parameters,
-content types, etc.
+content types, etc. Applications can register additional non-JAX-RS annotations that behave like `@Context` - see
+[Custom Context Annotations](enforcement.md#custom-context-annotations).
 
 ## API Builder Service Classes
 

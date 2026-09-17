@@ -403,6 +403,54 @@ class OpenApiGenerationTest
                 .isTrue();
     }
 
+    @MavenPluginTest
+    void testCustomContextAnnotations()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("context-service");
+
+        maven.forProject(basedir)
+                .execute("compile", "process-classes")
+                .assertErrorFreeLog()
+                .assertLogText("Registered context annotation: io.airlift.test.context.Injected");
+
+        File openapiFile = new File(basedir, "target/classes/openapi.json");
+        assertThat(openapiFile)
+                .describedAs("OpenAPI spec should be generated for services using a registered context annotation")
+                .exists()
+                .isFile();
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode openapi = mapper.readTree(openapiFile);
+        JsonNode paths = openapi.get("paths");
+
+        assertThat(paths.fieldNames()).toIterable().isNotEmpty();
+        paths.forEach(path -> path.forEach(operation -> {
+            JsonNode parameters = operation.get("parameters");
+            if (parameters != null) {
+                parameters.forEach(parameter -> assertThat(parameter.get("name").asText())
+                        .describedAs("Context parameters must not appear in the generated spec")
+                        .isNotEqualTo("requestId"));
+            }
+        }));
+        assertThat(openapi.toString())
+                .describedAs("Context parameters must not appear in the generated spec")
+                .doesNotContain("requestId");
+    }
+
+    @MavenPluginTest
+    void testUnregisteredContextAnnotationFailsBuild()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("context-service");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.contextAnnotations=")
+                .execute("clean", "compile", "process-classes")
+                .assertLogText("Invalid annotations on parameter")
+                .assertNoLogText("BUILD SUCCESS");
+    }
+
     private boolean hasSchemaLike(JsonNode schemas, String namePart)
     {
         String normalizedNamePart = namePart.toLowerCase(Locale.ROOT);

@@ -57,7 +57,11 @@ disambiguate.
   of possible additional responses it might return. All standard responses for success and most
   failures are added automatically.
 - Methods can have standard JAX-RS `@Context`/`@Suspended` parameters
-- Parameters must be annotated with `@ApiParameter` - all other annotations are invalid (other than `@Context` or`@Suspended`)
+- Methods can have parameters annotated with an application-registered context annotation
+  (see [Custom Context Annotations](#custom-context-annotations))
+- Parameters must be annotated with `@ApiParameter` - all other annotations are invalid (other than
+  `@Context`, `@Suspended` or a registered context annotation)
+- Parameters can carry only one of these annotations - combining them is invalid
 - Some methods can have a single un-annotated parameter that represents the request body. This resource can optionally be wrapped in `ApiMultiPartForm` to enable multipart uploads (see [Multi-part Uploads](multipart.md) for details).
 - Returned resources must either be annotated with `@ApiReadOnly` or have an `ApiResourceVersion` and an `ApiId` that matches the resource name
 - Update methods can optionally have either one `ApiPatch` parameter which makes the request type PATCH (see [Patching](patch.md) for details)
@@ -95,3 +99,36 @@ does not change its signature. It also ensures that public APIs don't get remove
     - if the system property `API_COMPATIBILITY_CREATION_ENABLED` is `true` a new compatibility file is generated and an error about this
       is generated. The new compatibility file must be added to the git repo manually.
     - if the system property `API_COMPATIBILITY_CREATION_ENABLED` is `false` or undefined an error is generated but no file is created
+
+## Custom Context Annotations
+
+`ApiBuilderConfig.withAdditionalContextAnnotation()` registers an additional annotation that marks a
+method parameter as supplied by the container rather than by the API:
+
+```java
+ApiBuilderConfig config = ApiBuilderConfig.jackson()
+        .withAdditionalContextAnnotation(Injected.class);
+```
+
+Registered annotations behave exactly like `@Context`: the parameter is excluded from the API model,
+it is not treated as the request body, and it does not appear in the generated OpenAPI
+specification.
+
+The annotation must have `RUNTIME` retention, must be applicable to parameters, and must not be a
+`jakarta.ws.rs` annotation. Each of these is enforced by `withAdditionalContextAnnotation()`.
+
+Because API Builder does not supply the value, the application **must** register a Jersey
+`ValueParamProvider` that resolves the annotation. Without one, Jersey rejects the resource model and
+the server fails to start with a `ModelValidationException`.
+
+When a service uses a registered context annotation, the `generate-openapi` Maven goal must be given
+the same annotations - otherwise model validation fails the build with
+`Invalid annotations on parameter`:
+
+```xml
+<configuration>
+    <contextAnnotations>
+        <contextAnnotation>com.example.Injected</contextAnnotation>
+    </contextAnnotations>
+</configuration>
+```

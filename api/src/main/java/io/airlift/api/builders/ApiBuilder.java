@@ -7,9 +7,11 @@ import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServices;
 import io.airlift.api.validation.ValidationContext;
 
+import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.airlift.api.ApiBuilderConfig.DEFAULT_CONTEXT_ANNOTATIONS;
 import static io.airlift.api.validation.DeprecationValidator.validateDeprecations;
 import static io.airlift.api.validation.MethodValidator.validateMethod;
 import static io.airlift.api.validation.ResourceValidator.validateParameter;
@@ -25,12 +27,14 @@ public class ApiBuilder
     private final ValidationContext validationContext;
     private final ServicesBuilder servicesBuilder;
     private final ApiEnumValueResolver enumValueResolver;
+    private final Set<Class<? extends Annotation>> contextAnnotations;
 
-    private ApiBuilder(ValidationContext validationContext, ServicesBuilder servicesBuilder, ApiEnumValueResolver enumValueResolver)
+    private ApiBuilder(ValidationContext validationContext, ServicesBuilder servicesBuilder, ApiEnumValueResolver enumValueResolver, Set<Class<? extends Annotation>> contextAnnotations)
     {
         this.validationContext = requireNonNull(validationContext, "validationContext is null");
         this.servicesBuilder = requireNonNull(servicesBuilder, "servicesBuilder is null");
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
+        this.contextAnnotations = ImmutableSet.copyOf(contextAnnotations);
     }
 
     public static ApiBuilder apiBuilder()
@@ -40,12 +44,18 @@ public class ApiBuilder
 
     public static ApiBuilder apiBuilder(ApiBuilderConfig config)
     {
-        return apiBuilder(requireNonNull(config, "config is null").enumValueResolver());
+        requireNonNull(config, "config is null");
+        return apiBuilder(config.enumValueResolver(), config.contextAnnotations());
     }
 
     public static ApiBuilder apiBuilder(ApiEnumValueResolver enumValueResolver)
     {
-        return new ApiBuilder(new ValidationContext(), ServicesBuilder.servicesBuilder(enumValueResolver), enumValueResolver);
+        return apiBuilder(enumValueResolver, DEFAULT_CONTEXT_ANNOTATIONS);
+    }
+
+    private static ApiBuilder apiBuilder(ApiEnumValueResolver enumValueResolver, Set<Class<? extends Annotation>> contextAnnotations)
+    {
+        return new ApiBuilder(new ValidationContext(), ServicesBuilder.servicesBuilder(enumValueResolver, contextAnnotations), enumValueResolver, contextAnnotations);
     }
 
     public ApiBuilder add(Class<?> serviceClass)
@@ -78,7 +88,7 @@ public class ApiBuilder
             validateService(context, modelService);
 
             modelService.methods().forEach(modelMethod -> {
-                validateMethod(context, modelMethod, modelService.service().type().serviceTraits());
+                validateMethod(context, modelMethod, modelService.service().type().serviceTraits(), contextAnnotations);
                 validateResult(context, modelService.service(), modelMethod, enumValueResolver);
 
                 modelMethod.responses().forEach(modelResponse -> validateResource(context, modelService.service(), modelResponse.resource(), enumValueResolver));

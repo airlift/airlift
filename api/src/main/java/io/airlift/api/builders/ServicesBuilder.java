@@ -7,6 +7,7 @@ import io.airlift.api.model.ModelResponse;
 import io.airlift.api.model.ModelService;
 import io.airlift.api.model.ModelServices;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -32,12 +33,13 @@ public class ServicesBuilder
         services = ImmutableSet.builder();
     }
 
-    public static ServicesBuilder servicesBuilder(ApiEnumValueResolver enumValueResolver)
+    public static ServicesBuilder servicesBuilder(ApiEnumValueResolver enumValueResolver, Set<Class<? extends Annotation>> contextAnnotations)
     {
         requireNonNull(enumValueResolver, "enumValueResolver is null");
+        requireNonNull(contextAnnotations, "contextAnnotations is null");
 
         Function<Type, ResourceBuilder> configuredResourceBuilder = createThunk(type -> ResourceBuilder.resourceBuilder(type, enumValueResolver), ((type, builder) -> builder.toBuilder(type)));
-        Function<Method, MethodBuilder> methodBuilder = createThunk(method -> methodBuilder(method, configuredResourceBuilder), ((method, builder) -> builder.toBuilder(method)));
+        Function<Method, MethodBuilder> methodBuilder = createThunk(method -> methodBuilder(method, contextAnnotations, configuredResourceBuilder), ((method, builder) -> builder.toBuilder(method)));
         Function<Class<?>, ServiceBuilder> serviceBuilder = createThunk(clazz -> ServiceBuilder.serviceBuilder(clazz, methodBuilder), (serviceClass, builder) -> builder.toBuilder(serviceClass));
 
         return new ServicesBuilder(serviceBuilder);

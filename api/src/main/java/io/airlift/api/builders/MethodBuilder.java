@@ -39,8 +39,6 @@ import io.airlift.api.responses.ApiForbidden;
 import io.airlift.api.responses.ApiNotFound;
 import io.airlift.api.responses.ApiUnauthorized;
 import io.airlift.api.validation.ValidatorException;
-import jakarta.ws.rs.container.Suspended;
-import jakarta.ws.rs.core.Context;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -119,28 +117,30 @@ public class MethodBuilder
     private final Map<Method, ModelMethod> builtMethods;
     private final Function<Type, ResourceBuilder> resourceBuilder;
     private final Map<Class<?>, ModelResponse> responses;
+    private final Set<Class<? extends Annotation>> contextAnnotations;
 
-    private MethodBuilder(Method method, Map<Method, ModelMethod> builtMethods, Function<Type, ResourceBuilder> resourceBuilder, Map<Class<?>, ModelResponse> responses)
+    private MethodBuilder(Method method, Map<Method, ModelMethod> builtMethods, Function<Type, ResourceBuilder> resourceBuilder, Map<Class<?>, ModelResponse> responses, Set<Class<? extends Annotation>> contextAnnotations)
     {
         this.method = requireNonNull(method, "method is null");
         this.builtMethods = requireNonNull(builtMethods, "builtMethods is null");
         this.resourceBuilder = requireNonNull(resourceBuilder, "resourceBuilder is null");
         this.responses = requireNonNull(responses, "responses is null");    // do not copy
+        this.contextAnnotations = ImmutableSet.copyOf(contextAnnotations);
     }
 
-    public static MethodBuilder methodBuilder(Method method, Function<Type, ResourceBuilder> resourceBuilderSupplier)
+    public static MethodBuilder methodBuilder(Method method, Set<Class<? extends Annotation>> contextAnnotations, Function<Type, ResourceBuilder> resourceBuilderSupplier)
     {
-        return new MethodBuilder(method, new LinkedHashMap<>(), resourceBuilderSupplier, new LinkedHashMap<>());
+        return new MethodBuilder(method, new LinkedHashMap<>(), resourceBuilderSupplier, new LinkedHashMap<>(), contextAnnotations);
     }
 
     public static MethodBuilder methodBuilder(Method method, MethodBuilder from)
     {
-        return new MethodBuilder(method, from.builtMethods, from.resourceBuilder, from.responses);
+        return new MethodBuilder(method, from.builtMethods, from.resourceBuilder, from.responses, from.contextAnnotations);
     }
 
     public MethodBuilder toBuilder(Method method)
     {
-        return new MethodBuilder(method, builtMethods, resourceBuilder, responses);
+        return new MethodBuilder(method, builtMethods, resourceBuilder, responses, contextAnnotations);
     }
 
     public Optional<ModelMethod> build()
@@ -310,10 +310,9 @@ public class MethodBuilder
         List<ModelResource> parameters = new ArrayList<>();
         List<ModelOptionalParameter> optionalParameters = new ArrayList<>();
         for (Parameter parameter : method.getParameters()) {
-            Context context = parameter.getAnnotation(Context.class);
-            Suspended suspended = parameter.getAnnotation(Suspended.class);
+            boolean isContext = contextAnnotations.stream().anyMatch(contextAnnotation -> parameter.getAnnotation(contextAnnotation) != null);
             ApiParameter apiParameter = parameter.getAnnotation(ApiParameter.class);
-            int expectedAnnotationCount = ((context != null) || (apiParameter != null) || (suspended != null)) ? 1 : 0;
+            int expectedAnnotationCount = (isContext || (apiParameter != null)) ? 1 : 0;
 
             if (parameter.getAnnotations().length != expectedAnnotationCount) {
                 throw new ValidatorException("Invalid annotations on parameter %s".formatted(parameter.getName()));
@@ -335,9 +334,8 @@ public class MethodBuilder
                 }
             }
             else {
-                boolean isContextOrSuspended = (context != null) || (suspended != null);
                 boolean isCreateOrUpdate = (apiType == ApiType.CREATE) || (apiType == ApiType.UPDATE);
-                if (!isContextOrSuspended && isCreateOrUpdate) {
+                if (!isContext && isCreateOrUpdate) {
                     requestBody.set(buildRequestBody(requestBody, parameter));
                 }
             }
