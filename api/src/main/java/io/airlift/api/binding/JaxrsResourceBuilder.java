@@ -8,6 +8,7 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiIdLookup;
 import io.airlift.api.ApiService;
@@ -64,15 +65,17 @@ class JaxrsResourceBuilder
     private final JaxrsBinder jaxrsBinder;
     private final MapBinder<ModelService, Object> servicesBinder;
     private final Optional<Class<? extends Annotation>> bindingAnnotation;
+    private final ApiEnumValueResolver enumValueResolver;
 
-    static JaxrsResourceBuilder jaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> bindingAnnotation)
+    static JaxrsResourceBuilder jaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> bindingAnnotation, ApiEnumValueResolver enumValueResolver)
     {
-        return new JaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation);
+        return new JaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation, enumValueResolver);
     }
 
-    private JaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> bindingAnnotation)
+    private JaxrsResourceBuilder(Binder binder, boolean withApiLogging, Optional<Class<? extends Annotation>> bindingAnnotation, ApiEnumValueResolver enumValueResolver)
     {
         this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
         jaxrsBinder = jaxrsBinder(binder, bindingAnnotation);
         this.binder = requireNonNull(binder, "binder is null");
         this.bindingProvider = new ApiBindingProvider(binder, bindingAnnotation);
@@ -190,7 +193,7 @@ class JaxrsResourceBuilder
     {
         Provider<Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>>> idLookups = bindingProvider.get(new TypeLiteral<>() {});
         Provider<JsonMapper> jsonMapper = bindingProvider.getUnqualified(JsonMapper.class);
-        return () -> new SpecialApiTypeValueParamProvider(idLookups.get(), jsonMapper.get());
+        return () -> new SpecialApiTypeValueParamProvider(idLookups.get(), jsonMapper.get(), enumValueResolver);
     }
 
     private Provider<JaxrsBindingBridge> jaxrsBindingBridgeProvider()
