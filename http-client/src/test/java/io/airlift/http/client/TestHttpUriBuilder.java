@@ -13,6 +13,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class TestHttpUriBuilder
 {
     @Test
+    public void testUserInfo()
+    {
+        URI uri = uriBuilder()
+                .scheme("http")
+                .userInfo("user:pass")
+                .host("www.example.com")
+                .build();
+
+        assertThat(uri.toASCIIString()).isEqualTo("http://user:pass@www.example.com");
+    }
+
+    @Test
+    public void testCreateFromUriWithUser()
+    {
+        URI original = URI.create("http://user:pass@www.example.com:8081/a%20/%C3%A5?k=1&k=2&%C3%A5=3");
+        assertThat(uriBuilderFrom(original).build()).isEqualTo(original);
+    }
+
+    @Test
     public void testCreateFromUri()
     {
         URI original = URI.create("http://www.example.com:8081/a%20/%C3%A5?k=1&k=2&%C3%A5=3");
