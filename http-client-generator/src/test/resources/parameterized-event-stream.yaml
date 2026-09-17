@@ -1,0 +1,27 @@
+openapi: 3.0.1
+info:
+  title: Parameterized Event Stream API
+  version: 1.0.0
+paths:
+  /events:
+    get:
+      tags: [events]
+      operationId: streamEvents
+      responses:
+        '200':
+          description: Stream
+          content:
+            Text/Event-Stream; charset=utf-8:
+              x-airlift-event-schema:
+                $ref: '#/components/schemas/Event'
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+components:
+  schemas:
+    Event:
+      type: object
+      properties:
+        message:
+          type: string

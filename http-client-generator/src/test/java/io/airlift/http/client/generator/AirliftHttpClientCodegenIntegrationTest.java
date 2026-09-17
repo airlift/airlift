@@ -633,12 +633,109 @@ class AirliftHttpClientCodegenIntegrationTest
     }
 
     @Test
+    void testRejectsMixedSuccessResponseShapes(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("mixed-success-responses.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'getJob' mixes success responses with and without a body");
+    }
+
+    @Test
+    void testAcceptedMarkerBesideBodylessSuccessIsVoid(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("accepted-response.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/FoldersClient.java"));
+        assertThat(client).contains("public void purgeFolder(String folderId)");
+        assertThat(client).containsPattern("createStatusResponseHandler\\((204, 202|202, 204)\\)");
+        assertThat(client).doesNotContain("createSafeJsonResponseHandler", "OBJECT_CODEC");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsNonJsonRequestBody(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("text-request-body.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'createNote' declares unsupported request body media types [text/plain]");
+    }
+
+    @Test
+    void testNonJsonSuccessBodyIsReturnedAsStreamingResponse(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("text-response-body.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/NotesClient.java"));
+        assertThat(client).contains("public StreamingResponse readNote()");
+        assertThat(client).contains("StreamingResponse response = httpClient.executeStreaming(request);");
+        assertThat(client).contains("return response;");
+        assertThat(client).doesNotContain("createSafeJsonResponseHandler", "STRING_CODEC", "ServerSentEventStream");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsDifferingSuccessResponseSchemas(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("differing-success-schemas.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'startJob' declares differing success response schemas");
+    }
+
+    @Test
+    void testIdenticalSuccessSchemasShareOneCodec(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("shared-success-schemas.yaml", outputPath);
+
+        // two responses referencing the same component compare equal, so they decode through one codec
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/JobsClient.java"));
+        assertThat(client).contains("public Job startJob()");
+        assertThat(client).contains("createSafeJsonResponseHandler(JOB_CODEC, 200, 201)");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsJsonBesideEventStreamSuccess(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("json-and-event-stream.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'events' mixes JSON and event stream success responses");
+    }
+
+    @Test
     void testRejectsCollidingAuthenticationHeaders(@TempDir Path outputPath)
     {
         assertThatThrownBy(() -> generate("colliding-authentication-headers.yaml", outputPath))
                 .isInstanceOf(RuntimeException.class)
                 .hasRootCauseInstanceOf(IllegalArgumentException.class)
                 .hasRootCauseMessage("Security requirement for operation 'status' applies several schemes to the authorization header");
+    }
+
+    @Test
+    void testParameterizedEventStreamMediaTypeIsTyped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("parameterized-event-stream.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java"));
+        assertThat(client).contains("public ServerSentEventStream<Event> streamEvents()");
+        assertThat(client).doesNotContain("public StreamingResponse streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testSuffixedJsonIsReturnedAsStreamingResponse(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("suffixed-json-response.yaml", outputPath);
+
+        // the runtime JSON handlers accept application/json only, so a structured-suffix body is not decoded
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/DocumentsClient.java"));
+        assertThat(client).contains("public StreamingResponse readDocument()");
+        verifyGeneratedCodeCompiles(outputPath);
     }
 
     @Test
@@ -649,6 +746,17 @@ class AirliftHttpClientCodegenIntegrationTest
 
         assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java")))
                 .contains("public ServerSentEventStream<Event> streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testNonUtf8JsonIsReturnedAsStreamingResponse(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("latin1-json-response.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/DocumentsClient.java")))
+                .contains("public StreamingResponse readDocument()");
         verifyGeneratedCodeCompiles(outputPath);
     }
 
