@@ -22,7 +22,7 @@ public class BufferedHandlerErrorManager
     @Override
     public synchronized void error(String msg, Exception exception, int code)
     {
-        if (!reported) {
+        if (reported) {
             return;
         }
         reported = true;
