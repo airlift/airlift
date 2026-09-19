@@ -2,9 +2,11 @@ package io.airlift.opentelemetry;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.multibindings.ProvidesIntoOptional;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import io.airlift.security.pem.PemReader;
 import io.airlift.security.pem.PemWriter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporterBuilder;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
@@ -35,11 +37,15 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import static com.google.inject.multibindings.ProvidesIntoOptional.Type.DEFAULT;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.opentelemetry.sdk.metrics.InstrumentType.HISTOGRAM;
 import static io.opentelemetry.sdk.metrics.data.AggregationTemporality.DELTA;
@@ -52,6 +58,11 @@ import static java.nio.file.Files.readAllBytes;
 public class OpenTelemetryExporterModule
         implements Module
 {
+    private static final String TRACES_PATH = "v1/traces";
+    private static final String METRICS_PATH = "v1/metrics";
+    private static final String LOGS_PATH = "v1/logs";
+    private static final List<String> OTLP_HTTP_SIGNAL_PATHS = List.of(TRACES_PATH, METRICS_PATH, LOGS_PATH);
+
     @Override
     public void configure(Binder binder)
     {
@@ -76,14 +87,14 @@ public class OpenTelemetryExporterModule
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcSpanExporter.builder()
-                            .setEndpoint(config.getEndpoint()),
+                            .setEndpoint(config.getEndpoint().toString()),
                     OtlpGrpcSpanExporterBuilder::setTrustedCertificates,
                     OtlpGrpcSpanExporterBuilder::setClientTls)
                     .build();
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpSpanExporter.builder()
-                            .setEndpoint(config.getEndpoint()),
+                            .setEndpoint(httpProtobufEndpoint(config.getEndpoint(), TRACES_PATH)),
                     OtlpHttpSpanExporterBuilder::setTrustedCertificates,
                     OtlpHttpSpanExporterBuilder::setClientTls)
                     .build();
@@ -119,7 +130,7 @@ public class OpenTelemetryExporterModule
                     config,
                     OtlpGrpcMetricExporter.builder()
                             .setAggregationTemporalitySelector(temporalitySelector)
-                            .setEndpoint(config.getEndpoint()),
+                            .setEndpoint(config.getEndpoint().toString()),
                     OtlpGrpcMetricExporterBuilder::setTrustedCertificates,
                     OtlpGrpcMetricExporterBuilder::setClientTls)
                     .build();
@@ -127,21 +138,28 @@ public class OpenTelemetryExporterModule
                     config,
                     OtlpHttpMetricExporter.builder()
                             .setAggregationTemporalitySelector(temporalitySelector)
-                            .setEndpoint(config.getEndpoint()),
+                            .setEndpoint(httpProtobufEndpoint(config.getEndpoint(), METRICS_PATH)),
                     OtlpHttpMetricExporterBuilder::setTrustedCertificates,
                     OtlpHttpMetricExporterBuilder::setClientTls)
                     .build();
         };
     }
 
-    @ProvidesIntoSet
+    // An overridden OptionalBinder default is still eagerly created in production when scoped.
+    @ProvidesIntoOptional(DEFAULT)
     public static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config, SdkMeterProvider meterProvider)
+    {
+        return createLogRecordProcessor(config, (MeterProvider) meterProvider);
+    }
+
+    static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config, MeterProvider meterProvider)
     {
         BatchLogRecordProcessorBuilder builder = BatchLogRecordProcessor.builder(createLogRecordExporter(config))
                 .setMeterProvider(meterProvider);
         config.getLogMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
         config.getLogMaxQueueSize().ifPresent(builder::setMaxQueueSize);
         config.getLogScheduleDelay().ifPresent(delay -> builder.setScheduleDelay(delay.toJavaTime()));
+        config.getLogExportTimeout().ifPresent(timeout -> builder.setExporterTimeout(timeout.toJavaTime()));
         builder.setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
         return builder.build();
     }
@@ -152,18 +170,56 @@ public class OpenTelemetryExporterModule
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcLogRecordExporter.builder()
-                            .setEndpoint(config.getEndpoint()),
+                            .setEndpoint(config.getEndpoint().toString()),
                     OtlpGrpcLogRecordExporterBuilder::setTrustedCertificates,
                     OtlpGrpcLogRecordExporterBuilder::setClientTls)
                     .build();
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpLogRecordExporter.builder()
-                            .setEndpoint(config.getEndpoint()),
+                            .setEndpoint(httpProtobufEndpoint(config.getEndpoint(), LOGS_PATH)),
                     OtlpHttpLogRecordExporterBuilder::setTrustedCertificates,
                     OtlpHttpLogRecordExporterBuilder::setClientTls)
                     .build();
         };
+    }
+
+    static String httpProtobufEndpoint(URI uri, String signalPath)
+    {
+        String path = Optional.ofNullable(uri.getRawPath()).orElse("");
+
+        String basePath = stripKnownOtlpSignalPath(path);
+        String resolvedPath = appendPath(basePath, signalPath);
+
+        try {
+            return new URI(uri.getScheme() + "://" + uri.getRawAuthority() + resolvedPath).toString();
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid OTLP HTTP endpoint: " + uri, e);
+        }
+    }
+
+    private static String stripKnownOtlpSignalPath(String path)
+    {
+        String normalizedPath = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+        for (String signalPath : OTLP_HTTP_SIGNAL_PATHS) {
+            String suffix = "/" + signalPath;
+            if (normalizedPath.equals(suffix) || normalizedPath.endsWith(suffix)) {
+                return normalizedPath.substring(0, normalizedPath.length() - suffix.length());
+            }
+        }
+        return path;
+    }
+
+    private static String appendPath(String basePath, String signalPath)
+    {
+        if (basePath.isEmpty() || basePath.equals("/")) {
+            return "/" + signalPath;
+        }
+        if (basePath.endsWith("/")) {
+            return basePath + signalPath;
+        }
+        return basePath + "/" + signalPath;
     }
 
     private static <T> T configureTls(

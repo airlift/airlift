@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -733,7 +734,7 @@ class TestExponentialHistogramDeltaExporter
         server.start();
         OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
                 .setProtocol(OpenTelemetryExporterConfig.Protocol.HTTP_PROTOBUF)
-                .setEndpoint("http://localhost:" + server.getAddress().getPort() + "/v1/metrics")
+                .setEndpoint(URI.create("http://localhost:" + server.getAddress().getPort() + "/v1/metrics"))
                 .setHistogramMaxTrackedSeries(1);
         InMemoryMetricExporter sink = InMemoryMetricExporter.create(DELTA);
         MetricExporter delegate = OpenTelemetryExporterModule.createMetricExporter(config);
@@ -1045,7 +1046,7 @@ class TestExponentialHistogramDeltaExporter
         server.start();
         OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
                 .setProtocol(OpenTelemetryExporterConfig.Protocol.HTTP_PROTOBUF)
-                .setEndpoint("http://localhost:" + server.getAddress().getPort() + "/v1/metrics");
+                .setEndpoint(URI.create("http://localhost:" + server.getAddress().getPort() + "/v1/metrics"));
         try (PeriodicMetricReader reader = PeriodicMetricReader.builder(new ExponentialHistogramDeltaExporter(
                         OpenTelemetryExporterModule.createMetricExporter(config), config, TestClock.create(Instant.EPOCH)))
                 .setInterval(Duration.ofDays(1)).build();
