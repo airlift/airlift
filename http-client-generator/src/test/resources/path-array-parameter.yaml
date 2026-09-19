@@ -1,0 +1,20 @@
+openapi: 3.0.1
+info:
+  title: Path Array Parameter API
+  version: 1.0.0
+paths:
+  /items/{ids}:
+    get:
+      tags: [items]
+      operationId: getItems
+      parameters:
+        - name: ids
+          in: path
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '204':
+          description: Success

@@ -37,6 +37,7 @@ import io.airlift.api.openapi.OpenApiExtensionFilter;
 import io.airlift.api.openapi.OpenApiFilter;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiModule;
+import io.airlift.api.openapi.OpenApiSecurityMetadata;
 import io.airlift.api.validation.ResourceSerializationValidator;
 import io.airlift.api.validation.ValidatorException;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -72,6 +73,7 @@ public class ApiModule
     private final Set<Builder.ResponseFilter> responseFilters;
     private final Map<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings;
     private final Optional<OpenApiMetadata> openApiMetadata;
+    private final Optional<OpenApiSecurityMetadata> openApiSecurityMetadata;
     private final Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
     private final OpenApiExtensionFilter extensionFilter;
     private final Optional<ApiCompatibilityTester> compatibilityTester;
@@ -87,6 +89,7 @@ public class ApiModule
             Set<Builder.ResponseFilter> responseFilters,
             Map<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings,
             Optional<OpenApiMetadata> openApiMetadata,
+            Optional<OpenApiSecurityMetadata> openApiSecurityMetadata,
             Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding,
             OpenApiExtensionFilter extensionFilter,
             Optional<ApiCompatibilityTester> compatibilityTester,
@@ -101,6 +104,7 @@ public class ApiModule
         this.responseFilters = ImmutableSet.copyOf(responseFilters);
         this.idLookupBindings = ImmutableMap.copyOf(idLookupBindings);
         this.openApiMetadata = requireNonNull(openApiMetadata, "openApiMetadata is null");
+        this.openApiSecurityMetadata = requireNonNull(openApiSecurityMetadata, "openApiSecurityMetadata is null");
         this.openApiFilterBinding = requireNonNull(openApiFilterBinding, "openApiFilterBinding is null");
         this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
         this.compatibilityTester = requireNonNull(compatibilityTester, "compatibilityTester is null");
@@ -124,6 +128,7 @@ public class ApiModule
         private final ImmutableSet.Builder<ResponseFilter> responseFilters = ImmutableSet.builder();
         private final ImmutableMap.Builder<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings = ImmutableMap.builder();
         private Optional<OpenApiMetadata> openApiMetadata = Optional.empty();
+        private Optional<OpenApiSecurityMetadata> openApiSecurityMetadata = Optional.empty();
         private OpenApiExtensionFilter extensionFilter;
         private Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
         private Optional<ApiCompatibilityTester> compatibilityTester = Optional.empty();
@@ -206,6 +211,14 @@ public class ApiModule
             return this;
         }
 
+        public Builder withOpenApiSecurityMetadata(OpenApiSecurityMetadata openApiSecurityMetadata)
+        {
+            checkArgument(this.openApiSecurityMetadata.isEmpty(), "openApiSecurityMetadata is already set");
+
+            this.openApiSecurityMetadata = Optional.of(requireNonNull(openApiSecurityMetadata, "openApiSecurityMetadata is null"));
+            return this;
+        }
+
         public Builder withOpenApiExtensionFilter(OpenApiExtensionFilter extensionFilter)
         {
             checkArgument(this.extensionFilter == null, "OpenApiExtensionFilter is already set");
@@ -250,6 +263,10 @@ public class ApiModule
 
         public Module build()
         {
+            checkArgument(openApiSecurityMetadata.isEmpty() || openApiMetadata.isPresent(), "openApiSecurityMetadata requires openApiMetadata");
+            checkArgument(
+                    openApiSecurityMetadata.isEmpty() || openApiMetadata.flatMap(OpenApiMetadata::security).isEmpty(),
+                    "legacy and named OpenAPI security metadata cannot both be configured");
             Consumer<LinkedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(_ -> _ -> true);
             OpenApiExtensionFilter localExtensionFilter = (extensionFilter != null) ? extensionFilter : (_, _, operation) -> operation;
 
@@ -260,6 +277,7 @@ public class ApiModule
                     responseFilters.build(),
                     idLookupBindings.build(),
                     openApiMetadata,
+                    openApiSecurityMetadata,
                     localFilterBinding,
                     localExtensionFilter,
                     compatibilityTester,
@@ -346,7 +364,14 @@ public class ApiModule
         modelApi.modelServices().services().forEach(jaxrsResourceBuilder::bindService);
         jaxrsResourceBuilder.bindFeatures();
 
-        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), bindingAnnotation, openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
+        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(
+                modelApi.modelServices(),
+                bindingAnnotation,
+                openApi,
+                openApiSecurityMetadata,
+                openApiFilterBinding,
+                extensionFilter,
+                enumValueResolver)));
 
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 

@@ -1,0 +1,34 @@
+openapi: 3.0.1
+info:
+  title: Differing Success Schemas API
+  version: 1.0.0
+paths:
+  /job:
+    post:
+      tags: [jobs]
+      operationId: startJob
+      responses:
+        '200':
+          description: Existing job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '201':
+          description: Created job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCreated'
+components:
+  schemas:
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+    JobCreated:
+      type: object
+      properties:
+        location:
+          type: string

@@ -86,7 +86,8 @@ public class TestStreaming
         assertThat(outputMediaType.has("x-airlift-event-schema")).isFalse();
 
         JsonNode eventMediaType = openApi.at("/paths/~1public~1api~1v1~1streamer:events/get/responses/200/content/text~1event-stream");
-        assertThat(eventMediaType.at("/schema/type").asText()).isEqualTo("string");
+        assertThat(eventMediaType.at("/schema/type").asText()).isEqualTo("array");
+        assertThat(eventMediaType.at("/schema/items/$ref").asText()).isEqualTo("#/components/schemas/StreamingEvent");
         assertThat(eventMediaType.at("/x-airlift-event-schema/$ref").asText()).isEqualTo("#/components/schemas/StreamingEvent");
         assertThat(openApi.at("/components/schemas/StreamingEvent").isMissingNode()).isFalse();
     }
@@ -110,6 +111,7 @@ public class TestStreaming
         assertThat(eventMediaType.at("/itemSchema/properties/data/contentMediaType").asText()).isEqualTo("application/json");
         assertThat(eventMediaType.at("/itemSchema/properties/data/contentSchema/$ref").asText()).isEqualTo("#/components/schemas/StreamingEvent");
         assertThat(eventMediaType.at("/itemSchema/properties/event").isMissingNode()).isTrue();
+        assertThat(eventMediaType.at("/x-airlift-event-schema/$ref").asText()).isEqualTo("#/components/schemas/StreamingEvent");
     }
 
     @Test

@@ -1,0 +1,38 @@
+openapi: 3.0.1
+info:
+  title: OAuth2 Only
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - serviceOAuth:
+      - status:read
+paths:
+  /status:
+    get:
+      operationId: getStatus
+      tags:
+        - Status
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+components:
+  securitySchemes:
+    serviceOAuth:
+      type: oauth2
+      x-airlift-token-endpoint-authentication-method: client_secret_basic
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            status:read: Read service status
+  schemas:
+    Status:
+      type: object
+      properties:
+        state:
+          type: string

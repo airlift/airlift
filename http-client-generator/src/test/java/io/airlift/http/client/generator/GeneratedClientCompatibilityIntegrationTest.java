@@ -1,0 +1,155 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.airlift.http.client.generator;
+
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
+import io.takari.maven.testing.TestResources5;
+import io.takari.maven.testing.executor.MavenRuntime;
+import io.takari.maven.testing.executor.MavenRuntime.MavenRuntimeBuilder;
+import io.takari.maven.testing.executor.MavenVersions;
+import io.takari.maven.testing.executor.junit.MavenPluginTest;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.openapitools.codegen.validation.Invalid;
+import org.openapitools.codegen.validation.ValidationResult;
+import org.openapitools.codegen.validations.oas.OpenApiEvaluator;
+import org.openapitools.codegen.validations.oas.RuleConfiguration;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static java.lang.System.getProperty;
+import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@MavenVersions("3.9.14")
+class GeneratedClientCompatibilityIntegrationTest
+{
+    @RegisterExtension
+    final TestResources5 resources = new TestResources5();
+
+    private final MavenRuntime maven;
+
+    GeneratedClientCompatibilityIntegrationTest(MavenRuntimeBuilder mavenBuilder)
+            throws Exception
+    {
+        maven = mavenBuilder
+                .withCliOptions(
+                        "-B",
+                        "-U",
+                        "-Ddep.airlift.version=" + requireNonNull(getProperty("project.version"), "project.version system property is null"))
+                .build();
+    }
+
+    @MavenPluginTest
+    void testGeneratedClientCallsApiBuilderServer()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("generated-client-compatibility");
+
+        maven.forProject(basedir)
+                .execute("clean", "test")
+                .assertErrorFreeLog();
+
+        Path spec = basedir.toPath().resolve("target/openapi.json");
+        assertThat(spec).exists();
+        assertStrictlyValid(spec);
+        assertThat(Files.readString(spec))
+                .contains("\"name\" : \"Compatibility Service\"")
+                .containsOnlyOnce("\"name\" : \"Compatibility Service\"")
+                .contains("\"type\" : \"http\"")
+                .contains("\"scheme\" : \"bearer\"")
+                .contains("\"serviceBasic\"")
+                .contains("\"serviceKey\"")
+                .contains("\"serviceOAuth\"")
+                .contains("\"tokenUrl\" : \"/oauth/token\"")
+                .contains("\"x-airlift-token-endpoint-authentication-method\" : \"client_secret_basic\"")
+                .contains("\"text/event-stream\"")
+                .contains("\"x-airlift-event-schema\"")
+                .contains("\"discriminator\"")
+                // a described enum property wraps its reference in allOf for a 3.0 contract so the description survives
+                .containsSubsequence("\"defaultKind\"", "\"description\" : \"Default frame kind\"", "\"allOf\"", "\"$ref\" : \"#/components/schemas/FrameKind\"");
+
+        Path generatedSources = basedir.toPath().resolve("target/generated-sources/openapi/io/airlift/openapi/client/generated");
+        assertThat(Files.readString(generatedSources.resolve("api/CompatibilityServiceClient.java")))
+                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials)")
+                .doesNotContain("URI baseUri, String apiKey)", "URI baseUri, BearerTokenProvider bearerTokenProvider)")
+                .contains("credentials.applyBearerToken(\"accessToken\", bearerToken, requestBuilder)")
+                .contains("retryPolicy.execute(\"getQueryFrame\", \"GET\", null, authenticationBearerTokenProvider")
+                .contains("retryPolicy.execute(\"safeExecute\", \"POST\", idempotencyKey, authenticationBearerTokenProvider")
+                .contains("requestBuilder.setHeader(\"Idempotency-Key\", String.valueOf(idempotencyKey))")
+                .contains("public ServerSentEventStream<CompatibilityEvent> streamEvents()")
+                .contains(".setHeader(ACCEPT, \"text/event-stream\")")
+                .contains("StreamingResponse response = httpClient.executeStreaming(request)")
+                .contains("throw captureUnexpectedResponse(\"Unexpected response\", request, response)")
+                .contains("return new ServerSentEventStream<>(response, COMPATIBILITY_EVENT_CODEC)")
+                .containsSubsequence(
+                        "if (statusCode == 409)",
+                        "return new ApiException(\"safeExecute\", exception, EXISTS_CODEC)")
+                .containsSubsequence(
+                        "if (statusCode == 409)",
+                        "return new ApiException(\"readFailure\", exception, COMPATIBILITY_CONFLICT_CODEC)")
+                .contains("createStatusResponseHandler(204)");
+        assertThat(generatedSources.resolve("BearerTokenProvider.java")).doesNotExist();
+
+        Path secondGeneratedSources = basedir.toPath().resolve("target/generated-sources/openapi-second/io/airlift/openapi/client/generated/second");
+        assertThat(Files.readString(secondGeneratedSources.resolve("api/CompatibilityServiceClient.java")))
+                .contains("import io.airlift.http.client.BearerTokenProvider;")
+                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials)");
+        assertThat(secondGeneratedSources.resolve("BearerTokenProvider.java")).doesNotExist();
+        assertThat(Files.readString(generatedSources.resolve("api/NamedAuthenticationServiceClient.java")))
+                .containsSubsequence(
+                        "if (credentials.hasBasicAuth(\"serviceBasic\") && credentials.hasHeaderApiKey(\"serviceKey\"))",
+                        "else if (credentials.hasBearerToken(\"serviceBearer\"))")
+                .contains("credentials.applyBasicAuth(\"serviceBasic\", requestBuilder)")
+                .contains("credentials.applyHeaderApiKey(\"serviceKey\", \"X-Service-Key\", requestBuilder)")
+                .contains("credentials.applyBearerToken(\"serviceBearer\", bearerToken, requestBuilder)")
+                .contains("credentials.bearerTokenProvider(\"serviceOAuth\")")
+                .doesNotContain("if (true)");
+        assertThat(Files.readString(generatedSources.resolve("model/QueryFrame.java")))
+                .contains("@JsonTypeInfo")
+                .contains("@JsonSubTypes.Type(value = TextFrame.class, name = \"textFrame\")")
+                .contains("public sealed interface QueryFrame permits SqlFrame, TextFrame");
+        assertThat(Files.readString(generatedSources.resolve("model/TextFrame.java")))
+                .contains("implements QueryFrame")
+                .contains("public enum FrameTypeEnum");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.securityScheme=BEARER_ACCESS_TOKEN")
+                .execute("clean", "process-classes")
+                .assertLogText("Legacy securityScheme and named securitySchemes/defaultSecurityRequirements cannot both be configured")
+                .assertNoLogText("BUILD SUCCESS");
+    }
+
+    private static void assertStrictlyValid(Path spec)
+    {
+        ParseOptions parseOptions = new ParseOptions();
+        parseOptions.setResolve(true);
+        SwaggerParseResult parseResult = new OpenAPIV3Parser().readLocation(spec.toString(), null, parseOptions);
+
+        RuleConfiguration rules = new RuleConfiguration();
+        rules.setEnableRecommendations(true);
+        ValidationResult validationResult = new OpenApiEvaluator(rules).validate(parseResult.getOpenAPI());
+
+        assertThat(parseResult.getMessages()).isEmpty();
+        assertThat(validationResult.getErrors())
+                .extracting(Invalid::getMessage)
+                .isEmpty();
+        assertThat(validationResult.getWarnings())
+                .extracting(Invalid::getMessage)
+                .isEmpty();
+    }
+}

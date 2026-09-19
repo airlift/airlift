@@ -10,11 +10,11 @@ The generated clients aim to match the structure and style of Trino's handwritte
 - **`HttpUriBuilder`** for URI construction — uses `uriBuilderFrom(baseUri).appendPath(...)` with `.addParameter()` for query parameters.
 - **Static final `JsonCodec` fields** — deduplicated codecs declared as `private static final` with UPPER_SNAKE_CASE names (e.g., `PET_CODEC`), matching Trino's codec declaration style.
 - **Airlift request builders** — uses `preparePost()`, `prepareGet()`, etc. with fluent `.setUri()`, `.setHeader()`, `.setBodyGenerator()` chaining.
-- **`JsonResponseHandler` and `StatusResponseHandler`** — uses `createJsonResponseHandler(codec)` for responses with bodies and `createStatusResponseHandler()` for void responses.
-- **Retry with exponential backoff** — all `httpClient.execute()` calls are wrapped in a `RetryPolicy` that retries transient failures with configurable exponential backoff. Non-retryable errors fail immediately.
+- **`JsonResponseHandler` and `StatusResponseHandler`** — uses handlers with explicit success codes when the contract lists them, and handlers accepting any successful status when the contract declares a `2XX` response range.
+- **Retry with exponential backoff** — generated calls use a `RetryPolicy`, but transport retries are limited to safe/idempotent operations: `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`, plus `POST` or `PATCH` with a nonblank idempotency key. Non-retryable errors fail immediately.
 - **Error classification** — distinguishes retryable errors (network exceptions like `SocketException`, `SocketTimeoutException`, `ConnectException`, and HTTP status codes 429, 502, 503, 504) from non-retryable errors that fail fast.
 - **Retry-After header support** — when a server returns a `Retry-After` header (common with 429 Too Many Requests), the retry delay uses the server-suggested value instead of exponential backoff.
-- **Bearer token authentication** — when the OpenAPI spec defines a `bearerAuth` security scheme, the generated client adds `Authorization: Bearer` headers, stores the API key as a field, and exposes it through the config class.
+- **Named authentication credentials** — generated clients hold `HttpClientCredentials`, select a satisfiable OpenAPI security alternative, and apply bearer, Basic, or header API-key credentials by scheme name. Bearer tokens are resolved from their provider for each attempt.
 - **Guice integration** — generates a `Module`, `Config`, and `@BindingAnnotation` annotation following Airlift's dependency injection patterns.
 - **Java records for models** — generates immutable record types with `@JsonProperty` annotations.
 - **Minimal imports** — only imports the specific static methods and types actually used by the generated code.
@@ -120,7 +120,7 @@ public class PetsClient
     public PetsClient(@ForPetstore HttpClient httpClient, PetstoreClientConfig config)
     {
         this(httpClient, config.getBaseUri(),
-                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelayMs(), config.getRetryMaxDelayMs()));
+                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
     }
 
     public Pet createPet(Pet pet)
@@ -135,8 +135,8 @@ public class PetsClient
                 .setBodyGenerator(jsonBodyGenerator(PET_CODEC, pet))
                 .build();
 
-        return retryPolicy.execute("createPet", uri, () ->
-                httpClient.execute(request, createJsonResponseHandler(PET_CODEC)));
+        return retryPolicy.execute("createPet", "POST", null, exception -> new ApiException("createPet", exception), () ->
+                httpClient.execute(request, createSafeJsonResponseHandler(PET_CODEC, 201)));
     }
 }
 ```
@@ -150,10 +150,11 @@ For a project named `petstore` with a tag `pets`, the generator produces:
 | `api/PetsClient.java` | HTTP client class with typed methods for each operation |
 | `model/*.java` | Java records for request/response schemas |
 | `PetstoreClientModule.java` | Guice module that binds the HTTP client, config, and client classes |
-| `PetstoreClientConfig.java` | Airlift `@Config` class with `baseUri`, retry settings (and `apiKey` when auth is present) |
+| `PetstoreClientConfig.java` | Airlift `@Config` class with `baseUri`, retry settings, and configured named credentials when authentication is present |
 | `ForPetstore.java` | Guice `@BindingAnnotation` for the HTTP client |
 | `RetryPolicy.java` | Retry with exponential backoff, error classification, and Retry-After support |
-| `ApiException.java` | Runtime exception for HTTP call failures |
+| `PetstoreOAuth2.java` | Token provider factories, generated when the contract declares an OAuth2 client-credentials scheme |
+| `ApiException.java` | Structured failure carrying the operation, request method and URI, status, headers, bounded response body, and decoded error model |
 
 ### PascalCase Naming
 
@@ -177,15 +178,15 @@ Or use separators in `projectName`:
 
 ### Resiliency
 
-Every generated client includes a `RetryPolicy` that provides retry with exponential backoff, error classification, and Retry-After header support. The retry behavior is fully configurable via Airlift `@Config` properties.
+Every generated client includes a `RetryPolicy` that provides retry with exponential backoff, error classification, and Retry-After header support. Transport retries apply only to safe/idempotent operations: `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`, plus `POST` or `PATCH` with a nonblank idempotency key. The retry behavior is fully configurable via Airlift `@Config` properties.
 
 #### Configuration Properties
 
 | Property | Description | Default |
 |----------|-------------|---------|
 | `{prefix}.max-retries` | Maximum number of retry attempts | `3` |
-| `{prefix}.retry-initial-delay-ms` | Initial delay before first retry (milliseconds) | `100` |
-| `{prefix}.retry-max-delay-ms` | Maximum delay between retries (milliseconds) | `1000` |
+| `{prefix}.retry-initial-delay` | Initial delay before the first retry | `100ms` |
+| `{prefix}.retry-max-delay` | Maximum delay between retries | `1s` |
 
 Where `{prefix}` is derived from `projectName` (e.g., `petstore.max-retries` for project name `petstore`).
 
@@ -202,7 +203,11 @@ Only transient errors are retried. Non-retryable errors fail immediately without
 
 #### Retry-After Header
 
-When a server returns a `Retry-After` header (common with HTTP 429 responses), the retry delay uses the server-suggested value (in seconds) instead of exponential backoff, capped at `retry-max-delay-ms`.
+When a server returns a `Retry-After` header (common with HTTP 429 responses), the retry delay uses the server-suggested value (in seconds) instead of exponential backoff, capped at `retry-max-delay`.
+
+#### Idempotent Mutations
+
+`POST` and `PATCH` operations are retried only when the contract marks them idempotent. API Builder emits the `x-airlift-idempotency` extension naming the idempotency header; the generated method takes that key as a parameter, sends it as the header, and permits transport retries when the key is nonblank.
 
 #### Disabling Retries
 
@@ -211,6 +216,37 @@ To disable retries entirely, set `max-retries` to `0`, or use `RetryPolicy.disab
 ```java
 var client = new PetsClient(httpClient, baseUri, RetryPolicy.disabled());
 ```
+
+### Failures
+
+Every failed call throws the generated `ApiException`. Its message names the operation and, for HTTP failures, the status code; headers and response bodies never appear in the message. The exception exposes:
+
+| Accessor | Contents |
+|----------|----------|
+| `getOperationName()`, `getRequestMethod()`, `getRequestUri()` | The failed operation and its request, with the URI query string removed |
+| `getStatusCode()`, `getHeaders()`, `getContentType()` | The response status and headers, or status `0` when no response was received |
+| `getResponseBody()`, `getResponseBodyBytes()`, `isResponseBodyTruncated()` | The response body, retained up to a bounded size |
+| `getError()`, `getError(Class)` | The decoded error model when the contract declares one for that status |
+
+Transport failures, interrupted retries, and bearer token provider failures are wrapped in the same exception with the original cause attached.
+
+### Form Requests
+
+An `application/x-www-form-urlencoded` request body generates a method taking one parameter per form field and encodes them with `FormDataBodyBuilder` using the standard encoding. Scalar, enum, and array fields are supported; array fields repeat the field name once per value. Generation fails for nested objects, `multipart` bodies, or custom `encoding` rules because they would produce ambiguous wire data.
+
+### Server-Sent Events
+
+A `text/event-stream` response generates a method returning `ServerSentEventStream<T>`, where `T` is the event schema API Builder records in `x-airlift-event-schema`:
+
+```java
+try (ServerSentEventStream<Event> stream = client.streamEvents()) {
+    for (ServerSentEvent<Event> event : stream) {
+        handle(event.data());
+    }
+}
+```
+
+Each `ServerSentEvent` carries the decoded `data` plus the optional `event` type, `id`, and `retry` hint. Events are decoded as they arrive with a bounded UTF-8 buffer, `readEvent()` returns one event at a time, and the stream releases the connection when it is closed or exhausted. A non-2xx response while establishing the stream throws `ApiException`; a malformed event closes the stream and throws the decoding failure.
 
 ### Security Schemes
 
@@ -226,10 +262,11 @@ security:
   - bearerAuth: []
 ```
 
-When present, the generated code:
-- Adds `private final String apiKey` to the client class
-- Adds `.setHeader(AUTHORIZATION, "Bearer " + apiKey)` to authenticated requests
-- Adds `getApiKey()` / `setApiKey()` to the config class with `@Config("projectname.api-key")`
+Basic authentication (`type: http`, `scheme: basic`) is supported alongside bearer and header API-key schemes. When present, the generated code:
+
+- Stores `HttpClientCredentials` in the client and selects a configured security alternative for each operation.
+- Resolves bearer tokens through `BearerTokenProvider` for each attempt and applies them through the named credentials.
+- Exposes a configuration setter for each supported scheme, named after the scheme.
 
 API key authentication in headers is also supported:
 
@@ -242,4 +279,31 @@ components:
       name: X-API-Key
 ```
 
-This generates `.setHeader("X-API-Key", apiKey)` on authenticated requests.
+This adds a named header API-key credential and applies it to authenticated requests.
+
+#### Credential Configuration
+
+| Scheme | Properties |
+|--------|------------|
+| Bearer | `{prefix}.{scheme}.token` |
+| Basic | `{prefix}.{scheme}.username` and `{prefix}.{scheme}.password`, configured together |
+| Header API key | `{prefix}.{scheme}.api-key` |
+| OAuth2 client credentials | `{prefix}.{scheme}.token` for a static token; build a refreshing provider with the generated `{ClientName}OAuth2` factory |
+
+`{scheme}` is the hyphenated scheme name (`serviceBearer` becomes `service-bearer`). Every credential is optional; the client selects a security alternative that the configured credentials satisfy and fails with `IllegalStateException` when none does. Only schemes referenced by some security requirement shape the generated client and configuration.
+
+#### OAuth2 Client Credentials
+
+An `oauth2` scheme with a `clientCredentials` flow generates a `{ClientName}OAuth2` factory:
+
+```java
+ClientCredentialsTokenProvider provider = PetstoreOAuth2.createServiceOAuthTokenProvider(httpClient, baseUri, clientId, clientSecret);
+HttpClientCredentials credentials = HttpClientCredentials.builder().bearerToken("serviceOAuth", provider).build();
+var client = new PetsClient(httpClient, baseUri, credentials);
+```
+
+The provider acquires tokens from the contract's `tokenUrl`, resolved against the client base URI, using the required scopes and the `x-airlift-token-endpoint-authentication-method` emitted by API Builder. It caches tokens until their skewed expiry, coalesces concurrent refreshes, and retries the token endpoint independently of API retries. One provider can be shared by clients generated from different contracts.
+
+#### Bearer Token Refresh
+
+Bearer tokens come from a `BearerTokenProvider`. When a request fails with `401` carrying a `WWW-Authenticate: Bearer` challenge, the client asks the provider to refresh the rejected token once and repeats the request with the new token. Refresh has its own one-attempt budget and does not consume transport retries.

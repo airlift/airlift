@@ -11,6 +11,8 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ApiParameter
 {
+    String name() default "";
+
     String description() default "";
 
     String[] allowedValues() default {};

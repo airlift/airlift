@@ -16,13 +16,17 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
+import com.google.common.primitives.Ints;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 
 public class StatusResponseHandler
@@ -35,7 +39,38 @@ public class StatusResponseHandler
         return statusResponseHandler;
     }
 
-    private StatusResponseHandler() {}
+    public static StatusResponseHandler createStatusResponseHandler(int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    {
+        return new StatusResponseHandler(ImmutableSet.<Integer>builder()
+                .add(firstSuccessfulResponseCode)
+                .addAll(Ints.asList(otherSuccessfulResponseCodes))
+                .build());
+    }
+
+    public static StatusResponseHandler createSuccessfulStatusResponseHandler()
+    {
+        return new StatusResponseHandler(ImmutableSet.of(), true);
+    }
+
+    private final Optional<Set<Integer>> successfulResponseCodes;
+    private final boolean acceptAnySuccessfulResponse;
+
+    private StatusResponseHandler()
+    {
+        successfulResponseCodes = Optional.empty();
+        acceptAnySuccessfulResponse = false;
+    }
+
+    private StatusResponseHandler(Set<Integer> successfulResponseCodes)
+    {
+        this(successfulResponseCodes, false);
+    }
+
+    private StatusResponseHandler(Set<Integer> successfulResponseCodes, boolean acceptAnySuccessfulResponse)
+    {
+        this.successfulResponseCodes = Optional.of(ImmutableSet.copyOf(successfulResponseCodes));
+        this.acceptAnySuccessfulResponse = acceptAnySuccessfulResponse;
+    }
 
     @Override
     public StatusResponse handleException(Request request, Exception exception)
@@ -46,7 +81,22 @@ public class StatusResponseHandler
     @Override
     public StatusResponse handle(Request request, Response response)
     {
+        if (successfulResponseCodes.isPresent() &&
+                !(acceptAnySuccessfulResponse && isSuccessful(response.getStatusCode())) &&
+                !successfulResponseCodes.orElseThrow().contains(response.getStatusCode())) {
+            throw captureUnexpectedResponse(
+                    "Expected %s response code, but was %d".formatted(
+                            acceptAnySuccessfulResponse ? "a successful" : successfulResponseCodes.orElseThrow(),
+                            response.getStatusCode()),
+                    request,
+                    response);
+        }
         return new StatusResponse(response.getStatusCode(), response.getHeaders());
+    }
+
+    private static boolean isSuccessful(int statusCode)
+    {
+        return statusCode >= 200 && statusCode < 300;
     }
 
     public static class StatusResponse

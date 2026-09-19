@@ -1,0 +1,32 @@
+openapi: 3.2.0
+info:
+  title: Typed SSE
+  version: 1.0.0
+paths:
+  /events:
+    get:
+      operationId: streamEvents
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              itemSchema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: string
+                    contentMediaType: application/json
+                    contentSchema:
+                      $ref: '#/components/schemas/Event'
+components:
+  schemas:
+    Event:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string

@@ -1,6 +1,9 @@
 {{>licenseInfo}}
 package {{invokerPackage}};
 
+{{#hasBearerAuthMethods}}
+import io.airlift.http.client.BearerTokenProvider;
+{{/hasBearerAuthMethods}}
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.UnexpectedResponseException;
 import io.airlift.units.Duration;
@@ -8,11 +11,16 @@ import io.airlift.units.Duration;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.URI;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
+{{#hasBearerAuthMethods}}
+import static io.airlift.http.client.HeaderNames.WWW_AUTHENTICATE;
+{{/hasBearerAuthMethods}}
 import static java.util.Objects.requireNonNull;
 
 public class RetryPolicy
@@ -21,7 +29,6 @@ public class RetryPolicy
     private static final Duration DEFAULT_MAX_DELAY = new Duration(1, TimeUnit.SECONDS);
     private static final int DEFAULT_MAX_RETRIES = 3;
     private static final double BACKOFF_MULTIPLIER = 2.0;
-    private static final HeaderName RETRY_AFTER = HeaderName.of("Retry-After");
     private static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 502, 503, 504);
 
     private final int maxRetries;
@@ -45,27 +52,160 @@ public class RetryPolicy
         return new RetryPolicy(0, new Duration(0, TimeUnit.MILLISECONDS), new Duration(0, TimeUnit.MILLISECONDS));
     }
 
-    public <T> T execute(String operationName, URI uri, Callable<T> operation)
+    public <T> T execute(
+            String operationName,
+            String method,
+            String idempotencyKey,
+            Function<UnexpectedResponseException, ApiException> responseExceptionFactory,
+            Callable<T> operation)
     {
+        requireNonNull(method, "method is null");
+        requireNonNull(responseExceptionFactory, "responseExceptionFactory is null");
+        requireNonNull(operation, "operation is null");
+
         RuntimeException lastException = null;
-        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+        int attempts = 0;
+        int retryAttempt = 0;
+        boolean transportRetryAllowed = isTransportRetryAllowed(method, idempotencyKey);
+        while (true) {
+            attempts++;
             try {
                 return operation.call();
             }
             catch (RuntimeException e) {
                 lastException = e;
-                if (attempt >= maxRetries || !isRetryable(e)) {
+                if (!transportRetryAllowed || retryAttempt >= maxRetries || !isRetryable(e)) {
                     break;
                 }
-                sleep(getDelay(e, attempt));
+                sleep(getDelay(e, retryAttempt));
+                retryAttempt++;
             }
             catch (Exception e) {
-                throw new ApiException("%s call failed for URI %s".formatted(operationName, uri), e);
+                throw new ApiException("%s call failed".formatted(operationName), e);
             }
         }
+        if (lastException instanceof UnexpectedResponseException unexpectedResponse) {
+            throw responseExceptionFactory.apply(unexpectedResponse);
+        }
         throw new ApiException(
-                "%s call failed for URI %s after %d attempts".formatted(operationName, uri, maxRetries + 1),
+                "%s call failed after %d attempts".formatted(operationName, attempts),
                 lastException);
+    }
+
+{{#hasBearerAuthMethods}}
+    public <T> T execute(
+            String operationName,
+            String method,
+            String idempotencyKey,
+            BearerTokenProvider tokenProvider,
+            Function<UnexpectedResponseException, ApiException> responseExceptionFactory,
+            Function<String, T> operation)
+    {
+        requireNonNull(method, "method is null");
+        requireNonNull(tokenProvider, "tokenProvider is null");
+        requireNonNull(responseExceptionFactory, "responseExceptionFactory is null");
+        requireNonNull(operation, "operation is null");
+
+        RuntimeException lastException = null;
+        int retryAttempt = 0;
+        int attempts = 0;
+        boolean authenticationRetried = false;
+        boolean transportRetryAllowed = isTransportRetryAllowed(method, idempotencyKey);
+        while (true) {
+            String bearerToken;
+            try {
+                bearerToken = requireNonNull(tokenProvider.getToken(), "bearer token is null");
+            }
+            catch (RuntimeException e) {
+                throw new ApiException("%s call failed".formatted(operationName), e);
+            }
+            attempts++;
+            try {
+                return operation.apply(bearerToken);
+            }
+            catch (RuntimeException e) {
+                lastException = e;
+                // a 401 with a Bearer challenge was rejected before the server processed the request, so replaying it
+                // once with a fresh token is safe for every method, including mutations without an idempotency key
+                if (!authenticationRetried && isBearerChallenge(e)) {
+                    try {
+                        if (tokenProvider.refreshToken(bearerToken)) {
+                            authenticationRetried = true;
+                            continue;
+                        }
+                    }
+                    catch (RuntimeException refreshException) {
+                        throw new ApiException("%s call failed".formatted(operationName), refreshException);
+                    }
+                }
+                if (!transportRetryAllowed || retryAttempt >= maxRetries || !isRetryable(e)) {
+                    break;
+                }
+                sleep(getDelay(e, retryAttempt));
+                retryAttempt++;
+            }
+        }
+        if (lastException instanceof UnexpectedResponseException unexpectedResponse) {
+            throw responseExceptionFactory.apply(unexpectedResponse);
+        }
+        throw new ApiException(
+                "%s call failed after %d attempts".formatted(operationName, attempts),
+                lastException);
+    }
+
+    private static boolean isBearerChallenge(RuntimeException e)
+    {
+        if (!(e instanceof UnexpectedResponseException response) || response.getStatusCode() != 401) {
+            return false;
+        }
+        return response.getHeaders(WWW_AUTHENTICATE).stream()
+                .anyMatch(RetryPolicy::containsBearerChallenge);
+    }
+
+    private static boolean containsBearerChallenge(String header)
+    {
+        int challengeStart = 0;
+        boolean quoted = false;
+        boolean escaped = false;
+        for (int index = 0; index <= header.length(); index++) {
+            if (index == header.length() && (quoted || escaped)) {
+                return false;
+            }
+            if (index == header.length() || (header.charAt(index) == ',' && !quoted)) {
+                String challenge = header.substring(challengeStart, index).strip();
+                if (challenge.equalsIgnoreCase("Bearer") ||
+                        (challenge.length() > "Bearer".length() &&
+                                challenge.regionMatches(true, 0, "Bearer", 0, "Bearer".length()) &&
+                                Character.isWhitespace(challenge.charAt("Bearer".length())) &&
+                                !challenge.substring("Bearer".length()).stripLeading().startsWith("="))) {
+                    return true;
+                }
+                challengeStart = index + 1;
+                continue;
+            }
+
+            char character = header.charAt(index);
+            if (escaped) {
+                escaped = false;
+            }
+            else if (quoted && character == '\\') {
+                escaped = true;
+            }
+            else if (character == '"') {
+                quoted = !quoted;
+            }
+        }
+        return false;
+    }
+{{/hasBearerAuthMethods}}
+
+    private static boolean isTransportRetryAllowed(String method, String idempotencyKey)
+    {
+        return switch (method) {
+            case "GET", "HEAD", "OPTIONS", "PUT", "DELETE" -> true;
+            case "POST", "PATCH" -> idempotencyKey != null && !idempotencyKey.isBlank();
+            default -> false;
+        };
     }
 
     static boolean isRetryable(RuntimeException e)
@@ -90,9 +230,9 @@ public class RetryPolicy
     long getDelay(RuntimeException e, int attempt)
     {
         if (e instanceof UnexpectedResponseException ure) {
-            long retryAfter = parseRetryAfterSeconds(ure);
-            if (retryAfter > 0) {
-                return Math.min(retryAfter * 1000, maxDelayMs);
+            Optional<Long> retryAfterMillis = ure.getRetryAfter(Instant.now()).map(java.time.Duration::toMillis).filter(millis -> millis > 0);
+            if (retryAfterMillis.isPresent()) {
+                return Math.min(retryAfterMillis.orElseThrow(), maxDelayMs);
             }
         }
         return calculateDelay(attempt);
@@ -104,20 +244,6 @@ public class RetryPolicy
         return Math.min(delay, maxDelayMs);
     }
 
-    private static long parseRetryAfterSeconds(UnexpectedResponseException e)
-    {
-        String value = e.getHeader(RETRY_AFTER);
-        if (value == null) {
-            return -1;
-        }
-        try {
-            return Long.parseLong(value.trim());
-        }
-        catch (NumberFormatException ignored) {
-            return -1;
-        }
-    }
-
     private static void sleep(long millis)
     {
         try {
@@ -125,7 +251,7 @@ public class RetryPolicy
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Retry interrupted", e);
+            throw new ApiException("Retry interrupted", e);
         }
     }
 }

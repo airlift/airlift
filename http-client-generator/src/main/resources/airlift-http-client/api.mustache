@@ -5,39 +5,65 @@ package {{package}};
 import {{import}};
 {{/imports}}
 import {{invokerPackage}}.ApiException;
+{{#x_has_auth}}
+{{#x_has_bearer_auth}}
+import io.airlift.http.client.BearerTokenProvider;
+{{/x_has_bearer_auth}}
+import io.airlift.http.client.HttpClientCredentials;
+{{/x_has_auth}}
 import {{invokerPackage}}.For{{clientName}};
 import {{invokerPackage}}.RetryPolicy;
 import {{invokerPackage}}.{{clientName}}ClientConfig;
 
 import com.google.inject.Inject;
+{{#x_uses_form_body}}
+import io.airlift.http.client.FormDataBodyBuilder;
+{{/x_uses_form_body}}
 import io.airlift.http.client.HttpClient;
 {{#x_uses_query_params}}
 import io.airlift.http.client.HttpUriBuilder;
 {{/x_uses_query_params}}
 import io.airlift.http.client.Request;
+{{#x_uses_server_sent_events}}
+import io.airlift.http.client.ServerSentEventStream;
+{{/x_uses_server_sent_events}}
+{{#x_uses_streaming_response}}
+import io.airlift.http.client.StreamingResponse;
+{{/x_uses_streaming_response}}
+{{#x_uses_json_codec}}
 import io.airlift.json.JsonCodec;
+{{/x_uses_json_codec}}
 
 import java.net.URI;
-{{#x_uses_list_codec}}
+{{#x_uses_list_type}}
 import java.util.List;
-{{/x_uses_list_codec}}
+{{/x_uses_list_type}}
 {{#x_uses_map_codec}}
 import java.util.Map;
 {{/x_uses_map_codec}}
 
-{{#x_has_bearer_auth}}
-import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
-{{/x_has_bearer_auth}}
+{{#x_uses_server_sent_events}}
+import static io.airlift.http.client.HeaderNames.ACCEPT;
+{{/x_uses_server_sent_events}}
 {{#x_uses_body}}
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 {{/x_uses_body}}
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-{{#x_uses_body}}
+{{#x_uses_streaming_response}}
+import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
+{{/x_uses_streaming_response}}
+{{#x_uses_server_sent_events}}
+import static io.airlift.http.client.ResponseHandlerUtils.isEventStreamContent;
+{{/x_uses_server_sent_events}}
+{{#x_uses_json_body}}
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
-{{/x_uses_body}}
-{{#x_uses_json_response}}
-import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
-{{/x_uses_json_response}}
+{{/x_uses_json_body}}
+{{#x_uses_safe_json_response}}
+import static io.airlift.http.client.JsonResponseHandler.createSafeJsonResponseHandler;
+{{/x_uses_safe_json_response}}
+{{#x_uses_successful_json_response}}
+import static io.airlift.http.client.JsonResponseHandler.createSuccessfulJsonResponseHandler;
+{{/x_uses_successful_json_response}}
 {{#x_uses_delete}}
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 {{/x_uses_delete}}
@@ -56,7 +82,12 @@ import static io.airlift.http.client.Request.Builder.preparePut;
 {{#x_uses_status_response}}
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 {{/x_uses_status_response}}
+{{#x_uses_successful_status_response}}
+import static io.airlift.http.client.StatusResponseHandler.createSuccessfulStatusResponseHandler;
+{{/x_uses_successful_status_response}}
+{{#x_uses_json_codec}}
 import static io.airlift.json.JsonCodec.jsonCodec;
+{{/x_uses_json_codec}}
 {{#x_uses_list_codec}}
 import static io.airlift.json.JsonCodec.listJsonCodec;
 {{/x_uses_list_codec}}
@@ -64,6 +95,9 @@ import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 {{/x_uses_map_codec}}
 import static java.util.Objects.requireNonNull;
+{{#x_uses_joined_array_params}}
+import static java.util.stream.Collectors.joining;
+{{/x_uses_joined_array_params}}
 
 {{#operations}}
 public class {{classname}}
@@ -71,36 +105,40 @@ public class {{classname}}
     private final HttpClient httpClient;
     private final URI baseUri;
 {{#x_has_auth}}
-    private final String apiKey;
+{{#x_has_bearer_auth}}
+    private static final BearerTokenProvider NO_BEARER_TOKEN = () -> "";
+{{/x_has_bearer_auth}}
+
+    private final HttpClientCredentials credentials;
 {{/x_has_auth}}
     private final RetryPolicy retryPolicy;
 
-{{#x_uses_body}}
+{{#x_uses_json_body}}
     private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
-{{/x_uses_body}}
+{{/x_uses_json_body}}
 {{#x_codecs}}
-    private static final JsonCodec<{{{type}}}> {{name}} = {{{init}}};
+    private static final JsonCodec<{{{type}}}> {{{name}}} = {{{init}}};
 {{/x_codecs}}
 
     @Inject
 {{#x_has_auth}}
     public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
     {
-        this(httpClient, config.getBaseUri(), config.getApiKey(),
+        this(httpClient, config.getBaseUri(), config.getCredentials(),
                 new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
     }
 
-    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey)
+    public {{classname}}(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials)
     {
-        this(httpClient, baseUri, apiKey, RetryPolicy.withDefaults());
+        this(httpClient, baseUri, credentials, RetryPolicy.withDefaults());
     }
 
-    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey, RetryPolicy retryPolicy)
+    public {{classname}}(HttpClient httpClient, URI baseUri, HttpClientCredentials credentials, RetryPolicy retryPolicy)
     {
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
         this.baseUri = requireNonNull(baseUri, "baseUri is null");
-        this.apiKey = requireNonNull(apiKey, "apiKey is null");
+        this.credentials = requireNonNull(credentials, "credentials is null");
         this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
     }
 {{/x_has_auth}}
@@ -145,59 +183,225 @@ public class {{classname}}
                         .replace("{{=<% %>=}}{<%baseName%>}<%={{ }}=%>", String.valueOf({{paramName}})){{/pathParams}});
 {{#queryParams}}
         if ({{paramName}} != null) {
-            uriBuilder.addParameter("{{baseName}}", String.valueOf({{paramName}}));
+{{#isArray}}
+{{#vendorExtensions.x_explode}}
+            {{paramName}}.forEach(value -> uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
+{{/vendorExtensions.x_explode}}
+{{^vendorExtensions.x_explode}}
+            uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+{{/vendorExtensions.x_explode}}
+{{/isArray}}
+{{^isArray}}
+            uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
+{{/isArray}}
         }
 {{/queryParams}}
         URI uri = uriBuilder.build();
 {{/hasQueryParams}}
 
-{{^vendorExtensions.x_has_body}}
-        Request request = {{vendorExtensions.x_prepare_method}}
-                .setUri(uri)
-{{#hasAuthMethods}}
-{{#authMethods}}
-{{#isBasicBearer}}
-                .setHeader(AUTHORIZATION, "Bearer " + apiKey)
-{{/isBasicBearer}}
-{{#isApiKey}}
-{{#isKeyInHeader}}
-                .setHeader("{{keyParamName}}", apiKey)
-{{/isKeyInHeader}}
-{{/isApiKey}}
-{{/authMethods}}
-{{/hasAuthMethods}}
-                .build();
-{{/vendorExtensions.x_has_body}}
-{{#vendorExtensions.x_has_body}}
-        Request request = {{vendorExtensions.x_prepare_method}}
-                .setUri(uri)
-{{#hasAuthMethods}}
-{{#authMethods}}
-{{#isBasicBearer}}
-                .setHeader(AUTHORIZATION, "Bearer " + apiKey)
-{{/isBasicBearer}}
-{{#isApiKey}}
-{{#isKeyInHeader}}
-                .setHeader("{{keyParamName}}", apiKey)
-{{/isKeyInHeader}}
-{{/isApiKey}}
-{{/authMethods}}
-{{/hasAuthMethods}}
-                .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
-                .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
-                .build();
-{{/vendorExtensions.x_has_body}}
+{{#vendorExtensions.x_has_auth_requirements}}
+        int authenticationAlternative;
+{{#vendorExtensions.x_has_bearer_auth}}
+        BearerTokenProvider authenticationBearerTokenProvider;
+{{/vendorExtensions.x_has_bearer_auth}}
+{{#vendorExtensions.x_auth_requirements}}
+{{#first}}
+        if ({{{condition}}}) {
+{{/first}}
+{{^first}}
+        else if ({{{condition}}}) {
+{{/first}}
+            authenticationAlternative = {{index}};
+{{#vendorExtensions.x_has_bearer_auth}}
+{{#hasBearer}}
+            authenticationBearerTokenProvider = credentials.bearerTokenProvider("{{{bearerSchemeName}}}");
+{{/hasBearer}}
+{{^hasBearer}}
+            authenticationBearerTokenProvider = NO_BEARER_TOKEN;
+{{/hasBearer}}
+{{/vendorExtensions.x_has_bearer_auth}}
+        }
+{{/vendorExtensions.x_auth_requirements}}
+        else {
+            throw new IllegalStateException("No configured credentials satisfy authentication for operation '{{operationId}}'");
+        }
 
 {{#vendorExtensions.x_returns_void}}
-        retryPolicy.execute("{{operationId}}", uri, () -> {
-            httpClient.execute(request, createStatusResponseHandler());
-            return null;
-        });
+        retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, {{#vendorExtensions.x_has_bearer_auth}}authenticationBearerTokenProvider, {{/vendorExtensions.x_has_bearer_auth}}exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, {{#vendorExtensions.x_has_bearer_auth}}bearerToken -> {{/vendorExtensions.x_has_bearer_auth}}{{^vendorExtensions.x_has_bearer_auth}}() -> {{/vendorExtensions.x_has_bearer_auth}}{
 {{/vendorExtensions.x_returns_void}}
 {{^vendorExtensions.x_returns_void}}
-        return retryPolicy.execute("{{operationId}}", uri, () ->
-                httpClient.execute(request, createJsonResponseHandler({{vendorExtensions.x_response_codec}})));
+        return retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, {{#vendorExtensions.x_has_bearer_auth}}authenticationBearerTokenProvider, {{/vendorExtensions.x_has_bearer_auth}}exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, {{#vendorExtensions.x_has_bearer_auth}}bearerToken -> {{/vendorExtensions.x_has_bearer_auth}}{{^vendorExtensions.x_has_bearer_auth}}() -> {{/vendorExtensions.x_has_bearer_auth}}{
 {{/vendorExtensions.x_returns_void}}
+{{/vendorExtensions.x_has_auth_requirements}}
+{{^vendorExtensions.x_has_auth_requirements}}
+{{#vendorExtensions.x_returns_void}}
+        retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, () -> {
+{{/vendorExtensions.x_returns_void}}
+{{^vendorExtensions.x_returns_void}}
+        return retryPolicy.execute("{{operationId}}", "{{vendorExtensions.x_http_method}}", {{vendorExtensions.x_idempotency_key}}, exception -> {
+            int statusCode = exception.getStatusCode();
+{{#vendorExtensions.x_error_responses}}
+            if ({{{condition}}}) {
+                return new ApiException("{{operationId}}", exception, {{codec}});
+            }
+{{/vendorExtensions.x_error_responses}}
+            return new ApiException("{{operationId}}", exception);
+        }, () -> {
+{{/vendorExtensions.x_returns_void}}
+{{/vendorExtensions.x_has_auth_requirements}}
+{{#vendorExtensions.x_has_form_body}}
+            FormDataBodyBuilder form = new FormDataBodyBuilder();
+{{#formParams}}
+{{#required}}
+{{#isArray}}
+            if (requireNonNull({{paramName}}, "{{paramName}} is null").isEmpty()) {
+                throw new IllegalArgumentException("{{paramName}} is empty");
+            }
+            {{paramName}}.forEach(value -> form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
+{{/isArray}}
+{{^isArray}}
+            form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(requireNonNull({{paramName}}, "{{paramName}} is null")));
+{{/isArray}}
+{{/required}}
+{{^required}}
+            if ({{paramName}} != null) {
+{{#isArray}}
+                {{paramName}}.forEach(value -> form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
+{{/isArray}}
+{{^isArray}}
+                form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
+{{/isArray}}
+            }
+{{/required}}
+{{/formParams}}
+{{/vendorExtensions.x_has_form_body}}
+            Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
+                    .setUri(uri){{#vendorExtensions.x_server_sent_events}}
+                    .setHeader(ACCEPT, "text/event-stream"){{/vendorExtensions.x_server_sent_events}};
+{{#headerParams}}
+            if ({{paramName}} != null) {
+{{#isArray}}
+                requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+{{/isArray}}
+{{^isArray}}
+                requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
+{{/isArray}}
+            }
+{{/headerParams}}
+{{#vendorExtensions.x_has_auth_requirements}}
+            switch (authenticationAlternative) {
+{{#vendorExtensions.x_auth_requirements}}
+                case {{index}} -> {
+{{#schemes}}
+{{#isBearer}}
+                    credentials.applyBearerToken("{{{name}}}", bearerToken, requestBuilder);
+{{/isBearer}}
+{{#isBasic}}
+                    credentials.applyBasicAuth("{{{name}}}", requestBuilder);
+{{/isBasic}}
+{{#isHeaderApiKey}}
+                    credentials.applyHeaderApiKey("{{{name}}}", "{{{headerName}}}", requestBuilder);
+{{/isHeaderApiKey}}
+{{/schemes}}
+                }
+{{/vendorExtensions.x_auth_requirements}}
+                default -> throw new IllegalStateException("Invalid authentication alternative for operation '{{operationId}}'");
+            }
+{{/vendorExtensions.x_has_auth_requirements}}
+{{^vendorExtensions.x_has_body}}
+            Request request = requestBuilder.build();
+{{/vendorExtensions.x_has_body}}
+{{#vendorExtensions.x_has_json_body}}
+            Request request = requestBuilder
+                    .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
+                    .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
+                    .build();
+{{/vendorExtensions.x_has_json_body}}
+{{#vendorExtensions.x_has_form_body}}
+            Request request = requestBuilder
+                    .setHeader(CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .setBodyGenerator(form.build())
+                    .build();
+{{/vendorExtensions.x_has_form_body}}
+
+{{#vendorExtensions.x_server_sent_events}}
+            StreamingResponse response = httpClient.executeStreaming(request);
+            int statusCode = response.getStatusCode();
+            if (!({{{vendorExtensions.x_success_response_condition}}})) {
+                try (response) {
+                    throw captureUnexpectedResponse("Unexpected response", request, response);
+                }
+            }
+            if (!isEventStreamContent(response)) {
+                try (response) {
+                    throw captureUnexpectedResponse("Unexpected content type", request, response);
+                }
+            }
+            try {
+                return new ServerSentEventStream<>(response, {{vendorExtensions.x_server_sent_event_codec}});
+            }
+            catch (RuntimeException e) {
+                try (response) {
+                    throw e;
+                }
+            }
+{{/vendorExtensions.x_server_sent_events}}
+{{#vendorExtensions.x_raw_response}}
+            StreamingResponse response = httpClient.executeStreaming(request);
+            int statusCode = response.getStatusCode();
+            if (!({{{vendorExtensions.x_success_response_condition}}})) {
+                try (response) {
+                    throw captureUnexpectedResponse("Unexpected response", request, response);
+                }
+            }
+            return response;
+{{/vendorExtensions.x_raw_response}}
+{{^vendorExtensions.x_raw_response}}
+{{^vendorExtensions.x_server_sent_events}}
+{{#vendorExtensions.x_returns_void}}
+{{#vendorExtensions.x_accepts_any_2xx}}
+            httpClient.execute(request, createSuccessfulStatusResponseHandler());
+{{/vendorExtensions.x_accepts_any_2xx}}
+{{^vendorExtensions.x_accepts_any_2xx}}
+            httpClient.execute(request, createStatusResponseHandler({{vendorExtensions.x_success_response_codes}}));
+{{/vendorExtensions.x_accepts_any_2xx}}
+            return null;
+{{/vendorExtensions.x_returns_void}}
+{{^vendorExtensions.x_returns_void}}
+{{#vendorExtensions.x_accepts_any_2xx}}
+            return httpClient.execute(request, createSuccessfulJsonResponseHandler({{vendorExtensions.x_response_codec}}));
+{{/vendorExtensions.x_accepts_any_2xx}}
+{{^vendorExtensions.x_accepts_any_2xx}}
+            return httpClient.execute(request, createSafeJsonResponseHandler({{vendorExtensions.x_response_codec}}, {{vendorExtensions.x_success_response_codes}}));
+{{/vendorExtensions.x_accepts_any_2xx}}
+{{/vendorExtensions.x_returns_void}}
+{{/vendorExtensions.x_server_sent_events}}
+{{/vendorExtensions.x_raw_response}}
+        });
     }
 
 {{/operation}}

@@ -1,0 +1,25 @@
+openapi: 3.0.1
+info:
+  title: Inline Enum API
+  version: 1.0.0
+paths:
+  /jobs:
+    get:
+      tags: [jobs]
+      operationId: getJob
+      responses:
+        '200':
+          description: Job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+components:
+  schemas:
+    Job:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [queued, running, done]

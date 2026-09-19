@@ -11,6 +11,7 @@ import io.airlift.api.openapi.models.OpenAPI;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -22,13 +23,23 @@ public interface OpenApiProvider
 
     static OpenApiProvider create(ModelServices modelServices, OpenApiMetadata metadata, ApiBuilderConfig config)
     {
+        return create(modelServices, metadata, Optional.empty(), config);
+    }
+
+    static OpenApiProvider create(ModelServices modelServices, OpenApiMetadata metadata, OpenApiSecurityMetadata securityMetadata, ApiBuilderConfig config)
+    {
+        return create(modelServices, metadata, Optional.of(securityMetadata), config);
+    }
+
+    private static OpenApiProvider create(ModelServices modelServices, OpenApiMetadata metadata, Optional<OpenApiSecurityMetadata> securityMetadata, ApiBuilderConfig config)
+    {
         ApiEnumValueResolver enumValueResolver = requireNonNull(config, "config is null").enumValueResolver();
 
         Map<ModelServiceType, List<ModelService>> servicesByType = modelServices.services().stream()
                 .collect(Collectors.groupingBy(modelService -> modelService.service().type()));
 
         return (serviceType, methodFilter) -> {
-            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, methodFilter, (_, _, operation) -> operation, enumValueResolver);
+            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, securityMetadata, methodFilter, (_, _, operation) -> operation, enumValueResolver);
             servicesByType.getOrDefault(serviceType, ImmutableList.of()).forEach(builder::addService);
             return builder.build();
         };

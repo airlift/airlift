@@ -1,0 +1,36 @@
+openapi: 3.0.1
+info:
+  title: Header Key
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - serviceKey: []
+paths:
+  /status:
+    get:
+      operationId: getStatus
+      tags:
+        - HeaderKey
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+components:
+  securitySchemes:
+    unusedBasic:
+      type: http
+      scheme: basic
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+  schemas:
+    Status:
+      type: object
+      properties:
+        state:
+          type: string
