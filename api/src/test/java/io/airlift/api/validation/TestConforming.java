@@ -124,6 +124,15 @@ public class TestConforming
     }
 
     @Test
+    public void testPolyResourceSubResourceCollections()
+    {
+        // sub-resource components are validated like any other resource component: collections of basics
+        // are allowed, and a read-only collection may hold element types a writable one may not
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithPolyCollections.class).build().modelServices();
+        assertThat(services.errors()).isEmpty();
+    }
+
+    @Test
     public void testDisallowedBothFieldMaskAndPatch()
     {
         ModelServices services = ApiBuilder.apiBuilder().add(ServicePatchWithPatchAndPatch.class).build().modelServices();

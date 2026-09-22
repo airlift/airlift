@@ -352,7 +352,11 @@ TODO why this?
                                 throw new ValidatorException("%s is a sub-resource of %s and has a component that is the same as the %s key: %s".formatted(subResource.type(), ApiPolyResource.class.getSimpleName(), ApiPolyResource.class.getSimpleName(), polyResource.key()));
                             }
                             if (component.resourceType() != BASIC) {
-                                internalValidate(context, service, Optional.of(component.name()), component, state, enumValueResolver);
+                                ResourceValidationState nextState = state.withOptions(ALLOW_BASIC_RESOURCES, ALLOW_POLY_RESOURCES);
+                                if (component.modifiers().contains(READ_ONLY)) {
+                                    nextState = nextState.withOptions(PARENT_IS_READ_ONLY);
+                                }
+                                internalValidate(context, service, Optional.of(component.name()), component, nextState, enumValueResolver);
                             }
                         }));
     }
