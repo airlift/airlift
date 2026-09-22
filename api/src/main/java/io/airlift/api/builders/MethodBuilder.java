@@ -382,7 +382,8 @@ public class MethodBuilder
                 .stream()
                 .map(externalParameter -> {
                     if (ApiHeader.class.isAssignableFrom(parameter.getType())) {
-                        externalParameter = externalParameter.withName(buildHeaderName(parameter.getName()));
+                        String headerName = apiParameter.name().isEmpty() ? buildHeaderName(parameter.getName()) : apiParameter.name();
+                        externalParameter = externalParameter.withName(headerName);
                     }
                     else if (externalParameter.name().isEmpty()) {
                         externalParameter = externalParameter.withName(parameter.getName());

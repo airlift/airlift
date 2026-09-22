@@ -75,7 +75,11 @@ class SpecialApiTypeValueParamProvider
             return containerRequest -> validate(parameter, buildOrderBy(containerRequest.getUriInfo()));
         }
         if (ApiHeader.class.isAssignableFrom(parameter.getRawType())) {
-            return containerRequest -> buildHeader(containerRequest, buildHeaderName(getParameterName(parameter, containerRequest)));
+            return containerRequest -> {
+                ApiParameter apiParameter = requireNonNull(parameter.getAnnotation(ApiParameter.class), "ApiParameter is missing");
+                String headerName = apiParameter.name().isEmpty() ? buildHeaderName(getParameterName(parameter, containerRequest)) : apiParameter.name();
+                return buildHeader(containerRequest, headerName);
+            };
         }
         if (ApiModifier.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> buildModifier(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
