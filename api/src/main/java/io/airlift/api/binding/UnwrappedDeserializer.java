@@ -20,15 +20,17 @@ import java.util.stream.Stream;
 class UnwrappedDeserializer
         extends JsonDeserializer<Object>
 {
-    private final Class<?> clazz;
+    private final RecordComponent[] recordComponents;
     private final Constructor<?> constructor;
 
     UnwrappedDeserializer(Class<?> clazz)
     {
-        this.clazz = clazz;
+        // record components are immutable for a class; cache them to avoid the defensive array copy
+        // that getRecordComponents() performs on every deserialize() call
+        this.recordComponents = clazz.getRecordComponents();
 
         // fail early check
-        constructor = getDefaultRecordConstructor(clazz);
+        constructor = getDefaultRecordConstructor(clazz, recordComponents);
     }
 
     @Override
@@ -37,7 +39,6 @@ class UnwrappedDeserializer
     {
         JsonNode tree = context.readTree(parser);
 
-        RecordComponent[] recordComponents = clazz.getRecordComponents();
         Object[] arguments = new Object[recordComponents.length];
 
         for (int i = 0; i < recordComponents.length; ++i) {
@@ -74,11 +75,10 @@ class UnwrappedDeserializer
         }
     }
 
-    private static Constructor<?> getDefaultRecordConstructor(Class<?> clazz)
+    private static Constructor<?> getDefaultRecordConstructor(Class<?> clazz, RecordComponent[] recordComponents)
     {
         final Constructor<?> constructor;
         try {
-            RecordComponent[] recordComponents = clazz.getRecordComponents();
             constructor = clazz.getConstructor(Stream.of(recordComponents).map(RecordComponent::getType).toArray(Class[]::new));
         }
         catch (NoSuchMethodException e) {
