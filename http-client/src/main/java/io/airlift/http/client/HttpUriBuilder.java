@@ -14,6 +14,9 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Streams.stream;
+import static java.lang.Character.isHighSurrogate;
+import static java.lang.Character.isLowSurrogate;
+import static java.lang.Character.isSurrogate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -261,14 +264,16 @@ public class HttpUriBuilder
 
     private static String encode(String input, boolean[] allowed)
     {
-        byte[] bytes = input.getBytes(UTF_8);
-        int encodedLength = encodedLength(bytes, allowed);
+        int encodedLength = encodedLength(input, allowed);
+        // Fast path: if nothing needs encoding, the input is already a valid encoding and can be
+        // returned as-is. This is by far the common case (internal service URIs are plain ASCII
+        // paths/params) and avoids allocating the UTF-8 byte[] entirely.
         if (encodedLength == input.length()) {
             return input;
         }
-        StringBuilder builder = new StringBuilder(encodedLength);
 
-        for (byte b : bytes) {
+        StringBuilder builder = new StringBuilder(encodedLength);
+        for (byte b : input.getBytes(UTF_8)) {
             // non-ASCII bytes are negative and always percent-encoded
             if (b >= 0 && allowed[b]) {
                 builder.append((char) b); // b is ASCII
@@ -283,16 +288,41 @@ public class HttpUriBuilder
         return builder.toString();
     }
 
-    private static int encodedLength(byte[] input, boolean[] allowed)
+    private static int encodedLength(String input, boolean[] allowed)
     {
-        int length = input.length;
-        for (byte b : input) {
-            if (b >= 0 && allowed[b]) {
-                continue;
+        // Compute the encoded length directly from the chars, without allocating the UTF-8 byte[].
+        // An allowed ASCII char stays as one char; anything else is percent-encoded as %XX (three
+        // chars) for each of its UTF-8 octets. A pure ASCII/allowed input therefore returns its own
+        // length, which the caller uses to detect the "nothing to encode" fast path.
+        int length = input.length();
+        int encodedLength = 0;
+        int index = 0;
+        while (index < length) {
+            char c = input.charAt(index);
+            if (c < 0x80) {
+                encodedLength += allowed[c] ? 1 : 3;
+                index++;
             }
-            length += 2; // two extra bytes per encoded octet
+            else if (c < 0x800) {
+                encodedLength += 2 * 3; // two UTF-8 octets, each percent-encoded
+                index++;
+            }
+            else if (isHighSurrogate(c) && index + 1 < length && isLowSurrogate(input.charAt(index + 1))) {
+                encodedLength += 4 * 3; // supplementary code point: four UTF-8 octets
+                index += 2;
+            }
+            else if (isSurrogate(c)) {
+                // Lone high or low surrogate: String.getBytes(UTF_8) substitutes a single '?' octet,
+                // emitted as one char if allowed, otherwise percent-encoded as %3F (three chars).
+                encodedLength += allowed['?'] ? 1 : 3;
+                index++;
+            }
+            else {
+                encodedLength += 3 * 3; // three UTF-8 octets
+                index++;
+            }
         }
-        return length;
+        return encodedLength;
     }
 
     /**
