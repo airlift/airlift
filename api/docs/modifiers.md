@@ -6,7 +6,9 @@ Request modifiers are boolean query parameters that can optionally modify a requ
 receive each request modifiers. The parameter name is used as the query parameter name that clients specify for the modifier.
 
 Request headers are string header parameters. An `ApiHeader` parameter is used to
-receive each request header. The parameter name is used as base for the header name of the form: `X-<uppercase-basename>`.
+receive each request header. By default the parameter name is used as base for the header name of the form: `X-<uppercase-basename>`.
+To receive a header under an exact name instead, such as a conventional `Idempotency-Key`, set `@ApiParameter(name = "...")`;
+the name must be a valid HTTP field name (an RFC 9110 token) and is only supported on `ApiHeader` parameters.
 
 The `ApiResponseHeaders` instance allows for setting any response header.
 
