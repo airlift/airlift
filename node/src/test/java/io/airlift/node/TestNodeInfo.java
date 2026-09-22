@@ -239,6 +239,36 @@ public class TestNodeInfo
         assertThat(nodeInfoIpv6.getInternalAddress()).isEqualTo(InetAddresses.toAddrString(otherIpv6));
     }
 
+    @Test
+    public void testInternalAddressOmitsScopeId()
+            throws UnknownHostException
+    {
+        // global IPv6 address carrying a scope/zone id (e.g. from NetworkInterface.getInetAddresses())
+        InetAddress scopedIpv6 = Inet6Address.getByAddress(
+                null,
+                Inet6Address.ofLiteral("2001:db8::5").getAddress(),
+                42);
+        assertThat(InetAddresses.toAddrString(scopedIpv6)).contains("%");
+
+        NodeAddresses networkAddresses = new NodeAddresses()
+        {
+            @Override
+            public List<InetAddress> getAddresses()
+            {
+                return ImmutableList.of(scopedIpv6);
+            }
+
+            @Override
+            public InetAddress getLocalHost()
+            {
+                return scopedIpv6;
+            }
+        };
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, true, networkAddresses);
+
+        assertThat(nodeInfo.getInternalAddress()).isEqualTo("2001:db8::5");
+    }
+
     private static void testInternalAddressDiscovery(boolean preferIpv6Address, InetAddress localHost, List<InetAddress> addresses, InetAddress expectedInternalAddress)
     {
         NodeAddresses networkAddresses = new NodeAddresses()
