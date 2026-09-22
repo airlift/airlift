@@ -4,6 +4,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.api.validation.ValidatorException;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -26,6 +27,30 @@ import static java.util.stream.Collectors.groupingBy;
 
 public record ApiPatch<RESOURCE>(Map<String, Function<Type, Object>> fields)
 {
+    // Record components and the canonical constructor are immutable per class. getRecordComponents()
+    // and getConstructor() are relatively expensive reflective calls (each returns a fresh copy), so
+    // cache them per class. ClassValue keeps the cache tied to the class loader lifecycle.
+    private static final ClassValue<RecordMeta> RECORD_META = new ClassValue<>()
+    {
+        @Override
+        protected RecordMeta computeValue(Class<?> type)
+        {
+            RecordComponent[] components = type.getRecordComponents();
+            Class<?>[] argumentTypes = new Class<?>[components.length];
+            for (int i = 0; i < components.length; ++i) {
+                argumentTypes[i] = components[i].getType();
+            }
+            try {
+                return new RecordMeta(components, type.getConstructor(argumentTypes));
+            }
+            catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    };
+
+    private record RecordMeta(RecordComponent[] components, Constructor<?> constructor) {}
+
     public ApiPatch
     {
         fields = ImmutableMap.copyOf(fields);
@@ -59,15 +84,13 @@ public record ApiPatch<RESOURCE>(Map<String, Function<Type, Object>> fields)
 
     private static Object buildRecord(Collection<String> fields, Map<String, ? extends Set<String>> secondLevels, Object originalValue, BiFunction<String, Type, Object> supplier)
     {
-        RecordComponent[] recordComponents = originalValue.getClass().getRecordComponents();
+        RecordMeta recordMeta = RECORD_META.get(originalValue.getClass());
+        RecordComponent[] recordComponents = recordMeta.components();
 
         Object[] arguments = new Object[recordComponents.length];
-        Class<?>[] argumentTypes = new Class<?>[recordComponents.length];
 
         for (int i = 0; i < recordComponents.length; ++i) {
             RecordComponent recordComponent = recordComponents[i];
-
-            argumentTypes[i] = recordComponent.getType();
 
             if (recordComponent.isAnnotationPresent(ApiUnwrapped.class)) {
                 try {
@@ -101,7 +124,7 @@ public record ApiPatch<RESOURCE>(Map<String, Function<Type, Object>> fields)
         }
 
         try {
-            return originalValue.getClass().getConstructor(argumentTypes).newInstance(arguments);
+            return recordMeta.constructor().newInstance(arguments);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
