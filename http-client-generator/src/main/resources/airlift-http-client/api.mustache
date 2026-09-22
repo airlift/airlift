@@ -18,9 +18,9 @@ import io.airlift.http.client.Request;
 import io.airlift.json.JsonCodec;
 
 import java.net.URI;
-{{#x_uses_list_codec}}
+{{#x_uses_list_type}}
 import java.util.List;
-{{/x_uses_list_codec}}
+{{/x_uses_list_type}}
 {{#x_uses_map_codec}}
 import java.util.Map;
 {{/x_uses_map_codec}}
@@ -64,6 +64,9 @@ import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 {{/x_uses_map_codec}}
 import static java.util.Objects.requireNonNull;
+{{#x_uses_joined_array_params}}
+import static java.util.stream.Collectors.joining;
+{{/x_uses_joined_array_params}}
 
 {{#operations}}
 public class {{classname}}
@@ -145,7 +148,17 @@ public class {{classname}}
                         .replace("{{=<% %>=}}{<%baseName%>}<%={{ }}=%>", String.valueOf({{paramName}})){{/pathParams}});
 {{#queryParams}}
         if ({{paramName}} != null) {
+{{#isArray}}
+{{#vendorExtensions.x_explode}}
+            {{paramName}}.forEach(value -> uriBuilder.addParameter("{{baseName}}", String.valueOf(value)));
+{{/vendorExtensions.x_explode}}
+{{^vendorExtensions.x_explode}}
+            uriBuilder.addParameter("{{baseName}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+{{/vendorExtensions.x_explode}}
+{{/isArray}}
+{{^isArray}}
             uriBuilder.addParameter("{{baseName}}", String.valueOf({{paramName}}));
+{{/isArray}}
         }
 {{/queryParams}}
         URI uri = uriBuilder.build();

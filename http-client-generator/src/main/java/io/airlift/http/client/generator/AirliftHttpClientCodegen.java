@@ -14,7 +14,9 @@
 package io.airlift.http.client.generator;
 
 import com.google.common.base.CaseFormat;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenSecurity;
 import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
@@ -28,13 +30,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.openapitools.codegen.utils.StringUtils.camelize;
 
 public class AirliftHttpClientCodegen
         extends JavaClientCodegen
 {
     public static final String GENERATOR_NAME = "airlift-http-client";
+
+    // whether an array parameter is sent one value per occurrence; recorded per parameter because openapi-generator keeps only an explicit flag
+    private static final String EXPLODE_EXTENSION = "x_explode";
 
     public AirliftHttpClientCodegen()
     {
@@ -132,6 +139,17 @@ public class AirliftHttpClientCodegen
     }
 
     @Override
+    public CodegenParameter fromParameter(Parameter parameter, Set<String> imports)
+    {
+        CodegenParameter codegenParameter = super.fromParameter(parameter, imports);
+        // form style parameters explode unless the contract says otherwise; openapi-generator records only an explicit flag
+        boolean formStyle = parameter.getStyle() == null || parameter.getStyle() == Parameter.StyleEnum.FORM;
+        boolean explode = parameter.getExplode() != null ? parameter.getExplode() : formStyle;
+        codegenParameter.vendorExtensions.put(EXPLODE_EXTENSION, explode);
+        return codegenParameter;
+    }
+
+    @Override
     public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels)
     {
         objs = super.postProcessOperationsWithModels(objs, allModels);
@@ -152,6 +170,8 @@ public class AirliftHttpClientCodegen
         boolean usesJsonResponse = false;
         boolean usesStatusResponse = false;
         boolean usesQueryParams = false;
+        boolean usesArrayParams = false;
+        boolean usesJoinedArrayParams = false;
         boolean hasAuth = false;
         boolean hasBearerAuth = false;
 
@@ -170,7 +190,14 @@ public class AirliftHttpClientCodegen
                 case "PUT" -> usesPut = true;
                 case "DELETE" -> usesDelete = true;
                 case "PATCH" -> usesPatch = true;
+                default -> throw new IllegalArgumentException("Operation '%s' uses unsupported HTTP method %s".formatted(operation.operationId, httpMethod));
             }
+
+            validateParameterSerialization(operation);
+            // the method signature declares every parameter, so any array parameter needs the List import
+            usesArrayParams |= operation.allParams.stream().anyMatch(parameter -> parameter.isArray);
+            usesJoinedArrayParams |= operation.queryParams.stream()
+                    .anyMatch(parameter -> parameter.isArray && !Boolean.TRUE.equals(parameter.vendorExtensions.get(EXPLODE_EXTENSION)));
 
             boolean hasBody = operation.bodyParam != null;
             operation.vendorExtensions.put("x_has_body", hasBody);
@@ -244,6 +271,8 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_json_response", usesJsonResponse);
         objs.put("x_uses_status_response", usesStatusResponse);
         objs.put("x_uses_query_params", usesQueryParams);
+        objs.put("x_uses_joined_array_params", usesJoinedArrayParams);
+        objs.put("x_uses_list_type", usesListCodec || usesArrayParams);
         objs.put("x_uses_list_codec", usesListCodec);
         objs.put("x_uses_map_codec", usesMapCodec);
         objs.put("x_has_auth", hasAuth);
@@ -289,5 +318,25 @@ public class AirliftHttpClientCodegen
             baseName = type;
         }
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, baseName) + "_CODEC";
+    }
+
+    private static void validateParameterSerialization(CodegenOperation operation)
+    {
+        checkArgument(operation.cookieParams.isEmpty(), "Operation '%s' uses unsupported cookie parameters", operation.operationId);
+        operation.pathParams.stream()
+                .filter(parameter -> parameter.isArray)
+                .forEach(parameter -> {
+                    throw new IllegalArgumentException("Path parameter '%s' in operation '%s' must not be an array".formatted(parameter.baseName, operation.operationId));
+                });
+        // arrays are sent one value per query parameter (form style, exploded) or comma-joined
+        // (form style, not exploded); other styles have no generated form
+        operation.queryParams.stream()
+                .filter(parameter -> parameter.isArray)
+                .forEach(parameter -> checkArgument(
+                        parameter.style == null || "form".equals(parameter.style),
+                        "Query parameter '%s' in operation '%s' uses unsupported array style '%s'",
+                        parameter.baseName,
+                        operation.operationId,
+                        parameter.style));
     }
 }

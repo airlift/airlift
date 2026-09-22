@@ -1,0 +1,17 @@
+openapi: 3.0.1
+info:
+  title: Cookie Parameter API
+  version: 1.0.0
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      parameters:
+        - name: session
+          in: cookie
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Success

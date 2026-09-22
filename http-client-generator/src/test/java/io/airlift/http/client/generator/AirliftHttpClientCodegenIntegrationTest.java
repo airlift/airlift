@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 class AirliftHttpClientCodegenIntegrationTest
@@ -336,6 +337,71 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(pomContent).contains("<version>999</version>");
         assertThat(pomContent).contains("<project.build.targetJdk>21</project.build.targetJdk>");
         assertThat(pomContent).contains("<dep.airlift.version>1.2.3</dep.airlift.version>");
+    }
+
+    @Test
+    void testGeneratesArrayQueryParameterSerialization(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("array-parameters.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/ItemsClient.java"));
+        // form style explodes by default, so filter and tags repeat the parameter while ids is comma-joined
+        assertThat(client).contains("filter.forEach(value -> uriBuilder.addParameter(\"filter\", String.valueOf(value)));");
+        assertThat(client).contains("tags.forEach(value -> uriBuilder.addParameter(\"tags\", String.valueOf(value)));");
+        assertThat(client).contains("uriBuilder.addParameter(\"ids\", ids.stream().map(String::valueOf).collect(joining(\",\")));");
+        assertThat(client).doesNotContain("String.valueOf(filter)", "String.valueOf(ids)", "String.valueOf(tags)");
+        // an array header parameter is part of the signature, so the List import must be present even without a list codec
+        assertThat(client).contains("List<String> xTrace").contains("import java.util.List;");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsUnsupportedArrayParameterStyle(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("unsupported-array-style.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Query parameter 'ids' in operation 'listItems' uses unsupported array style 'pipeDelimited'");
+    }
+
+    @Test
+    void testRejectsArrayPathParameters(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("path-array-parameter.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Path parameter 'ids' in operation 'getItems' must not be an array");
+    }
+
+    @Test
+    void testRejectsCookieParameters(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("cookie-parameter.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'status' uses unsupported cookie parameters");
+    }
+
+    @Test
+    void testRejectsUnsupportedHttpMethod(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("unsupported-method.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'statusHead' uses unsupported HTTP method HEAD");
+    }
+
+    private static void generate(String resourceName, Path outputPath)
+    {
+        String inputSpec = AirliftHttpClientCodegenIntegrationTest.class.getClassLoader().getResource(resourceName).getFile();
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec)
+                .setOutputDir(outputPath.toString());
+        new DefaultGenerator()
+                .opts(configurator.toClientOptInput())
+                .generate();
     }
 
     private List<File> collectJavaFiles(Path sourceDir)
