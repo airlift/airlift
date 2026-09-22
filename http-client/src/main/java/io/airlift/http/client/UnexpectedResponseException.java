@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.http.client.ResponseHandlerUtils.sanitizeUri;
 
 public class UnexpectedResponseException
         extends RuntimeException
@@ -51,7 +52,7 @@ public class UnexpectedResponseException
     public UnexpectedResponseException(String message, Request request, int statusCode, ListMultimap<HeaderName, String> headers)
     {
         super(message);
-        this.requestUri = request != null ? request.getUri() : null;
+        this.requestUri = request != null ? sanitizeUri(request.getUri()) : null;
         this.requestMethod = request != null ? request.getMethod() : null;
         this.statusCode = statusCode;
         this.headers = ImmutableListMultimap.copyOf(headers);
@@ -99,7 +100,6 @@ public class UnexpectedResponseException
                 .add("message", getLocalizedMessage())
                 .add("request", requestMethod + " " + requestUri)
                 .add("statusCode", statusCode)
-                .add("headers", headers)
                 .toString();
     }
 }
