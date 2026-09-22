@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
+import java.net.URI;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
@@ -58,8 +59,34 @@ public final class ResponseHandlerUtils
         };
     }
 
+    /**
+     * Returns {@code uri} without user info, query, or fragment, for messages and logs that must not expose credentials.
+     */
+    public static URI sanitizeUri(URI uri)
+    {
+        if (uri == null) {
+            return null;
+        }
+        StringBuilder sanitized = new StringBuilder();
+        if (uri.getScheme() != null) {
+            sanitized.append(uri.getScheme()).append(':');
+        }
+        if (uri.getRawAuthority() != null) {
+            String authority = uri.getRawAuthority();
+            int userInfoEnd = authority.lastIndexOf('@');
+            if (userInfoEnd >= 0) {
+                authority = authority.substring(userInfoEnd + 1);
+            }
+            sanitized.append("//").append(authority);
+        }
+        if (uri.getRawPath() != null) {
+            sanitized.append(uri.getRawPath());
+        }
+        return URI.create(sanitized.toString());
+    }
+
     private static String urlFor(Request request)
     {
-        return request.getUri().toASCIIString();
+        return sanitizeUri(request.getUri()).toASCIIString();
     }
 }

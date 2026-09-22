@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 
+import static io.airlift.http.client.ResponseHandlerUtils.sanitizeUri;
 import static java.util.Objects.requireNonNull;
 
 class JettyResponseListener<T, E extends Exception>
@@ -60,7 +61,7 @@ class JettyResponseListener<T, E extends Exception>
             return;
         }
         if (requestFailure != null) {
-            log.debug(requestFailure, "Suppressing request failure for fully-received response from %s", request.getURI());
+            log.debug(requestFailure, "Suppressing request failure for fully-received response from %s", sanitizeUri(request.getURI()));
         }
         deliver(response);
     }
@@ -71,7 +72,7 @@ class JettyResponseListener<T, E extends Exception>
             future.completed(response, stream);
         }
         catch (IOException e) {
-            future.failed(new UncheckedIOException("Failed communicating with server: " + request.getURI().toASCIIString(), e));
+            future.failed(new UncheckedIOException("Failed communicating with server: " + sanitizeUri(request.getURI()).toASCIIString(), e));
         }
     }
 }
