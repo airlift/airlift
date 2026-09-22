@@ -36,6 +36,7 @@ import static com.google.common.io.Resources.getResource;
 import static io.airlift.node.NodeConfig.AddressSource.FQDN;
 import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
+import static io.airlift.node.NodeConfig.AddressSource.IP_ENCODED_AS_HOSTNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -237,6 +238,41 @@ public class TestNodeInfo
         NodeInfo nodeInfoIpv6 = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, true, throwingNetworkAddresses);
 
         assertThat(nodeInfoIpv6.getInternalAddress()).isEqualTo(InetAddresses.toAddrString(otherIpv6));
+    }
+
+    @Test
+    public void testScopedIpv6AddressDiscovery()
+    {
+        InetAddress scopedIpv6 = Inet6Address.ofLiteral("2001:db8::5%1");
+        NodeAddresses networkAddresses = new NodeAddresses()
+        {
+            @Override
+            public List<InetAddress> getAddresses()
+            {
+                return ImmutableList.of(scopedIpv6);
+            }
+
+            @Override
+            public InetAddress getLocalHost()
+            {
+                return Inet4Address.ofLiteral("10.1.2.3");
+            }
+        };
+
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, true, networkAddresses);
+        assertThat(nodeInfo.getInternalAddress()).isEqualTo("2001:db8::5");
+
+        NodeInfo encodedNodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP_ENCODED_AS_HOSTNAME, null, null, true, networkAddresses);
+        assertThat(encodedNodeInfo.getInternalAddress()).isEqualTo("x2001-db8--5.ip");
+    }
+
+    @Test
+    public void testConfiguredScopedIpv6Address()
+    {
+        String internalAddress = "2001:db8::5%eth0";
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", internalAddress, null, null, null, null, null, IP, null, null, true);
+
+        assertThat(nodeInfo.getInternalAddress()).isEqualTo(internalAddress);
     }
 
     private static void testInternalAddressDiscovery(boolean preferIpv6Address, InetAddress localHost, List<InetAddress> addresses, InetAddress expectedInternalAddress)
