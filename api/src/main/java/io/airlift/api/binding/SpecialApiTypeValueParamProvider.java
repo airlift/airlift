@@ -21,13 +21,16 @@ import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiResponseHeaders;
 import io.airlift.api.ApiValidateOnly;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.model.Invocable;
 import org.glassfish.jersey.server.model.Parameter;
 import org.glassfish.jersey.server.spi.internal.ValueParamProvider;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -51,6 +54,10 @@ class SpecialApiTypeValueParamProvider
 {
     private final Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups;
     private final JsonMapper jsonMapper;
+    // The name of a Jersey Parameter is fixed for the life of the resource model, but resolving it
+    // requires the matched resource method that is only available per request. Resolve it once on the
+    // first request and reuse it thereafter, keyed on the (stable) Parameter instance.
+    private final Map<Parameter, String> parameterNameCache = new ConcurrentHashMap<>();
 
     @Inject
     SpecialApiTypeValueParamProvider(Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups, JsonMapper jsonMapper)
@@ -129,10 +136,23 @@ class SpecialApiTypeValueParamProvider
 
     private String getParameterName(Parameter jerseyParameter, ContainerRequest containerRequest)
     {
+        String cached = parameterNameCache.get(jerseyParameter);
+        if (cached != null) {
+            return cached;
+        }
+        String name = resolveParameterName(jerseyParameter, containerRequest);
+        parameterNameCache.put(jerseyParameter, name);
+        return name;
+    }
+
+    private static String resolveParameterName(Parameter jerseyParameter, ContainerRequest containerRequest)
+    {
+        Invocable invocable = containerRequest.getUriInfo().getMatchedResourceMethod().getInvocable();
+        List<Parameter> invocableParameters = invocable.getParameters();
         int index = -1;
-        for (int i = 0; i < containerRequest.getUriInfo().getMatchedResourceMethod().getInvocable().getParameters().size(); ++i) {
+        for (int i = 0; i < invocableParameters.size(); ++i) {
             // must do identity comparison - only way of correlating parameter
-            if (containerRequest.getUriInfo().getMatchedResourceMethod().getInvocable().getParameters().get(i) == jerseyParameter) {
+            if (invocableParameters.get(i) == jerseyParameter) {
                 index = i;
                 break;
             }
@@ -140,7 +160,7 @@ class SpecialApiTypeValueParamProvider
         if (index < 0) {
             throw new RuntimeException("Could not find matching parameter");
         }
-        java.lang.reflect.Parameter[] parameters = containerRequest.getUriInfo().getMatchedResourceMethod().getInvocable().getDefinitionMethod().getParameters();
+        java.lang.reflect.Parameter[] parameters = invocable.getDefinitionMethod().getParameters();
         if (index >= parameters.length) {
             throw new RuntimeException("Not enough method parameters");
         }
