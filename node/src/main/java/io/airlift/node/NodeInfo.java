@@ -46,6 +46,7 @@ import static com.google.common.base.Verify.verify;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
+import static io.airlift.node.AddressToHostname.stripScopeId;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
 
@@ -332,7 +333,7 @@ public class NodeInfo
     private String findInternalAddress(AddressSource addressSource, NodeAddresses networkAddresses)
     {
         return switch (addressSource) {
-            case IP -> InetAddresses.toAddrString(findInternalIp(networkAddresses));
+            case IP -> stripScopeId(InetAddresses.toAddrString(findInternalIp(networkAddresses)));
             case IP_ENCODED_AS_HOSTNAME -> encodeAddressAsHostname(findInternalIp(networkAddresses));
             case HOSTNAME -> getLocalHost(networkAddresses).getHostName();
             case FQDN -> getLocalHost(networkAddresses).getCanonicalHostName();

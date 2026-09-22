@@ -46,7 +46,7 @@ public final class AddressToHostname
     }
 
     // Strips scope ID added to toAddrString representation in https://github.com/google/guava/commit/3f61870ac6e5b18dbb74ce6f6cb2930ad8750a43
-    private static String stripScopeId(String address)
+    public static String stripScopeId(String address)
     {
         int index = address.indexOf('%');
         if (index == -1) {
