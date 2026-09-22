@@ -71,6 +71,7 @@ import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
+import static io.airlift.http.client.Request.Builder.prepareQuery;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerator;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -278,6 +279,33 @@ public abstract class AbstractHttpClientTest
             assertThat(server.servlet().getRequestHeaders(FOO_HEADER)).isEqualTo(ImmutableList.of("bar"));
             assertThat(server.servlet().getRequestHeaders(DUPE_HEADER)).isEqualTo(ImmutableList.of("first", "second"));
             assertThat(server.servlet().getRequestHeaders(X_CUSTOM_FILTER_HEADER)).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.statusCounts().count(200)).isEqualTo(1);
+        }
+    }
+
+    @Test
+    public void testQueryMethod()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            URI uri = server.baseURI().resolve("/road/to/nowhere");
+            byte[] body = {1, 2, 5};
+            Request request = prepareQuery()
+                    .setUri(uri)
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
+                    .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(body))
+                    .build();
+
+            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            assertThat(statusCode).isEqualTo(200);
+            assertThat(server.servlet().getRequestMethod()).isEqualTo("QUERY");
+            assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
+            assertThat(server.servlet().getRequestHeaders(FOO_HEADER)).isEqualTo(ImmutableList.of("bar"));
+            assertThat(server.servlet().getRequestHeaders(DUPE_HEADER)).isEqualTo(ImmutableList.of("first", "second"));
+            assertThat(server.servlet().getRequestHeaders(X_CUSTOM_FILTER_HEADER)).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestBytes()).isEqualTo(body);
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }

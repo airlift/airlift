@@ -239,6 +239,11 @@ public final class Request
             return new Builder().setMethod("OPTIONS");
         }
 
+        public static Builder prepareQuery()
+        {
+            return new Builder().setMethod("QUERY");
+        }
+
         public static Builder fromRequest(Request request)
         {
             Builder builder = new Builder()
