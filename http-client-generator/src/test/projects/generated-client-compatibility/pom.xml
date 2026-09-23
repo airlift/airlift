@@ -119,6 +119,9 @@
                             </serviceClasses>
                             <serviceTypeClass>io.airlift.openapi.client.compatibility.CompatibilityServiceType</serviceTypeClass>
                             <securityScheme>BEARER_ACCESS_TOKEN</securityScheme>
+                            <extensionFilterClasses>
+                                <extensionFilterClass>io.airlift.openapi.client.compatibility.IdempotencyKeyExtensionFilter</extensionFilterClass>
+                            </extensionFilterClasses>
                             <outputFile>${project.build.directory}/openapi.json</outputFile>
                             <prettyPrint>true</prettyPrint>
                         </configuration>

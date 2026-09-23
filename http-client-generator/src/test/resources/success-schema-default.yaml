@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Labels
+  version: 1.0.0
+paths:
+  /labels:
+    get:
+      operationId: listLabels
+      tags: [labels]
+      responses:
+        '200':
+          description: The labels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                default: [unlabeled]
+        default:
+          description: Any failure

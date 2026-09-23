@@ -85,7 +85,7 @@ class EndToEndIntegrationTest
         // Verify inline request building (no intermediary)
         assertThat(widgetsClientContent).contains("uriBuilderFrom(baseUri)");
         assertThat(widgetsClientContent).contains("httpClient.execute(");
-        assertThat(widgetsClientContent).contains("createJsonResponseHandler(");
+        assertThat(widgetsClientContent).contains("createSafeJsonResponseHandler(");
 
         // Verify retry-wrapped execution with RetryPolicy
         assertThat(widgetsClientContent).contains("retryPolicy.execute(");

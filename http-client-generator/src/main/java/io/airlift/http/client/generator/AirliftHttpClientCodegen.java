@@ -17,6 +17,7 @@ import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
+import org.openapitools.codegen.CodegenResponse;
 import org.openapitools.codegen.CodegenSecurity;
 import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
@@ -26,11 +27,13 @@ import org.openapitools.codegen.model.OperationMap;
 import org.openapitools.codegen.model.OperationsMap;
 
 import java.io.File;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.openapitools.codegen.utils.StringUtils.camelize;
@@ -38,10 +41,17 @@ import static org.openapitools.codegen.utils.StringUtils.camelize;
 public class AirliftHttpClientCodegen
         extends JavaClientCodegen
 {
+    private static final Pattern STATUS_CODE = Pattern.compile("\\d{3}");
+    private static final Pattern STATUS_CODE_RANGE = Pattern.compile("[1-5][Xx]{2}");
+
     public static final String GENERATOR_NAME = "airlift-http-client";
+    public static final String IDEMPOTENCY_EXTENSION = "idempotencyExtension";
+    private static final String DEFAULT_IDEMPOTENCY_EXTENSION = "x-airlift-idempotency";
 
     // whether an array parameter is sent one value per occurrence; recorded per parameter because openapi-generator keeps only an explicit flag
     private static final String EXPLODE_EXTENSION = "x_explode";
+
+    private String idempotencyExtension = DEFAULT_IDEMPOTENCY_EXTENSION;
 
     public AirliftHttpClientCodegen()
     {
@@ -117,6 +127,11 @@ public class AirliftHttpClientCodegen
             additionalProperties.put("invokerPackage", invokerPackage);
         }
 
+        if (additionalProperties.containsKey(IDEMPOTENCY_EXTENSION)) {
+            idempotencyExtension = String.valueOf(additionalProperties.get(IDEMPOTENCY_EXTENSION));
+            checkArgument(idempotencyExtension.startsWith("x-"), "%s must name an x- extension: %s", IDEMPOTENCY_EXTENSION, idempotencyExtension);
+        }
+
         String projectName = (String) additionalProperties.getOrDefault("projectName", "api");
 
         String clientName;
@@ -169,8 +184,10 @@ public class AirliftHttpClientCodegen
         boolean usesDelete = false;
         boolean usesPatch = false;
         boolean usesBody = false;
-        boolean usesJsonResponse = false;
+        boolean usesSafeJsonResponse = false;
+        boolean usesSuccessfulJsonResponse = false;
         boolean usesStatusResponse = false;
+        boolean usesSuccessfulStatusResponse = false;
         boolean usesQueryParams = false;
         boolean usesArrayParams = false;
         boolean usesJoinedArrayParams = false;
@@ -182,6 +199,14 @@ public class AirliftHttpClientCodegen
         for (CodegenOperation operation : ops) {
             String httpMethod = operation.httpMethod.toUpperCase(Locale.ENGLISH);
             operation.vendorExtensions.put("x_http_method", httpMethod);
+            List<String> successCodes = operation.responses.stream()
+                    .filter(AirliftHttpClientCodegen::isSuccessResponse)
+                    .map(response -> response.code)
+                    .toList();
+            List<String> explicitSuccessCodes = successCodes.stream().filter(code -> STATUS_CODE.matcher(code).matches()).toList();
+            boolean acceptsAny2xx = explicitSuccessCodes.isEmpty() || successCodes.stream().anyMatch(code -> STATUS_CODE_RANGE.matcher(code).matches());
+            operation.vendorExtensions.put("x_success_response_codes", String.join(", ", explicitSuccessCodes));
+            operation.vendorExtensions.put("x_accepts_any_2xx", acceptsAny2xx);
 
             String methodLower = httpMethod.toLowerCase(Locale.ENGLISH);
             String prepareMethod = "prepare" + Character.toUpperCase(methodLower.charAt(0)) + methodLower.substring(1) + "()";
@@ -211,10 +236,20 @@ public class AirliftHttpClientCodegen
             boolean returnsVoid = "void".equals(operation.returnType) || operation.returnType == null;
             operation.vendorExtensions.put("x_returns_void", returnsVoid);
             if (returnsVoid) {
-                usesStatusResponse = true;
+                if (acceptsAny2xx) {
+                    usesSuccessfulStatusResponse = true;
+                }
+                else {
+                    usesStatusResponse = true;
+                }
             }
             else {
-                usesJsonResponse = true;
+                if (acceptsAny2xx) {
+                    usesSuccessfulJsonResponse = true;
+                }
+                else {
+                    usesSafeJsonResponse = true;
+                }
             }
 
             if (operation.getHasQueryParams()) {
@@ -256,6 +291,17 @@ public class AirliftHttpClientCodegen
                 operation.vendorExtensions.put("x_request_codec", codecName);
                 codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(codecName, bodyType, null, null));
             }
+
+            List<Map<String, String>> errorResponses = operation.responses.stream()
+                    .filter(response -> !isSuccessResponse(response))
+                    .filter(response -> response.isDefault || STATUS_CODE.matcher(response.code).matches() || STATUS_CODE_RANGE.matcher(response.code).matches())
+                    .filter(response -> response.dataType != null || response.baseType != null)
+                    .sorted(Comparator.comparingInt(AirliftHttpClientCodegen::responseSpecificity))
+                    .map(response -> buildErrorResponse(response, codecs))
+                    .toList();
+            operation.vendorExtensions.put("x_error_responses", errorResponses);
+
+            configureIdempotency(operation);
         }
 
         // Check for list/map codecs
@@ -280,8 +326,10 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_delete", usesDelete);
         objs.put("x_uses_patch", usesPatch);
         objs.put("x_uses_body", usesBody);
-        objs.put("x_uses_json_response", usesJsonResponse);
+        objs.put("x_uses_safe_json_response", usesSafeJsonResponse);
+        objs.put("x_uses_successful_json_response", usesSuccessfulJsonResponse);
         objs.put("x_uses_status_response", usesStatusResponse);
+        objs.put("x_uses_successful_status_response", usesSuccessfulStatusResponse);
         objs.put("x_uses_query_params", usesQueryParams);
         objs.put("x_uses_joined_array_params", usesJoinedArrayParams);
         objs.put("x_uses_list_type", usesListCodec || usesArrayParams);
@@ -305,6 +353,67 @@ public class AirliftHttpClientCodegen
         }
 
         return objs;
+    }
+
+    private static boolean isSuccessResponse(CodegenResponse response)
+    {
+        return response.is2xx;
+    }
+
+    private static int responseSpecificity(CodegenResponse response)
+    {
+        if (STATUS_CODE.matcher(response.code).matches()) {
+            return 0;
+        }
+        if (STATUS_CODE_RANGE.matcher(response.code).matches()) {
+            return 1;
+        }
+        return 2;
+    }
+
+    private Map<String, String> buildErrorResponse(CodegenResponse response, Map<String, Map<String, String>> codecs)
+    {
+        String responseType = response.dataType != null ? response.dataType : response.baseType;
+        String codecName = toCodecName(responseType, response.containerType, response.baseType);
+        codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(codecName, responseType, response.containerType, response.baseType));
+        return Map.of(
+                "condition", response.isDefault ? "true" : responseCondition(response.code),
+                "codec", codecName);
+    }
+
+    private static String responseCondition(String responseCode)
+    {
+        if (STATUS_CODE.matcher(responseCode).matches()) {
+            return "statusCode == " + responseCode;
+        }
+        if (STATUS_CODE_RANGE.matcher(responseCode).matches()) {
+            int lowerBound = Character.digit(responseCode.charAt(0), 10) * 100;
+            return "statusCode >= %d && statusCode < %d".formatted(lowerBound, lowerBound + 100);
+        }
+        return "true";
+    }
+
+    private void configureIdempotency(CodegenOperation operation)
+    {
+        Object extension = operation.vendorExtensions.get(idempotencyExtension);
+        if (extension == null) {
+            operation.vendorExtensions.put("x_idempotency_key", "null");
+            return;
+        }
+        if (!(extension instanceof Map<?, ?> values) || !(values.get("header") instanceof String headerName) || headerName.isBlank()) {
+            throw new IllegalArgumentException("%s must contain a nonblank string header".formatted(idempotencyExtension));
+        }
+
+        CodegenParameter header = operation.headerParams.stream()
+                .filter(parameter -> headerName.equalsIgnoreCase(parameter.baseName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "%s header '%s' is not an operation header parameter".formatted(idempotencyExtension, headerName)));
+        if (!header.isString) {
+            throw new IllegalArgumentException(
+                    "%s header '%s' must be a string operation header parameter".formatted(idempotencyExtension, headerName));
+        }
+        operation.vendorExtensions.put("x_idempotency_key", header.paramName);
     }
 
     private Map<String, String> buildCodecEntry(String name, String type, String container, String baseType)

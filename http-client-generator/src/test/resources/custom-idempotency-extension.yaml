@@ -1,0 +1,19 @@
+openapi: 3.0.1
+info:
+  title: Custom idempotency extension
+  version: 1.0.0
+paths:
+  /jobs:
+    post:
+      tags: [jobs]
+      operationId: createJob
+      x-my-idempotency:
+        header: Idempotency-Key
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Created

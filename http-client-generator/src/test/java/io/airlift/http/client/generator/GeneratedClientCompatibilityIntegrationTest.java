@@ -75,7 +75,16 @@ class GeneratedClientCompatibilityIntegrationTest
                 .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, BearerTokenProvider bearerTokenProvider)")
                 .contains("import io.airlift.http.client.BearerTokenProvider;")
                 .contains(".setHeader(AUTHORIZATION, \"Bearer \" + bearerToken)")
-                .contains("retryPolicy.execute(\"getQueryFrame\", uri, bearerTokenProvider, bearerToken ->");
+                .contains("retryPolicy.execute(\"getQueryFrame\", \"GET\", null, bearerTokenProvider")
+                .contains("retryPolicy.execute(\"safeExecute\", \"POST\", idempotencyKey, bearerTokenProvider")
+                .contains("requestBuilder.setHeader(\"Idempotency-Key\", String.valueOf(idempotencyKey))")
+                .containsSubsequence(
+                        "if (statusCode == 409)",
+                        "return new ApiException(\"safeExecute\", exception, EXISTS_CODEC)")
+                .containsSubsequence(
+                        "if (statusCode == 409)",
+                        "return new ApiException(\"readFailure\", exception, COMPATIBILITY_CONFLICT_CODEC)")
+                .contains("createStatusResponseHandler(204)");
         assertThat(generatedSources.resolve("BearerTokenProvider.java")).doesNotExist();
 
         Path secondGeneratedSources = basedir.toPath().resolve("target/generated-sources/openapi-second/io/airlift/openapi/client/generated/second");

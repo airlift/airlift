@@ -1,0 +1,63 @@
+openapi: 3.0.1
+info:
+  title: Response ranges
+  version: 1.0.0
+paths:
+  /item:
+    get:
+      operationId: getItem
+      responses:
+        2XX:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '409':
+          description: Exact conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExactError'
+        4XX:
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+        default:
+          description: Other error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultError'
+  /item:refresh:
+    post:
+      operationId: refreshItem
+      responses:
+        2XX:
+          description: Successful response
+components:
+  schemas:
+    Item:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+    ExactError:
+      type: object
+      properties:
+        message:
+          type: string
+    ClientError:
+      type: object
+      properties:
+        message:
+          type: string
+    DefaultError:
+      type: object
+      properties:
+        message:
+          type: string

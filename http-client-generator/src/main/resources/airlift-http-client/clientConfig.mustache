@@ -2,6 +2,9 @@
 package {{invokerPackage}};
 
 import io.airlift.configuration.Config;
+{{#hasAuthMethods}}
+import io.airlift.configuration.ConfigSecuritySensitive;
+{{/hasAuthMethods}}
 import io.airlift.units.Duration;
 import jakarta.validation.constraints.NotNull;
 
@@ -39,6 +42,7 @@ public class {{clientName}}ClientConfig
     }
 
     @Config("{{clientNameLower}}.api-key")
+    @ConfigSecuritySensitive
     public {{clientName}}ClientConfig setApiKey(String apiKey)
     {
         this.apiKey = apiKey;
