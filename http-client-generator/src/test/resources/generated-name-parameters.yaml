@@ -1,0 +1,46 @@
+openapi: 3.0.1
+info:
+  title: Generated Name Parameters API
+  version: 1.0.0
+security:
+  - serviceToken: []
+paths:
+  /records:
+    post:
+      tags: [records]
+      operationId: createRecord
+      parameters:
+        - name: value
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: request
+          in: query
+          schema:
+            type: string
+        - name: bearerToken
+          in: header
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [form]
+              properties:
+                form:
+                  type: string
+                credentials:
+                  type: string
+      responses:
+        '204':
+          description: Created
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer

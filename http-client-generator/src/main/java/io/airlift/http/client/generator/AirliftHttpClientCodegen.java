@@ -23,6 +23,8 @@ import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.openapitools.codegen.CodegenDiscriminator;
+import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenResponse;
@@ -30,6 +32,7 @@ import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.languages.JavaClientCodegen;
 import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.ModelsMap;
 import org.openapitools.codegen.model.OperationMap;
 import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.utils.ModelUtils;
@@ -46,6 +49,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -60,6 +64,25 @@ public class AirliftHttpClientCodegen
     private static final Pattern STATUS_CODE = Pattern.compile("\\d{3}");
     private static final Pattern STATUS_CODE_RANGE = Pattern.compile("[1-5][Xx]{2}");
     private static final Pattern SUCCESS_STATUS_CODE = Pattern.compile("2\\d{2}|2[Xx]{2}");
+    // fields, locals, and lambda parameters of a generated operation method, which a parameter must not redeclare or shadow
+    private static final Set<String> GENERATED_METHOD_NAMES = Set.of(
+            "authenticationAlternative",
+            "authenticationBearerTokenProvider",
+            "baseUri",
+            "bearerToken",
+            "credentials",
+            "e",
+            "exception",
+            "form",
+            "httpClient",
+            "request",
+            "requestBuilder",
+            "response",
+            "retryPolicy",
+            "statusCode",
+            "uri",
+            "uriBuilder",
+            "value");
 
     public static final String GENERATOR_NAME = "airlift-http-client";
     public static final String IDEMPOTENCY_EXTENSION = "idempotencyExtension";
@@ -131,6 +154,13 @@ public class AirliftHttpClientCodegen
             return "DefaultClient";
         }
         return camelize(name) + "Client";
+    }
+
+    @Override
+    public String toParamName(String name)
+    {
+        String paramName = super.toParamName(name);
+        return GENERATED_METHOD_NAMES.contains(paramName) ? paramName + "Parameter" : paramName;
     }
 
     @Override
@@ -246,6 +276,31 @@ public class AirliftHttpClientCodegen
     }
 
     @Override
+    public Map<String, ModelsMap> postProcessAllModels(Map<String, ModelsMap> objs)
+    {
+        objs = super.postProcessAllModels(objs);
+        // JSON wire names go into Java string literals; Mustache would HTML-escape them otherwise
+        for (ModelsMap modelsMap : objs.values()) {
+            for (ModelMap modelMap : modelsMap.getModels()) {
+                CodegenModel model = modelMap.getModel();
+                model.vars.forEach(property -> property.vendorExtensions.put("x_java_base_name", javaString(property.baseName)));
+                if (model.discriminator != null) {
+                    model.vendorExtensions.put("x_java_discriminator_property", javaString(model.discriminator.getPropertyBaseName()));
+                    List<Map<String, String>> mappedModels = new ArrayList<>();
+                    Set<CodegenDiscriminator.MappedModel> discriminatorModels = model.discriminator.getMappedModels();
+                    for (CodegenDiscriminator.MappedModel mappedModel : discriminatorModels == null ? Set.<CodegenDiscriminator.MappedModel>of() : discriminatorModels) {
+                        mappedModels.add(Map.of(
+                                "modelName", mappedModel.getModelName(),
+                                "mappingName", javaString(mappedModel.getMappingName())));
+                    }
+                    model.vendorExtensions.put("x_java_mapped_models", List.copyOf(mappedModels));
+                }
+            }
+        }
+        return objs;
+    }
+
+    @Override
     public CodegenParameter fromParameter(Parameter parameter, Set<String> imports)
     {
         CodegenParameter codegenParameter = super.fromParameter(parameter, imports);
@@ -334,6 +389,11 @@ public class AirliftHttpClientCodegen
             }
 
             validateParameterSerialization(operation);
+            // wire names go into Java string literals; Mustache would HTML-escape them otherwise
+            // (openapi-generator copies parameters into each per-location list, so mark every list)
+            Stream.of(operation.allParams, operation.pathParams, operation.queryParams, operation.headerParams, operation.formParams)
+                    .flatMap(List::stream)
+                    .forEach(parameter -> parameter.vendorExtensions.put("x_java_base_name", javaString(parameter.baseName)));
             // the method signature declares every parameter, so any array parameter needs the List import
             usesListType |= operation.allParams.stream().anyMatch(parameter -> parameter.isArray);
             usesJoinedArrayParams |= operation.queryParams.stream()

@@ -1,0 +1,25 @@
+openapi: 3.0.1
+info:
+  title: Ampersand Authentication API
+  version: 1.0.0
+security:
+  - serviceKey: []
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      parameters:
+        - name: X-Trace&Id
+          in: header
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service&Key

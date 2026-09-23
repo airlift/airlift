@@ -1,0 +1,43 @@
+openapi: 3.0.1
+info:
+  title: Ampersand Model API
+  version: 1.0.0
+paths:
+  /shape:
+    get:
+      tags: [shapes]
+      operationId: getShape
+      responses:
+        '200':
+          description: Shape
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shape'
+components:
+  schemas:
+    Shape:
+      oneOf:
+        - $ref: '#/components/schemas/Circle'
+        - $ref: '#/components/schemas/Square'
+      discriminator:
+        propertyName: kind&type
+        mapping:
+          round&: '#/components/schemas/Circle'
+          square: '#/components/schemas/Square'
+    Circle:
+      type: object
+      required: [kind&type]
+      properties:
+        kind&type:
+          type: string
+        radius&size:
+          type: number
+    Square:
+      type: object
+      required: [kind&type]
+      properties:
+        kind&type:
+          type: string
+        side:
+          type: number

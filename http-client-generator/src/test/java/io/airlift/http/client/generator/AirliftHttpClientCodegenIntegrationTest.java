@@ -592,6 +592,50 @@ class AirliftHttpClientCodegenIntegrationTest
     }
 
     @Test
+    void testWireNamesAreNotHtmlEscaped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("ampersand-authentication.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java"));
+        assertThat(client).contains("requestBuilder.setHeader(\"X-Trace&Id\", ");
+        assertThat(client).contains("credentials.applyServiceKey(requestBuilder)");
+        assertThat(client).doesNotContain("&amp;");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiCredentials.java")))
+                .contains(".setHeader(\"X-Service&Key\", ")
+                .doesNotContain("&amp;");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testParametersNamedLikeGeneratedLocalsCompile(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("generated-name-parameters.yaml", outputPath);
+
+        // the Java names change so the generated method compiles; the wire names do not
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/RecordsClient.java"));
+        assertThat(client).contains("public void createRecord(String formParameter, List<String> valueParameter, String requestParameter, String bearerTokenParameter, String credentialsParameter)");
+        assertThat(client).contains("uriBuilder.addParameter(\"value\", String.valueOf(value))");
+        assertThat(client).contains("uriBuilder.addParameter(\"request\", String.valueOf(requestParameter))");
+        assertThat(client).contains("requestBuilder.setHeader(\"bearerToken\", String.valueOf(bearerTokenParameter))");
+        assertThat(client).contains("form.addField(\"form\", String.valueOf(requireNonNull(formParameter, \"formParameter is null\")))");
+        assertThat(client).contains("form.addField(\"credentials\", String.valueOf(credentialsParameter))");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testInlineEnumPropertyCompiles(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("inline-enum-model.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Job.java")))
+                .contains("public enum StateEnum");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
     void testRejectsCollidingAuthenticationHeaders(@TempDir Path outputPath)
     {
         assertThatThrownBy(() -> generate("colliding-authentication-headers.yaml", outputPath))
@@ -617,6 +661,22 @@ class AirliftHttpClientCodegenIntegrationTest
 
         assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java")))
                 .contains("public ServerSentEventStream<Event> streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testModelWireNamesAreNotHtmlEscaped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("ampersand-model.yaml", outputPath);
+
+        String shape = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Shape.java"));
+        assertThat(shape).contains("property = \"kind&type\"");
+        assertThat(shape).contains("name = \"round&\"");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Circle.java")))
+                .contains("@JsonProperty(\"kind&type\")")
+                .contains("@JsonProperty(\"radius&size\")");
+        assertThat(shape).doesNotContain("&amp;");
         verifyGeneratedCodeCompiles(outputPath);
     }
 

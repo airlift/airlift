@@ -117,7 +117,7 @@ public class {{clientName}}ClientConfig
 {{/isBearer}}
 {{#isBasic}}
         if (({{propertyName}}Username == null) != ({{propertyName}}Password == null)) {
-            throw new IllegalStateException("Both username and password must be configured for security scheme '{{name}}'");
+            throw new IllegalStateException("Both username and password must be configured for security scheme '{{{name}}}'");
         }
         if ({{propertyName}}Username != null) {
             builder.with{{methodName}}({{propertyName}}Username, {{propertyName}}Password);
