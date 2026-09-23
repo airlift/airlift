@@ -14,7 +14,7 @@ The generated clients aim to match the structure and style of Trino's handwritte
 - **Retry with exponential backoff** — generated calls use a `RetryPolicy`, but transport retries are limited to safe/idempotent operations: `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`, plus `POST` or `PATCH` with a nonblank idempotency key. Non-retryable errors fail immediately.
 - **Error classification** — distinguishes retryable errors (network exceptions like `SocketException`, `SocketTimeoutException`, `ConnectException`, and HTTP status codes 429, 502, 503, 504) from non-retryable errors that fail fast.
 - **Retry-After header support** — when a server returns a `Retry-After` header (common with 429 Too Many Requests), the retry delay uses the server-suggested value instead of exponential backoff.
-- **Bearer token authentication** — when the OpenAPI spec defines a `bearerAuth` security scheme, the generated client adds `Authorization: Bearer` headers, stores the API key as a field, and exposes it through the config class.
+- **Typed authentication credentials** — generated clients hold a generated `{ClientName}Credentials` with one builder method per security scheme, select a satisfiable OpenAPI security alternative, and apply bearer, Basic, or header API-key credentials. Bearer tokens are resolved from their provider for each attempt.
 - **Guice integration** — generates a `Module`, `Config`, and `@BindingAnnotation` annotation following Airlift's dependency injection patterns.
 - **Java records for models** — generates immutable record types with `@JsonProperty` annotations.
 - **Minimal imports** — only imports the specific static methods and types actually used by the generated code.
@@ -151,7 +151,8 @@ For a project named `petstore` with a tag `pets`, the generator produces:
 | `api/PetsClient.java` | HTTP client class with typed methods for each operation |
 | `model/*.java` | Java records for request/response schemas |
 | `PetstoreClientModule.java` | Guice module that binds the HTTP client, config, and client classes |
-| `PetstoreClientConfig.java` | Airlift `@Config` class with `baseUri`, retry settings (and `apiKey` when auth is present) |
+| `PetstoreClientConfig.java` | Airlift `@Config` class with `baseUri`, retry settings, and configured credentials when authentication is present |
+| `PetstoreCredentials.java` | Credentials with one builder method per security scheme, generated when an operation requires authentication |
 | `ForPetstore.java` | Guice `@BindingAnnotation` for the HTTP client |
 | `RetryPolicy.java` | Retry with exponential backoff, error classification, and Retry-After support |
 | `ApiException.java` | Structured failure carrying the operation, request method and URI, status, headers, bounded response body, and decoded error model |
@@ -271,10 +272,11 @@ security:
   - bearerAuth: []
 ```
 
-When present, the generated code:
-- Adds `private final String apiKey` to the client class
-- Adds `.setHeader(AUTHORIZATION, "Bearer " + apiKey)` to authenticated requests
-- Adds `getApiKey()` / `setApiKey()` to the config class with `@Config("projectname.api-key")`
+Basic authentication (`type: http`, `scheme: basic`) is supported alongside bearer and header API-key schemes. When present, the generated code:
+
+- Generates `{ClientName}Credentials`, with a builder method named after each scheme (`withBearerAuth(...)`), and selects a configured security alternative for each operation.
+- Resolves bearer tokens through `BearerTokenProvider` for each attempt.
+- Exposes a configuration setter for each supported scheme, named after the scheme.
 
 API key authentication in headers is also supported:
 
@@ -287,4 +289,18 @@ components:
       name: X-API-Key
 ```
 
-This generates `.setHeader("X-API-Key", apiKey)` on authenticated requests.
+This adds a `withApiKey(String)` credential that is sent in the declared header.
+
+#### Credential Configuration
+
+| Scheme | Properties |
+|--------|------------|
+| Bearer | `{prefix}.{scheme}.token` |
+| Basic | `{prefix}.{scheme}.username` and `{prefix}.{scheme}.password`, configured together |
+| Header API key | `{prefix}.{scheme}.api-key` |
+
+`{scheme}` is the hyphenated scheme name (`serviceBearer` becomes `service-bearer`). Every credential is optional; the client selects a security alternative that the configured credentials satisfy and fails with `IllegalStateException` when none does. Only schemes referenced by some security requirement shape the generated client and configuration.
+
+#### Bearer Token Refresh
+
+Bearer tokens come from a `BearerTokenProvider`. When a request fails with `401` carrying a `WWW-Authenticate: Bearer` challenge, the client asks the provider to refresh the rejected token once and repeats the request with the new token. Refresh has its own one-attempt budget and does not consume transport retries.

@@ -65,18 +65,22 @@ class GeneratedClientCompatibilityIntegrationTest
                 .containsOnlyOnce("\"name\" : \"Compatibility Service\"")
                 .contains("\"type\" : \"http\"")
                 .contains("\"scheme\" : \"bearer\"")
+                .contains("\"serviceBasic\"")
+                .contains("\"serviceKey\"")
+                .contains("\"serviceOAuth\"")
+                .contains("\"tokenUrl\" : \"/oauth/token\"")
+                .contains("\"x-airlift-token-endpoint-authentication-method\" : \"client_secret_basic\"")
                 .contains("\"discriminator\"")
                 // a described enum property wraps its reference in allOf for a 3.0 contract so the description survives
                 .containsSubsequence("\"defaultKind\"", "\"description\" : \"Default frame kind\"", "\"allOf\"", "\"$ref\" : \"#/components/schemas/FrameKind\"");
 
         Path generatedSources = basedir.toPath().resolve("target/generated-sources/openapi/io/airlift/openapi/client/generated");
         assertThat(Files.readString(generatedSources.resolve("api/CompatibilityServiceClient.java")))
-                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, String apiKey)")
-                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, BearerTokenProvider bearerTokenProvider)")
-                .contains("import io.airlift.http.client.BearerTokenProvider;")
-                .contains(".setHeader(AUTHORIZATION, \"Bearer \" + bearerToken)")
-                .contains("retryPolicy.execute(\"getQueryFrame\", \"GET\", null, bearerTokenProvider")
-                .contains("retryPolicy.execute(\"safeExecute\", \"POST\", idempotencyKey, bearerTokenProvider")
+                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, ApiCredentials credentials)")
+                .doesNotContain("URI baseUri, String apiKey)", "URI baseUri, BearerTokenProvider bearerTokenProvider)")
+                .contains("requestBuilder.setHeader(AUTHORIZATION, \"Bearer \" + requireNonNull(bearerToken, \"bearerToken is null\"))")
+                .contains("retryPolicy.execute(\"getQueryFrame\", \"GET\", null, authenticationBearerTokenProvider")
+                .contains("retryPolicy.execute(\"safeExecute\", \"POST\", idempotencyKey, authenticationBearerTokenProvider")
                 .contains("requestBuilder.setHeader(\"Idempotency-Key\", String.valueOf(idempotencyKey))")
                 .containsSubsequence(
                         "if (statusCode == 409)",
@@ -90,8 +94,17 @@ class GeneratedClientCompatibilityIntegrationTest
         Path secondGeneratedSources = basedir.toPath().resolve("target/generated-sources/openapi-second/io/airlift/openapi/client/generated/second");
         assertThat(Files.readString(secondGeneratedSources.resolve("api/CompatibilityServiceClient.java")))
                 .contains("import io.airlift.http.client.BearerTokenProvider;")
-                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, BearerTokenProvider bearerTokenProvider)");
+                .contains("public CompatibilityServiceClient(HttpClient httpClient, URI baseUri, ApiCredentials credentials)");
         assertThat(secondGeneratedSources.resolve("BearerTokenProvider.java")).doesNotExist();
+        assertThat(Files.readString(generatedSources.resolve("api/NamedAuthenticationServiceClient.java")))
+                .containsSubsequence(
+                        "if (credentials.hasServiceBasic() && credentials.hasServiceKey())",
+                        "else if (credentials.hasServiceBearer())")
+                .contains("credentials.applyServiceBasic(requestBuilder)")
+                .contains("credentials.applyServiceKey(requestBuilder)")
+                .contains("requestBuilder.setHeader(AUTHORIZATION, \"Bearer \" + requireNonNull(bearerToken, \"bearerToken is null\"))")
+                .contains("credentials.getServiceOAuthTokenProvider()")
+                .doesNotContain("if (true)");
         assertThat(Files.readString(generatedSources.resolve("model/QueryFrame.java")))
                 .contains("@JsonTypeInfo")
                 .contains("@JsonSubTypes.Type(value = TextFrame.class, name = \"textFrame\")")
@@ -99,5 +112,11 @@ class GeneratedClientCompatibilityIntegrationTest
         assertThat(Files.readString(generatedSources.resolve("model/TextFrame.java")))
                 .contains("implements QueryFrame")
                 .contains("public enum FrameTypeEnum");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.securityScheme=BEARER_ACCESS_TOKEN")
+                .execute("clean", "process-classes")
+                .assertLogText("Legacy securityScheme and named securitySchemes/defaultSecurityRequirements cannot both be configured")
+                .assertNoLogText("BUILD SUCCESS");
     }
 }

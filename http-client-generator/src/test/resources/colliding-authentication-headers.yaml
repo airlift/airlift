@@ -1,0 +1,24 @@
+openapi: 3.0.1
+info:
+  title: Colliding Authentication Headers API
+  version: 1.0.0
+security:
+  - serviceBasic: []
+    legacyKey: []
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceBasic:
+      type: http
+      scheme: basic
+    legacyKey:
+      type: apiKey
+      in: header
+      name: authorization

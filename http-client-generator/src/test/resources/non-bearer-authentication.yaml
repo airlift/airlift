@@ -1,0 +1,24 @@
+openapi: 3.0.1
+info:
+  title: Non-Bearer Authentication API
+  version: 1.0.0
+security:
+  - serviceBasic: []
+    serviceKey: []
+paths:
+  /status:
+    get:
+      tags: [non-bearer]
+      operationId: status
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceBasic:
+      type: http
+      scheme: basic
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
