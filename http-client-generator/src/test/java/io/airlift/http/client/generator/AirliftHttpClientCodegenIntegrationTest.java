@@ -182,7 +182,7 @@ class AirliftHttpClientCodegenIntegrationTest
         String pomContent = Files.readString(pomFile);
         assertThat(pomContent).contains("<artifactId>airbase</artifactId>");
         assertThat(pomContent).contains("<artifactId>bom</artifactId>");
-        assertThat(pomContent).doesNotContain("<artifactId>guava</artifactId>");
+        assertThat(pomContent).contains("<artifactId>guava</artifactId>");
 
         // Verify generated code compiles
         verifyGeneratedCodeCompiles(outputPath);
@@ -219,15 +219,24 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).contains("public class OpenAiClient");
         assertThat(clientContent).contains("private final HttpClient httpClient");
         assertThat(clientContent).contains("private final URI baseUri");
-        assertThat(clientContent).contains("private final String apiKey");
+        assertThat(clientContent).contains("private final BearerTokenProvider bearerTokenProvider");
+        assertThat(clientContent).doesNotContain("private final String apiKey");
 
         // Bearer auth: Authorization header
         assertThat(clientContent).contains("import static io.airlift.http.client.HeaderNames.AUTHORIZATION;");
-        assertThat(clientContent).contains(".setHeader(AUTHORIZATION, \"Bearer \" + apiKey)");
+        assertThat(clientContent).contains(".setHeader(AUTHORIZATION, \"Bearer \" + bearerToken)");
 
-        // Constructor takes apiKey from config
+        // Existing string constructor remains and dynamic providers are supported
         assertThat(clientContent).contains("config.getApiKey()");
-        assertThat(clientContent).contains("requireNonNull(apiKey, \"apiKey is null\")");
+        assertThat(clientContent).contains("import io.airlift.http.client.BearerTokenProvider;");
+        assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, String apiKey)");
+        assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, BearerTokenProvider bearerTokenProvider)");
+        assertThat(clientContent).contains("BearerTokenProvider.fixedToken(apiKey)");
+        assertThat(clientContent).contains("retryPolicy.execute(\"generateCompletion\", uri, bearerTokenProvider, bearerToken ->");
+
+        Path bearerTokenProviderFile = outputPath.resolve(
+                "src/main/java/io/trino/plugin/ai/generated/BearerTokenProvider.java");
+        assertThat(bearerTokenProviderFile).doesNotExist();
 
         // Static codecs matching Trino's naming
         assertThat(clientContent).contains("private static final JsonCodec<ChatRequest> CHAT_REQUEST_CODEC = jsonCodec(ChatRequest.class)");

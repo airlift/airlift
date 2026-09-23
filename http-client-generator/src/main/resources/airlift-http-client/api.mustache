@@ -5,6 +5,9 @@ package {{package}};
 import {{import}};
 {{/imports}}
 import {{invokerPackage}}.ApiException;
+{{#x_has_bearer_auth}}
+import io.airlift.http.client.BearerTokenProvider;
+{{/x_has_bearer_auth}}
 import {{invokerPackage}}.For{{clientName}};
 import {{invokerPackage}}.RetryPolicy;
 import {{invokerPackage}}.{{clientName}}ClientConfig;
@@ -73,9 +76,12 @@ public class {{classname}}
 {
     private final HttpClient httpClient;
     private final URI baseUri;
-{{#x_has_auth}}
+{{#x_has_non_bearer_auth}}
     private final String apiKey;
-{{/x_has_auth}}
+{{/x_has_non_bearer_auth}}
+{{#x_has_bearer_auth}}
+    private final BearerTokenProvider bearerTokenProvider;
+{{/x_has_bearer_auth}}
     private final RetryPolicy retryPolicy;
 
 {{#x_uses_body}}
@@ -87,6 +93,40 @@ public class {{classname}}
 {{/x_codecs}}
 
     @Inject
+{{#x_has_bearer_auth}}
+    public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
+    {
+        this(httpClient, config.getBaseUri(), {{#x_has_non_bearer_auth}}config.getApiKey(), {{/x_has_non_bearer_auth}}BearerTokenProvider.fixedToken(config.getApiKey()),
+                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey)
+    {
+        this(httpClient, baseUri, {{#x_has_non_bearer_auth}}apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider.fixedToken(apiKey), RetryPolicy.withDefaults());
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey, RetryPolicy retryPolicy)
+    {
+        this(httpClient, baseUri, {{#x_has_non_bearer_auth}}apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider.fixedToken(apiKey), retryPolicy);
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, {{#x_has_non_bearer_auth}}String apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider bearerTokenProvider)
+    {
+        this(httpClient, baseUri, {{#x_has_non_bearer_auth}}apiKey, {{/x_has_non_bearer_auth}}bearerTokenProvider, RetryPolicy.withDefaults());
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, {{#x_has_non_bearer_auth}}String apiKey, {{/x_has_non_bearer_auth}}BearerTokenProvider bearerTokenProvider, RetryPolicy retryPolicy)
+    {
+        this.httpClient = requireNonNull(httpClient, "httpClient is null");
+        this.baseUri = requireNonNull(baseUri, "baseUri is null");
+{{#x_has_non_bearer_auth}}
+        this.apiKey = requireNonNull(apiKey, "apiKey is null");
+{{/x_has_non_bearer_auth}}
+        this.bearerTokenProvider = requireNonNull(bearerTokenProvider, "bearerTokenProvider is null");
+        this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
+    }
+{{/x_has_bearer_auth}}
+{{^x_has_bearer_auth}}
 {{#x_has_auth}}
     public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
     {
@@ -126,6 +166,7 @@ public class {{classname}}
         this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
     }
 {{/x_has_auth}}
+{{/x_has_bearer_auth}}
 
 {{#operation}}
 {{#vendorExtensions.x_returns_void}}
@@ -164,53 +205,67 @@ public class {{classname}}
         URI uri = uriBuilder.build();
 {{/hasQueryParams}}
 
+{{#vendorExtensions.x_has_bearer_auth}}
+{{#vendorExtensions.x_returns_void}}
+        retryPolicy.execute("{{operationId}}", uri, bearerTokenProvider, bearerToken -> {
+{{/vendorExtensions.x_returns_void}}
+{{^vendorExtensions.x_returns_void}}
+        return retryPolicy.execute("{{operationId}}", uri, bearerTokenProvider, bearerToken -> {
+{{/vendorExtensions.x_returns_void}}
+{{/vendorExtensions.x_has_bearer_auth}}
+{{^vendorExtensions.x_has_bearer_auth}}
+{{#vendorExtensions.x_returns_void}}
+        retryPolicy.execute("{{operationId}}", uri, () -> {
+{{/vendorExtensions.x_returns_void}}
+{{^vendorExtensions.x_returns_void}}
+        return retryPolicy.execute("{{operationId}}", uri, () -> {
+{{/vendorExtensions.x_returns_void}}
+{{/vendorExtensions.x_has_bearer_auth}}
 {{^vendorExtensions.x_has_body}}
-        Request request = {{vendorExtensions.x_prepare_method}}
-                .setUri(uri)
+            Request request = {{vendorExtensions.x_prepare_method}}
+                    .setUri(uri)
 {{#hasAuthMethods}}
 {{#authMethods}}
 {{#isBasicBearer}}
-                .setHeader(AUTHORIZATION, "Bearer " + apiKey)
+                    .setHeader(AUTHORIZATION, "Bearer " + bearerToken)
 {{/isBasicBearer}}
 {{#isApiKey}}
 {{#isKeyInHeader}}
-                .setHeader("{{keyParamName}}", apiKey)
+                    .setHeader("{{keyParamName}}", apiKey)
 {{/isKeyInHeader}}
 {{/isApiKey}}
 {{/authMethods}}
 {{/hasAuthMethods}}
-                .build();
+                    .build();
 {{/vendorExtensions.x_has_body}}
 {{#vendorExtensions.x_has_body}}
-        Request request = {{vendorExtensions.x_prepare_method}}
-                .setUri(uri)
+            Request request = {{vendorExtensions.x_prepare_method}}
+                    .setUri(uri)
 {{#hasAuthMethods}}
 {{#authMethods}}
 {{#isBasicBearer}}
-                .setHeader(AUTHORIZATION, "Bearer " + apiKey)
+                    .setHeader(AUTHORIZATION, "Bearer " + bearerToken)
 {{/isBasicBearer}}
 {{#isApiKey}}
 {{#isKeyInHeader}}
-                .setHeader("{{keyParamName}}", apiKey)
+                    .setHeader("{{keyParamName}}", apiKey)
 {{/isKeyInHeader}}
 {{/isApiKey}}
 {{/authMethods}}
 {{/hasAuthMethods}}
-                .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
-                .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
-                .build();
+                    .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
+                    .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
+                    .build();
 {{/vendorExtensions.x_has_body}}
 
 {{#vendorExtensions.x_returns_void}}
-        retryPolicy.execute("{{operationId}}", uri, () -> {
             httpClient.execute(request, createStatusResponseHandler());
             return null;
-        });
 {{/vendorExtensions.x_returns_void}}
 {{^vendorExtensions.x_returns_void}}
-        return retryPolicy.execute("{{operationId}}", uri, () ->
-                httpClient.execute(request, createJsonResponseHandler({{vendorExtensions.x_response_codec}})));
+            return httpClient.execute(request, createJsonResponseHandler({{vendorExtensions.x_response_codec}}));
 {{/vendorExtensions.x_returns_void}}
+        });
     }
 
 {{/operation}}
