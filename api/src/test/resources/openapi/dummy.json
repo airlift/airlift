@@ -83,6 +83,13 @@
     }
   },
   "components" : {
+    "securitySchemes" : {
+      "accessToken" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "Access token"
+      }
+    },
     "schemas" : {
       "BadRequest" : {
         "properties" : {

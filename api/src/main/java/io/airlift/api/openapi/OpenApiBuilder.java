@@ -150,17 +150,17 @@ class OpenApiBuilder
         openAPI.tags(tags);
         openAPI.tagGroups(tagGroups);
 
-        buildSecurity().ifPresent(security -> {
-            openAPI.schemaRequirement(security.getKey(), security.getValue());
-            openAPI.security(ImmutableList.of(new SecurityRequirement().addList(security.getKey())));
-        });
-
         Map<String, Schema> schemas = new TreeMap<>();
         schemaBuilder.build().forEach(schema -> schemas.put(schema.getName(), schema));
 
         Components components = new Components();
         components.schemas(schemas);
         openAPI.setComponents(components);
+
+        buildSecurity().ifPresent(security -> {
+            openAPI.schemaRequirement(security.getKey(), security.getValue());
+            openAPI.security(ImmutableList.of(new SecurityRequirement().addList(security.getKey())));
+        });
 
         return openAPI;
     }
@@ -177,7 +177,10 @@ class OpenApiBuilder
             return;
         }
 
-        tags.add(new Tag().name(makeServiceName(modelService)).description(modelService.service().generateDescriptionWithDocumentation()));
+        String tagName = makeServiceName(modelService);
+        if (tags.stream().noneMatch(tag -> tagName.equals(tag.getName()))) {
+            tags.add(new Tag().name(tagName).description(modelService.service().generateDescriptionWithDocumentation()));
+        }
 
         methodsToAdd.forEach(method -> {
             String servicePath = buildServicePath(modelService.service());
@@ -486,9 +489,9 @@ class OpenApiBuilder
         return metadata.security().map(securityScheme -> {
             SecurityScheme accessTokenSecurityScheme = new SecurityScheme();
             return switch (securityScheme) {
-                case BEARER_ACCESS_TOKEN -> Map.entry("accessToken", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("Access token"));
-                case BEARER_JWT -> Map.entry("bearer", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("JWT"));
-                case BASIC -> Map.entry("Basic", accessTokenSecurityScheme.scheme("basic"));
+                case BEARER_ACCESS_TOKEN -> Map.entry("accessToken", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("Access token"));
+                case BEARER_JWT -> Map.entry("bearer", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT"));
+                case BASIC -> Map.entry("Basic", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).scheme("basic"));
             };
         });
     }
@@ -499,7 +502,7 @@ class OpenApiBuilder
         this.deprecations = deprecations.stream().collect(toImmutableMap(ModelDeprecation::method, identity()));
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.methodFilter = requireNonNull(methodFilter, "methodFilter is null");
-        this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver);
+        this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver, metadata.openApiVersion());
         this.extensionFilters = ImmutableList.copyOf(extensionFilters);
     }
 }

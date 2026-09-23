@@ -151,35 +151,6 @@
         "description" : "dummy",
         "x-tags" : [ "Model Definitions" ]
       },
-      "NameAndAge2" : {
-        "required" : [ "age", "detailId", "name", "syncToken", "typeKey" ],
-        "properties" : {
-          "typeKey" : {
-            "type" : "string",
-            "enum" : [ "nameAndAge" ]
-          },
-          "detailId" : {
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "syncToken" : {
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "name" : {
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "age" : {
-            "format" : "int32",
-            "type" : "integer",
-            "description" : "dummy",
-            "nullable" : false
-          }
-        },
-        "description" : "dummy",
-        "x-tags" : [ "Model Definitions" ]
-      },
       "RecursiveDetail" : {
         "required" : [ "detailId", "name", "nested", "syncToken", "typeKey" ],
         "properties" : {
@@ -203,23 +174,7 @@
             "type" : "array",
             "description" : "dummy",
             "items" : {
-              "description" : "dummy",
-              "oneOf" : [ {
-                "$ref" : "#/components/schemas/NameAndAge2"
-              }, {
-                "$ref" : "#/components/schemas/RecursiveDetail"
-              }, {
-                "$ref" : "#/components/schemas/Schedule"
-              } ],
-              "discriminator" : {
-                "propertyName" : "typeKey",
-                "mapping" : {
-                  "nameAndAge" : "#/components/schemas/NameAndAge2",
-                  "recursiveDetail" : "#/components/schemas/RecursiveDetail",
-                  "schedule" : "#/components/schemas/Schedule"
-                }
-              },
-              "x-tags" : [ "Model Definitions" ]
+              "$ref" : "#/components/schemas/Simple"
             }
           }
         },
@@ -259,39 +214,6 @@
         "description" : "dummy",
         "x-tags" : [ "Model Definitions" ]
       },
-      "Schedule2" : {
-        "required" : [ "detailId", "endDate", "name", "startDate", "syncToken", "typeKey" ],
-        "properties" : {
-          "typeKey" : {
-            "type" : "string",
-            "enum" : [ "schedule" ]
-          },
-          "detailId" : {
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "syncToken" : {
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "name" : {
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "startDate" : {
-            "format" : "date-time",
-            "type" : "string",
-            "description" : "dummy"
-          },
-          "endDate" : {
-            "format" : "date-time",
-            "type" : "string",
-            "description" : "dummy"
-          }
-        },
-        "description" : "dummy",
-        "x-tags" : [ "Model Definitions" ]
-      },
       "Simple" : {
         "description" : "dummy",
         "oneOf" : [ {
@@ -299,14 +221,14 @@
         }, {
           "$ref" : "#/components/schemas/RecursiveDetail"
         }, {
-          "$ref" : "#/components/schemas/Schedule2"
+          "$ref" : "#/components/schemas/Schedule"
         } ],
         "discriminator" : {
           "propertyName" : "typeKey",
           "mapping" : {
             "nameAndAge" : "#/components/schemas/NameAndAge",
             "recursiveDetail" : "#/components/schemas/RecursiveDetail",
-            "schedule" : "#/components/schemas/Schedule2"
+            "schedule" : "#/components/schemas/Schedule"
           }
         },
         "x-tags" : [ "Model Definitions" ]
