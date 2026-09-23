@@ -1,4 +1,4 @@
-package io.airlift.mcp.storage;
+package io.airlift.mcp.operations.legacy.storage;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

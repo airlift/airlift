@@ -25,6 +25,7 @@ import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
 
 public interface Predicates
 {
+    Predicate<MethodParameter> isHttpRequest = methodParameter -> methodParameter instanceof HttpRequestParameter;
     Predicate<MethodParameter> isHttpRequestOrContext = methodParameter -> methodParameter instanceof HttpRequestParameter || methodParameter instanceof McpRequestContextParameter;
     Predicate<MethodParameter> isIdentity = methodParameter -> methodParameter instanceof IdentityParameter;
     Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof GetPromptRequestParameter;

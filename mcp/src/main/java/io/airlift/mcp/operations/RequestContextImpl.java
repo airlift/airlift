@@ -3,15 +3,20 @@ package io.airlift.mcp.operations;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.McpTasks;
 import io.airlift.mcp.messages.MessageWriter;
+import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.tasks.TaskExecutor;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
@@ -33,19 +38,47 @@ class RequestContextImpl
     private final JsonMapper jsonMapper;
     private final MessageWriter messageWriter;
     private final Authenticated<?> identity;
+    private final Optional<McpTasks> tasks;
+    private final Duration taskTtl;
+    private final Duration taskPollInterval;
 
     RequestContextImpl(
             HttpServletRequest request,
             RequestMetadata requestMetadata,
             JsonMapper jsonMapper,
             MessageWriter messageWriter,
-            Authenticated<?> identity)
+            Authenticated<?> identity,
+            Optional<McpTasks> tasks,
+            Duration taskTtl,
+            Duration taskPollInterval)
     {
         this.request = requireNonNull(request, "request is null");
         this.requestMetadata = requireNonNull(requestMetadata, "requestMetadata is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
         this.identity = requireNonNull(identity, "identity is null");
+        this.tasks = requireNonNull(tasks, "tasks is null");
+        this.taskTtl = requireNonNull(taskTtl, "taskTtl is null");
+        this.taskPollInterval = requireNonNull(taskPollInterval, "taskPollInterval is null");
+    }
+
+    @Override
+    public Task createTask(CallToolRequest callToolRequest)
+    {
+        McpTasks mcpTasks = tasks.orElseThrow(() -> new UnsupportedOperationException("Tasks are not supported by this server"));
+
+        return mcpTasks.createTask(this, callToolRequest, taskTtl, taskPollInterval);
+    }
+
+    @Override
+    public Task createAndExecuteTask(CallToolRequest callToolRequest, TaskExecutor executor)
+    {
+        McpTasks mcpTasks = tasks.orElseThrow(() -> new UnsupportedOperationException("Tasks are not supported by this server"));
+
+        Task task = mcpTasks.createTask(this, callToolRequest, taskTtl, taskPollInterval);
+        mcpTasks.executeTask(task.taskId(), executor);
+
+        return task;
     }
 
     @Override

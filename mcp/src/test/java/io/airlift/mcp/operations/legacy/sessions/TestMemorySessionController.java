@@ -1,12 +1,9 @@
-package io.airlift.mcp;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import io.airlift.json.JsonMapperProvider;
+import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity.Authenticated;
-import io.airlift.mcp.operations.legacy.sessions.SessionController;
-import io.airlift.mcp.operations.legacy.sessions.SessionId;
-import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
-import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 
 import java.time.Duration;
 import java.util.Optional;
