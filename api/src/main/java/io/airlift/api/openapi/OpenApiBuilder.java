@@ -1,6 +1,7 @@
 package io.airlift.api.openapi;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiIdSupportsLookup;
@@ -46,6 +47,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -79,7 +81,7 @@ import static java.util.function.Function.identity;
 class OpenApiBuilder
 {
     private final SchemaBuilder schemaBuilder;
-    private final OpenApiExtensionFilter extensionFilter;
+    private final List<OpenApiExtensionFilter> extensionFilters;
     private final Paths paths = new Paths();
     private final List<Tag> tags = new ArrayList<>();
     private final ModelServiceType serviceType;
@@ -101,10 +103,10 @@ class OpenApiBuilder
             Collection<ModelDeprecation> deprecations,
             OpenApiMetadata metadata,
             Predicate<Method> methodFilter,
-            OpenApiExtensionFilter extensionFilter,
+            List<OpenApiExtensionFilter> extensionFilters,
             ApiEnumValueResolver enumValueResolver)
     {
-        return new OpenApiBuilder(serviceType, deprecations, metadata, methodFilter, extensionFilter, enumValueResolver);
+        return new OpenApiBuilder(serviceType, deprecations, metadata, methodFilter, extensionFilters, enumValueResolver);
     }
 
     enum JsonUriMode
@@ -301,7 +303,7 @@ class OpenApiBuilder
         operation.parameters(buildParameters(modelMethod));
         addIdempotencyMetadata(operation, modelMethod);
 
-        return extensionFilter.apply(modelService, modelMethod, operation);
+        return applyExtensionFilters(modelService, modelMethod, operation);
     }
 
     private static void addIdempotencyMetadata(Operation operation, ModelMethod modelMethod)
@@ -324,6 +326,22 @@ class OpenApiBuilder
         }
 
         operation.addExtension("x-airlift-idempotency", Map.of("header", headerParameter.getName()));
+    }
+
+    private Operation applyExtensionFilters(ModelService modelService, ModelMethod modelMethod, Operation operation)
+    {
+        Operation filtered = operation;
+        for (OpenApiExtensionFilter extensionFilter : extensionFilters) {
+            Map<String, Object> claimedExtensions = ImmutableMap.copyOf(filtered.getExtensions());
+            filtered = requireNonNull(extensionFilter.apply(modelService, modelMethod, filtered), "extension filter returned a null operation");
+            Map<String, Object> extensions = filtered.getExtensions();
+            claimedExtensions.forEach((name, value) -> {
+                if (!Objects.equals(extensions.get(name), value)) {
+                    throw new IllegalStateException("OpenAPI extension '%s' is claimed by more than one extension filter".formatted(name));
+                }
+            });
+        }
+        return filtered;
     }
 
     private MediaType buildStreamingResponseMediaType(ModelResource returnType)
@@ -498,13 +516,13 @@ class OpenApiBuilder
         });
     }
 
-    private OpenApiBuilder(ModelServiceType serviceType, Collection<ModelDeprecation> deprecations, OpenApiMetadata metadata, Predicate<Method> methodFilter, OpenApiExtensionFilter extensionFilter, ApiEnumValueResolver enumValueResolver)
+    private OpenApiBuilder(ModelServiceType serviceType, Collection<ModelDeprecation> deprecations, OpenApiMetadata metadata, Predicate<Method> methodFilter, List<OpenApiExtensionFilter> extensionFilters, ApiEnumValueResolver enumValueResolver)
     {
         this.serviceType = requireNonNull(serviceType, "serviceType is null");
         this.deprecations = deprecations.stream().collect(toImmutableMap(ModelDeprecation::method, identity()));
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.methodFilter = requireNonNull(methodFilter, "methodFilter is null");
         this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver);
-        this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
+        this.extensionFilters = ImmutableList.copyOf(extensionFilters);
     }
 }
