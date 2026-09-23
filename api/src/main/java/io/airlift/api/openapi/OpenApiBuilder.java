@@ -354,7 +354,7 @@ class OpenApiBuilder
     private MediaType buildOpenApi301StreamingResponseMediaType(Schema<?> eventSchema)
     {
         return new MediaType()
-                .schema(new StringSchema())
+                .schema(new ArraySchema().items(eventSchema))
                 .airliftEventSchema(eventSchema);
     }
 
@@ -367,7 +367,9 @@ class OpenApiBuilder
                 .type("object")
                 .addProperty("data", dataSchema)
                 .addRequiredItem("data");
-        return new MediaType().itemSchema(itemSchema);
+        return new MediaType()
+                .itemSchema(itemSchema)
+                .airliftEventSchema(eventSchema);
     }
 
     private String buildMethodName(ModelMethod modelMethod)
