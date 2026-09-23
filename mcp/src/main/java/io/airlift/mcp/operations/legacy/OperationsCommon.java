@@ -27,6 +27,7 @@ import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.MaxProtocolLevel;
 import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
 
@@ -37,6 +38,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.METADATA_PROGRESS_TOKEN;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
+import static io.airlift.mcp.model.Protocol.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
 import static java.util.Objects.requireNonNull;
 
@@ -45,13 +47,15 @@ public class OperationsCommon
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
     private final MrtrEmulator mrtrEmulator;
+    private final Protocol maxProtocol;
 
     @Inject
-    OperationsCommon(McpEntities entities, McpConfig mcpConfig, MrtrEmulator mrtrEmulator)
+    OperationsCommon(McpEntities entities, McpConfig mcpConfig, MrtrEmulator mrtrEmulator, MaxProtocolLevel maxProtocolLevel)
     {
         this.entities = requireNonNull(entities, "entities is null");
         this.mrtrEmulator = requireNonNull(mrtrEmulator, "mrtrEmulator is null");
 
+        maxProtocol = maxProtocolLevel.limit(LAST_LEGACY_PROTOCOL);
         paginationUtil = new PaginationUtil(mcpConfig);
     }
 
@@ -60,11 +64,23 @@ public class OperationsCommon
         return protocol != PROTOCOL_MCP_2025_06_18;
     }
 
+    Protocol negotiateProtocol(String requestedProtocolVersion)
+    {
+        return Protocol.of(requestedProtocolVersion)
+                .map(protocol -> Protocol.min(protocol, maxProtocol))
+                .orElse(maxProtocol);
+    }
+
+    Protocol protocol(LegacyRequestContextImpl requestContext)
+    {
+        return Protocol.min(requestContext.protocol(), maxProtocol);
+    }
+
     ListToolsResult listTools(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Tool> localTools = entities.tools(requestContext)
                 .stream()
-                .map(tool -> supportsIcons(requestContext.protocol()) ? tool : tool.withoutIcons())
+                .map(tool -> supportsIcons(protocol(requestContext)) ? tool : tool.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
@@ -95,7 +111,7 @@ public class OperationsCommon
     {
         List<Prompt> localPrompts = entities.prompts(requestContext)
                 .stream()
-                .map(prompt -> supportsIcons(requestContext.protocol()) ? prompt : prompt.withoutIcons())
+                .map(prompt -> supportsIcons(protocol(requestContext)) ? prompt : prompt.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
@@ -120,7 +136,7 @@ public class OperationsCommon
     {
         List<Resource> localResources = entities.resources(requestContext)
                 .stream()
-                .map(resource -> supportsIcons(requestContext.protocol()) ? resource : resource.withoutIcons())
+                .map(resource -> supportsIcons(protocol(requestContext)) ? resource : resource.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
@@ -129,7 +145,7 @@ public class OperationsCommon
     {
         List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext)
                 .stream()
-                .map(resourceTemplate -> supportsIcons(requestContext.protocol()) ? resourceTemplate : resourceTemplate.withoutIcons())
+                .map(resourceTemplate -> supportsIcons(protocol(requestContext)) ? resourceTemplate : resourceTemplate.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }

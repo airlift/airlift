@@ -35,7 +35,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
-import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.model.Protocol.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.operations.legacy.LegacySessionOperations.optionalSessionId;
 import static io.airlift.mcp.operations.legacy.LegacySessionOperations.requireSessionId;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
@@ -117,7 +117,7 @@ class LegacyRequestContextImpl
     {
         return sessionController.flatMap(controller ->
                         optionalSessionId(request).flatMap(sessionId -> controller.getSessionValue(sessionId, PROTOCOL)))
-                .orElse(LATEST_PROTOCOL);
+                .orElse(LAST_LEGACY_PROTOCOL);
     }
 
     HttpServletResponse response()

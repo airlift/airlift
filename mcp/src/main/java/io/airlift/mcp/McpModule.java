@@ -29,6 +29,7 @@ import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.JsonSchemaBuilder.DefaultSchemaBuilderProvider;
 import io.airlift.mcp.model.JsonSchemaBuilder.SchemaBuilder;
 import io.airlift.mcp.model.Protocol;
+import io.airlift.mcp.operations.MaxProtocolLevel;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
 import io.airlift.mcp.operations.OperationsSelector;
@@ -66,7 +67,7 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
-import static io.airlift.mcp.operations.OperationsSelector.LAST_LEGACY_PROTOCOL;
+import static io.airlift.mcp.model.Protocol.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
@@ -368,8 +369,9 @@ public class McpModule
     private void bindOperations(Binder binder)
     {
         legacyOperationsBinding.accept(binder.bind(LegacyOperations.class));
+        binder.bind(MaxProtocolLevel.class).toInstance(new MaxProtocolLevel(maxProtocolLevel));
 
-        boolean legacyOnly = maxProtocolLevel.map(protocol -> protocol.compareTo(LAST_LEGACY_PROTOCOL) <= 0).orElse(false);
+        boolean legacyOnly = maxProtocolLevel.map(protocol -> protocol.isAtMost(LAST_LEGACY_PROTOCOL)).orElse(false);
         if (legacyOnly) {
             binder.bind(Operations.class).to(LegacyOperations.class).in(SINGLETON);
         }
