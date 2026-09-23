@@ -1,0 +1,16 @@
+openapi: 3.0.1
+info:
+  title: Text Response Body API
+  version: 1.0.0
+paths:
+  /notes:
+    get:
+      tags: [notes]
+      operationId: readNote
+      responses:
+        '200':
+          description: Note
+          content:
+            text/plain:
+              schema:
+                type: string

@@ -1,0 +1,18 @@
+openapi: 3.0.1
+info:
+  title: Text Request Body API
+  version: 1.0.0
+paths:
+  /notes:
+    post:
+      tags: [notes]
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '204':
+          description: Created

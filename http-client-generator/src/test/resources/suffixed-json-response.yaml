@@ -1,0 +1,19 @@
+openapi: 3.0.1
+info:
+  title: Suffixed JSON API
+  version: 1.0.0
+paths:
+  /document:
+    get:
+      tags: [documents]
+      operationId: readDocument
+      responses:
+        '200':
+          description: Document
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string

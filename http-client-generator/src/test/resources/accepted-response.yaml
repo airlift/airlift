@@ -1,0 +1,28 @@
+openapi: 3.0.1
+info:
+  title: Accepted Response API
+  version: 1.0.0
+paths:
+  /folder/{folderId}:purge:
+    delete:
+      tags: [folders]
+      operationId: purgeFolder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '202':
+          description: Accepted for asynchronous processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accepted'
+components:
+  schemas:
+    Accepted:
+      description: Request accepted for asynchronous processing
