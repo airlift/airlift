@@ -301,31 +301,8 @@ class OpenApiBuilder
         });
 
         operation.parameters(buildParameters(modelMethod));
-        addIdempotencyMetadata(operation, modelMethod);
 
         return applyExtensionFilters(modelService, modelMethod, operation);
-    }
-
-    private static void addIdempotencyMetadata(Operation operation, ModelMethod modelMethod)
-    {
-        OpenApiIdempotencyKey idempotencyKey = modelMethod.method().getAnnotation(OpenApiIdempotencyKey.class);
-        if (idempotencyKey == null) {
-            return;
-        }
-
-        String headerName = idempotencyKey.header();
-        Parameter headerParameter = operation.getParameters().stream()
-                .filter(parameter -> "header".equals(parameter.getIn()))
-                .filter(parameter -> headerName.equalsIgnoreCase(parameter.getName()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "@OpenApiIdempotencyKey header '%s' is not an operation header parameter".formatted(headerName)));
-        if ((headerParameter.getSchema() == null) || !"string".equals(headerParameter.getSchema().getType())) {
-            throw new IllegalArgumentException(
-                    "@OpenApiIdempotencyKey header '%s' must be a string operation header parameter".formatted(headerName));
-        }
-
-        operation.addExtension("x-airlift-idempotency", Map.of("header", headerParameter.getName()));
     }
 
     private Operation applyExtensionFilters(ModelService modelService, ModelMethod modelMethod, Operation operation)
