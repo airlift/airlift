@@ -1,0 +1,41 @@
+    /**
+     * {{description}}{{^description}}Gets or sets {{{name}}}{{/description}}
+     */
+    public enum {{{datatypeWithEnum}}}
+    {
+        {{#allowableValues}}
+        {{#enumVars}}
+        {{name}}({{{value}}}){{^-last}},{{/-last}}{{#-last}};{{/-last}}
+        {{/enumVars}}
+        {{/allowableValues}}
+
+        private final {{{dataType}}} value;
+
+        {{{datatypeWithEnum}}}({{{dataType}}} value)
+        {
+            this.value = value;
+        }
+
+        @JsonValue
+        public {{{dataType}}} getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.valueOf(value);
+        }
+
+        @JsonCreator
+        public static {{{datatypeWithEnum}}} fromValue({{{dataType}}} value)
+        {
+            for ({{{datatypeWithEnum}}} candidate : {{{datatypeWithEnum}}}.values()) {
+                if (candidate.value.equals(value)) {
+                    return candidate;
+                }
+            }
+            throw new IllegalArgumentException("Unexpected value '" + value + "'");
+        }
+    }

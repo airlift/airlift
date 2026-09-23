@@ -1,6 +1,9 @@
 {{>licenseInfo}}
 package {{invokerPackage}};
 
+{{#hasBearerAuthMethods}}
+import io.airlift.http.client.BearerTokenProvider;
+{{/hasBearerAuthMethods}}
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.UnexpectedResponseException;
 import io.airlift.units.Duration;
@@ -12,6 +15,9 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+{{#hasBearerAuthMethods}}
+import java.util.function.Function;
+{{/hasBearerAuthMethods}}
 
 import static java.util.Objects.requireNonNull;
 
@@ -67,6 +73,46 @@ public class RetryPolicy
                 "%s call failed for URI %s after %d attempts".formatted(operationName, uri, maxRetries + 1),
                 lastException);
     }
+
+{{#hasBearerAuthMethods}}
+    public <T> T execute(String operationName, URI uri, BearerTokenProvider tokenProvider, Function<String, T> operation)
+    {
+        requireNonNull(tokenProvider, "tokenProvider is null");
+        requireNonNull(operation, "operation is null");
+
+        RuntimeException lastException = null;
+        int retryAttempt = 0;
+        int attempts = 0;
+        boolean authenticationRetried = false;
+        while (true) {
+            String bearerToken = requireNonNull(tokenProvider.getToken(), "bearer token is null");
+            attempts++;
+            try {
+                return operation.apply(bearerToken);
+            }
+            catch (RuntimeException e) {
+                lastException = e;
+                if (!authenticationRetried && isUnauthorized(e) && tokenProvider.refreshToken(bearerToken)) {
+                    authenticationRetried = true;
+                    continue;
+                }
+                if (retryAttempt >= maxRetries || !isRetryable(e)) {
+                    break;
+                }
+                sleep(getDelay(e, retryAttempt));
+                retryAttempt++;
+            }
+        }
+        throw new ApiException(
+                "%s call failed for URI %s after %d attempts".formatted(operationName, uri, attempts),
+                lastException);
+    }
+
+    private static boolean isUnauthorized(RuntimeException e)
+    {
+        return e instanceof UnexpectedResponseException ure && ure.getStatusCode() == 401;
+    }
+{{/hasBearerAuthMethods}}
 
     static boolean isRetryable(RuntimeException e)
     {

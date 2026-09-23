@@ -141,6 +141,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <project.version>${project.version}</project.version>
+                        <dep.openapi-generator.version>${dep.openapi-generator.version}</dep.openapi-generator.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
