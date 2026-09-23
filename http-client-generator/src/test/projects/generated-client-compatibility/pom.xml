@@ -116,12 +116,50 @@
                             <serviceClasses>
                                 <serviceClass>io.airlift.openapi.client.compatibility.FrameService</serviceClass>
                                 <serviceClass>io.airlift.openapi.client.compatibility.StatusService</serviceClass>
+                                <serviceClass>io.airlift.openapi.client.compatibility.NamedAuthenticationService</serviceClass>
                             </serviceClasses>
                             <serviceTypeClass>io.airlift.openapi.client.compatibility.CompatibilityServiceType</serviceTypeClass>
-                            <securityScheme>BEARER_ACCESS_TOKEN</securityScheme>
                             <extensionFilterClasses>
                                 <extensionFilterClass>io.airlift.openapi.client.compatibility.IdempotencyKeyExtensionFilter</extensionFilterClass>
+                                <extensionFilterClass>io.airlift.openapi.client.compatibility.NamedAuthenticationSecurityFilter</extensionFilterClass>
                             </extensionFilterClasses>
+                            <securitySchemes>
+                                <securityScheme>
+                                    <name>accessToken</name>
+                                    <type>BEARER</type>
+                                    <bearerFormat>JWT</bearerFormat>
+                                </securityScheme>
+                                <securityScheme>
+                                    <name>serviceBasic</name>
+                                    <type>BASIC</type>
+                                </securityScheme>
+                                <securityScheme>
+                                    <name>serviceKey</name>
+                                    <type>HEADER_API_KEY</type>
+                                    <headerName>X-Service-Key</headerName>
+                                </securityScheme>
+                                <securityScheme>
+                                    <name>serviceBearer</name>
+                                    <type>BEARER</type>
+                                </securityScheme>
+                                <securityScheme>
+                                    <name>serviceOAuth</name>
+                                    <type>OAUTH2_CLIENT_CREDENTIALS</type>
+                                    <tokenUrl>/oauth/token</tokenUrl>
+                                    <scopes>
+                                        <read>Read named authentication status</read>
+                                    </scopes>
+                                </securityScheme>
+                            </securitySchemes>
+                            <defaultSecurityRequirements>
+                                <defaultSecurityRequirement>
+                                    <schemes>
+                                        <scheme>
+                                            <name>accessToken</name>
+                                        </scheme>
+                                    </schemes>
+                                </defaultSecurityRequirement>
+                            </defaultSecurityRequirements>
                             <outputFile>${project.build.directory}/openapi.json</outputFile>
                             <prettyPrint>true</prettyPrint>
                         </configuration>

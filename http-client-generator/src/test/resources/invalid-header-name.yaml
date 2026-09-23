@@ -1,0 +1,20 @@
+openapi: 3.0.1
+info:
+  title: Invalid Header Name API
+  version: 1.0.0
+security:
+  - serviceKey: []
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceKey:
+      type: apiKey
+      in: header
+      name: Bad Header

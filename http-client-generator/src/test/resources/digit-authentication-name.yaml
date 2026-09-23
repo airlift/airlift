@@ -1,0 +1,19 @@
+openapi: 3.0.1
+info:
+  title: Digit Authentication Name API
+  version: 1.0.0
+security:
+  - 1key: []
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    1key:
+      type: http
+      scheme: bearer

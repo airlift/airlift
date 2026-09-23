@@ -1,0 +1,55 @@
+openapi: 3.0.1
+info:
+  title: Mixed Authentication API
+  version: 1.0.0
+security:
+  - serviceBasic: []
+    serviceKey: []
+  - serviceBearer: []
+paths:
+  /combined:
+    get:
+      tags: [mixed]
+      operationId: combined
+      responses:
+        '204':
+          description: Success
+  /oauth:
+    get:
+      tags: [mixed]
+      operationId: oauth
+      security:
+        - serviceOAuth: [status:read]
+      responses:
+        '204':
+          description: Success
+  /public:
+    get:
+      tags: [mixed]
+      operationId: publicOperation
+      security:
+        - {}
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    serviceBasic:
+      type: http
+      scheme: basic
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+    serviceOAuth:
+      type: oauth2
+      x-airlift-token-endpoint-authentication-method: client_secret_basic
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            status:read: Read service status

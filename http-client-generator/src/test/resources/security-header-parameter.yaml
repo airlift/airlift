@@ -1,0 +1,24 @@
+openapi: 3.0.1
+info:
+  title: Security Header Parameter API
+  version: 1.0.0
+security:
+  - serviceToken: []
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer

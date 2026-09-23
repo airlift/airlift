@@ -1,0 +1,20 @@
+openapi: 3.0.1
+info:
+  title: Optional Authentication API
+  version: 1.0.0
+paths:
+  /status:
+    get:
+      tags: [status]
+      operationId: status
+      security:
+        - {}
+        - serviceBearer: []
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceBearer:
+      type: http
+      scheme: bearer

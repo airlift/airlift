@@ -1,0 +1,19 @@
+openapi: 3.0.1
+info:
+  title: Unsupported Query API Key
+  version: 1.0.0
+security:
+  - queryKey: []
+paths:
+  /status:
+    get:
+      operationId: status
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    queryKey:
+      type: apiKey
+      in: query
+      name: secret
