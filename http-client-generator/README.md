@@ -259,6 +259,10 @@ Every failed call throws the generated `ApiException`. Its message names the ope
 
 Transport failures, interrupted retries, and bearer token provider failures are wrapped in the same exception with the original cause attached.
 
+### Form Requests
+
+An `application/x-www-form-urlencoded` request body generates a method taking one parameter per form field and encodes them with `FormDataBodyBuilder` using the standard encoding. Scalar, enum, and array fields are supported; array fields repeat the field name once per value. Generation fails for nested objects, `multipart` bodies, or custom `encoding` rules because they would produce ambiguous wire data.
+
 ### Security Schemes
 
 The generator supports bearer token authentication from OpenAPI `securitySchemes`:

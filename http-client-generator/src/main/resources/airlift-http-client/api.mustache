@@ -16,12 +16,17 @@ import {{invokerPackage}}.RetryPolicy;
 import {{invokerPackage}}.{{clientName}}ClientConfig;
 
 import com.google.inject.Inject;
+{{#x_uses_form_body}}
+import io.airlift.http.client.FormDataBodyBuilder;
+{{/x_uses_form_body}}
 import io.airlift.http.client.HttpClient;
 {{#x_uses_query_params}}
 import io.airlift.http.client.HttpUriBuilder;
 {{/x_uses_query_params}}
 import io.airlift.http.client.Request;
+{{#x_uses_json_codec}}
 import io.airlift.json.JsonCodec;
+{{/x_uses_json_codec}}
 
 import java.net.URI;
 {{#x_uses_list_type}}
@@ -40,9 +45,9 @@ import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 {{/x_uses_body}}
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-{{#x_uses_body}}
+{{#x_uses_json_body}}
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
-{{/x_uses_body}}
+{{/x_uses_json_body}}
 {{#x_uses_safe_json_response}}
 import static io.airlift.http.client.JsonResponseHandler.createSafeJsonResponseHandler;
 {{/x_uses_safe_json_response}}
@@ -70,7 +75,9 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 {{#x_uses_successful_status_response}}
 import static io.airlift.http.client.StatusResponseHandler.createSuccessfulStatusResponseHandler;
 {{/x_uses_successful_status_response}}
+{{#x_uses_json_codec}}
 import static io.airlift.json.JsonCodec.jsonCodec;
+{{/x_uses_json_codec}}
 {{#x_uses_list_codec}}
 import static io.airlift.json.JsonCodec.listJsonCodec;
 {{/x_uses_list_codec}}
@@ -96,10 +103,10 @@ public class {{classname}}
 {{/x_has_auth}}
     private final RetryPolicy retryPolicy;
 
-{{#x_uses_body}}
+{{#x_uses_json_body}}
     private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
-{{/x_uses_body}}
+{{/x_uses_json_body}}
 {{#x_codecs}}
     private static final JsonCodec<{{{type}}}> {{name}} = {{{init}}};
 {{/x_codecs}}
@@ -256,7 +263,32 @@ public class {{classname}}
         }, () -> {
 {{/vendorExtensions.x_returns_void}}
 {{/vendorExtensions.x_has_auth_requirements}}
-{{^vendorExtensions.x_has_body}}
+{{#vendorExtensions.x_has_form_body}}
+            FormDataBodyBuilder form = new FormDataBodyBuilder();
+{{#formParams}}
+{{#required}}
+{{#isArray}}
+            if (requireNonNull({{paramName}}, "{{paramName}} is null").isEmpty()) {
+                throw new IllegalArgumentException("{{paramName}} is empty");
+            }
+            {{paramName}}.forEach(value -> form.addField("{{baseName}}", String.valueOf(value)));
+{{/isArray}}
+{{^isArray}}
+            form.addField("{{baseName}}", String.valueOf(requireNonNull({{paramName}}, "{{paramName}} is null")));
+{{/isArray}}
+{{/required}}
+{{^required}}
+            if ({{paramName}} != null) {
+{{#isArray}}
+                {{paramName}}.forEach(value -> form.addField("{{baseName}}", String.valueOf(value)));
+{{/isArray}}
+{{^isArray}}
+                form.addField("{{baseName}}", String.valueOf({{paramName}}));
+{{/isArray}}
+            }
+{{/required}}
+{{/formParams}}
+{{/vendorExtensions.x_has_form_body}}
             Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
                     .setUri(uri);
 {{#headerParams}}
@@ -284,41 +316,21 @@ public class {{classname}}
                 default -> throw new IllegalStateException("Invalid authentication alternative for operation '{{operationId}}'");
             }
 {{/vendorExtensions.x_has_auth_requirements}}
+{{^vendorExtensions.x_has_body}}
             Request request = requestBuilder.build();
 {{/vendorExtensions.x_has_body}}
-{{#vendorExtensions.x_has_body}}
-            Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
-                    .setUri(uri);
-{{#headerParams}}
-            if ({{paramName}} != null) {
-                requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
-            }
-{{/headerParams}}
-{{#vendorExtensions.x_has_auth_requirements}}
-            switch (authenticationAlternative) {
-{{#vendorExtensions.x_auth_requirements}}
-                case {{index}} -> {
-{{#schemes}}
-{{#isBearer}}
-                    requestBuilder.setHeader(AUTHORIZATION, "Bearer " + requireNonNull(bearerToken, "bearerToken is null"));
-{{/isBearer}}
-{{#isBasic}}
-                    credentials.apply{{methodName}}(requestBuilder);
-{{/isBasic}}
-{{#isHeaderApiKey}}
-                    credentials.apply{{methodName}}(requestBuilder);
-{{/isHeaderApiKey}}
-{{/schemes}}
-                }
-{{/vendorExtensions.x_auth_requirements}}
-                default -> throw new IllegalStateException("Invalid authentication alternative for operation '{{operationId}}'");
-            }
-{{/vendorExtensions.x_has_auth_requirements}}
+{{#vendorExtensions.x_has_json_body}}
             Request request = requestBuilder
                     .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
                     .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
                     .build();
-{{/vendorExtensions.x_has_body}}
+{{/vendorExtensions.x_has_json_body}}
+{{#vendorExtensions.x_has_form_body}}
+            Request request = requestBuilder
+                    .setHeader(CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .setBodyGenerator(form.build())
+                    .build();
+{{/vendorExtensions.x_has_form_body}}
 
 {{#vendorExtensions.x_returns_void}}
 {{#vendorExtensions.x_accepts_any_2xx}}
