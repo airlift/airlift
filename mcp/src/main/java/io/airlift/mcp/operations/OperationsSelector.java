@@ -22,7 +22,7 @@ public class OperationsSelector
         implements Operations
 {
     private static final Set<String> UNSUPPORTED_OLD_PROTOCOL_VERSIONS = ImmutableSet.of("2025-03-26", "2024-11-05");
-    private static final Protocol LAST_LEGACY_PROTOCOL = PROTOCOL_MCP_2025_11_25;
+    public static final Protocol LAST_LEGACY_PROTOCOL = PROTOCOL_MCP_2025_11_25;
 
     private final OperationsImpl operationsImpl;
     private final LegacyOperations legacyOperations;

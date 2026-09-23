@@ -28,6 +28,7 @@ import io.airlift.mcp.model.JsonRpcMessageDeserializer;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.JsonSchemaBuilder.DefaultSchemaBuilderProvider;
 import io.airlift.mcp.model.JsonSchemaBuilder.SchemaBuilder;
+import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
 import io.airlift.mcp.operations.OperationsSelector;
@@ -65,6 +66,7 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
+import static io.airlift.mcp.operations.OperationsSelector.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
@@ -92,6 +94,7 @@ public class McpModule
     private final Optional<Class<? extends Annotation>> filterBindingAnnotation;
     private final Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding;
     private final ValidationMode validationMode;
+    private final Optional<Protocol> maxProtocolLevel;
 
     public static Builder builder()
     {
@@ -115,7 +118,8 @@ public class McpModule
             Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding,
             Optional<Class<? extends Annotation>> filterBindingAnnotation,
             Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding,
-            ValidationMode validationMode)
+            ValidationMode validationMode,
+            Optional<Protocol> maxProtocolLevel)
     {
         this.metadataBinding = requireNonNull(metadataBinding, "metadataBinding is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
@@ -134,6 +138,7 @@ public class McpModule
         this.filterBindingAnnotation = requireNonNull(filterBindingAnnotation, "filterBindingAnnotation is null");
         this.schemaBuilderBinding = requireNonNull(schemaBuilderBinding, "schemaBuilderBinding is null");
         this.validationMode = requireNonNull(validationMode, "validationMode is null");
+        this.maxProtocolLevel = requireNonNull(maxProtocolLevel, "maxProtocolLevel is null");
     }
 
     record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
@@ -164,6 +169,7 @@ public class McpModule
         private Optional<Class<? extends Annotation>> filterBindingAnnotation = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<SchemaBuilder>>> schemaBuilderBinding = Optional.empty();
         private ValidationMode validationMode = ValidationMode.LENIENT;
+        private Optional<Protocol> maxProtocolLevel = Optional.empty();
 
         private Builder() {}
 
@@ -245,6 +251,14 @@ public class McpModule
             return this;
         }
 
+        public Builder withMaxProtocolLevel(Protocol maxProtocolLevel)
+        {
+            checkArgument(this.maxProtocolLevel.isEmpty(), "Max protocol level is already set");
+
+            this.maxProtocolLevel = Optional.of(requireNonNull(maxProtocolLevel, "maxProtocolLevel is null"));
+            return this;
+        }
+
         public Builder withStrictValidation()
         {
             validationMode = ValidationMode.STRICT;
@@ -313,7 +327,8 @@ public class McpModule
                     legacyOperationsBinding,
                     filterBindingAnnotation,
                     localSchemaBuilderBinding,
-                    validationMode);
+                    validationMode,
+                    maxProtocolLevel);
         }
     }
 
@@ -322,8 +337,6 @@ public class McpModule
     {
         metadataBinding.accept(binder.bind(McpMetadataMapper.class));
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
-        legacyOperationsBinding.accept(binder.bind(LegacyOperations.class));
-        binder.bind(Operations.class).to(OperationsSelector.class).in(SINGLETON);
         binder.bind(ValidationMode.class).toInstance(validationMode);
 
         configBinder(binder).bindConfig(McpConfig.class);
@@ -334,6 +347,7 @@ public class McpModule
 
         newOptionalBinder(binder, ErrorHandler.class);
 
+        bindOperations(binder);
         bindClasses(binder);
         bindTools(binder);
         bindPrompts(binder);
@@ -349,6 +363,19 @@ public class McpModule
 
         binder.install(new InternalMcpModule(filterBindingAnnotation));
         binder.install(new OperationsModule());
+    }
+
+    private void bindOperations(Binder binder)
+    {
+        legacyOperationsBinding.accept(binder.bind(LegacyOperations.class));
+
+        boolean legacyOnly = maxProtocolLevel.map(protocol -> protocol.compareTo(LAST_LEGACY_PROTOCOL) <= 0).orElse(false);
+        if (legacyOnly) {
+            binder.bind(Operations.class).to(LegacyOperations.class).in(SINGLETON);
+        }
+        else {
+            binder.bind(Operations.class).to(OperationsSelector.class).in(SINGLETON);
+        }
     }
 
     private void bindSchemaBuilder(Binder binder)
