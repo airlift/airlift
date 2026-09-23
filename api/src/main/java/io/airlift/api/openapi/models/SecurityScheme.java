@@ -1,7 +1,11 @@
 package io.airlift.api.openapi.models;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName"})
 public class SecurityScheme
@@ -59,6 +63,19 @@ public class SecurityScheme
     private String bearerFormat;
     private OAuthFlows flows;
     private String openIdConnectUrl;
+    private final Map<String, Object> extensions = new LinkedHashMap<>();
+
+    @JsonAnyGetter
+    public Map<String, Object> getExtensions()
+    {
+        return extensions;
+    }
+
+    public SecurityScheme addExtension(String name, Object value)
+    {
+        extensions.put(name, value);
+        return this;
+    }
 
     @JsonProperty
     public Type getType()

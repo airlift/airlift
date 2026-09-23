@@ -24,6 +24,7 @@ import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion;
 import io.airlift.api.openapi.OpenApiMetadata.SecurityScheme;
 import io.airlift.api.openapi.OpenApiProvider;
+import io.airlift.api.openapi.OpenApiSecurityMetadata;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.json.JsonMapperProvider;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -45,7 +46,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.api.builders.ApiBuilder.apiBuilder;
@@ -78,6 +82,12 @@ public class GenerateOpenApiMojo
 
     @Parameter(property = "api.securityScheme")
     private String securityScheme;
+
+    @Parameter
+    private List<SecuritySchemeConfiguration> securitySchemes;
+
+    @Parameter
+    private List<SecurityRequirementConfiguration> defaultSecurityRequirements;
 
     @Parameter(property = "api.openApiVersion", defaultValue = "3.0.1")
     private String openApiVersion;
@@ -248,9 +258,15 @@ public class GenerateOpenApiMojo
         }
 
         Optional<SecurityScheme> security = parseSecurityScheme();
+        Optional<OpenApiSecurityMetadata> namedSecurity = parseNamedSecurityMetadata();
+        if (security.isPresent() && namedSecurity.isPresent()) {
+            throw new MojoExecutionException("Legacy securityScheme and named securitySchemes/defaultSecurityRequirements cannot both be configured");
+        }
         OpenApiMetadata metadata = new OpenApiMetadata(security, ImmutableList.of(), basePath, Duration.ofMinutes(5), parseOpenApiVersion());
 
-        OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata, config);
+        OpenApiProvider openApiProvider = namedSecurity
+                .map(value -> OpenApiProvider.create(modelApi.modelServices(), metadata, value, config))
+                .orElseGet(() -> OpenApiProvider.create(modelApi.modelServices(), metadata, config));
         ModelServiceType modelServiceType = ModelServiceType.map(serviceType);
         OpenAPI openAPI = openApiProvider.build(modelServiceType, _ -> true);
 
@@ -300,6 +316,130 @@ public class GenerateOpenApiMojo
             throw new MojoExecutionException(
                     "Invalid security scheme: %s. Valid values are: %s".formatted(configuredSecurityScheme, Arrays.toString(SecurityScheme.values())));
         }
+    }
+
+    private Optional<OpenApiSecurityMetadata> parseNamedSecurityMetadata()
+            throws MojoExecutionException
+    {
+        boolean hasSchemes = securitySchemes != null && !securitySchemes.isEmpty();
+        boolean hasRequirements = defaultSecurityRequirements != null && !defaultSecurityRequirements.isEmpty();
+        if (!hasSchemes && !hasRequirements) {
+            return Optional.empty();
+        }
+        if (!hasSchemes) {
+            throw new MojoExecutionException("defaultSecurityRequirements require named securitySchemes");
+        }
+
+        try {
+            Map<String, OpenApiSecurityMetadata.SecurityScheme> schemes = new LinkedHashMap<>();
+            for (SecuritySchemeConfiguration configuration : securitySchemes) {
+                String name = required(configuration.name, "security scheme name");
+                OpenApiSecurityMetadata.SecurityScheme previous = schemes.put(name, configuration.toSecurityScheme());
+                if (previous != null) {
+                    throw new MojoExecutionException("Duplicate named security scheme: " + name);
+                }
+            }
+
+            List<OpenApiSecurityMetadata.SecurityRequirement> requirements = hasRequirements
+                    ? defaultSecurityRequirements.stream()
+                      .map(SecurityRequirementConfiguration::toSecurityRequirement)
+                      .toList()
+                    : List.of();
+            return Optional.of(new OpenApiSecurityMetadata(schemes, requirements));
+        }
+        catch (IllegalArgumentException | NullPointerException e) {
+            throw new MojoExecutionException("Invalid named OpenAPI security configuration: " + e.getMessage(), e);
+        }
+    }
+
+    private static String required(String value, String description)
+    {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(description + " is blank");
+        }
+        return value.trim();
+    }
+
+    public static class SecuritySchemeConfiguration
+    {
+        @Parameter(required = true)
+        private String name;
+
+        @Parameter(required = true)
+        private String type;
+
+        @Parameter
+        private String bearerFormat;
+
+        @Parameter
+        private String headerName;
+
+        @Parameter
+        private String tokenUrl;
+
+        @Parameter
+        private Map<String, String> scopes;
+
+        @Parameter(defaultValue = "CLIENT_SECRET_BASIC")
+        private String tokenEndpointAuthenticationMethod;
+
+        private OpenApiSecurityMetadata.SecurityScheme toSecurityScheme()
+        {
+            return switch (NamedSecuritySchemeType.valueOf(required(type, "security scheme type").toUpperCase(Locale.ENGLISH))) {
+                case BEARER -> bearerFormat == null || bearerFormat.isBlank()
+                        ? new OpenApiSecurityMetadata.BearerSecurityScheme()
+                        : new OpenApiSecurityMetadata.BearerSecurityScheme(bearerFormat.trim());
+                case BASIC -> new OpenApiSecurityMetadata.BasicSecurityScheme();
+                case HEADER_API_KEY -> new OpenApiSecurityMetadata.HeaderApiKeySecurityScheme(required(headerName, "headerName"));
+                case OAUTH2_CLIENT_CREDENTIALS -> new OpenApiSecurityMetadata.OAuth2ClientCredentialsSecurityScheme(
+                        required(tokenUrl, "tokenUrl"),
+                        scopes == null ? Map.of() : scopes,
+                        OpenApiSecurityMetadata.TokenEndpointAuthenticationMethod.valueOf(
+                                optional(tokenEndpointAuthenticationMethod, "CLIENT_SECRET_BASIC").toUpperCase(Locale.ENGLISH)));
+            };
+        }
+
+        private static String optional(String value, String defaultValue)
+        {
+            return value == null || value.isBlank() ? defaultValue : value.trim();
+        }
+    }
+
+    public static class SecurityRequirementConfiguration
+    {
+        @Parameter
+        private List<SecuritySchemeRequirementConfiguration> schemes;
+
+        private OpenApiSecurityMetadata.SecurityRequirement toSecurityRequirement()
+        {
+            Map<String, List<String>> requirement = new LinkedHashMap<>();
+            if (schemes != null) {
+                for (SecuritySchemeRequirementConfiguration scheme : schemes) {
+                    String name = required(scheme.name, "security requirement scheme name");
+                    if (requirement.put(name, scheme.scopes == null ? List.of() : List.copyOf(scheme.scopes)) != null) {
+                        throw new IllegalArgumentException("duplicate security scheme in requirement: " + name);
+                    }
+                }
+            }
+            return new OpenApiSecurityMetadata.SecurityRequirement(requirement);
+        }
+    }
+
+    public static class SecuritySchemeRequirementConfiguration
+    {
+        @Parameter(required = true)
+        private String name;
+
+        @Parameter
+        private List<String> scopes;
+    }
+
+    private enum NamedSecuritySchemeType
+    {
+        BEARER,
+        BASIC,
+        HEADER_API_KEY,
+        OAUTH2_CLIENT_CREDENTIALS,
     }
 
     private void writeOutput(String content)
