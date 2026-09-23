@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -58,10 +59,15 @@ public class AirliftHttpClientCodegen
     private static final Pattern HTTP_TOKEN = Pattern.compile("[!#$%&'*+.^_`|~0-9A-Za-z-]+");
     private static final Pattern STATUS_CODE = Pattern.compile("\\d{3}");
     private static final Pattern STATUS_CODE_RANGE = Pattern.compile("[1-5][Xx]{2}");
+    private static final Pattern SUCCESS_STATUS_CODE = Pattern.compile("2\\d{2}|2[Xx]{2}");
 
     public static final String GENERATOR_NAME = "airlift-http-client";
     public static final String IDEMPOTENCY_EXTENSION = "idempotencyExtension";
     private static final String DEFAULT_IDEMPOTENCY_EXTENSION = "x-airlift-idempotency";
+    private static final String EVENT_STREAM_MEDIA_TYPE = "text/event-stream";
+    private static final String EVENT_SCHEMA_EXTENSION = "x-airlift-event-schema";
+
+    private final Map<String, String> serverSentEventTypes = new LinkedHashMap<>();
 
     // whether an array parameter is sent one value per occurrence; recorded per parameter because openapi-generator keeps only an explicit flag
     private static final String EXPLODE_EXTENSION = "x_explode";
@@ -178,6 +184,8 @@ public class AirliftHttpClientCodegen
     {
         super.preprocessOpenAPI(openAPI);
 
+        serverSentEventTypes.clear();
+
         Map<String, Set<String>> requiredScopes = collectRequiredScopes(openAPI);
         authenticationSchemes.clear();
         if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null) {
@@ -220,6 +228,11 @@ public class AirliftHttpClientCodegen
         if (openAPI.getPaths() != null) {
             openAPI.getPaths().forEach((path, pathItem) -> pathItem.readOperations().forEach(operation ->
                     validateFormRequestBody(openAPI, path, operation)));
+
+            boolean openApi32 = openAPI.getOpenapi() != null && openAPI.getOpenapi().startsWith("3.2");
+            openAPI.getPaths().values().stream()
+                    .flatMap(path -> path.readOperations().stream())
+                    .forEach(operation -> discoverServerSentEventType(openAPI, operation, openApi32));
         }
     }
 
@@ -270,12 +283,27 @@ public class AirliftHttpClientCodegen
         boolean usesSuccessfulStatusResponse = false;
         boolean usesQueryParams = false;
         boolean usesJoinedArrayParams = false;
+        boolean usesServerSentEvents = false;
         boolean hasAuth = false;
         boolean hasBearerAuth = false;
         boolean hasNonBearerAuth = false;
 
         List<CodegenOperation> ops = operations.getOperation();
         for (CodegenOperation operation : ops) {
+            String configuredEventType = serverSentEventTypes.get(operation.operationIdOriginal);
+            if (configuredEventType == null) {
+                configuredEventType = serverSentEventTypes.get(operation.operationId);
+            }
+            String serverSentEventType = configuredEventType == null ? null : toModelName(configuredEventType);
+            boolean serverSentEvents = serverSentEventType != null;
+            operation.vendorExtensions.put("x_server_sent_events", serverSentEvents);
+            if (serverSentEvents) {
+                usesServerSentEvents = true;
+                operation.vendorExtensions.put("x_server_sent_event_type", serverSentEventType);
+                operation.returnType = "ServerSentEventStream<%s>".formatted(serverSentEventType);
+                addModelImport(objs, serverSentEventType);
+            }
+
             String httpMethod = operation.httpMethod.toUpperCase(Locale.ENGLISH);
             operation.vendorExtensions.put("x_http_method", httpMethod);
             List<String> successCodes = operation.responses.stream()
@@ -286,6 +314,11 @@ public class AirliftHttpClientCodegen
             boolean acceptsAny2xx = explicitSuccessCodes.isEmpty() || successCodes.stream().anyMatch(code -> STATUS_CODE_RANGE.matcher(code).matches());
             operation.vendorExtensions.put("x_success_response_codes", String.join(", ", explicitSuccessCodes));
             operation.vendorExtensions.put("x_accepts_any_2xx", acceptsAny2xx);
+            operation.vendorExtensions.put("x_success_response_condition", acceptsAny2xx
+                    ? "statusCode >= 200 && statusCode < 300"
+                    : explicitSuccessCodes.stream()
+                      .map(code -> "statusCode == " + code)
+                      .collect(Collectors.joining(" || ")));
 
             String methodLower = httpMethod.toLowerCase(Locale.ENGLISH);
             String prepareMethod = "prepare" + Character.toUpperCase(methodLower.charAt(0)) + methodLower.substring(1) + "()";
@@ -331,7 +364,12 @@ public class AirliftHttpClientCodegen
 
             boolean returnsVoid = "void".equals(operation.returnType) || operation.returnType == null;
             operation.vendorExtensions.put("x_returns_void", returnsVoid);
-            if (returnsVoid) {
+            if (serverSentEvents) {
+                String codecName = toCodecName(serverSentEventType, null, null);
+                operation.vendorExtensions.put("x_server_sent_event_codec", codecName);
+                codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(codecName, serverSentEventType, null, null));
+            }
+            else if (returnsVoid) {
                 if (acceptsAny2xx) {
                     usesSuccessfulStatusResponse = true;
                 }
@@ -363,7 +401,7 @@ public class AirliftHttpClientCodegen
             }
 
             // Build deduplicated codec references
-            if (!returnsVoid) {
+            if (!returnsVoid && !serverSentEvents) {
                 String codecName = toCodecName(operation.returnType, operation.returnContainer, operation.returnBaseType);
                 operation.vendorExtensions.put("x_response_codec", codecName);
                 codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(
@@ -423,6 +461,7 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_query_params", usesQueryParams);
         objs.put("x_uses_joined_array_params", usesJoinedArrayParams);
         objs.put("x_uses_json_codec", !codecs.isEmpty());
+        objs.put("x_uses_server_sent_events", usesServerSentEvents);
         objs.put("x_uses_list_codec", usesListCodec);
         objs.put("x_uses_list_type", usesListType || usesListCodec);
         objs.put("x_uses_map_codec", usesMapCodec);
@@ -692,6 +731,67 @@ public class AirliftHttpClientCodegen
                     .replaceAll("[^A-Za-z0-9]+", "-")
                     .replaceAll("^-|-$", "")
                     .toLowerCase(Locale.ENGLISH);
+        }
+    }
+
+    private void discoverServerSentEventType(OpenAPI openAPI, Operation operation, boolean openApi32)
+    {
+        if (operation.getResponses() == null) {
+            return;
+        }
+
+        operation.getResponses().entrySet().stream()
+                .filter(entry -> SUCCESS_STATUS_CODE.matcher(entry.getKey()).matches())
+                .map(entry -> ModelUtils.getReferencedApiResponse(openAPI, entry.getValue()))
+                .filter(response -> response.getContent() != null)
+                .map(response -> response.getContent().get(EVENT_STREAM_MEDIA_TYPE))
+                .filter(java.util.Objects::nonNull)
+                .forEach(mediaType -> discoverServerSentEventType(operation, mediaType, openApi32));
+    }
+
+    private void discoverServerSentEventType(Operation operation, MediaType mediaType, boolean openApi32)
+    {
+        Object eventSchema = mediaType.getExtensions() == null ? null : mediaType.getExtensions().get(EVENT_SCHEMA_EXTENSION);
+        if (eventSchema == null) {
+            if (openApi32 && mediaType.getSchema() == null) {
+                throw new IllegalArgumentException(
+                        "OpenAPI 3.2 itemSchema metadata for operation '%s' is not available; typed server-sent events cannot be generated"
+                                .formatted(operation.getOperationId()));
+            }
+            // an untyped event stream would otherwise be generated as a JSON operation with the wrong wire contract
+            throw new IllegalArgumentException(
+                    "Operation '%s' returns text/event-stream without %s; typed server-sent events cannot be generated"
+                            .formatted(operation.getOperationId(), EVENT_SCHEMA_EXTENSION));
+        }
+
+        String reference = switch (eventSchema) {
+            case Schema<?> schema -> schema.get$ref();
+            case Map<?, ?> values when values.get("$ref") instanceof String value -> value;
+            default -> null;
+        };
+        if (reference == null || reference.isBlank() || !reference.contains("/")) {
+            throw new IllegalArgumentException(
+                    "%s for operation '%s' must be a schema reference".formatted(EVENT_SCHEMA_EXTENSION, operation.getOperationId()));
+        }
+        if (operation.getOperationId() == null || operation.getOperationId().isBlank()) {
+            throw new IllegalArgumentException("Typed server-sent event operations must declare an operationId");
+        }
+
+        String modelName = reference.substring(reference.lastIndexOf('/') + 1);
+        String previous = serverSentEventTypes.putIfAbsent(operation.getOperationId(), modelName);
+        if (previous != null && !previous.equals(modelName)) {
+            throw new IllegalArgumentException(
+                    "Operation '%s' declares multiple server-sent event schemas".formatted(operation.getOperationId()));
+        }
+    }
+
+    private void addModelImport(OperationsMap objs, String modelName)
+    {
+        Map<String, String> modelImport = Map.of("import", toModelImport(modelName));
+        List<Map<String, String>> imports = new ArrayList<>(objs.getImports());
+        if (!imports.contains(modelImport)) {
+            imports.add(modelImport);
+            objs.setImports(imports);
         }
     }
 

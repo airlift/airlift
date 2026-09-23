@@ -1,0 +1,30 @@
+openapi: 3.0.1
+info:
+  title: Referenced Event Stream API
+  version: 1.0.0
+paths:
+  /events:
+    get:
+      tags: [events]
+      operationId: streamEvents
+      responses:
+        '200':
+          $ref: '#/components/responses/EventStream'
+components:
+  responses:
+    EventStream:
+      description: Stream
+      content:
+        text/event-stream:
+          x-airlift-event-schema:
+            $ref: '#/components/schemas/Event'
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Event'
+  schemas:
+    Event:
+      type: object
+      properties:
+        message:
+          type: string
