@@ -119,7 +119,7 @@ public class {{classname}}
 
 {{/x_uses_json_body}}
 {{#x_codecs}}
-    private static final JsonCodec<{{{type}}}> {{name}} = {{{init}}};
+    private static final JsonCodec<{{{type}}}> {{{name}}} = {{{init}}};
 {{/x_codecs}}
 
     @Inject
@@ -186,14 +186,14 @@ public class {{classname}}
         if ({{paramName}} != null) {
 {{#isArray}}
 {{#vendorExtensions.x_explode}}
-            {{paramName}}.forEach(value -> uriBuilder.addParameter("{{baseName}}", String.valueOf(value)));
+            {{paramName}}.forEach(value -> uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
 {{/vendorExtensions.x_explode}}
 {{^vendorExtensions.x_explode}}
-            uriBuilder.addParameter("{{baseName}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+            uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
 {{/vendorExtensions.x_explode}}
 {{/isArray}}
 {{^isArray}}
-            uriBuilder.addParameter("{{baseName}}", String.valueOf({{paramName}}));
+            uriBuilder.addParameter("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
 {{/isArray}}
         }
 {{/queryParams}}
@@ -282,19 +282,19 @@ public class {{classname}}
             if (requireNonNull({{paramName}}, "{{paramName}} is null").isEmpty()) {
                 throw new IllegalArgumentException("{{paramName}} is empty");
             }
-            {{paramName}}.forEach(value -> form.addField("{{baseName}}", String.valueOf(value)));
+            {{paramName}}.forEach(value -> form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
 {{/isArray}}
 {{^isArray}}
-            form.addField("{{baseName}}", String.valueOf(requireNonNull({{paramName}}, "{{paramName}} is null")));
+            form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(requireNonNull({{paramName}}, "{{paramName}} is null")));
 {{/isArray}}
 {{/required}}
 {{^required}}
             if ({{paramName}} != null) {
 {{#isArray}}
-                {{paramName}}.forEach(value -> form.addField("{{baseName}}", String.valueOf(value)));
+                {{paramName}}.forEach(value -> form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf(value)));
 {{/isArray}}
 {{^isArray}}
-                form.addField("{{baseName}}", String.valueOf({{paramName}}));
+                form.addField("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
 {{/isArray}}
             }
 {{/required}}
@@ -305,7 +305,7 @@ public class {{classname}}
                     .setHeader(ACCEPT, "text/event-stream"){{/vendorExtensions.x_server_sent_events}};
 {{#headerParams}}
             if ({{paramName}} != null) {
-                requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
+                requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
             }
 {{/headerParams}}
 {{#vendorExtensions.x_has_auth_requirements}}

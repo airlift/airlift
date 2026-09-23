@@ -73,11 +73,11 @@ public enum {{classname}}
 /**
  * {{description}}{{^description}}{{classname}}{{/description}}
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "{{discriminator.propertyBaseName}}", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "{{{vendorExtensions.x_java_discriminator_property}}}", visible = true)
 @JsonSubTypes({
-{{#discriminator.mappedModels}}
-        @JsonSubTypes.Type(value = {{modelName}}.class, name = "{{mappingName}}"){{^-last}},{{/-last}}
-{{/discriminator.mappedModels}}
+{{#vendorExtensions.x_java_mapped_models}}
+        @JsonSubTypes.Type(value = {{modelName}}.class, name = "{{{mappingName}}}"){{^-last}},{{/-last}}
+{{/vendorExtensions.x_java_mapped_models}}
 })
 public {{#discriminator.mappedModels}}{{#-first}}sealed {{/-first}}{{/discriminator.mappedModels}}interface {{classname}}{{#discriminator.mappedModels}}{{#-first}} permits {{/-first}}{{modelName}}{{^-last}}, {{/-last}}{{/discriminator.mappedModels}}
 {
@@ -91,7 +91,7 @@ public {{#discriminator.mappedModels}}{{#-first}}sealed {{/-first}}{{/discrimina
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record {{classname}}(
 {{#vars}}
-        @JsonProperty("{{baseName}}") {{{datatypeWithEnum}}} {{name}}{{^-last}},{{/-last}}
+        @JsonProperty("{{{vendorExtensions.x_java_base_name}}}") {{{datatypeWithEnum}}} {{name}}{{^-last}},{{/-last}}
 {{/vars}})
 {{#vendorExtensions.x-implements}}
         {{#-first}}implements {{{.}}}{{/-first}}{{^-first}}, {{{.}}}{{/-first}}
