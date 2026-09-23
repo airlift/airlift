@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -331,6 +333,44 @@ class OpenApiGenerationTest
         assertThat(openapiFile)
                 .describedAs("OpenAPI spec should not be written when OpenAPI version is invalid")
                 .doesNotExist();
+    }
+
+    @MavenPluginTest
+    void testExtensionFiltersAreApplied()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("full-service");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.extensionFilterClasses=io.airlift.test.OperationNameExtensionFilter")
+                .execute("compile", "process-classes")
+                .assertErrorFreeLog();
+
+        JsonNode paths = new ObjectMapper().readTree(new File(basedir, "target/openapi.json")).get("paths");
+        List<JsonNode> operations = new ArrayList<>();
+        paths.forEach(path -> path.forEach(node -> {
+            if (node.has("operationId")) {
+                operations.add(node);
+            }
+        }));
+        assertThat(operations)
+                .isNotEmpty()
+                .allSatisfy(operation -> assertThat(operation.has("x-operation-name"))
+                        .describedAs("every operation should carry the filter's extension: " + operation.get("operationId"))
+                        .isTrue());
+    }
+
+    @MavenPluginTest
+    void testInvalidExtensionFilterClassFailsBuild()
+            throws Exception
+    {
+        File basedir = resources.getBasedir("full-service");
+
+        maven.forProject(basedir)
+                .withCliOptions("-Dapi.extensionFilterClasses=java.lang.String")
+                .execute("clean", "compile", "process-classes")
+                .assertLogText("must implement OpenApiExtensionFilter")
+                .assertNoLogText("BUILD SUCCESS");
     }
 
     @MavenPluginTest

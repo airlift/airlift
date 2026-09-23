@@ -20,6 +20,7 @@ import io.airlift.api.ApiServiceType;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
+import io.airlift.api.openapi.OpenApiExtensionFilter;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion;
 import io.airlift.api.openapi.OpenApiMetadata.SecurityScheme;
@@ -74,6 +75,13 @@ public class GenerateOpenApiMojo
     @Parameter(property = "api.serviceTypeClass", defaultValue = "io.airlift.api.maven.DefaultServiceType")
     private String serviceTypeClass;
 
+    /**
+     * {@link OpenApiExtensionFilter} classes, each with a public no-argument constructor, applied to every
+     * generated operation, as {@code ApiModule.Builder.addOpenApiExtensionFilterBinding} does at runtime.
+     */
+    @Parameter(property = "api.extensionFilterClasses")
+    private List<String> extensionFilterClasses;
+
     @Parameter(property = "api.outputFile", defaultValue = "${project.build.directory}/openapi/openapi.json")
     private File outputFile;
 
@@ -121,7 +129,9 @@ public class GenerateOpenApiMojo
             ApiServiceType serviceType = loadServiceType(classLoader);
             getLog().info("Using service type: " + serviceType.getClass().getName());
 
-            String openApiJson = generateOpenApi(serviceClassList, serviceType);
+            List<OpenApiExtensionFilter> extensionFilters = loadExtensionFilters(classLoader);
+
+            String openApiJson = generateOpenApi(serviceClassList, serviceType, extensionFilters);
 
             writeOutput(openApiJson);
             getLog().info("OpenAPI specification written to: " + outputFile.getAbsolutePath());
@@ -240,7 +250,29 @@ public class GenerateOpenApiMojo
         }
     }
 
-    private String generateOpenApi(List<Class<?>> serviceClassList, ApiServiceType serviceType)
+    private List<OpenApiExtensionFilter> loadExtensionFilters(ClassLoader classLoader)
+            throws MojoExecutionException
+    {
+        if (extensionFilterClasses == null) {
+            return ImmutableList.of();
+        }
+        ImmutableList.Builder<OpenApiExtensionFilter> extensionFilters = ImmutableList.builder();
+        for (String extensionFilterClass : extensionFilterClasses) {
+            try {
+                Class<?> loadedClass = classLoader.loadClass(extensionFilterClass);
+                if (!OpenApiExtensionFilter.class.isAssignableFrom(loadedClass)) {
+                    throw new MojoExecutionException("Extension filter class must implement OpenApiExtensionFilter: " + extensionFilterClass);
+                }
+                extensionFilters.add(loadedClass.asSubclass(OpenApiExtensionFilter.class).getDeclaredConstructor().newInstance());
+            }
+            catch (ReflectiveOperationException e) {
+                throw new MojoExecutionException("Failed to instantiate extension filter class: " + extensionFilterClass, e);
+            }
+        }
+        return extensionFilters.build();
+    }
+
+    private String generateOpenApi(List<Class<?>> serviceClassList, ApiServiceType serviceType, List<OpenApiExtensionFilter> extensionFilters)
             throws MojoExecutionException
     {
         ApiBuilderConfig config = ApiBuilderConfig.jackson();
@@ -264,9 +296,7 @@ public class GenerateOpenApiMojo
         }
         OpenApiMetadata metadata = new OpenApiMetadata(security, ImmutableList.of(), basePath, Duration.ofMinutes(5), parseOpenApiVersion());
 
-        OpenApiProvider openApiProvider = namedSecurity
-                .map(value -> OpenApiProvider.create(modelApi.modelServices(), metadata, value, config))
-                .orElseGet(() -> OpenApiProvider.create(modelApi.modelServices(), metadata, config));
+        OpenApiProvider openApiProvider = OpenApiProvider.create(modelApi.modelServices(), metadata, namedSecurity, extensionFilters, config.enumValueResolver());
         ModelServiceType modelServiceType = ModelServiceType.map(serviceType);
         OpenAPI openAPI = openApiProvider.build(modelServiceType, _ -> true);
 
