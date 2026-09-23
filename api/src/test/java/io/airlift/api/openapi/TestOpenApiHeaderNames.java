@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.api.builders.ApiBuilder.apiBuilder;
@@ -33,51 +32,26 @@ import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_
 import static io.airlift.api.servertests.openapi.TestOpenApi.validateOpenApiJson;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestOpenApiIdempotencyKey
+public class TestOpenApiHeaderNames
 {
     private static final JsonCodec<OpenAPI> OPEN_API_CODEC = jsonCodec(OpenAPI.class);
 
     @Test
-    public void testIdempotencyHeaderIsPublished()
+    public void testExplicitAndDerivedHeaderNamesArePublished()
     {
-        ModelApi modelApi = apiBuilder().add(IdempotentService.class).build();
+        ModelApi modelApi = apiBuilder().add(HeaderService.class).build();
         assertThat(modelApi.modelServices().errors()).isEmpty();
 
         OpenAPI openAPI = build(modelApi);
         validateOpenApiJson(OPEN_API_CODEC.toJson(openAPI));
 
-        Operation create = onlyPost(openAPI);
-        List<String> headerNames = create.getParameters().stream()
+        List<String> headerNames = onlyPost(openAPI).getParameters().stream()
                 .filter(parameter -> "header".equals(parameter.getIn()))
                 .map(Parameter::getName)
                 .toList();
         // an explicitly named header keeps its name; an unnamed one keeps the derived X- name
         assertThat(headerNames).containsExactlyInAnyOrder("Idempotency-Key", "X-REQUEST-ID");
-        assertThat(create.getExtensions()).containsEntry("x-airlift-idempotency", Map.of("header", "Idempotency-Key"));
-    }
-
-    @Test
-    public void testOperationWithoutIdempotencyKeyHasNoExtension()
-    {
-        ModelApi modelApi = apiBuilder().add(PlainService.class).build();
-        assertThat(modelApi.modelServices().errors()).isEmpty();
-
-        OpenAPI openAPI = build(modelApi);
-        onlyPost(openAPI);
-        assertThat(OPEN_API_CODEC.toJson(openAPI)).doesNotContain("x-airlift-idempotency");
-    }
-
-    @Test
-    public void testIdempotencyKeyRequiresMatchingHeaderParameter()
-    {
-        ModelApi modelApi = apiBuilder().add(MissingHeaderService.class).build();
-        assertThat(modelApi.modelServices().errors()).isEmpty();
-
-        assertThatThrownBy(() -> build(modelApi))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("@OpenApiIdempotencyKey header 'Idempotency-Key' is not an operation header parameter");
     }
 
     @Test
@@ -108,34 +82,18 @@ public class TestOpenApiIdempotencyKey
     private static Operation onlyPost(OpenAPI openAPI)
     {
         List<Operation> posts = openAPI.getPaths().getPaths().values().stream()
-                .map(path -> path.getPost())
+                .map(pathItem -> pathItem.getPost())
                 .filter(operation -> operation != null)
                 .toList();
         assertThat(posts).hasSize(1);
         return posts.getFirst();
     }
 
-    @ApiService(name = "idempotent", type = ServiceType.class, description = "Idempotent operations")
-    public static class IdempotentService
+    @ApiService(name = "headerNames", type = ServiceType.class, description = "Header name operations")
+    public static class HeaderService
     {
-        @ApiCreate(description = "Create with an idempotency key", quotas = "things")
-        @OpenApiIdempotencyKey(header = "Idempotency-Key")
+        @ApiCreate(description = "Create with named and unnamed headers", quotas = "things")
         public void create(@ApiParameter(name = "Idempotency-Key") ApiHeader idempotencyKey, @ApiParameter ApiHeader requestId) {}
-    }
-
-    @ApiService(name = "plain", type = ServiceType.class, description = "Plain operations")
-    public static class PlainService
-    {
-        @ApiCreate(description = "Create without an idempotency key", quotas = "things")
-        public void create(@ApiParameter ApiHeader requestId) {}
-    }
-
-    @ApiService(name = "missingHeader", type = ServiceType.class, description = "Invalid idempotent operations")
-    public static class MissingHeaderService
-    {
-        @ApiCreate(description = "Create without the declared header", quotas = "things")
-        @OpenApiIdempotencyKey(header = "Idempotency-Key")
-        public void create() {}
     }
 
     @ApiService(name = "namedId", type = ServiceType.class, description = "Named id operations")

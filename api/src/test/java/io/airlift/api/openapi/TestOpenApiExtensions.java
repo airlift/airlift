@@ -3,17 +3,25 @@ package io.airlift.api.openapi;
 import com.google.common.collect.ImmutableList;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiCreate;
+import io.airlift.api.ApiHeader;
+import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiService;
 import io.airlift.api.ServiceType;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.openapi.models.Operation;
+import io.airlift.api.openapi.models.Parameter;
 import io.airlift.json.JsonCodec;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.api.builders.ApiBuilder.apiBuilder;
@@ -74,6 +82,23 @@ public class TestOpenApiExtensions
                 .hasMessage("OpenAPI extension name must start with \"x-\": unprefixed");
     }
 
+    @Test
+    public void testIdempotencyKeyExample()
+    {
+        OpenAPI openAPI = build(IdempotentService.class, ImmutableList.of(IDEMPOTENCY_FILTER));
+        validateOpenApiJson(OPEN_API_CODEC.toJson(openAPI));
+
+        assertThat(onlyPost(openAPI).getExtensions()).containsEntry("x-airlift-idempotency", Map.of("header", "Idempotency-Key"));
+    }
+
+    @Test
+    public void testIdempotencyKeyExampleRejectsAnUnknownHeader()
+    {
+        assertThatThrownBy(() -> build(MissingHeaderService.class, ImmutableList.of(IDEMPOTENCY_FILTER)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("idempotency key header 'Idempotency-Key' is not an operation header parameter");
+    }
+
     private static OpenApiExtensionFilter extensionFilter(String name, Object value)
     {
         return (_, _, operation) -> {
@@ -84,7 +109,12 @@ public class TestOpenApiExtensions
 
     private static OpenAPI build(List<OpenApiExtensionFilter> extensionFilters)
     {
-        ModelApi modelApi = apiBuilder().add(ThingService.class).build();
+        return build(ThingService.class, extensionFilters);
+    }
+
+    private static OpenAPI build(Class<?> serviceClass, List<OpenApiExtensionFilter> extensionFilters)
+    {
+        ModelApi modelApi = apiBuilder().add(serviceClass).build();
         assertThat(modelApi.modelServices().errors()).isEmpty();
 
         ModelServiceType serviceType = modelApi.modelServices().services().iterator().next().service().type();
@@ -107,6 +137,49 @@ public class TestOpenApiExtensions
     public static class ThingService
     {
         @ApiCreate(description = "Create a thing", quotas = "things")
+        public void create() {}
+    }
+
+    /**
+     * An application declares its own idempotency annotation and publishes it with its own extension filter.
+     */
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface IdempotencyKey
+    {
+        String header();
+    }
+
+    private static final OpenApiExtensionFilter IDEMPOTENCY_FILTER = (_, modelMethod, operation) -> {
+        IdempotencyKey idempotencyKey = modelMethod.method().getAnnotation(IdempotencyKey.class);
+        if (idempotencyKey == null) {
+            return operation;
+        }
+
+        String headerName = idempotencyKey.header();
+        Parameter headerParameter = operation.getParameters().stream()
+                .filter(parameter -> "header".equals(parameter.getIn()))
+                .filter(parameter -> headerName.equalsIgnoreCase(parameter.getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("idempotency key header '%s' is not an operation header parameter".formatted(headerName)));
+
+        operation.addExtension("x-airlift-idempotency", Map.of("header", headerParameter.getName()));
+        return operation;
+    };
+
+    @ApiService(name = "idempotent", type = ServiceType.class, description = "Idempotent operations")
+    public static class IdempotentService
+    {
+        @ApiCreate(description = "Create with an idempotency key", quotas = "things")
+        @IdempotencyKey(header = "Idempotency-Key")
+        public void create(@ApiParameter(name = "Idempotency-Key") ApiHeader idempotencyKey) {}
+    }
+
+    @ApiService(name = "missingHeader", type = ServiceType.class, description = "Invalid idempotent operations")
+    public static class MissingHeaderService
+    {
+        @ApiCreate(description = "Create without the declared header", quotas = "things")
+        @IdempotencyKey(header = "Idempotency-Key")
         public void create() {}
     }
 }
