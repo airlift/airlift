@@ -24,6 +24,10 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpUriBuilder;
 {{/x_uses_query_params}}
 import io.airlift.http.client.Request;
+{{#x_uses_server_sent_events}}
+import io.airlift.http.client.ServerSentEventStream;
+import io.airlift.http.client.StreamingResponse;
+{{/x_uses_server_sent_events}}
 {{#x_uses_json_codec}}
 import io.airlift.json.JsonCodec;
 {{/x_uses_json_codec}}
@@ -36,6 +40,9 @@ import java.util.List;
 import java.util.Map;
 {{/x_uses_map_codec}}
 
+{{#x_uses_server_sent_events}}
+import static io.airlift.http.client.HeaderNames.ACCEPT;
+{{/x_uses_server_sent_events}}
 {{#x_has_auth}}
 {{#x_has_bearer_auth}}
 import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
@@ -45,6 +52,10 @@ import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 {{/x_uses_body}}
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+{{#x_uses_server_sent_events}}
+import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
+import static io.airlift.http.client.ResponseHandlerUtils.isEventStreamContent;
+{{/x_uses_server_sent_events}}
 {{#x_uses_json_body}}
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 {{/x_uses_json_body}}
@@ -290,7 +301,8 @@ public class {{classname}}
 {{/formParams}}
 {{/vendorExtensions.x_has_form_body}}
             Request.Builder requestBuilder = {{vendorExtensions.x_prepare_method}}
-                    .setUri(uri);
+                    .setUri(uri){{#vendorExtensions.x_server_sent_events}}
+                    .setHeader(ACCEPT, "text/event-stream"){{/vendorExtensions.x_server_sent_events}};
 {{#headerParams}}
             if ({{paramName}} != null) {
                 requestBuilder.setHeader("{{baseName}}", String.valueOf({{paramName}}));
@@ -332,6 +344,29 @@ public class {{classname}}
                     .build();
 {{/vendorExtensions.x_has_form_body}}
 
+{{#vendorExtensions.x_server_sent_events}}
+            StreamingResponse response = httpClient.executeStreaming(request);
+            int statusCode = response.getStatusCode();
+            if (!({{{vendorExtensions.x_success_response_condition}}})) {
+                try (response) {
+                    throw captureUnexpectedResponse("Unexpected response", request, response);
+                }
+            }
+            if (!isEventStreamContent(response)) {
+                try (response) {
+                    throw captureUnexpectedResponse("Unexpected content type", request, response);
+                }
+            }
+            try {
+                return new ServerSentEventStream<>(response, {{vendorExtensions.x_server_sent_event_codec}});
+            }
+            catch (RuntimeException e) {
+                try (response) {
+                    throw e;
+                }
+            }
+{{/vendorExtensions.x_server_sent_events}}
+{{^vendorExtensions.x_server_sent_events}}
 {{#vendorExtensions.x_returns_void}}
 {{#vendorExtensions.x_accepts_any_2xx}}
             httpClient.execute(request, createSuccessfulStatusResponseHandler());
@@ -349,6 +384,7 @@ public class {{classname}}
             return httpClient.execute(request, createSafeJsonResponseHandler({{vendorExtensions.x_response_codec}}, {{vendorExtensions.x_success_response_codes}}));
 {{/vendorExtensions.x_accepts_any_2xx}}
 {{/vendorExtensions.x_returns_void}}
+{{/vendorExtensions.x_server_sent_events}}
         });
     }
 

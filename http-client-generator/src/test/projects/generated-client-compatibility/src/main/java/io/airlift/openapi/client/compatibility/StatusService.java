@@ -15,11 +15,15 @@ package io.airlift.openapi.client.compatibility;
 
 import io.airlift.api.ApiGet;
 import io.airlift.api.ApiCustom;
+import io.airlift.api.ApiCreate;
 import io.airlift.api.ApiHeader;
 import io.airlift.api.ApiParameter;
 import io.airlift.api.ApiPatch;
 import io.airlift.api.ApiService;
+import io.airlift.api.ApiStreamResponse.ApiServerSentEventStreamResponse;
 import io.airlift.api.ApiType;
+
+import java.nio.charset.StandardCharsets;
 
 @ApiService(name = "compatibility", type = CompatibilityServiceType.class, description = "Generated client compatibility operations")
 public class StatusService
@@ -41,6 +45,28 @@ public class StatusService
     public ServiceStatus readFailure()
     {
         return getStatus();
+    }
+
+    @ApiCreate(description = "Stream service status events", openApiAlternateName = "streamEvents")
+    public ApiServerSentEventStreamResponse<ServiceStatus, CompatibilityEvent> streamEvents()
+    {
+        return new ApiServerSentEventStreamResponse<>(outputStream -> {
+            try {
+                outputStream.write("""
+                        : keepalive\r
+                        id: status-1\r
+                        event: status\r
+                        retry: 1500\r
+                        data: {"message":"héllo",\r
+                        data: "kind":"TEXT"}\r
+                        \r
+                        : complete\r
+                        """.getBytes(StandardCharsets.UTF_8));
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @ApiCustom(verb = "patch-status", type = ApiType.UPDATE, description = "Patch service status", responses = CompatibilityConflict.class, openApiAlternateName = "patchStatus")

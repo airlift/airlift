@@ -16,14 +16,22 @@ package io.airlift.openapi.client.compatibility;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
 import io.airlift.api.binding.ApiModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.BearerTokenProvider;
 import io.airlift.http.client.ClientCredentialsTokenProvider;
 import io.airlift.http.client.HeaderName;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.RequestStats;
+import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.ServerSentEvent;
+import io.airlift.http.client.ServerSentEventStream;
+import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.UnexpectedResponseException;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.testing.TestingHttpClient;
@@ -37,6 +45,7 @@ import io.airlift.openapi.client.generated.ApiException;
 import io.airlift.openapi.client.generated.ApiOAuth2;
 import io.airlift.openapi.client.generated.RetryPolicy;
 import io.airlift.openapi.client.generated.model.CompatibilityConflict;
+import io.airlift.openapi.client.generated.model.CompatibilityEvent;
 import io.airlift.openapi.client.generated.model.FrameKind;
 import io.airlift.openapi.client.generated.model.NamedStatus;
 import io.airlift.openapi.client.generated.model.QueryFrame;
@@ -60,8 +69,11 @@ import org.junit.jupiter.api.Timeout;
 
 import java.net.URI;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -156,6 +168,57 @@ class GeneratedClientRuntimeTest
     {
         assertThat(QueryFrame.class.getPermittedSubclasses())
                 .containsExactlyInAnyOrder(TextFrame.class, SqlFrame.class);
+    }
+
+    @Test
+    void testTypedServerSentEventRoundTrip()
+    {
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken(ACCESS_TOKEN));
+
+        try (ServerSentEventStream<CompatibilityEvent> stream = client.streamEvents()) {
+            assertThat(stream.readEvent()).contains(new ServerSentEvent<>(
+                    Optional.of("status"),
+                    Optional.of("status-1"),
+                    new CompatibilityEvent("héllo", FrameKind.TEXT),
+                    Optional.of(Duration.ofMillis(1500))));
+            assertThat(stream.hasNext()).isFalse();
+        }
+    }
+
+    @Test
+    void testServerSentEventEstablishmentUsesStructuredFailure()
+    {
+        CompatibilityServiceClient client = new CompatibilityServiceClient(httpClient, baseUri, accessToken("rejected-token"), RetryPolicy.disabled());
+
+        assertThatThrownBy(client::streamEvents)
+                .isInstanceOf(ApiException.class)
+                .satisfies(throwable -> {
+                    ApiException exception = (ApiException) throwable;
+                    assertThat(exception.getOperationName()).isEqualTo("streamEvents");
+                    assertThat(exception.getRequestMethod()).isEqualTo("POST");
+                    assertThat(exception.getStatusCode()).isEqualTo(401);
+                });
+    }
+
+    @Test
+    void testServerSentEventContentTypeMismatchIsStructuredFailure()
+    {
+        AtomicBoolean closed = new AtomicBoolean();
+        HttpClient streamingClient = streamingClient(new StubStreamingResponse(
+                ImmutableListMultimap.of(CONTENT_TYPE, JSON_UTF_8.toString()),
+                "{\"message\":\"not an event stream\"}".getBytes(UTF_8),
+                closed));
+        CompatibilityServiceClient client = new CompatibilityServiceClient(streamingClient, TEST_URI, accessToken(ACCESS_TOKEN), RetryPolicy.disabled());
+
+        assertThatThrownBy(client::streamEvents)
+                .isInstanceOf(ApiException.class)
+                .satisfies(throwable -> {
+                    ApiException exception = (ApiException) throwable;
+                    assertThat(exception.getOperationName()).isEqualTo("streamEvents");
+                    assertThat(exception.getStatusCode()).isEqualTo(200);
+                    assertThat(exception.getCause()).hasMessageStartingWith("Unexpected content type");
+                });
+        assertThat(closed).isTrue();
     }
 
     @Test
@@ -782,6 +845,64 @@ class GeneratedClientRuntimeTest
     private static io.airlift.openapi.client.generated.second.ApiCredentials secondAccessToken(BearerTokenProvider tokenProvider)
     {
         return io.airlift.openapi.client.generated.second.ApiCredentials.builder().withAccessToken(tokenProvider).build();
+    }
+
+    private static HttpClient streamingClient(StreamingResponse response)
+    {
+        return new HttpClient()
+        {
+            @Override
+            public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public StreamingResponse executeStreaming(Request request)
+            {
+                return response;
+            }
+
+            @Override
+            public RequestStats getStats()
+            {
+                return new RequestStats();
+            }
+
+            @Override
+            public void close() {}
+
+            @Override
+            public boolean isClosed()
+            {
+                return false;
+            }
+        };
+    }
+
+    private static final class StubStreamingResponse
+            extends TestingResponse
+            implements StreamingResponse
+    {
+        private final AtomicBoolean closed;
+
+        private StubStreamingResponse(ListMultimap<HeaderName, String> headers, byte[] body, AtomicBoolean closed)
+        {
+            super(OK, headers, body);
+            this.closed = closed;
+        }
+
+        @Override
+        public void close()
+        {
+            closed.set(true);
+        }
     }
 
     private static CompatibilityServiceClient client(TestingHttpClient httpClient, int maxRetries)

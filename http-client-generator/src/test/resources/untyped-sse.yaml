@@ -1,0 +1,16 @@
+openapi: 3.0.1
+info:
+  title: Untyped Event Stream API
+  version: 1.0.0
+paths:
+  /events:
+    get:
+      tags: [events]
+      operationId: streamEvents
+      responses:
+        '200':
+          description: Events
+          content:
+            text/event-stream:
+              schema:
+                type: string
