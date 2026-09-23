@@ -1,0 +1,31 @@
+openapi: 3.0.1
+info:
+  title: Inconsistent OAuth Scopes
+  version: 1.0.0
+paths:
+  /read:
+    get:
+      operationId: read
+      security:
+        - serviceOAuth: [read]
+      responses:
+        '204':
+          description: Success
+  /write:
+    post:
+      operationId: write
+      security:
+        - serviceOAuth: [write]
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceOAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            read: Read access
+            write: Write access

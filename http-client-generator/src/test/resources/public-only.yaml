@@ -1,0 +1,31 @@
+openapi: 3.0.1
+info:
+  title: Public Only API
+  version: 1.0.0
+security:
+  - serviceBearer: []
+paths:
+  /public:
+    get:
+      tags: [status]
+      operationId: publicOperation
+      security:
+        - {}
+      responses:
+        '204':
+          description: Success
+  /alsoPublic:
+    get:
+      tags: [status]
+      operationId: alsoPublicOperation
+      security:
+        - {}
+        - {}
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    serviceBearer:
+      type: http
+      scheme: bearer
