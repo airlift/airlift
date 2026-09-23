@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static io.airlift.mcp.model.Constants.HEADER_PROTOCOL_VERSION;
-import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_11_25;
+import static io.airlift.mcp.model.Protocol.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2026_07_28;
 import static java.util.Objects.requireNonNull;
 
@@ -22,7 +22,6 @@ public class OperationsSelector
         implements Operations
 {
     private static final Set<String> UNSUPPORTED_OLD_PROTOCOL_VERSIONS = ImmutableSet.of("2025-03-26", "2024-11-05");
-    public static final Protocol LAST_LEGACY_PROTOCOL = PROTOCOL_MCP_2025_11_25;
 
     private final OperationsImpl operationsImpl;
     private final LegacyOperations legacyOperations;
