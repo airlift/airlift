@@ -1,16 +1,167 @@
 {{>licenseInfo}}
 package {{invokerPackage}};
 
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.net.MediaType;
+import io.airlift.http.client.HeaderName;
+import io.airlift.http.client.UnexpectedResponseException;
+import io.airlift.json.JsonCodec;
+
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.util.Optional;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class ApiException
         extends RuntimeException
 {
+    private final String operationName;
+    private final URI requestUri;
+    private final String requestMethod;
+    private final int statusCode;
+    private final ListMultimap<HeaderName, String> headers;
+    private final byte[] responseBody;
+    private final Optional<String> contentType;
+    private final boolean responseBodyTruncated;
+    private final Object error;
+
     public ApiException(String message)
     {
         super(message);
+        operationName = null;
+        requestUri = null;
+        requestMethod = null;
+        statusCode = 0;
+        headers = ImmutableListMultimap.of();
+        responseBody = new byte[0];
+        contentType = Optional.empty();
+        responseBodyTruncated = false;
+        error = null;
     }
 
     public ApiException(String message, Throwable cause)
     {
         super(message, cause);
+        operationName = null;
+        requestUri = null;
+        requestMethod = null;
+        statusCode = 0;
+        headers = ImmutableListMultimap.of();
+        responseBody = new byte[0];
+        contentType = Optional.empty();
+        responseBodyTruncated = false;
+        error = null;
+    }
+
+    public ApiException(String operationName, UnexpectedResponseException response)
+    {
+        this(operationName, response, null);
+    }
+
+    public ApiException(String operationName, UnexpectedResponseException response, JsonCodec<?> errorCodec)
+    {
+        super("%s call failed with HTTP %d".formatted(operationName, response.getStatusCode()), response);
+        this.operationName = operationName;
+        requestUri = response.getRequestUri();
+        requestMethod = response.getRequestMethod();
+        statusCode = response.getStatusCode();
+        headers = ImmutableListMultimap.copyOf(response.getHeaders());
+        responseBody = response.getResponseBodyBytes();
+        contentType = response.getContentType();
+        responseBodyTruncated = response.isResponseBodyTruncated();
+        error = decodeError(errorCodec);
+    }
+
+    public String getOperationName()
+    {
+        return operationName;
+    }
+
+    public URI getRequestUri()
+    {
+        return requestUri;
+    }
+
+    public String getRequestMethod()
+    {
+        return requestMethod;
+    }
+
+    public int getStatusCode()
+    {
+        return statusCode;
+    }
+
+    public ListMultimap<HeaderName, String> getHeaders()
+    {
+        return headers;
+    }
+
+    public byte[] getResponseBodyBytes()
+    {
+        return responseBody.clone();
+    }
+
+    public String getResponseBody()
+    {
+        return new String(responseBody, getResponseCharset());
+    }
+
+    public Optional<String> getContentType()
+    {
+        return contentType;
+    }
+
+    public boolean isResponseBodyTruncated()
+    {
+        return responseBodyTruncated;
+    }
+
+    public Optional<Object> getError()
+    {
+        return Optional.ofNullable(error);
+    }
+
+    public <T> Optional<T> getError(Class<T> type)
+    {
+        return Optional.ofNullable(error)
+                .filter(type::isInstance)
+                .map(type::cast);
+    }
+
+    private Object decodeError(JsonCodec<?> errorCodec)
+    {
+        if ((errorCodec == null) || responseBodyTruncated || !isJsonContentType()) {
+            return null;
+        }
+        try {
+            return errorCodec.fromJson(responseBody);
+        }
+        catch (IllegalArgumentException _) {
+            return null;
+        }
+    }
+
+    private Charset getResponseCharset()
+    {
+        try {
+            return contentType
+                    .map(MediaType::parse)
+                    .flatMap(type -> type.charset().toJavaUtil())
+                    .orElse(UTF_8);
+        }
+        catch (RuntimeException _) {
+            return UTF_8;
+        }
+    }
+
+    private boolean isJsonContentType()
+    {
+        return contentType
+                .map(value -> value.split(";", 2)[0].trim().toLowerCase(java.util.Locale.ENGLISH))
+                .map(value -> value.equals("application/json") || value.endsWith("+json"))
+                .orElse(false);
     }
 }

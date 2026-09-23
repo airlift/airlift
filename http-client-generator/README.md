@@ -10,8 +10,8 @@ The generated clients aim to match the structure and style of Trino's handwritte
 - **`HttpUriBuilder`** for URI construction — uses `uriBuilderFrom(baseUri).appendPath(...)` with `.addParameter()` for query parameters.
 - **Static final `JsonCodec` fields** — deduplicated codecs declared as `private static final` with UPPER_SNAKE_CASE names (e.g., `PET_CODEC`), matching Trino's codec declaration style.
 - **Airlift request builders** — uses `preparePost()`, `prepareGet()`, etc. with fluent `.setUri()`, `.setHeader()`, `.setBodyGenerator()` chaining.
-- **`JsonResponseHandler` and `StatusResponseHandler`** — uses `createJsonResponseHandler(codec)` for responses with bodies and `createStatusResponseHandler()` for void responses.
-- **Retry with exponential backoff** — all `httpClient.execute()` calls are wrapped in a `RetryPolicy` that retries transient failures with configurable exponential backoff. Non-retryable errors fail immediately.
+- **`JsonResponseHandler` and `StatusResponseHandler`** — uses handlers with explicit success codes when the contract lists them, and handlers accepting any successful status when the contract declares a `2XX` response range.
+- **Retry with exponential backoff** — generated calls use a `RetryPolicy`, but transport retries are limited to safe/idempotent operations: `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`, plus `POST` or `PATCH` with a nonblank idempotency key. Non-retryable errors fail immediately.
 - **Error classification** — distinguishes retryable errors (network exceptions like `SocketException`, `SocketTimeoutException`, `ConnectException`, and HTTP status codes 429, 502, 503, 504) from non-retryable errors that fail fast.
 - **Retry-After header support** — when a server returns a `Retry-After` header (common with 429 Too Many Requests), the retry delay uses the server-suggested value instead of exponential backoff.
 - **Bearer token authentication** — when the OpenAPI spec defines a `bearerAuth` security scheme, the generated client adds `Authorization: Bearer` headers, stores the API key as a field, and exposes it through the config class.
@@ -39,6 +39,7 @@ airlift-http-client
 | `javaVersion` | JDK level used in the generated `pom.xml` | Bundled default |
 | `airbaseVersion` | Airbase parent version used in the generated `pom.xml` | Bundled default |
 | `airliftVersion` | Airlift BOM version imported by the generated `pom.xml` | Bundled default |
+| `idempotencyExtension` | Operation extension that names an operation's idempotency header (see [Idempotent Mutations](#idempotent-mutations)) | `x-airlift-idempotency` |
 
 ### Example: Maven Plugin Configuration
 
@@ -120,7 +121,7 @@ public class PetsClient
     public PetsClient(@ForPetstore HttpClient httpClient, PetstoreClientConfig config)
     {
         this(httpClient, config.getBaseUri(),
-                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelayMs(), config.getRetryMaxDelayMs()));
+                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
     }
 
     public Pet createPet(Pet pet)
@@ -135,8 +136,8 @@ public class PetsClient
                 .setBodyGenerator(jsonBodyGenerator(PET_CODEC, pet))
                 .build();
 
-        return retryPolicy.execute("createPet", uri, () ->
-                httpClient.execute(request, createJsonResponseHandler(PET_CODEC)));
+        return retryPolicy.execute("createPet", "POST", null, exception -> new ApiException("createPet", exception), () ->
+                httpClient.execute(request, createSafeJsonResponseHandler(PET_CODEC, 201)));
     }
 }
 ```
@@ -153,7 +154,7 @@ For a project named `petstore` with a tag `pets`, the generator produces:
 | `PetstoreClientConfig.java` | Airlift `@Config` class with `baseUri`, retry settings (and `apiKey` when auth is present) |
 | `ForPetstore.java` | Guice `@BindingAnnotation` for the HTTP client |
 | `RetryPolicy.java` | Retry with exponential backoff, error classification, and Retry-After support |
-| `ApiException.java` | Runtime exception for HTTP call failures |
+| `ApiException.java` | Structured failure carrying the operation, request method and URI, status, headers, bounded response body, and decoded error model |
 
 ### PascalCase Naming
 
@@ -177,15 +178,15 @@ Or use separators in `projectName`:
 
 ### Resiliency
 
-Every generated client includes a `RetryPolicy` that provides retry with exponential backoff, error classification, and Retry-After header support. The retry behavior is fully configurable via Airlift `@Config` properties.
+Every generated client includes a `RetryPolicy` that provides retry with exponential backoff, error classification, and Retry-After header support. Transport retries apply only to safe/idempotent operations: `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`, plus `POST` or `PATCH` with a nonblank idempotency key. The retry behavior is fully configurable via Airlift `@Config` properties.
 
 #### Configuration Properties
 
 | Property | Description | Default |
 |----------|-------------|---------|
 | `{prefix}.max-retries` | Maximum number of retry attempts | `3` |
-| `{prefix}.retry-initial-delay-ms` | Initial delay before first retry (milliseconds) | `100` |
-| `{prefix}.retry-max-delay-ms` | Maximum delay between retries (milliseconds) | `1000` |
+| `{prefix}.retry-initial-delay` | Initial delay before the first retry | `100ms` |
+| `{prefix}.retry-max-delay` | Maximum delay between retries | `1s` |
 
 Where `{prefix}` is derived from `projectName` (e.g., `petstore.max-retries` for project name `petstore`).
 
@@ -202,7 +203,38 @@ Only transient errors are retried. Non-retryable errors fail immediately without
 
 #### Retry-After Header
 
-When a server returns a `Retry-After` header (common with HTTP 429 responses), the retry delay uses the server-suggested value (in seconds) instead of exponential backoff, capped at `retry-max-delay-ms`.
+When a server returns a `Retry-After` header (common with HTTP 429 responses), the retry delay uses the server-suggested value (in seconds) instead of exponential backoff, capped at `retry-max-delay`.
+
+#### Idempotent Mutations
+
+`POST` and `PATCH` operations are retried only when the contract marks them idempotent, with an operation extension naming the header that carries the idempotency key:
+
+```yaml
+x-airlift-idempotency:
+  header: Idempotency-Key
+```
+
+The generated method takes that key as a parameter, sends it as the header, and permits transport retries when the key is nonblank. The header must be one of the operation's string header parameters. Set `idempotencyExtension` to read the declaration from a differently named extension.
+
+An API Builder service publishes the extension with an `OpenApiExtensionFilter`, registered with `ApiModule.Builder.addOpenApiExtensionFilterBinding` for the contract the service serves, and with the `extensionFilterClasses` parameter of `api-maven-plugin` for a contract generated at build time:
+
+```java
+public class IdempotencyKeyExtensionFilter
+        implements OpenApiExtensionFilter
+{
+    @Override
+    public Operation apply(ModelService modelService, ModelMethod modelMethod, Operation operation)
+    {
+        IdempotencyKey idempotencyKey = modelMethod.method().getAnnotation(IdempotencyKey.class);
+        if (idempotencyKey != null) {
+            operation.addExtension("x-airlift-idempotency", Map.of("header", idempotencyKey.header()));
+        }
+        return operation;
+    }
+}
+```
+
+Name the header parameter exactly with `@ApiParameter(name = "Idempotency-Key") ApiHeader idempotencyKey`.
 
 #### Disabling Retries
 
@@ -211,6 +243,19 @@ To disable retries entirely, set `max-retries` to `0`, or use `RetryPolicy.disab
 ```java
 var client = new PetsClient(httpClient, baseUri, RetryPolicy.disabled());
 ```
+
+### Failures
+
+Every failed call throws the generated `ApiException`. Its message names the operation and, for HTTP failures, the status code; headers and response bodies never appear in the message. The exception exposes:
+
+| Accessor | Contents |
+|----------|----------|
+| `getOperationName()`, `getRequestMethod()`, `getRequestUri()` | The failed operation and its request, with the URI query string removed |
+| `getStatusCode()`, `getHeaders()`, `getContentType()` | The response status and headers, or status `0` when no response was received |
+| `getResponseBody()`, `getResponseBodyBytes()`, `isResponseBodyTruncated()` | The response body, retained up to a bounded size |
+| `getError()`, `getError(Class)` | The decoded error model when the contract declares one for that status |
+
+Transport failures, interrupted retries, and bearer token provider failures are wrapped in the same exception with the original cause attached.
 
 ### Security Schemes
 
