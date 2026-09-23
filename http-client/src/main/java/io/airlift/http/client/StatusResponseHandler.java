@@ -23,19 +23,36 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
+import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 
 public class StatusResponseHandler
         implements ResponseHandler<StatusResponse, RuntimeException>
 {
-    private static final StatusResponseHandler statusResponseHandler = new StatusResponseHandler();
+    private static final StatusResponseHandler statusResponseHandler = new StatusResponseHandler(Optional.empty());
 
     public static StatusResponseHandler createStatusResponseHandler()
     {
         return statusResponseHandler;
     }
 
-    private StatusResponseHandler() {}
+    public static StatusResponseHandler createStatusResponseHandler(int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    {
+        return new StatusResponseHandler(Optional.of(SuccessfulResponseCodes.of(firstSuccessfulResponseCode, otherSuccessfulResponseCodes)));
+    }
+
+    public static StatusResponseHandler createSuccessfulStatusResponseHandler()
+    {
+        return new StatusResponseHandler(Optional.of(SuccessfulResponseCodes.anySuccessful()));
+    }
+
+    // empty when every response code is returned to the caller
+    private final Optional<SuccessfulResponseCodes> successfulResponseCodes;
+
+    private StatusResponseHandler(Optional<SuccessfulResponseCodes> successfulResponseCodes)
+    {
+        this.successfulResponseCodes = successfulResponseCodes;
+    }
 
     @Override
     public StatusResponse handleException(Request request, Exception exception)
@@ -46,6 +63,12 @@ public class StatusResponseHandler
     @Override
     public StatusResponse handle(Request request, Response response)
     {
+        if (successfulResponseCodes.isPresent() && !successfulResponseCodes.orElseThrow().contains(response.getStatusCode())) {
+            throw captureUnexpectedResponse(
+                    "Expected response code to be %s, but was %d".formatted(successfulResponseCodes.orElseThrow(), response.getStatusCode()),
+                    request,
+                    response);
+        }
         return new StatusResponse(response.getStatusCode(), response.getHeaders());
     }
 

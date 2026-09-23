@@ -15,14 +15,11 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
-
-import java.util.Set;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -38,21 +35,33 @@ public class JsonResponseHandler<T>
 
     public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
     {
-        return new JsonResponseHandler<>(jsonCodec, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
+        return new JsonResponseHandler<>(jsonCodec, SuccessfulResponseCodes.of(firstSuccessfulResponseCode, otherSuccessfulResponseCodes), false);
+    }
+
+    public static <T> JsonResponseHandler<T> createSuccessfulJsonResponseHandler(JsonCodec<T> jsonCodec)
+    {
+        return new JsonResponseHandler<>(jsonCodec, SuccessfulResponseCodes.anySuccessful(), true);
+    }
+
+    public static <T> JsonResponseHandler<T> createSafeJsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    {
+        return new JsonResponseHandler<>(jsonCodec, SuccessfulResponseCodes.of(firstSuccessfulResponseCode, otherSuccessfulResponseCodes), true);
     }
 
     private final JsonCodec<T> jsonCodec;
-    private final Set<Integer> successfulResponseCodes;
+    private final SuccessfulResponseCodes successfulResponseCodes;
+    private final boolean safeDiagnostics;
 
     private JsonResponseHandler(JsonCodec<T> jsonCodec)
     {
-        this(jsonCodec, 200, 201, 202, 203, 204, 205, 206);
+        this(jsonCodec, SuccessfulResponseCodes.of(200, 201, 202, 203, 204, 205, 206), false);
     }
 
-    private JsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
+    private JsonResponseHandler(JsonCodec<T> jsonCodec, SuccessfulResponseCodes successfulResponseCodes, boolean safeDiagnostics)
     {
         this.jsonCodec = jsonCodec;
-        this.successfulResponseCodes = ImmutableSet.<Integer>builder().add(firstSuccessfulResponseCode).addAll(Ints.asList(otherSuccessfulResponseCodes)).build();
+        this.successfulResponseCodes = successfulResponseCodes;
+        this.safeDiagnostics = safeDiagnostics;
     }
 
     @Override
@@ -65,13 +74,17 @@ public class JsonResponseHandler<T>
     public T handle(Request request, Response response)
     {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
-            throw new UnexpectedResponseException(
-                    "Expected response code to be %s, but was %d".formatted(successfulResponseCodes, response.getStatusCode()),
-                    request,
-                    response);
+            String message = "Expected response code to be %s, but was %d".formatted(successfulResponseCodes, response.getStatusCode());
+            throw safeDiagnostics ? captureUnexpectedResponse(message, request, response) : new UnexpectedResponseException(message, request, response);
         }
 
-        if (!isJsonUtf8Content(response)) {
+        if (!isExpectedJsonContent(response)) {
+            if (safeDiagnostics) {
+                throw captureUnexpectedResponse(
+                        "Expected %s response from server".formatted(JSON_UTF_8),
+                        request,
+                        response);
+            }
             throw new UnexpectedResponseException("Expected %s response from server but got %s".formatted(JSON_UTF_8, response.getHeader(CONTENT_TYPE).orElse(null)), request, response);
         }
 
@@ -84,8 +97,24 @@ public class JsonResponseHandler<T>
             return jsonCodec.fromJson(bytes);
         }
         catch (IllegalArgumentException e) {
+            if (safeDiagnostics) {
+                throw new IllegalArgumentException("Unable to create %s from JSON response".formatted(jsonCodec.getType()));
+            }
             String json = new String(bytes, UTF_8);
             throw new IllegalArgumentException("Unable to create %s from JSON response: <%s>".formatted(jsonCodec.getType(), json), e);
+        }
+    }
+
+    private boolean isExpectedJsonContent(Response response)
+    {
+        try {
+            return isJsonUtf8Content(response);
+        }
+        catch (IllegalArgumentException e) {
+            if (!safeDiagnostics) {
+                throw e;
+            }
+            return false;
         }
     }
 }
