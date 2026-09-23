@@ -927,7 +927,8 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(client).contains("filter.forEach(value -> uriBuilder.addParameter(\"filter\", String.valueOf(value)));");
         assertThat(client).contains("tags.forEach(value -> uriBuilder.addParameter(\"tags\", String.valueOf(value)));");
         assertThat(client).contains("uriBuilder.addParameter(\"ids\", ids.stream().map(String::valueOf).collect(joining(\",\")));");
-        assertThat(client).doesNotContain("String.valueOf(filter)", "String.valueOf(ids)", "String.valueOf(tags)");
+        assertThat(client).contains("requestBuilder.setHeader(\"X-Trace\", xTrace.stream().map(String::valueOf).collect(joining(\",\")));");
+        assertThat(client).doesNotContain("String.valueOf(filter)", "String.valueOf(ids)", "String.valueOf(tags)", "String.valueOf(xTrace)");
         // an array header parameter is part of the signature, so the List import must be present even without a list codec
         assertThat(client).contains("List<String> xTrace").contains("import java.util.List;");
         verifyGeneratedCodeCompiles(outputPath);

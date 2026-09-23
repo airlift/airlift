@@ -396,8 +396,8 @@ public class AirliftHttpClientCodegen
                     .forEach(parameter -> parameter.vendorExtensions.put("x_java_base_name", javaString(parameter.baseName)));
             // the method signature declares every parameter, so any array parameter needs the List import
             usesListType |= operation.allParams.stream().anyMatch(parameter -> parameter.isArray);
-            usesJoinedArrayParams |= operation.queryParams.stream()
-                    .anyMatch(parameter -> parameter.isArray && !Boolean.TRUE.equals(parameter.vendorExtensions.get(EXPLODE_EXTENSION)));
+            usesJoinedArrayParams |= operation.headerParams.stream().anyMatch(parameter -> parameter.isArray) ||
+                    operation.queryParams.stream().anyMatch(parameter -> parameter.isArray && !Boolean.TRUE.equals(parameter.vendorExtensions.get(EXPLODE_EXTENSION)));
 
             boolean hasJsonBody = operation.bodyParam != null;
             boolean hasFormBody = operation.getHasFormParams();
@@ -1063,12 +1063,20 @@ public class AirliftHttpClientCodegen
                     throw new IllegalArgumentException("Path parameter '%s' in operation '%s' must not be an array".formatted(parameter.baseName, operation.operationId));
                 });
         // arrays are sent one value per query parameter (form style, exploded) or comma-joined
-        // (form style, not exploded); other styles have no generated form
+        // (form style, not exploded; simple style headers); other styles have no generated form
         operation.queryParams.stream()
                 .filter(parameter -> parameter.isArray)
                 .forEach(parameter -> checkArgument(
                         parameter.style == null || "form".equals(parameter.style),
                         "Query parameter '%s' in operation '%s' uses unsupported array style '%s'",
+                        parameter.baseName,
+                        operation.operationId,
+                        parameter.style));
+        operation.headerParams.stream()
+                .filter(parameter -> parameter.isArray)
+                .forEach(parameter -> checkArgument(
+                        parameter.style == null || "simple".equals(parameter.style),
+                        "Header parameter '%s' in operation '%s' uses unsupported array style '%s'",
                         parameter.baseName,
                         operation.operationId,
                         parameter.style));

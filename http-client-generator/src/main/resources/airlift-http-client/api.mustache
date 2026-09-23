@@ -305,7 +305,12 @@ public class {{classname}}
                     .setHeader(ACCEPT, "text/event-stream"){{/vendorExtensions.x_server_sent_events}};
 {{#headerParams}}
             if ({{paramName}} != null) {
+{{#isArray}}
+                requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", {{paramName}}.stream().map(String::valueOf).collect(joining(",")));
+{{/isArray}}
+{{^isArray}}
                 requestBuilder.setHeader("{{{vendorExtensions.x_java_base_name}}}", String.valueOf({{paramName}}));
+{{/isArray}}
             }
 {{/headerParams}}
 {{#vendorExtensions.x_has_auth_requirements}}
