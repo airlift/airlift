@@ -39,6 +39,7 @@ public class OpenApiModule
     private final ModelServices modelServices;
     private final Optional<Class<? extends Annotation>> bindingAnnotation;
     private final OpenApiMetadata metadata;
+    private final Optional<OpenApiSecurityMetadata> securityMetadata;
     private final Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding;
     private final List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings;
     private final ApiEnumValueResolver enumValueResolver;
@@ -51,9 +52,22 @@ public class OpenApiModule
             List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings,
             ApiEnumValueResolver enumValueResolver)
     {
+        this(modelServices, bindingAnnotation, metadata, Optional.empty(), openApiFilterProviderBinding, extensionFilterBindings, enumValueResolver);
+    }
+
+    public OpenApiModule(
+            ModelServices modelServices,
+            Optional<Class<? extends Annotation>> bindingAnnotation,
+            OpenApiMetadata metadata,
+            Optional<OpenApiSecurityMetadata> securityMetadata,
+            Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding,
+            List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings,
+            ApiEnumValueResolver enumValueResolver)
+    {
         this.modelServices = requireNonNull(modelServices, "modelServices is null");
         this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
+        this.securityMetadata = requireNonNull(securityMetadata, "securityMetadata is null");
         this.openApiFilterProviderBinding = requireNonNull(openApiFilterProviderBinding, "openApiFilterProviderBinding is null");
         this.extensionFilterBindings = ImmutableList.copyOf(extensionFilterBindings);
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
@@ -70,7 +84,7 @@ public class OpenApiModule
         extensionFilterBindings.forEach(extensionFilterBinding -> extensionFilterBinding.accept(extensionFilterBinder.addBinding()));
 
         newOptionalBinder(binder, annotatedKey(OpenApiProvider.class, bindingAnnotation)).setBinding()
-                .toProvider(new OpenApiProviderProvider(bindingAnnotation, modelServices, metadata, enumValueResolver));
+                .toProvider(new OpenApiProviderProvider(bindingAnnotation, modelServices, metadata, securityMetadata, enumValueResolver));
 
         openApiFilterProviderBinding.accept(binder.bind(annotatedKey(OpenApiFilter.class, bindingAnnotation)));
 
@@ -96,6 +110,7 @@ public class OpenApiModule
         private final Optional<Class<? extends Annotation>> bindingAnnotation;
         private final ModelServices modelServices;
         private final OpenApiMetadata metadata;
+        private final Optional<OpenApiSecurityMetadata> securityMetadata;
         private final ApiEnumValueResolver enumValueResolver;
         private Injector injector;
 
@@ -103,11 +118,13 @@ public class OpenApiModule
                 Optional<Class<? extends Annotation>> bindingAnnotation,
                 ModelServices modelServices,
                 OpenApiMetadata metadata,
+                Optional<OpenApiSecurityMetadata> securityMetadata,
                 ApiEnumValueResolver enumValueResolver)
         {
             this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
             this.modelServices = requireNonNull(modelServices, "modelServices is null");
             this.metadata = requireNonNull(metadata, "metadata is null");
+            this.securityMetadata = requireNonNull(securityMetadata, "securityMetadata is null");
             this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
         }
 
@@ -121,7 +138,7 @@ public class OpenApiModule
         public OpenApiProvider get()
         {
             Set<OpenApiExtensionFilter> extensionFilters = injector.getInstance(annotatedKey(new TypeLiteral<Set<OpenApiExtensionFilter>>() {}, bindingAnnotation));
-            return OpenApiProvider.create(modelServices, metadata, ImmutableList.copyOf(extensionFilters), enumValueResolver);
+            return OpenApiProvider.create(modelServices, metadata, securityMetadata, ImmutableList.copyOf(extensionFilters), enumValueResolver);
         }
     }
 
