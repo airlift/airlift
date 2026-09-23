@@ -75,6 +75,20 @@ public final class ResponseHandlerUtils
                 .orElse(false);
     }
 
+    public static boolean isEventStreamContent(Response response)
+    {
+        try {
+            return response.getHeader(CONTENT_TYPE)
+                    .map(MediaType::parse)
+                    .map(type -> type.type().equals("text") && type.subtype().equals("event-stream"))
+                    .orElse(false);
+        }
+        catch (IllegalArgumentException e) {
+            // a malformed content type is not an event stream
+            return false;
+        }
+    }
+
     public static InputStream getResponseStream(Response response)
     {
         return switch (response.getContent()) {
