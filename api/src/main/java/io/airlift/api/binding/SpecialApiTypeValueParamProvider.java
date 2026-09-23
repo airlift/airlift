@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
@@ -30,7 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -56,8 +56,10 @@ class SpecialApiTypeValueParamProvider
     private final JsonMapper jsonMapper;
     // The name of a Jersey Parameter is fixed for the life of the resource model, but resolving it
     // requires the matched resource method that is only available per request. Resolve it once on the
-    // first request and reuse it thereafter, keyed on the (stable) Parameter instance.
-    private final Map<Parameter, String> parameterNameCache = new ConcurrentHashMap<>();
+    // first request and reuse it thereafter, keyed on the (stable) Parameter instance. The key must be
+    // compared by identity: Parameter implements value equality, so two parameters of the same type
+    // with the same annotations are equal and would otherwise share one name.
+    private final Map<Parameter, String> parameterNameCache = new MapMaker().weakKeys().makeMap();
 
     @Inject
     SpecialApiTypeValueParamProvider(Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups, JsonMapper jsonMapper)
