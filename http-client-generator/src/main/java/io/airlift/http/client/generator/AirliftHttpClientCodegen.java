@@ -20,6 +20,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -91,6 +92,7 @@ public class AirliftHttpClientCodegen
     private static final String EVENT_SCHEMA_EXTENSION = "x-airlift-event-schema";
 
     private final Map<String, String> serverSentEventTypes = new LinkedHashMap<>();
+    private final Set<String> rawResponseOperations = new LinkedHashSet<>();
 
     // whether an array parameter is sent one value per occurrence; recorded per parameter because openapi-generator keeps only an explicit flag
     private static final String EXPLODE_EXTENSION = "x_explode";
@@ -215,6 +217,7 @@ public class AirliftHttpClientCodegen
         super.preprocessOpenAPI(openAPI);
 
         serverSentEventTypes.clear();
+        rawResponseOperations.clear();
 
         Map<String, Set<String>> requiredScopes = collectRequiredScopes(openAPI);
         authenticationSchemes.clear();
@@ -256,8 +259,10 @@ public class AirliftHttpClientCodegen
         }
 
         if (openAPI.getPaths() != null) {
-            openAPI.getPaths().forEach((path, pathItem) -> pathItem.readOperations().forEach(operation ->
-                    validateFormRequestBody(openAPI, path, operation)));
+            openAPI.getPaths().forEach((path, pathItem) -> pathItem.readOperations().forEach(operation -> {
+                validateFormRequestBody(openAPI, path, operation);
+                validateMediaTypes(openAPI, path, operation);
+            }));
 
             boolean openApi32 = openAPI.getOpenapi() != null && openAPI.getOpenapi().startsWith("3.2");
             openAPI.getPaths().values().stream()
@@ -339,6 +344,7 @@ public class AirliftHttpClientCodegen
         boolean usesQueryParams = false;
         boolean usesJoinedArrayParams = false;
         boolean usesServerSentEvents = false;
+        boolean usesRawResponse = false;
         boolean hasAuth = false;
         boolean hasBearerAuth = false;
         boolean hasNonBearerAuth = false;
@@ -357,6 +363,13 @@ public class AirliftHttpClientCodegen
                 operation.vendorExtensions.put("x_server_sent_event_type", serverSentEventType);
                 operation.returnType = "ServerSentEventStream<%s>".formatted(serverSentEventType);
                 addModelImport(objs, serverSentEventType);
+            }
+
+            boolean rawResponse = rawResponseOperations.contains(operation.operationIdOriginal) || rawResponseOperations.contains(operation.operationId);
+            operation.vendorExtensions.put("x_raw_response", rawResponse);
+            if (rawResponse) {
+                usesRawResponse = true;
+                operation.returnType = "StreamingResponse";
             }
 
             String httpMethod = operation.httpMethod.toUpperCase(Locale.ENGLISH);
@@ -423,11 +436,26 @@ public class AirliftHttpClientCodegen
             }
 
             boolean returnsVoid = "void".equals(operation.returnType) || operation.returnType == null;
+            // one handler serves every accepted success status; a bodyless status beside a marker body
+            // (API Builder's Accepted on a void method) becomes a void call, but a real payload cannot
+            List<CodegenResponse> successResponses = operation.responses.stream().filter(AirliftHttpClientCodegen::isSuccessResponse).toList();
+            boolean hasBodylessSuccess = successResponses.stream().anyMatch(response -> response.dataType == null && response.baseType == null);
+            if (!returnsVoid && !rawResponse && hasBodylessSuccess) {
+                boolean markerBodiesOnly = successResponses.stream()
+                        .filter(response -> response.dataType != null || response.baseType != null)
+                        .allMatch(response -> "Object".equals(response.dataType) && !response.isArray && !response.isMap);
+                checkArgument(markerBodiesOnly, "Operation '%s' mixes success responses with and without a body", operation.operationId);
+                operation.returnType = null;
+                returnsVoid = true;
+            }
             operation.vendorExtensions.put("x_returns_void", returnsVoid);
             if (serverSentEvents) {
                 String codecName = toCodecName(serverSentEventType, null, null);
                 operation.vendorExtensions.put("x_server_sent_event_codec", codecName);
                 codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(codecName, serverSentEventType, null, null));
+            }
+            else if (rawResponse) {
+                // the caller reads the body; only the status is checked here
             }
             else if (returnsVoid) {
                 if (acceptsAny2xx) {
@@ -461,7 +489,7 @@ public class AirliftHttpClientCodegen
             }
 
             // Build deduplicated codec references
-            if (!returnsVoid && !serverSentEvents) {
+            if (!returnsVoid && !serverSentEvents && !rawResponse) {
                 String codecName = toCodecName(operation.returnType, operation.returnContainer, operation.returnBaseType);
                 operation.vendorExtensions.put("x_response_codec", codecName);
                 codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(
@@ -522,6 +550,8 @@ public class AirliftHttpClientCodegen
         objs.put("x_uses_joined_array_params", usesJoinedArrayParams);
         objs.put("x_uses_json_codec", !codecs.isEmpty());
         objs.put("x_uses_server_sent_events", usesServerSentEvents);
+        objs.put("x_uses_raw_response", usesRawResponse);
+        objs.put("x_uses_streaming_response", usesServerSentEvents || usesRawResponse);
         objs.put("x_uses_list_codec", usesListCodec);
         objs.put("x_uses_list_type", usesListType || usesListCodec);
         objs.put("x_uses_map_codec", usesMapCodec);
@@ -804,8 +834,9 @@ public class AirliftHttpClientCodegen
                 .filter(entry -> SUCCESS_STATUS_CODE.matcher(entry.getKey()).matches())
                 .map(entry -> ModelUtils.getReferencedApiResponse(openAPI, entry.getValue()))
                 .filter(response -> response.getContent() != null)
-                .map(response -> response.getContent().get(EVENT_STREAM_MEDIA_TYPE))
-                .filter(java.util.Objects::nonNull)
+                .flatMap(response -> response.getContent().entrySet().stream())
+                .filter(entry -> isEventStreamMediaType(entry.getKey()))
+                .map(Map.Entry::getValue)
                 .forEach(mediaType -> discoverServerSentEventType(operation, mediaType, openApi32));
     }
 
@@ -914,6 +945,102 @@ public class AirliftHttpClientCodegen
                     "%s header '%s' must be a string operation header parameter".formatted(idempotencyExtension, headerName));
         }
         operation.vendorExtensions.put("x_idempotency_key", header.paramName);
+    }
+
+    // generated clients send JSON or form bodies and decode JSON or typed event streams; any other
+    // success body is handed back as the raw streaming response, and any other request body is refused
+    private void validateMediaTypes(OpenAPI openAPI, String path, Operation operation)
+    {
+        String operationName = operation.getOperationId() == null ? path : operation.getOperationId();
+
+        RequestBody requestBody = ModelUtils.getReferencedRequestBody(openAPI, operation.getRequestBody());
+        if (requestBody != null && requestBody.getContent() != null && !requestBody.getContent().isEmpty()) {
+            Set<String> mediaTypes = requestBody.getContent().keySet();
+            checkArgument(mediaTypes.stream().anyMatch(type -> isJsonMediaType(type) || isFormMediaType(type)),
+                    "Operation '%s' declares unsupported request body media types %s",
+                    operationName,
+                    mediaTypes);
+        }
+
+        if (operation.getResponses() == null) {
+            return;
+        }
+        List<ApiResponse> successResponses = operation.getResponses().entrySet().stream()
+                .filter(entry -> SUCCESS_STATUS_CODE.matcher(entry.getKey()).matches())
+                .map(entry -> ModelUtils.getReferencedApiResponse(openAPI, entry.getValue()))
+                .toList();
+        boolean json = false;
+        boolean eventStream = false;
+        boolean raw = false;
+        Set<Schema<?>> jsonSchemas = new LinkedHashSet<>();
+        for (ApiResponse response : successResponses) {
+            if (response.getContent() == null || response.getContent().isEmpty()) {
+                continue;
+            }
+            boolean decodable = false;
+            for (Map.Entry<String, MediaType> entry : response.getContent().entrySet()) {
+                if (isJsonMediaType(entry.getKey())) {
+                    json = true;
+                    decodable = true;
+                    jsonSchemas.add(entry.getValue().getSchema());
+                }
+                else if (isEventStreamMediaType(entry.getKey())) {
+                    eventStream = true;
+                    decodable = true;
+                }
+            }
+            if (!decodable) {
+                raw = true;
+            }
+        }
+        boolean decodable = json || eventStream;
+        checkArgument(!(decodable && raw), "Operation '%s' mixes decodable and raw success response media types", operationName);
+        checkArgument(!(json && eventStream), "Operation '%s' mixes JSON and event stream success responses", operationName);
+        // one codec decodes every accepted success status, so the declared bodies must share a schema
+        checkArgument(jsonSchemas.size() <= 1, "Operation '%s' declares differing success response schemas", operationName);
+        if (raw) {
+            checkArgument(operation.getOperationId() != null && !operation.getOperationId().isBlank(),
+                    "Operation %s returns a raw response and must declare an operationId",
+                    path);
+            rawResponseOperations.add(operation.getOperationId());
+        }
+    }
+
+    // the runtime JSON handlers accept application/json in UTF-8 only, so that is the only decodable body here
+    private static boolean isJsonMediaType(String mediaType)
+    {
+        if (!baseMediaType(mediaType).equals("application/json")) {
+            return false;
+        }
+        String charset = mediaTypeParameter(mediaType, "charset");
+        return charset == null || charset.equalsIgnoreCase("utf-8") || charset.equalsIgnoreCase("utf8");
+    }
+
+    private static String mediaTypeParameter(String mediaType, String name)
+    {
+        String[] parts = mediaType.split(";");
+        for (int index = 1; index < parts.length; index++) {
+            String[] parameter = parts[index].trim().split("=", 2);
+            if (parameter.length == 2 && parameter[0].trim().equalsIgnoreCase(name)) {
+                return parameter[1].trim().replace("\"", "");
+            }
+        }
+        return null;
+    }
+
+    private static boolean isEventStreamMediaType(String mediaType)
+    {
+        return baseMediaType(mediaType).equals(EVENT_STREAM_MEDIA_TYPE);
+    }
+
+    private static String baseMediaType(String mediaType)
+    {
+        return mediaType.split(";", 2)[0].trim().toLowerCase(Locale.ENGLISH);
+    }
+
+    private static boolean isFormMediaType(String mediaType)
+    {
+        return baseMediaType(mediaType).equals("application/x-www-form-urlencoded");
     }
 
     private static void validateFormRequestBody(OpenAPI openAPI, String path, Operation operation)

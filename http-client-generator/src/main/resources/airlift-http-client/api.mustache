@@ -26,8 +26,10 @@ import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.Request;
 {{#x_uses_server_sent_events}}
 import io.airlift.http.client.ServerSentEventStream;
-import io.airlift.http.client.StreamingResponse;
 {{/x_uses_server_sent_events}}
+{{#x_uses_streaming_response}}
+import io.airlift.http.client.StreamingResponse;
+{{/x_uses_streaming_response}}
 {{#x_uses_json_codec}}
 import io.airlift.json.JsonCodec;
 {{/x_uses_json_codec}}
@@ -52,8 +54,10 @@ import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 {{/x_uses_body}}
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-{{#x_uses_server_sent_events}}
+{{#x_uses_streaming_response}}
 import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
+{{/x_uses_streaming_response}}
+{{#x_uses_server_sent_events}}
 import static io.airlift.http.client.ResponseHandlerUtils.isEventStreamContent;
 {{/x_uses_server_sent_events}}
 {{#x_uses_json_body}}
@@ -371,6 +375,17 @@ public class {{classname}}
                 }
             }
 {{/vendorExtensions.x_server_sent_events}}
+{{#vendorExtensions.x_raw_response}}
+            StreamingResponse response = httpClient.executeStreaming(request);
+            int statusCode = response.getStatusCode();
+            if (!({{{vendorExtensions.x_success_response_condition}}})) {
+                try (response) {
+                    throw captureUnexpectedResponse("Unexpected response", request, response);
+                }
+            }
+            return response;
+{{/vendorExtensions.x_raw_response}}
+{{^vendorExtensions.x_raw_response}}
 {{^vendorExtensions.x_server_sent_events}}
 {{#vendorExtensions.x_returns_void}}
 {{#vendorExtensions.x_accepts_any_2xx}}
@@ -390,6 +405,7 @@ public class {{classname}}
 {{/vendorExtensions.x_accepts_any_2xx}}
 {{/vendorExtensions.x_returns_void}}
 {{/vendorExtensions.x_server_sent_events}}
+{{/vendorExtensions.x_raw_response}}
         });
     }
 
