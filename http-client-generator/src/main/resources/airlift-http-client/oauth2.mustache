@@ -1,0 +1,53 @@
+{{>licenseInfo}}
+package {{invokerPackage}};
+
+import io.airlift.http.client.ClientCredentialsTokenProvider;
+import io.airlift.http.client.HttpClient;
+
+import java.net.URI;
+
+import static java.util.Objects.requireNonNull;
+
+public final class {{clientName}}OAuth2
+{
+    private {{clientName}}OAuth2() {}
+
+{{#x_auth_schemes}}
+{{#isOAuth2ClientCredentials}}
+    public static ClientCredentialsTokenProvider create{{methodName}}TokenProvider(
+            HttpClient httpClient,
+            URI baseUri,
+            String clientId,
+            String clientSecret)
+    {
+        return {{propertyName}}TokenProviderBuilder(httpClient, baseUri, clientId, clientSecret).build();
+    }
+
+    public static ClientCredentialsTokenProvider create{{methodName}}TokenProvider(
+            HttpClient httpClient,
+            URI baseUri,
+            String clientId,
+            String clientSecret,
+            String resource)
+    {
+        return {{propertyName}}TokenProviderBuilder(httpClient, baseUri, clientId, clientSecret)
+                .resource(resource)
+                .build();
+    }
+
+    private static ClientCredentialsTokenProvider.Builder {{propertyName}}TokenProviderBuilder(
+            HttpClient httpClient,
+            URI baseUri,
+            String clientId,
+            String clientSecret)
+    {
+        return ClientCredentialsTokenProvider.builder(
+                        httpClient,
+                        requireNonNull(baseUri, "baseUri is null").resolve("{{{tokenUrl}}}"),
+                        clientId,
+                        clientSecret){{#requiredScopes}}
+                .scope("{{{value}}}"){{/requiredScopes}};
+    }
+{{/isOAuth2ClientCredentials}}
+{{/x_auth_schemes}}
+}

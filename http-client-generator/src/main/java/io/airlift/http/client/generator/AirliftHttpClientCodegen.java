@@ -174,11 +174,17 @@ public class AirliftHttpClientCodegen
     {
         super.preprocessOpenAPI(openAPI);
 
+        Map<String, Set<String>> requiredScopes = collectRequiredScopes(openAPI);
         authenticationSchemes.clear();
         if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null) {
             validateAuthenticationSchemeNames(openAPI.getComponents().getSecuritySchemes().keySet());
-            openAPI.getComponents().getSecuritySchemes().forEach((name, scheme) ->
-                    authenticationSchemes.put(name, authenticationScheme(name, scheme)));
+            // Only schemes referenced by a security requirement can be applied by generated operations,
+            // so declared but unused schemes must not shape the client or weaken its configuration.
+            openAPI.getComponents().getSecuritySchemes().forEach((name, scheme) -> {
+                if (requiredScopes.containsKey(name)) {
+                    authenticationSchemes.put(name, authenticationScheme(name, scheme, List.copyOf(requiredScopes.get(name))));
+                }
+            });
         }
         defaultSecurityRequirements = openAPI.getSecurity() == null ? List.of() : List.copyOf(openAPI.getSecurity());
 
@@ -197,6 +203,14 @@ public class AirliftHttpClientCodegen
             String clientName = (String) additionalProperties.get("clientName");
             String invokerFolder = (sourceFolder + File.separator + invokerPackage).replace(".", File.separator);
             supportingFiles.add(new SupportingFile("credentials.mustache", invokerFolder, clientName + "Credentials.java"));
+        }
+        boolean hasOAuth2ClientCredentialsMethods = authenticationSchemes.values().stream().anyMatch(scheme -> scheme.type() == AuthenticationType.OAUTH2_CLIENT_CREDENTIALS);
+        additionalProperties.put("hasOAuth2ClientCredentialsMethods", hasOAuth2ClientCredentialsMethods);
+
+        if (hasOAuth2ClientCredentialsMethods) {
+            String clientName = (String) additionalProperties.get("clientName");
+            String invokerFolder = (sourceFolder + File.separator + invokerPackage).replace(".", File.separator);
+            supportingFiles.add(new SupportingFile("oauth2.mustache", invokerFolder, clientName + "OAuth2.java"));
         }
     }
 
@@ -430,13 +444,13 @@ public class AirliftHttpClientCodegen
             for (Map.Entry<String, List<String>> entry : requirement.entrySet()) {
                 AuthenticationScheme scheme = authenticationSchemes.get(entry.getKey());
                 checkArgument(scheme != null, "Security requirement references unknown scheme '%s'", entry.getKey());
-                if (!entry.getValue().isEmpty() && scheme.type() != AuthenticationType.BEARER) {
+                if (!entry.getValue().isEmpty() && scheme.type() != AuthenticationType.OAUTH2_CLIENT_CREDENTIALS) {
                     throw new IllegalArgumentException("Scopes are only supported for OAuth2 bearer scheme '%s'".formatted(scheme.name()));
                 }
-                if (scheme.type() == AuthenticationType.BEARER || scheme.type() == AuthenticationType.BASIC) {
+                if (scheme.isBearer() || scheme.type() == AuthenticationType.BASIC) {
                     authorizationSchemes++;
                 }
-                if (scheme.type() == AuthenticationType.BEARER) {
+                if (scheme.isBearer()) {
                     bearerSchemeName = scheme.name();
                     hasBearer = true;
                 }
@@ -482,24 +496,69 @@ public class AirliftHttpClientCodegen
         operation.vendorExtensions.put("x_has_non_bearer_auth", hasNonBearer);
     }
 
-    private static AuthenticationScheme authenticationScheme(String name, SecurityScheme scheme)
+    private static Map<String, Set<String>> collectRequiredScopes(OpenAPI openAPI)
+    {
+        Map<String, Set<String>> requiredScopes = new LinkedHashMap<>();
+        List<SecurityRequirement> defaultRequirements = openAPI.getSecurity() == null ? List.of() : openAPI.getSecurity();
+        // the default requirements only apply to operations that do not declare their own,
+        // so a default every operation overrides must not shape the client configuration
+        if (openAPI.getPaths() != null) {
+            openAPI.getPaths().values().forEach(path -> path.readOperations().forEach(operation ->
+                    addRequiredScopes(requiredScopes, operation.getSecurity() == null ? defaultRequirements : operation.getSecurity())));
+        }
+        return requiredScopes;
+    }
+
+    private static void addRequiredScopes(Map<String, Set<String>> requiredScopes, List<SecurityRequirement> requirements)
+    {
+        if (requirements == null) {
+            return;
+        }
+        requirements.forEach(requirement -> requirement.forEach((name, scopes) -> {
+            Set<String> operationScopes = new LinkedHashSet<>(scopes);
+            Set<String> previousScopes = requiredScopes.putIfAbsent(name, operationScopes);
+            checkArgument(
+                    previousScopes == null || previousScopes.equals(operationScopes),
+                    "Security scheme '%s' is used with inconsistent required scopes: %s and %s",
+                    name,
+                    previousScopes,
+                    operationScopes);
+        }));
+    }
+
+    private static AuthenticationScheme authenticationScheme(String name, SecurityScheme scheme, List<String> requiredScopes)
     {
         requireNonNull(name, "security scheme name is null");
         requireNonNull(scheme, "security scheme is null");
         if (scheme.getType() == SecurityScheme.Type.HTTP && "bearer".equalsIgnoreCase(scheme.getScheme())) {
-            return new AuthenticationScheme(name, AuthenticationType.BEARER, null);
+            checkArgument(requiredScopes.isEmpty(), "Non-OAuth2 bearer scheme '%s' cannot require scopes", name);
+            return new AuthenticationScheme(name, AuthenticationType.BEARER, null, null, requiredScopes);
         }
         if (scheme.getType() == SecurityScheme.Type.HTTP && "basic".equalsIgnoreCase(scheme.getScheme())) {
-            return new AuthenticationScheme(name, AuthenticationType.BASIC, null);
+            checkArgument(requiredScopes.isEmpty(), "Basic scheme '%s' cannot require scopes", name);
+            return new AuthenticationScheme(name, AuthenticationType.BASIC, null, null, requiredScopes);
         }
         if (scheme.getType() == SecurityScheme.Type.APIKEY) {
+            checkArgument(requiredScopes.isEmpty(), "API key scheme '%s' cannot require scopes", name);
             checkArgument(scheme.getIn() == SecurityScheme.In.HEADER, "API key scheme '%s' uses unsupported location '%s'; only header API keys are supported", name, scheme.getIn());
             checkArgument(scheme.getName() != null && !scheme.getName().isBlank(), "Header API key scheme '%s' has no header name", name);
             checkArgument(HTTP_TOKEN.matcher(scheme.getName()).matches(), "Header API key scheme '%s' has an invalid header name '%s'", name, scheme.getName());
-            return new AuthenticationScheme(name, AuthenticationType.HEADER_API_KEY, scheme.getName());
+            return new AuthenticationScheme(name, AuthenticationType.HEADER_API_KEY, scheme.getName(), null, requiredScopes);
         }
         if (scheme.getType() == SecurityScheme.Type.OAUTH2 && scheme.getFlows() != null && scheme.getFlows().getClientCredentials() != null) {
-            return new AuthenticationScheme(name, AuthenticationType.BEARER, null);
+            String tokenUrl = scheme.getFlows().getClientCredentials().getTokenUrl();
+            checkArgument(tokenUrl != null && !tokenUrl.isBlank(), "OAuth2 client-credentials scheme '%s' has no token URL", name);
+            Map<String, String> availableScopes = scheme.getFlows().getClientCredentials().getScopes();
+            requiredScopes.forEach(scope -> checkArgument(
+                    availableScopes != null && availableScopes.containsKey(scope),
+                    "OAuth2 client-credentials scheme '%s' requires undeclared scope '%s'",
+                    name,
+                    scope));
+            Object authenticationMethod = scheme.getExtensions() == null ? null : scheme.getExtensions().get("x-airlift-token-endpoint-authentication-method");
+            checkArgument(authenticationMethod == null || "client_secret_basic".equals(authenticationMethod),
+                    "OAuth2 client-credentials scheme '%s' uses unsupported token endpoint authentication method",
+                    name);
+            return new AuthenticationScheme(name, AuthenticationType.OAUTH2_CLIENT_CREDENTIALS, null, tokenUrl, requiredScopes);
         }
         throw new IllegalArgumentException("Unsupported security scheme '%s'".formatted(name));
     }
@@ -542,14 +601,21 @@ public class AirliftHttpClientCodegen
         BEARER,
         BASIC,
         HEADER_API_KEY,
+        OAUTH2_CLIENT_CREDENTIALS,
     }
 
-    private record AuthenticationScheme(String name, AuthenticationType type, String headerName)
+    private record AuthenticationScheme(String name, AuthenticationType type, String headerName, String tokenUrl, List<String> requiredScopes)
     {
         private AuthenticationScheme
         {
             requireNonNull(name, "name is null");
             requireNonNull(type, "type is null");
+            requiredScopes = List.copyOf(requiredScopes);
+        }
+
+        private boolean isBearer()
+        {
+            return type == AuthenticationType.BEARER || type == AuthenticationType.OAUTH2_CLIENT_CREDENTIALS;
         }
 
         private String configuredCondition()
@@ -565,9 +631,15 @@ public class AirliftHttpClientCodegen
             data.put("methodName", toMethodName(name));
             data.put("configName", toConfigName(name));
             data.put("headerName", headerName == null ? "" : javaString(headerName));
-            data.put("isBearer", type == AuthenticationType.BEARER);
+            data.put("tokenUrl", tokenUrl == null ? "" : javaString(tokenUrl));
+            data.put("requiredScopes", requiredScopes.stream()
+                    .map(scope -> Map.of("value", javaString(scope)))
+                    .toList());
+            data.put("hasRequiredScopes", !requiredScopes.isEmpty());
+            data.put("isBearer", isBearer());
             data.put("isBasic", type == AuthenticationType.BASIC);
             data.put("isHeaderApiKey", type == AuthenticationType.HEADER_API_KEY);
+            data.put("isOAuth2ClientCredentials", type == AuthenticationType.OAUTH2_CLIENT_CREDENTIALS);
             return Map.copyOf(data);
         }
 

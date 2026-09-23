@@ -87,6 +87,14 @@ class AirliftHttpClientCodegenIntegrationTest
                 .contains("public Builder withServiceKey(String apiKey)")
                 .contains(".setHeader(\"X-Service-Key\", requireConfigured(serviceKeyApiKey, \"serviceKey\"))");
 
+        Path oauthFactory = outputPath.resolve("src/main/java/org/openapitools/client/ApiOAuth2.java");
+        assertThat(oauthFactory).exists();
+        assertThat(Files.readString(oauthFactory))
+                .contains("public static ClientCredentialsTokenProvider createServiceOAuthTokenProvider(")
+                .contains("requireNonNull(baseUri, \"baseUri is null\").resolve(\"/oauth/token?tenant=first&audience=api\")")
+                .contains(".scope(\"status:read\")")
+                .contains(".resource(resource)");
+
         verifyGeneratedCodeCompiles(outputPath);
     }
 
@@ -130,6 +138,14 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThatThrownBy(() -> generate("colliding-authentication-names.yaml", outputPath))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Security scheme names 'service-key' and 'service_key' generate the same Java property 'serviceKey'");
+    }
+
+    @Test
+    void testRejectsInconsistentOAuthScopes(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("inconsistent-oauth-scopes.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Security scheme 'serviceOAuth' is used with inconsistent required scopes: [read] and [write]");
     }
 
     @Test
@@ -491,6 +507,49 @@ class AirliftHttpClientCodegenIntegrationTest
     }
 
     @Test
+    void testOAuth2OnlyContractDoesNotRequireStaticApiKey(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("oauth2-only.yaml", outputPath);
+
+        Path configFile = outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java");
+        assertThat(Files.readString(configFile))
+                .contains("@Config(\"api.service-oauth.token\")")
+                .contains("setServiceOAuthToken")
+                .doesNotContain("getApiKey", "@NotNull\n    public String getServiceOAuthToken()");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java")))
+                .contains("public StatusClient(HttpClient httpClient, URI baseUri, ApiCredentials credentials)")
+                .doesNotContain("URI baseUri, String apiKey)");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiOAuth2.java")))
+                .contains("public static ClientCredentialsTokenProvider createServiceOAuthTokenProvider(");
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] {classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> configClass = classLoader.loadClass("org.openapitools.client.ApiClientConfig");
+            assertThat(configurationErrors(configClass, Map.of("api.base-uri", "https://example.test"))).isEmpty();
+        }
+    }
+
+    @Test
+    void testPublicOnlyOperationsDoNotRequireCredentials(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("public-only.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java")))
+                .doesNotContain("getCredentials", "getApiKey", "serviceBearer");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java")))
+                .doesNotContain("authenticationAlternative", "getCredentials()");
+        assertThat(outputPath.resolve("src/main/java/org/openapitools/client/ApiCredentials.java")).doesNotExist();
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] {classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> configClass = classLoader.loadClass("org.openapitools.client.ApiClientConfig");
+            assertThat(configurationErrors(configClass, Map.of("api.base-uri", "https://example.test"))).isEmpty();
+        }
+    }
+
+    @Test
     void testOptionalAuthenticationTriesCredentialsFirst(@TempDir Path outputPath)
             throws Exception
     {
@@ -539,7 +598,7 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(Files.readString(configFile))
                 .contains("@Config(\"api.service-key.api-key\")")
                 .contains("builder.withServiceKey(serviceKeyApiKey)")
-                .doesNotContain("@Config(\"api.api-key\")", "getApiKey()");
+                .doesNotContain("@Config(\"api.api-key\")", "getApiKey()", "unusedBasic", "Username", "Password");
 
         Path classesDir = verifyGeneratedCodeCompiles(outputPath);
         assertCredentialsOptional(classesDir, "org.openapitools.client.ApiClientConfig", "api", "service-key.api-key");

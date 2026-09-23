@@ -1,17 +1,18 @@
 openapi: 3.0.1
 info:
-  title: Header Key
+  title: OAuth2 Only
   version: 1.0.0
 servers:
   - url: /
 security:
-  - serviceKey: []
+  - serviceOAuth:
+      - status:read
 paths:
   /status:
     get:
       operationId: getStatus
       tags:
-        - HeaderKey
+        - Status
       responses:
         '200':
           description: Status
@@ -21,13 +22,14 @@ paths:
                 $ref: '#/components/schemas/Status'
 components:
   securitySchemes:
-    unusedBasic:
-      type: http
-      scheme: basic
-    serviceKey:
-      type: apiKey
-      in: header
-      name: X-Service-Key
+    serviceOAuth:
+      type: oauth2
+      x-airlift-token-endpoint-authentication-method: client_secret_basic
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes:
+            status:read: Read service status
   schemas:
     Status:
       type: object
