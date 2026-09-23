@@ -57,8 +57,8 @@ import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_UNWRAP
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.api.binding.ApiBinders.newMapBinder;
 import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
-import static io.airlift.api.binding.ApiMapBinders.newMapBinder;
 import static io.airlift.api.binding.JaxrsResourceBuilder.jaxrsResourceBuilder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static java.util.Objects.requireNonNull;
@@ -73,7 +73,7 @@ public class ApiModule
     private final Map<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings;
     private final Optional<OpenApiMetadata> openApiMetadata;
     private final Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
-    private final OpenApiExtensionFilter extensionFilter;
+    private final List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings;
     private final Optional<ApiCompatibilityTester> compatibilityTester;
     private final boolean withApiLogging;
     private final ApiMode apiMode;
@@ -88,7 +88,7 @@ public class ApiModule
             Map<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings,
             Optional<OpenApiMetadata> openApiMetadata,
             Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding,
-            OpenApiExtensionFilter extensionFilter,
+            List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings,
             Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
             ApiMode apiMode,
@@ -102,7 +102,7 @@ public class ApiModule
         this.idLookupBindings = ImmutableMap.copyOf(idLookupBindings);
         this.openApiMetadata = requireNonNull(openApiMetadata, "openApiMetadata is null");
         this.openApiFilterBinding = requireNonNull(openApiFilterBinding, "openApiFilterBinding is null");
-        this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
+        this.extensionFilterBindings = ImmutableList.copyOf(extensionFilterBindings);
         this.compatibilityTester = requireNonNull(compatibilityTester, "compatibilityTester is null");
         this.withApiLogging = withApiLogging;
         this.apiMode = requireNonNull(apiMode, "apiMode is null");
@@ -124,7 +124,7 @@ public class ApiModule
         private final ImmutableSet.Builder<ResponseFilter> responseFilters = ImmutableSet.builder();
         private final ImmutableMap.Builder<Class<? extends ApiId<?, ?>>, Consumer<LinkedBindingBuilder<ApiIdLookup<? extends ApiId<?, ?>>>>> idLookupBindings = ImmutableMap.builder();
         private Optional<OpenApiMetadata> openApiMetadata = Optional.empty();
-        private OpenApiExtensionFilter extensionFilter;
+        private final ImmutableList.Builder<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings = ImmutableList.builder();
         private Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
         private Optional<ApiCompatibilityTester> compatibilityTester = Optional.empty();
         private boolean withApiLogging;
@@ -206,11 +206,9 @@ public class ApiModule
             return this;
         }
 
-        public Builder withOpenApiExtensionFilter(OpenApiExtensionFilter extensionFilter)
+        public Builder addOpenApiExtensionFilterBinding(Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>> binding)
         {
-            checkArgument(this.extensionFilter == null, "OpenApiExtensionFilter is already set");
-
-            this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
+            extensionFilterBindings.add(requireNonNull(binding, "binding is null"));
             return this;
         }
 
@@ -251,7 +249,6 @@ public class ApiModule
         public Module build()
         {
             Consumer<LinkedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(_ -> _ -> true);
-            OpenApiExtensionFilter localExtensionFilter = (extensionFilter != null) ? extensionFilter : (_, _, operation) -> operation;
 
             return new ApiModule(
                     mergeApis(),
@@ -261,7 +258,7 @@ public class ApiModule
                     idLookupBindings.build(),
                     openApiMetadata,
                     localFilterBinding,
-                    localExtensionFilter,
+                    extensionFilterBindings.build(),
                     compatibilityTester,
                     withApiLogging,
                     apiMode,
@@ -346,7 +343,7 @@ public class ApiModule
         modelApi.modelServices().services().forEach(jaxrsResourceBuilder::bindService);
         jaxrsResourceBuilder.bindFeatures();
 
-        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), bindingAnnotation, openApi, openApiFilterBinding, extensionFilter, enumValueResolver)));
+        openApiMetadata.ifPresent(openApi -> binder.install(new OpenApiModule(modelApi.modelServices(), bindingAnnotation, openApi, openApiFilterBinding, extensionFilterBindings, enumValueResolver)));
 
         modelApi.modelServices().deprecations().forEach(modelDeprecation -> deprecationBinder.addBinding(modelDeprecation.method()).toInstance(modelDeprecation));
 

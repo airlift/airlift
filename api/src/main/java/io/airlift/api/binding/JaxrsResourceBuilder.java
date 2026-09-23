@@ -42,8 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.api.binding.ApiBinders.newMapBinder;
 import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
-import static io.airlift.api.binding.ApiMapBinders.newMapBinder;
 import static io.airlift.api.internals.Mappers.MethodPathMode.FOR_BINDING;
 import static io.airlift.api.internals.Mappers.MethodPathMode.FOR_DISPLAY;
 import static io.airlift.api.internals.Mappers.buildFullPath;

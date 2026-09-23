@@ -596,10 +596,10 @@ public class TestApiModuleBindingAnnotation
                     .addIdLookupBinding(SharedLookupId.class, binding -> binding.toInstance(lookupWithPrefix(lookupPrefix)))
                     .withOpenApiMetadata(openApiMetadata(openApiBasePath))
                     .withOpenApiFilterBinding(binding -> binding.toInstance(_ -> method -> !hideOpenApiFilteredMethod || !method.getName().equals("getOpenApiFiltered")))
-                    .withOpenApiExtensionFilter((_, _, operation) -> {
+                    .addOpenApiExtensionFilterBinding(binding -> binding.toInstance((_, _, operation) -> {
                         operation.addExtension("x-binding-test", extensionValue);
                         return operation;
-                    });
+                    }));
             serverBinding.configure(builder);
             return builder.build();
         }
@@ -624,10 +624,10 @@ public class TestApiModuleBindingAnnotation
             ApiModule.Builder builder = ApiModule.builder()
                     .addApi(apiBuilder -> apiBuilder.add(SharedServerService.class))
                     .withOpenApiMetadata(openApiMetadata(openApiBasePath))
-                    .withOpenApiExtensionFilter((_, _, operation) -> {
+                    .addOpenApiExtensionFilterBinding(binding -> binding.toInstance((_, _, operation) -> {
                         operation.addExtension("x-binding-test", extensionValue);
                         return operation;
-                    });
+                    }));
             serverBinding.configure(builder);
             return builder.build();
         }

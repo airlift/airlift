@@ -8,6 +8,7 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
+import com.google.inject.multibindings.Multibinder;
 import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.model.ModelService;
 import io.airlift.api.model.ModelServiceType;
@@ -20,10 +21,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.api.binding.ApiBinders.newSetBinder;
 import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
 import static io.airlift.api.openapi.OpenApiBuilder.JsonUriMode.TEMPLATE;
 import static io.airlift.api.openapi.OpenApiBuilder.jsonUriBuilder;
@@ -37,7 +40,7 @@ public class OpenApiModule
     private final Optional<Class<? extends Annotation>> bindingAnnotation;
     private final OpenApiMetadata metadata;
     private final Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding;
-    private final OpenApiExtensionFilter extensionFilter;
+    private final List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings;
     private final ApiEnumValueResolver enumValueResolver;
 
     public OpenApiModule(
@@ -45,14 +48,14 @@ public class OpenApiModule
             Optional<Class<? extends Annotation>> bindingAnnotation,
             OpenApiMetadata metadata,
             Consumer<LinkedBindingBuilder<OpenApiFilter>> openApiFilterProviderBinding,
-            OpenApiExtensionFilter extensionFilter,
+            List<Consumer<LinkedBindingBuilder<OpenApiExtensionFilter>>> extensionFilterBindings,
             ApiEnumValueResolver enumValueResolver)
     {
         this.modelServices = requireNonNull(modelServices, "modelServices is null");
         this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.openApiFilterProviderBinding = requireNonNull(openApiFilterProviderBinding, "openApiFilterProviderBinding is null");
-        this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
+        this.extensionFilterBindings = ImmutableList.copyOf(extensionFilterBindings);
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
     }
 
@@ -63,11 +66,11 @@ public class OpenApiModule
 
         binder.bind(annotatedKey(new TypeLiteral<Collection<ModelServiceType>>() {}, bindingAnnotation)).toInstance(servicesByType.keySet());
 
-        newOptionalBinder(binder, annotatedKey(OpenApiProvider.class, bindingAnnotation)).setBinding().toInstance((serviceType, methodFilter) -> {
-            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, methodFilter, extensionFilter, enumValueResolver);
-            servicesByType.getOrDefault(serviceType, ImmutableList.of()).forEach(builder::addService);
-            return builder.build();
-        });
+        Multibinder<OpenApiExtensionFilter> extensionFilterBinder = newSetBinder(binder, TypeLiteral.get(OpenApiExtensionFilter.class), bindingAnnotation);
+        extensionFilterBindings.forEach(extensionFilterBinding -> extensionFilterBinding.accept(extensionFilterBinder.addBinding()));
+
+        newOptionalBinder(binder, annotatedKey(OpenApiProvider.class, bindingAnnotation)).setBinding()
+                .toProvider(new OpenApiProviderProvider(bindingAnnotation, modelServices, metadata, enumValueResolver));
 
         openApiFilterProviderBinding.accept(binder.bind(annotatedKey(OpenApiFilter.class, bindingAnnotation)));
 
@@ -85,6 +88,41 @@ public class OpenApiModule
         return Resource.builder(OpenApiResource.class)
                 .path(adjustedPath)
                 .build();
+    }
+
+    private static class OpenApiProviderProvider
+            implements Provider<OpenApiProvider>
+    {
+        private final Optional<Class<? extends Annotation>> bindingAnnotation;
+        private final ModelServices modelServices;
+        private final OpenApiMetadata metadata;
+        private final ApiEnumValueResolver enumValueResolver;
+        private Injector injector;
+
+        private OpenApiProviderProvider(
+                Optional<Class<? extends Annotation>> bindingAnnotation,
+                ModelServices modelServices,
+                OpenApiMetadata metadata,
+                ApiEnumValueResolver enumValueResolver)
+        {
+            this.bindingAnnotation = requireNonNull(bindingAnnotation, "bindingAnnotation is null");
+            this.modelServices = requireNonNull(modelServices, "modelServices is null");
+            this.metadata = requireNonNull(metadata, "metadata is null");
+            this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
+        }
+
+        @Inject
+        public void setInjector(Injector injector)
+        {
+            this.injector = requireNonNull(injector, "injector is null");
+        }
+
+        @Override
+        public OpenApiProvider get()
+        {
+            Set<OpenApiExtensionFilter> extensionFilters = injector.getInstance(annotatedKey(new TypeLiteral<Set<OpenApiExtensionFilter>>() {}, bindingAnnotation));
+            return OpenApiProvider.create(modelServices, metadata, ImmutableList.copyOf(extensionFilters), enumValueResolver);
+        }
     }
 
     private static class OpenApiResourceProvider

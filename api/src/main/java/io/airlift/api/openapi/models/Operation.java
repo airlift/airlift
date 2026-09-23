@@ -225,13 +225,13 @@ public class Operation
 
     public Map<String, Object> getExtensions()
     {
-        return extensions.properties;
+        return (extensions == null) ? Map.of() : extensions.properties;
     }
 
     public void addExtension(String name, Object value)
     {
-        if (name == null || !name.startsWith("x-")) {
-            return;
+        if ((name == null) || !name.startsWith("x-")) {
+            throw new IllegalArgumentException("OpenAPI extension name must start with \"x-\": " + name);
         }
         if (this.extensions == null) {
             this.extensions = new MapWrapper();

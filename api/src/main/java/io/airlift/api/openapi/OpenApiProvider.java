@@ -22,13 +22,23 @@ public interface OpenApiProvider
 
     static OpenApiProvider create(ModelServices modelServices, OpenApiMetadata metadata, ApiBuilderConfig config)
     {
-        ApiEnumValueResolver enumValueResolver = requireNonNull(config, "config is null").enumValueResolver();
+        return create(modelServices, metadata, ImmutableList.of(), config);
+    }
+
+    static OpenApiProvider create(ModelServices modelServices, OpenApiMetadata metadata, List<OpenApiExtensionFilter> extensionFilters, ApiBuilderConfig config)
+    {
+        return create(modelServices, metadata, extensionFilters, requireNonNull(config, "config is null").enumValueResolver());
+    }
+
+    static OpenApiProvider create(ModelServices modelServices, OpenApiMetadata metadata, List<OpenApiExtensionFilter> extensionFilters, ApiEnumValueResolver enumValueResolver)
+    {
+        List<OpenApiExtensionFilter> filters = ImmutableList.copyOf(extensionFilters);
 
         Map<ModelServiceType, List<ModelService>> servicesByType = modelServices.services().stream()
                 .collect(Collectors.groupingBy(modelService -> modelService.service().type()));
 
         return (serviceType, methodFilter) -> {
-            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, methodFilter, (_, _, operation) -> operation, enumValueResolver);
+            OpenApiBuilder builder = OpenApiBuilder.builder(serviceType, modelServices.deprecations(), metadata, methodFilter, filters, enumValueResolver);
             servicesByType.getOrDefault(serviceType, ImmutableList.of()).forEach(builder::addService);
             return builder.build();
         };
