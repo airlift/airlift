@@ -5,8 +5,11 @@ import com.google.errorprone.annotations.ThreadSafe;
 import jakarta.annotation.Nullable;
 import org.weakref.jmx.Managed;
 
+import java.util.concurrent.atomic.LongAdder;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
 /*
@@ -22,6 +25,14 @@ public final class DecayCounter
 {
     @Nullable
     private final DecayState decay;
+
+    // The decay weight is a function of the current second only, so increments arriving within one
+    // second are batched in a striped adder and folded into "count" as sum * weightAt(second) when
+    // the second advances or on read - exactly equivalent to weighting each increment individually,
+    // but the common-case add() never touches the monitor. Increments that race a fold stay in the
+    // adder and are folded with the next second's weight, at most one second of decay skew.
+    private final LongAdder pending = new LongAdder();
+    private volatile long pendingSecond;
 
     private double count;
 
@@ -47,25 +58,73 @@ public final class DecayCounter
     {
         this.count = count;
         this.decay = decay;
+        this.pendingSecond = decay == null ? 0 : decay.getLandmarkInSeconds();
     }
 
     public synchronized DecayCounter duplicate()
     {
+        foldPending();
         return new DecayCounter(count, decay == null ? null : decay.copy());
     }
 
-    public synchronized void add(long value)
+    public void add(long value)
     {
         if (decay == null) {
-            count += value;
+            pending.add(value);
             return;
         }
 
         long nowInSeconds = decay.nowInSeconds();
-        if (decay.needsRescale(nowInSeconds)) {
-            count /= decay.rescaleTo(nowInSeconds);
+        if (nowInSeconds != pendingSecond) {
+            rollPendingTo(nowInSeconds);
         }
-        count += value * decay.weightAt(nowInSeconds);
+        pending.add(value);
+    }
+
+    private synchronized void rollPendingTo(long nowInSeconds)
+    {
+        // another thread may have already rolled forward, or this thread's clock read is slightly behind
+        if (nowInSeconds > pendingSecond) {
+            foldPending(nowInSeconds);
+        }
+    }
+
+    /**
+     * Must be called while holding this counter's monitor, with a non-null decay state.
+     * Returns the second the counter is now folded up to.
+     */
+    private long foldPending(long nowInSeconds)
+    {
+        long newSecond = max(nowInSeconds, pendingSecond);
+        long sum = pending.sum();
+        if (sum != 0) {
+            pending.add(-sum);
+        }
+        if (decay.needsRescale(newSecond)) {
+            count /= decay.rescaleTo(newSecond);
+        }
+        if (sum != 0) {
+            count += sum * decay.weightAt(pendingSecond);
+        }
+        pendingSecond = newSecond;
+        return newSecond;
+    }
+
+    /**
+     * Must be called while holding this counter's monitor.
+     */
+    private void foldPending()
+    {
+        if (decay == null) {
+            long sum = pending.sum();
+            if (sum != 0) {
+                pending.add(-sum);
+                count += sum;
+            }
+        }
+        else {
+            foldPending(decay.nowInSeconds());
+        }
     }
 
     public void merge(DecayCounter decayCounter)
@@ -79,6 +138,7 @@ public final class DecayCounter
         double otherCount;
         double otherAlpha;
         synchronized (decayCounter) {
+            decayCounter.foldPending();
             otherAlpha = decayCounter.getAlpha();
             otherLandmarkInSeconds = decayCounter.decay == null ? 0 : decayCounter.decay.getLandmarkInSeconds();
             otherCount = decayCounter.count;
@@ -87,6 +147,7 @@ public final class DecayCounter
         checkArgument(otherAlpha == getAlpha(), "Expected decayCounter to have alpha %s, but was %s", getAlpha(), otherAlpha);
 
         synchronized (this) {
+            foldPending();
             if (decay == null) {
                 // neither counter decays (equal alpha was checked above), so all weights are 1
                 count += otherCount;
@@ -107,8 +168,11 @@ public final class DecayCounter
     @Managed
     public synchronized void reset()
     {
+        pending.add(-pending.sum());
         if (decay != null) {
-            decay.setLandmarkInSeconds(decay.nowInSeconds());
+            long nowInSeconds = decay.nowInSeconds();
+            decay.setLandmarkInSeconds(nowInSeconds);
+            pendingSecond = max(nowInSeconds, pendingSecond);
         }
         count = 0;
     }
@@ -120,9 +184,12 @@ public final class DecayCounter
     public synchronized void resetTo(DecayCounter counter)
     {
         synchronized (counter) {
+            counter.foldPending();
             if (decay != null && counter.decay != null) {
                 decay.setLandmarkInSeconds(counter.decay.getLandmarkInSeconds());
+                pendingSecond = counter.decay.getLandmarkInSeconds();
             }
+            pending.add(-pending.sum());
             count = counter.count;
         }
     }
@@ -131,9 +198,11 @@ public final class DecayCounter
     public synchronized double getCount()
     {
         if (decay == null) {
+            foldPending();
             return count;
         }
-        return count / decay.currentWeight();
+        long second = foldPending(decay.nowInSeconds());
+        return count / decay.weightAt(second);
     }
 
     @Managed
