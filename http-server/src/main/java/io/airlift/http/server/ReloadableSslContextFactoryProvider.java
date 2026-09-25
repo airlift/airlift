@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.Enumeration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -140,11 +141,27 @@ final class ReloadableSslContextFactoryProvider
 
         try (InputStream in = new FileInputStream(file)) {
             KeyStore keyStore = KeyStore.getInstance(keystoreType);
-            keyStore.load(in, keystorePassword.toCharArray());
+            keyStore.load(in, keystorePassword == null ? null : keystorePassword.toCharArray());
+            validateKeystorePasswordProvided(keyStore, file, keystorePassword);
             return keyStore;
         }
         catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading Java key store: " + file, e);
+        }
+    }
+
+    private static void validateKeystorePasswordProvided(KeyStore keyStore, File file, String keystorePassword)
+            throws GeneralSecurityException
+    {
+        if (keystorePassword != null) {
+            return;
+        }
+
+        Enumeration<String> aliases = keyStore.aliases();
+        while (aliases.hasMoreElements()) {
+            if (keyStore.isKeyEntry(aliases.nextElement())) {
+                throw new IllegalArgumentException("Keystore password is required to load key store: " + file);
+            }
         }
     }
 

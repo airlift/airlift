@@ -656,6 +656,18 @@ public class TestHttpServerProvider
     }
 
     @Test
+    public void testMissingKeystorePassword()
+    {
+        config.setHttpEnabled(false)
+                .setHttpsEnabled(true);
+        httpsConfig.setKeystorePath(getResource("test.keystore").getPath());
+
+        assertThatThrownBy(this::createAndStartServer)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageStartingWith("Keystore password is required to load key store:");
+    }
+
+    @Test
     public void testHttpsDaysUntilCertificateExpiration()
             throws Exception
     {
