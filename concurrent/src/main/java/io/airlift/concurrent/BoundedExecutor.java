@@ -72,17 +72,61 @@ public class BoundedExecutor
         }
     }
 
+    /**
+     * Drains the queue and runs each task one at a time.
+     * Interrupt handling is similar to MoreExecutors#newSequentialExecutor with one key difference:
+     * newSequentialExecutor restores any interrupt observed at any point while draining the queue,
+     * which can propagate one task's own interrupt (e.g. a canceled FutureTask) onward to whatever
+     * runs next on that thread. BoundedExecutor only restores interrupt status that was already present
+     * before this batch began; an interrupt arising from a task during the batch is cleared and not
+     * propagated.
+     * For a BoundedExecutor wrapping a plain ThreadPoolExecutor, this distinction rarely matters:
+     * ThreadPoolExecutor clears interrupt status before each task it runs, so any residual
+     * flag left behind would be erased before it could be observed anyway.
+     * <p>
+     * Task {@link Exception}s are logged and swallowed so that a single failing task cannot stop the
+     * batch. {@link Error}s (e.g. {@link OutOfMemoryError}) are considered non-recoverable and are
+     * propagated to terminate the draining thread; before rethrowing, the queue accounting is kept
+     * consistent and, if work remains, a replacement draining task is dispatched so that queued tasks
+     * are not stranded.
+     */
     private void drainQueue()
     {
         // INVARIANT: queue has at least one task available when this method is called
-        do {
-            try {
-                queue.poll().run();
+        boolean interruptedAtStart = Thread.interrupted();
+        try {
+            do {
+                try {
+                    queue.poll().run();
+                }
+                catch (Exception e) {
+                    log.error(e, "Task failed");
+                }
+                finally {
+                    Thread.interrupted();
+                }
             }
-            catch (Throwable e) {
-                log.error(e, "Task failed");
+            while (queueSize.getAndDecrement() > maxThreads);
+        }
+        catch (Error e) {
+            // An Error will terminate this draining thread. Account for the failed task and, if there is
+            // still more queued work than active drainers, hand the remainder off to another thread.
+            if (queueSize.getAndDecrement() > maxThreads) {
+                try {
+                    coreExecutor.execute(drainQueueTask);
+                }
+                catch (Throwable t) {
+                    failed.set(true);
+                    log.error("BoundedExecutor state corrupted due to underlying executor failure");
+                    e.addSuppressed(t);
+                }
+            }
+            throw e;
+        }
+        finally {
+            if (interruptedAtStart) {
+                Thread.currentThread().interrupt();
             }
         }
-        while (queueSize.getAndDecrement() > maxThreads);
     }
 }
