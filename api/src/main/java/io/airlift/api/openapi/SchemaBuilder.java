@@ -12,6 +12,7 @@ import io.airlift.api.model.ModelPolyResource;
 import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelResourceModifier;
 import io.airlift.api.model.ModelResourceType;
+import io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion;
 import io.airlift.api.openapi.models.ArraySchema;
 import io.airlift.api.openapi.models.BooleanSchema;
 import io.airlift.api.openapi.models.DateSchema;
@@ -29,6 +30,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.ApiJsonTypes.jacksonJsonType;
@@ -47,38 +50,54 @@ import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
 import static io.airlift.api.model.ModelResourceModifier.MULTIPART_RESOURCE_IS_FIRST_ITEM;
 import static io.airlift.api.model.ModelResourceModifier.RECURSIVE_REFERENCE;
 import static io.airlift.api.openapi.OpenApiMetadata.TAG_MODEL_DEFINITIONS;
+import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 class SchemaBuilder
 {
     private final Map<SchemaKey, Schema<?>> schemas;
+    private final Map<Class<?>, Schema<?>> enumSchemas;
+    private final Map<Class<?>, List<Schema<?>>> enumReferences;
     private final boolean enumsAsStrings;
     private final ApiEnumValueResolver enumValueResolver;
     private final String schemaTag;
     private final Map<Type, ModelResource> typeToResourceCache;
     private final Map<String, Schema<?>> ofSchemas;
+    private final Map<SchemaKey, String> activeSchemaNames;
+    private final Map<Type, String> activeTypeNames;
+    private final boolean refSiblingsAllowed;
 
     SchemaBuilder(boolean enumsAsStrings, ApiEnumValueResolver enumValueResolver)
     {
-        this(TAG_MODEL_DEFINITIONS, new LinkedHashMap<>(), enumsAsStrings, enumValueResolver, new LinkedHashMap<>(), new LinkedHashMap<>());
+        this(enumsAsStrings, enumValueResolver, OpenApiVersion.OPENAPI_3_0_1);
     }
 
-    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, ApiEnumValueResolver enumValueResolver, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> ofSchemas)
+    SchemaBuilder(boolean enumsAsStrings, ApiEnumValueResolver enumValueResolver, OpenApiVersion openApiVersion)
     {
+        this(TAG_MODEL_DEFINITIONS, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), enumsAsStrings, enumValueResolver, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), openApiVersion == OpenApiVersion.OPENAPI_3_2_0);
+    }
+
+    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, Map<Class<?>, Schema<?>> enumSchemas, Map<Class<?>, List<Schema<?>>> enumReferences, boolean enumsAsStrings, ApiEnumValueResolver enumValueResolver, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> ofSchemas, Map<SchemaKey, String> activeSchemaNames, Map<Type, String> activeTypeNames, boolean refSiblingsAllowed)
+    {
+        this.refSiblingsAllowed = refSiblingsAllowed;
         this.schemaTag = requireNonNull(schemaTag, "schemaTag is null");
         // don't copy
         this.schemas = requireNonNull(schemas, "schemas is null");
+        this.enumSchemas = requireNonNull(enumSchemas, "enumSchemas is null");
+        this.enumReferences = requireNonNull(enumReferences, "enumReferences is null");  // don't copy
         this.enumsAsStrings = enumsAsStrings;
         this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
         this.typeToResourceCache = requireNonNull(typeToResourceCache, "typeToResourceCache is null");  // don't copy
         this.ofSchemas = requireNonNull(ofSchemas, "ofSchemas is null");  // don't copy
+        this.activeSchemaNames = requireNonNull(activeSchemaNames, "activeSchemaNames is null");  // don't copy
+        this.activeTypeNames = requireNonNull(activeTypeNames, "activeTypeNames is null");  // don't copy
     }
 
     @SuppressWarnings("SameParameterValue")
     SchemaBuilder withSchemaTag(String schemaTag)
     {
-        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, enumValueResolver, typeToResourceCache, ofSchemas);
+        return new SchemaBuilder(schemaTag, schemas, enumSchemas, enumReferences, enumsAsStrings, enumValueResolver, typeToResourceCache, ofSchemas, activeSchemaNames, activeTypeNames, refSiblingsAllowed);
     }
 
     private record SchemaKey(Optional<String> parent, Type containerType, ModelResourceType resourceType, BuildSchemaMode mode)
@@ -124,7 +143,39 @@ class SchemaBuilder
 
     Collection<Schema<?>> build()
     {
+        nameEnumSchemas();
         return withMissingRefs();
+    }
+
+    // Enum components are named once every resource schema is known: a resource always keeps its own
+    // name, and an enum whose simple name a resource holds becomes "<Name>Enum", so published names do not
+    // depend on the order in which the model was traversed. The recorded references are updated in place.
+    private void nameEnumSchemas()
+    {
+        Set<String> usedNames = new HashSet<>();
+        schemas.values().stream().map(Schema::getName).forEach(usedNames::add);
+        ofSchemas.keySet().forEach(usedNames::add);
+        // enums sharing a simple name are named in class name order, not in the order they were met
+        List<Class<?>> enumClasses = enumSchemas.keySet().stream()
+                .sorted(comparing(Class::getName))
+                .toList();
+        for (Class<?> clazz : enumClasses) {
+            String baseName = clazz.getSimpleName();
+            String name = baseName;
+            if (usedNames.contains(name)) {
+                name = baseName + "Enum";
+            }
+            if (usedNames.contains(name) && clazz.getEnclosingClass() != null) {
+                name = clazz.getEnclosingClass().getSimpleName() + baseName;
+            }
+            for (int index = 2; usedNames.contains(name); index++) {
+                name = baseName + "Enum" + index;
+            }
+            usedNames.add(name);
+            enumSchemas.get(clazz).setName(name);
+            String finalName = name;
+            enumReferences.getOrDefault(clazz, List.of()).forEach(reference -> reference.$ref(finalName));
+        }
     }
 
     Schema<?> buildMultiPartForm(ModelResource modelResource, BuildSchemaMode mode)
@@ -145,9 +196,18 @@ class SchemaBuilder
         if (modelResource.modifiers().contains(RECURSIVE_REFERENCE)) {
             ModelResource referencedModelResource = typeToResourceCache.get(modelResource.type());
             requireNonNull(referencedModelResource, "referencedModelResource could not be found for: " + modelResource.type());
+            String referencedName = activeTypeNames.get(modelResource.type());
+            if (referencedName == null) {
+                referencedName = schemaName(referencedModelResource, mode, Optional.empty());
+            }
 
             // recursive references are always lists
-            return asList(modelResource, asRef(new Schema<>().name(schemaName(referencedModelResource, mode, Optional.empty()))));
+            return asList(modelResource, asRef(new Schema<>().name(referencedName)));
+        }
+
+        String activeName = activeSchemaNames.get(schemaKey(modelResource, mode, Optional.empty()));
+        if (activeName != null) {
+            return asRef(new Schema<>().name(activeName));
         }
 
         typeToResourceCache.putIfAbsent(modelResource.type(), modelResource);
@@ -234,6 +294,7 @@ class SchemaBuilder
     private List<Schema<?>> withMissingRefs()
     {
         List<Schema<?>> localSchemas = new ArrayList<>(schemas.values());
+        localSchemas.addAll(enumSchemas.values());
 
         // of/allOf schemas do not add the sub-schema to the main schema list because they get merged with the
         // parent. See the buildResourceSchema() method and the line "if (mode.isOf())".
@@ -242,19 +303,70 @@ class SchemaBuilder
         Map<String, Schema<?>> localOfSchemas = new LinkedHashMap<>(ofSchemas);
         // remove any allOf/of schemas that are already included
         schemas.values().stream().map(Schema::getName).forEach(localOfSchemas::remove);
-        // add the missing schemas
-        localSchemas.addAll(localOfSchemas.values());
+
+        Set<Schema<?>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        List.copyOf(localSchemas).forEach(schema -> addReferencedOfSchemas(schema, localOfSchemas, localSchemas, visited));
 
         return localSchemas;
     }
 
+    private void addReferencedOfSchemas(Schema<?> schema, Map<String, Schema<?>> localOfSchemas, List<Schema<?>> localSchemas, Set<Schema<?>> visited)
+    {
+        if ((schema == null) || !visited.add(schema)) {
+            return;
+        }
+
+        addReferencedOfSchema(schema.get$ref(), localOfSchemas, localSchemas, visited);
+        if (schema.getProperties() != null) {
+            schema.getProperties().values().forEach(property -> addReferencedOfSchemas(property, localOfSchemas, localSchemas, visited));
+        }
+        addReferencedOfSchemas(schema.getItems(), localOfSchemas, localSchemas, visited);
+        if (schema.getAdditionalProperties() instanceof Schema<?> additionalProperties) {
+            addReferencedOfSchemas(additionalProperties, localOfSchemas, localSchemas, visited);
+        }
+        if (schema.getAllOf() != null) {
+            schema.getAllOf().forEach(item -> addReferencedOfSchemas(item, localOfSchemas, localSchemas, visited));
+        }
+        if (schema.getOneOf() != null) {
+            schema.getOneOf().forEach(item -> addReferencedOfSchemas(item, localOfSchemas, localSchemas, visited));
+        }
+        if ((schema.getDiscriminator() != null) && (schema.getDiscriminator().getMapping() != null)) {
+            schema.getDiscriminator().getMapping().values().forEach(ref -> addReferencedOfSchema(ref, localOfSchemas, localSchemas, visited));
+        }
+        addReferencedOfSchemas(schema.getContentSchema(), localOfSchemas, localSchemas, visited);
+    }
+
+    private void addReferencedOfSchema(String ref, Map<String, Schema<?>> localOfSchemas, List<Schema<?>> localSchemas, Set<Schema<?>> visited)
+    {
+        String prefix = "#/components/schemas/";
+        if ((ref == null) || !ref.startsWith(prefix)) {
+            return;
+        }
+
+        Schema<?> referencedSchema = localOfSchemas.remove(ref.substring(prefix.length()));
+        if (referencedSchema != null) {
+            localSchemas.add(referencedSchema);
+            addReferencedOfSchemas(referencedSchema, localOfSchemas, localSchemas, visited);
+        }
+    }
+
     private Schema<?> buildEnum(Class<?> clazz)
     {
-        StringSchema stringSchema = new StringSchema();
-        if (!enumsAsStrings) {
-            enumValueResolver.values(clazz).forEach(stringSchema::addEnumItem);
+        Schema<?> enumSchema = enumSchemas.get(clazz);
+        if (enumSchema == null) {
+            StringSchema stringSchema = new StringSchema();
+            // provisional; the final name is assigned in nameEnumSchemas() once every resource name is known
+            stringSchema.name(clazz.getSimpleName());
+            stringSchema.tags(ImmutableList.of(schemaTag));
+            if (!enumsAsStrings) {
+                enumValueResolver.values(clazz).forEach(stringSchema::addEnumItem);
+            }
+            enumSchemas.put(clazz, stringSchema);
+            enumSchema = stringSchema;
         }
-        return stringSchema;
+        Schema<?> reference = asRef(enumSchema);
+        enumReferences.computeIfAbsent(clazz, _ -> new ArrayList<>()).add(reference);
+        return reference;
     }
 
     private static String resourceName(ModelResource modelResource)
@@ -265,39 +377,57 @@ class SchemaBuilder
     private Schema<?> buildPaginatedSchema(ModelResource modelResource)
     {
         ModelResource resultResource = modelResource.asContainedResourceType(ModelResourceType.LIST);
-        Schema<?> modelSchema = buildSchema(resultResource, BuildSchemaMode.STANDARD);
-        Schema<?> schema = newNamedSchema(schemaName(resultResource, BuildSchemaMode.STANDARD, Optional.of("Paginated")));
-        schema.addProperty("nextPageToken", new StringSchema().description("The next page token to use or \"\" if there are no more pages."));
-        schema.addProperty("result", modelSchema.description("A page of results."));
-        schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), BuildSchemaMode.STANDARD), schema);
-        return asRef(schema);
+        Optional<String> prefix = Optional.of("Paginated");
+        SchemaKey nameKey = schemaKey(resultResource, BuildSchemaMode.STANDARD, prefix);
+        String name = schemaName(resultResource, BuildSchemaMode.STANDARD, prefix);
+        boolean reserved = activeSchemaNames.putIfAbsent(nameKey, name) == null;
+        try {
+            Schema<?> modelSchema = buildSchema(resultResource, BuildSchemaMode.STANDARD);
+            Schema<?> schema = newNamedSchema(name);
+            schema.addProperty("nextPageToken", new StringSchema().description("The next page token to use or \"\" if there are no more pages."));
+            schema.addProperty("result", modelSchema.description("A page of results."));
+            schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), BuildSchemaMode.STANDARD), schema);
+            return asRef(schema);
+        }
+        finally {
+            if (reserved) {
+                activeSchemaNames.remove(nameKey);
+            }
+        }
     }
 
     private String schemaName(ModelResource modelResource, BuildSchemaMode mode, Optional<String> prefix)
     {
-        Set<String> usedNames = schemas.values().stream()
-                .map(Schema::getName)
-                .collect(toImmutableSet());
-
-        int index = 0;
-        String name;
-        do {
-            StringBuilder builder = new StringBuilder();
-
-            prefix.ifPresent(builder::append);
-            builder.append(capitalize(resourceName(modelResource)));
-            builder.append(mode.suffix);
-
-            ++index;
-            if (index > 1) {
-                builder.append(index);
-            }
-
-            name = builder.toString();
+        String activeName = activeSchemaNames.get(schemaKey(modelResource, mode, prefix));
+        if (activeName != null) {
+            return activeName;
         }
-        while (usedNames.contains(name));
 
+        StringBuilder builder = new StringBuilder();
+        prefix.ifPresent(builder::append);
+        builder.append(capitalize(resourceName(modelResource)));
+        builder.append(mode.suffix);
+        return uniqueSchemaName(builder.toString());
+    }
+
+    private String uniqueSchemaName(String baseName)
+    {
+        // enum components are named after the resources (see nameEnumSchemas), so they never take a resource's name
+        Set<String> usedNames = new HashSet<>();
+        schemas.values().stream().map(Schema::getName).forEach(usedNames::add);
+        usedNames.addAll(activeSchemaNames.values());
+
+        String name = baseName;
+        for (int index = 2; usedNames.contains(name); index++) {
+            name = baseName + index;
+        }
         return name;
+    }
+
+    private static SchemaKey schemaKey(ModelResource modelResource, BuildSchemaMode mode, Optional<String> parent)
+    {
+        BuildSchemaMode canonicalMode = mode.isPartialPatch() ? BuildSchemaMode.PATCH : BuildSchemaMode.STANDARD;
+        return new SchemaKey(parent, modelResource.containerType(), modelResource.resourceType(), canonicalMode);
     }
 
     private Schema<?> asRef(Schema<?> schema)
@@ -321,22 +451,52 @@ class SchemaBuilder
             return buildJsonValueResourceSchema(modelResource, modelResource.jsonValueResource().orElseThrow(), mode);
         }
 
-        Schema<?> schema = newNamedSchema(schemaName(modelResource, mode, Optional.empty())).description(adjustedDescription(modelResource));
-        return buildResourceSchema(schema, modelResource, mode);
+        Optional<String> prefix = Optional.empty();
+        SchemaKey nameKey = schemaKey(modelResource, mode, prefix);
+        String name = schemaName(modelResource, mode, prefix);
+        boolean reserved = activeSchemaNames.putIfAbsent(nameKey, name) == null;
+        boolean typeReserved = activeTypeNames.putIfAbsent(modelResource.type(), name) == null;
+        try {
+            Schema<?> schema = newNamedSchema(name).description(adjustedDescription(modelResource));
+            return buildResourceSchema(schema, modelResource, mode);
+        }
+        finally {
+            if (reserved) {
+                activeSchemaNames.remove(nameKey);
+            }
+            if (typeReserved) {
+                activeTypeNames.remove(modelResource.type());
+            }
+        }
     }
 
     private Schema<?> buildJsonValueResourceSchema(ModelResource modelResource, ModelResource jsonValueResource, BuildSchemaMode mode)
     {
-        Schema<?> valueSchema = buildSchema(jsonValueResource, mode);
-        Schema<?> schema = asNamedJsonValueSchema(valueSchema, schemaName(modelResource, mode, Optional.empty()), adjustedDescription(modelResource));
+        Optional<String> prefix = Optional.empty();
+        SchemaKey nameKey = schemaKey(modelResource, mode, prefix);
+        String name = schemaName(modelResource, mode, prefix);
+        boolean reserved = activeSchemaNames.putIfAbsent(nameKey, name) == null;
+        boolean typeReserved = activeTypeNames.putIfAbsent(modelResource.type(), name) == null;
+        try {
+            Schema<?> valueSchema = buildSchema(jsonValueResource, mode);
+            Schema<?> schema = asNamedJsonValueSchema(valueSchema, name, adjustedDescription(modelResource));
 
-        if (mode.isOf()) {
-            ofSchemas.put(schema.getName(), schema);
-            return schema;
+            if (mode.isOf()) {
+                ofSchemas.put(schema.getName(), schema);
+                return schema;
+            }
+
+            schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), mode), schema);
+            return asRef(schema);
         }
-
-        schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), mode), schema);
-        return asRef(schema);
+        finally {
+            if (reserved) {
+                activeSchemaNames.remove(nameKey);
+            }
+            if (typeReserved) {
+                activeTypeNames.remove(modelResource.type());
+            }
+        }
     }
 
     private Schema<?> asNamedJsonValueSchema(Schema<?> valueSchema, String name, String description)
@@ -382,12 +542,24 @@ class SchemaBuilder
             }
         }
         else {
-            Schema<?> componentSchema = buildSchema(component, mode);
+            Schema<?> componentSchema = describedProperty(buildSchema(component, mode));
             schema.addProperty(component.name(), componentSchema);
             if (!mode.isPartialPatch() && !component.modifiers().contains(ModelResourceModifier.OPTIONAL)) {
                 schema.addRequiredItem(component.name());
             }
         }
+    }
+
+    // OpenAPI 3.0 consumers ignore sibling keys of $ref, so a described property that is a reference (an enum)
+    // wraps the reference in allOf there; 3.2 allows the description beside the reference
+    private Schema<?> describedProperty(Schema<?> property)
+    {
+        if (refSiblingsAllowed || property.get$ref() == null || property.getDescription() == null || property.getDescription().isEmpty()) {
+            return property;
+        }
+        String description = property.getDescription();
+        property.description(null);
+        return new Schema<>().addAllOfItem(property).description(description);
     }
 
     private void buildUnwrappedJsonValueListComponentSchema(BuildSchemaMode mode, Schema<?> schema, ModelResource component)
@@ -402,9 +574,23 @@ class SchemaBuilder
 
     private Optional<Schema<?>> buildBasicSchema(ModelResource modelResource)
     {
-        Optional<Schema<?>> schema = buildBasicSchema(TypeToken.of(modelResource.type()).getRawType());
+        Class<?> rawType = TypeToken.of(modelResource.type()).getRawType();
+        Optional<Schema<?>> schema = buildBasicSchema(rawType);
         schema.ifPresent(s -> s.description(adjustedDescription(modelResource)));
+        if (Enum.class.isAssignableFrom(rawType)) {
+            describeEnumSchema(rawType, modelResource);
+        }
         return schema;
+    }
+
+    // Enum properties reference a shared component schema. OpenAPI 3.0 consumers ignore sibling keys of
+    // $ref, so the enum value documentation must also live on the component schema they resolve.
+    private void describeEnumSchema(Class<?> clazz, ModelResource modelResource)
+    {
+        Schema<?> enumSchema = enumSchemas.get(clazz);
+        if ((enumSchema != null) && (enumSchema.getDescription() == null)) {
+            enumValueDescriptions(modelResource).ifPresent(enumSchema::description);
+        }
     }
 
     private Optional<Schema<?>> buildApiJsonSchemaIfPresent(ModelResource modelResource)
@@ -522,9 +708,14 @@ class SchemaBuilder
         if (ModelResourceModifier.hasReadOnly(modelResource.modifiers())) {
             description += " (read only)";    // Swagger UI removes read only fields which is not what we want
         }
-        return description + modelResource.enumDescriptions().map(enumDescriptions ->
+        return description + enumValueDescriptions(modelResource).map(enumValueDescriptions -> "\n" + enumValueDescriptions + "\n").orElse("");
+    }
+
+    private static Optional<String> enumValueDescriptions(ModelResource modelResource)
+    {
+        return modelResource.enumDescriptions().map(enumDescriptions ->
                 enumDescriptions.entrySet().stream()
                         .map(entry -> "<li><code>\"%s\"</code>: %s</li>".formatted(entry.getKey(), entry.getValue()))
-                        .collect(joining("\n", "\n<ul>", "</ul>\n"))).orElse("");
+                        .collect(joining("\n", "<ul>", "</ul>")));
     }
 }

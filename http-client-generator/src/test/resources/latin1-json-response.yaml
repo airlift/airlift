@@ -1,0 +1,19 @@
+openapi: 3.0.1
+info:
+  title: Latin-1 JSON API
+  version: 1.0.0
+paths:
+  /document:
+    get:
+      tags: [documents]
+      operationId: readDocument
+      responses:
+        '200':
+          description: Document
+          content:
+            application/json; charset=iso-8859-1:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string

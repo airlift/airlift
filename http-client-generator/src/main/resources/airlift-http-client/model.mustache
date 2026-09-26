@@ -10,6 +10,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 {{^isEnum}}
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+{{#vendorExtensions.x-is-one-of-interface}}
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+{{/vendorExtensions.x-is-one-of-interface}}
 {{/isEnum}}
 {{/model}}
 {{/models}}
@@ -64,6 +68,22 @@ public enum {{classname}}
 }
 {{/isEnum}}
 {{^isEnum}}
+{{#vendorExtensions.x-is-one-of-interface}}
+
+/**
+ * {{description}}{{^description}}{{classname}}{{/description}}
+ */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "{{{vendorExtensions.x_java_discriminator_property}}}", visible = true)
+@JsonSubTypes({
+{{#vendorExtensions.x_java_mapped_models}}
+        @JsonSubTypes.Type(value = {{modelName}}.class, name = "{{{mappingName}}}"){{^-last}},{{/-last}}
+{{/vendorExtensions.x_java_mapped_models}}
+})
+public {{#discriminator.mappedModels}}{{#-first}}sealed {{/-first}}{{/discriminator.mappedModels}}interface {{classname}}{{#discriminator.mappedModels}}{{#-first}} permits {{/-first}}{{modelName}}{{^-last}}, {{/-last}}{{/discriminator.mappedModels}}
+{
+}
+{{/vendorExtensions.x-is-one-of-interface}}
+{{^vendorExtensions.x-is-one-of-interface}}
 
 /**
  * {{description}}{{^description}}{{classname}}{{/description}}
@@ -71,10 +91,26 @@ public enum {{classname}}
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record {{classname}}(
 {{#vars}}
-        @JsonProperty("{{baseName}}") {{{datatypeWithEnum}}} {{name}}{{^-last}},{{/-last}}
+        @JsonProperty("{{{vendorExtensions.x_java_base_name}}}") {{{datatypeWithEnum}}} {{name}}{{^-last}},{{/-last}}
 {{/vars}})
+{{#vendorExtensions.x-implements}}
+        {{#-first}}implements {{{.}}}{{/-first}}{{^-first}}, {{{.}}}{{/-first}}
+{{/vendorExtensions.x-implements}}
 {
+{{#vars}}
+{{#isEnum}}
+{{^isContainer}}
+{{>modelInnerEnum}}
+{{/isContainer}}
+{{#isContainer}}
+{{#mostInnerItems}}
+{{>modelInnerEnum}}
+{{/mostInnerItems}}
+{{/isContainer}}
+{{/isEnum}}
+{{/vars}}
 }
+{{/vendorExtensions.x-is-one-of-interface}}
 {{/isEnum}}
 {{/model}}
 {{/models}}

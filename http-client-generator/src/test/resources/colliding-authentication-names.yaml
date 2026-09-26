@@ -1,0 +1,19 @@
+openapi: 3.0.1
+info:
+  title: Colliding Authentication Names
+  version: 1.0.0
+paths:
+  /status:
+    get:
+      operationId: status
+      responses:
+        '204':
+          description: Success
+components:
+  securitySchemes:
+    service-key:
+      type: http
+      scheme: bearer
+    service_key:
+      type: http
+      scheme: bearer

@@ -57,6 +57,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static io.airlift.api.ApiServiceTrait.ENUMS_AS_STRINGS;
@@ -87,6 +88,7 @@ class OpenApiBuilder
     private final ModelServiceType serviceType;
     private final Map<Method, ModelDeprecation> deprecations;
     private final OpenApiMetadata metadata;
+    private final Optional<OpenApiSecurityMetadata> securityMetadata;
     private final Predicate<Method> methodFilter;
     private final Set<String> usedOperationIds = new TreeSet<>();
     private final Set<String> serviceTags = new LinkedHashSet<>();
@@ -102,11 +104,12 @@ class OpenApiBuilder
             ModelServiceType serviceType,
             Collection<ModelDeprecation> deprecations,
             OpenApiMetadata metadata,
+            Optional<OpenApiSecurityMetadata> securityMetadata,
             Predicate<Method> methodFilter,
             List<OpenApiExtensionFilter> extensionFilters,
             ApiEnumValueResolver enumValueResolver)
     {
-        return new OpenApiBuilder(serviceType, deprecations, metadata, methodFilter, extensionFilters, enumValueResolver);
+        return new OpenApiBuilder(serviceType, deprecations, metadata, securityMetadata, methodFilter, extensionFilters, enumValueResolver);
     }
 
     enum JsonUriMode
@@ -150,17 +153,26 @@ class OpenApiBuilder
         openAPI.tags(tags);
         openAPI.tagGroups(tagGroups);
 
-        buildSecurity().ifPresent(security -> {
-            openAPI.schemaRequirement(security.getKey(), security.getValue());
-            openAPI.security(ImmutableList.of(new SecurityRequirement().addList(security.getKey())));
-        });
-
         Map<String, Schema> schemas = new TreeMap<>();
         schemaBuilder.build().forEach(schema -> schemas.put(schema.getName(), schema));
 
         Components components = new Components();
         components.schemas(schemas);
         openAPI.setComponents(components);
+
+        if (securityMetadata.isPresent()) {
+            OpenApiSecurityMetadata security = securityMetadata.orElseThrow();
+            security.securitySchemes().forEach((name, scheme) -> openAPI.schemaRequirement(name, buildSecurityScheme(scheme)));
+            openAPI.security(security.defaultSecurityRequirements().stream()
+                    .map(OpenApiBuilder::buildSecurityRequirement)
+                    .toList());
+        }
+        else {
+            buildLegacySecurity().ifPresent(security -> {
+                openAPI.schemaRequirement(security.getKey(), security.getValue());
+                openAPI.security(ImmutableList.of(new SecurityRequirement().addList(security.getKey())));
+            });
+        }
 
         return openAPI;
     }
@@ -177,7 +189,10 @@ class OpenApiBuilder
             return;
         }
 
-        tags.add(new Tag().name(makeServiceName(modelService)).description(modelService.service().generateDescriptionWithDocumentation()));
+        String tagName = makeServiceName(modelService);
+        if (tags.stream().noneMatch(tag -> tagName.equals(tag.getName()))) {
+            tags.add(new Tag().name(tagName).description(modelService.service().generateDescriptionWithDocumentation()));
+        }
 
         methodsToAdd.forEach(method -> {
             String servicePath = buildServicePath(modelService.service());
@@ -302,7 +317,8 @@ class OpenApiBuilder
 
         operation.parameters(buildParameters(modelMethod));
 
-        return applyExtensionFilters(modelService, modelMethod, operation);
+        // an operation that differs from the default security gets its requirements from an extension filter
+        return validateSecurityRequirements(applyExtensionFilters(modelService, modelMethod, operation));
     }
 
     private Operation applyExtensionFilters(ModelService modelService, ModelMethod modelMethod, Operation operation)
@@ -338,7 +354,7 @@ class OpenApiBuilder
     private MediaType buildOpenApi301StreamingResponseMediaType(Schema<?> eventSchema)
     {
         return new MediaType()
-                .schema(new StringSchema())
+                .schema(new ArraySchema().items(eventSchema))
                 .airliftEventSchema(eventSchema);
     }
 
@@ -351,7 +367,9 @@ class OpenApiBuilder
                 .type("object")
                 .addProperty("data", dataSchema)
                 .addRequiredItem("data");
-        return new MediaType().itemSchema(itemSchema);
+        return new MediaType()
+                .itemSchema(itemSchema)
+                .airliftEventSchema(eventSchema);
     }
 
     private String buildMethodName(ModelMethod modelMethod)
@@ -481,25 +499,91 @@ class OpenApiBuilder
         };
     }
 
-    private Optional<Map.Entry<String, SecurityScheme>> buildSecurity()
+    private static SecurityScheme buildSecurityScheme(OpenApiSecurityMetadata.SecurityScheme scheme)
+    {
+        return switch (scheme) {
+            case OpenApiSecurityMetadata.BearerSecurityScheme bearer -> new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .bearerFormat(bearer.bearerFormat().orElse(null));
+            case OpenApiSecurityMetadata.BasicSecurityScheme _ -> new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("basic");
+            case OpenApiSecurityMetadata.HeaderApiKeySecurityScheme apiKey -> new SecurityScheme()
+                    .type(SecurityScheme.Type.APIKEY)
+                    .name(apiKey.headerName())
+                    .in(SecurityScheme.In.HEADER);
+            case OpenApiSecurityMetadata.OAuth2ClientCredentialsSecurityScheme oauth -> new SecurityScheme()
+                    .type(SecurityScheme.Type.OAUTH2)
+                    .flows(new io.airlift.api.openapi.models.OAuthFlows()
+                            .clientCredentials(new io.airlift.api.openapi.models.OAuthFlow()
+                                    .tokenUrl(oauth.tokenUrl())
+                                    .scopes(buildScopes(oauth.scopes()))))
+                    .addExtension(
+                            "x-airlift-token-endpoint-authentication-method",
+                            oauth.tokenEndpointAuthenticationMethod().name().toLowerCase(ENGLISH));
+        };
+    }
+
+    private Optional<Map.Entry<String, SecurityScheme>> buildLegacySecurity()
     {
         return metadata.security().map(securityScheme -> {
             SecurityScheme accessTokenSecurityScheme = new SecurityScheme();
             return switch (securityScheme) {
-                case BEARER_ACCESS_TOKEN -> Map.entry("accessToken", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("Access token"));
-                case BEARER_JWT -> Map.entry("bearer", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("JWT"));
-                case BASIC -> Map.entry("Basic", accessTokenSecurityScheme.scheme("basic"));
+                case BEARER_ACCESS_TOKEN -> Map.entry("accessToken", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("Access token"));
+                case BEARER_JWT -> Map.entry("bearer", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT"));
+                case BASIC -> Map.entry("Basic", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).scheme("basic"));
             };
         });
     }
 
-    private OpenApiBuilder(ModelServiceType serviceType, Collection<ModelDeprecation> deprecations, OpenApiMetadata metadata, Predicate<Method> methodFilter, List<OpenApiExtensionFilter> extensionFilters, ApiEnumValueResolver enumValueResolver)
+    private static io.airlift.api.openapi.models.Scopes buildScopes(Map<String, String> scopes)
+    {
+        io.airlift.api.openapi.models.Scopes result = new io.airlift.api.openapi.models.Scopes();
+        scopes.forEach(result::addString);
+        return result;
+    }
+
+    private static SecurityRequirement buildSecurityRequirement(OpenApiSecurityMetadata.SecurityRequirement requirement)
+    {
+        SecurityRequirement result = new SecurityRequirement();
+        requirement.schemes().forEach(result::addList);
+        return result;
+    }
+
+    private Operation validateSecurityRequirements(Operation operation)
+    {
+        if (operation.getSecurity() == null) {
+            return operation;
+        }
+        OpenApiSecurityMetadata metadata = securityMetadata.orElseThrow(() ->
+                new IllegalArgumentException("operation security requirements require OpenAPI security metadata"));
+        operation.getSecurity().forEach(requirement ->
+                OpenApiSecurityMetadata.validateRequirement(new OpenApiSecurityMetadata.SecurityRequirement(requirement.getMap()), metadata.securitySchemes()));
+        return operation;
+    }
+
+    private static Optional<OpenApiSecurityMetadata> resolveSecurityMetadata(OpenApiMetadata metadata, Optional<OpenApiSecurityMetadata> securityMetadata)
+    {
+        checkArgument(securityMetadata.isEmpty() || metadata.security().isEmpty(), "legacy and named OpenAPI security metadata cannot both be configured");
+        return securityMetadata;
+    }
+
+    private OpenApiBuilder(
+            ModelServiceType serviceType,
+            Collection<ModelDeprecation> deprecations,
+            OpenApiMetadata metadata,
+            Optional<OpenApiSecurityMetadata> securityMetadata,
+            Predicate<Method> methodFilter,
+            List<OpenApiExtensionFilter> extensionFilters,
+            ApiEnumValueResolver enumValueResolver)
     {
         this.serviceType = requireNonNull(serviceType, "serviceType is null");
         this.deprecations = deprecations.stream().collect(toImmutableMap(ModelDeprecation::method, identity()));
         this.metadata = requireNonNull(metadata, "metadata is null");
+        this.securityMetadata = resolveSecurityMetadata(metadata, requireNonNull(securityMetadata, "securityMetadata is null"));
         this.methodFilter = requireNonNull(methodFilter, "methodFilter is null");
-        this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver);
+        this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver, metadata.openApiVersion());
         this.extensionFilters = ImmutableList.copyOf(extensionFilters);
     }
 }

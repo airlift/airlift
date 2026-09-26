@@ -749,6 +749,13 @@
     }
   },
   "components" : {
+    "securitySchemes" : {
+      "accessToken" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "Access token"
+      }
+    },
     "schemas" : {
       "BadRequest" : {
         "properties" : {
@@ -964,6 +971,12 @@
         "description" : "Already exists",
         "x-tags" : [ "Responses" ]
       },
+      "ExternalWidgetSize" : {
+        "type" : "string",
+        "description" : "<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>",
+        "enum" : [ "Small", "Huge", "Large" ],
+        "x-tags" : [ "Model Definitions" ]
+      },
       "Forbidden" : {
         "properties" : {
           "message" : {
@@ -974,30 +987,14 @@
         "description" : "Authorization failed",
         "x-tags" : [ "Responses" ]
       },
-      "NameAndAge" : {
-        "required" : [ "age", "name" ],
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "description" : "A name"
-          },
-          "age" : {
-            "format" : "int32",
-            "type" : "integer",
-            "description" : "An age",
-            "nullable" : false
-          }
-        },
-        "description" : "A name and an age",
-        "x-tags" : [ "Model Definitions" ]
-      },
       "NewWidget" : {
         "required" : [ "attributes", "manufactureDate", "name", "size" ],
         "properties" : {
           "size" : {
-            "type" : "string",
             "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
-            "enum" : [ "Small", "Huge", "Large" ]
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/ExternalWidgetSize"
+            } ]
           },
           "name" : {
             "type" : "string",
@@ -1115,27 +1112,6 @@
         "description" : "items (read only)",
         "x-tags" : [ "Model Definitions" ]
       },
-      "Schedule" : {
-        "required" : [ "endDate", "name", "startDate" ],
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "description" : "A schedule name"
-          },
-          "startDate" : {
-            "format" : "date-time",
-            "type" : "string",
-            "description" : "Start date"
-          },
-          "endDate" : {
-            "format" : "date-time",
-            "type" : "string",
-            "description" : "End date"
-          }
-        },
-        "description" : "A schedule",
-        "x-tags" : [ "Model Definitions" ]
-      },
       "Test" : {
         "required" : [ "message" ],
         "properties" : {
@@ -1169,9 +1145,10 @@
             "description" : "Used to ensure consistency for resource updates. A syncToken that is returned\nfrom the server is valid until the resource is updated when a new syncToken will\nbe generated. Only the latest version of the object is maintained.\n (read only)"
           },
           "size" : {
-            "type" : "string",
             "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
-            "enum" : [ "Small", "Huge", "Large" ]
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/ExternalWidgetSize"
+            } ]
           },
           "name" : {
             "type" : "string",
@@ -1197,9 +1174,10 @@
       "WidgetPatch" : {
         "properties" : {
           "size" : {
-            "type" : "string",
             "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
-            "enum" : [ "Small", "Huge", "Large" ]
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/ExternalWidgetSize"
+            } ]
           },
           "name" : {
             "type" : "string",

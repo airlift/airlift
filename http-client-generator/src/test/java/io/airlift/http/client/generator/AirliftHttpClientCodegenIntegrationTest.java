@@ -13,10 +13,19 @@
  */
 package io.airlift.http.client.generator;
 
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.inject.spi.Message;
+import io.airlift.configuration.ConfigurationFactory;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.http.client.testing.TestingHttpClient;
+import io.airlift.http.client.testing.TestingResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.openapitools.codegen.ClientOptInput;
 import org.openapitools.codegen.DefaultGenerator;
+import org.openapitools.codegen.SpecValidationException;
 import org.openapitools.codegen.config.CodegenConfigurator;
 
 import javax.tools.DiagnosticCollector;
@@ -27,11 +36,21 @@ import javax.tools.ToolProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.HttpStatus.NO_CONTENT;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,6 +58,201 @@ import static org.assertj.core.api.Assertions.fail;
 
 class AirliftHttpClientCodegenIntegrationTest
 {
+    @Test
+    void testGeneratesNamedAuthenticationAlternatives(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("mixed-authentication.yaml", outputPath);
+
+        Path clientFile = outputPath.resolve("src/main/java/org/openapitools/client/api/MixedClient.java");
+        assertThat(clientFile).exists();
+        String clientContent = Files.readString(clientFile);
+        assertThat(clientContent)
+                .contains("private final ApiCredentials credentials")
+                .doesNotContain("private final String apiKey")
+                .containsSubsequence(
+                        "if (credentials.hasServiceBasic() && credentials.hasServiceKey())",
+                        "else if (credentials.hasServiceBearer())")
+                .contains("credentials.applyServiceBasic(requestBuilder)")
+                .contains("credentials.applyServiceKey(requestBuilder)")
+                .contains("requestBuilder.setHeader(AUTHORIZATION, \"Bearer \" + requireNonNull(bearerToken, \"bearerToken is null\"))")
+                .contains("credentials.getServiceOAuthTokenProvider()")
+                .doesNotContain("if (true)")
+                .contains("No configured credentials satisfy authentication for operation")
+                .doesNotContain("query-secret", "cookie-secret");
+
+        Path configFile = outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java");
+        assertThat(configFile).exists();
+        String configContent = Files.readString(configFile);
+        assertThat(configContent)
+                .contains("setServiceBearerToken")
+                .contains("setServiceBasicUsername")
+                .contains("setServiceBasicPassword")
+                .contains("setServiceKeyApiKey")
+                .contains("setServiceOAuthToken")
+                .contains("ApiCredentials getCredentials()")
+                .doesNotContain("public String getApiKey()");
+
+        // one typed method per scheme, so a misspelled scheme name does not compile
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiCredentials.java")))
+                .contains("public Builder withServiceBearer(BearerTokenProvider tokenProvider)")
+                .contains("public Builder withServiceBasic(String username, String password)")
+                .contains("public Builder withServiceKey(String apiKey)")
+                .contains(".setHeader(\"X-Service-Key\", requireConfigured(serviceKeyApiKey, \"serviceKey\"))");
+
+        Path oauthFactory = outputPath.resolve("src/main/java/org/openapitools/client/ApiOAuth2.java");
+        assertThat(oauthFactory).exists();
+        assertThat(Files.readString(oauthFactory))
+                .contains("public static ClientCredentialsTokenProvider createServiceOAuthTokenProvider(")
+                .contains("requireNonNull(baseUri, \"baseUri is null\").resolve(\"/oauth/token?tenant=first&audience=api\")")
+                .contains(".scope(\"status:read\")")
+                .contains(".resource(resource)");
+
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testGeneratesNonBearerAuthentication(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("non-bearer-authentication.yaml", outputPath);
+
+        Path clientFile = outputPath.resolve("src/main/java/org/openapitools/client/api/NonBearerClient.java");
+        assertThat(clientFile).exists();
+        assertThat(Files.readString(clientFile))
+                .contains("credentials.applyServiceBasic(requestBuilder)")
+                .contains("credentials.applyServiceKey(requestBuilder)")
+                .doesNotContain("authenticationBearerTokenProvider", "NO_BEARER_TOKEN", "AUTHORIZATION");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiCredentials.java")))
+                .doesNotContain("BearerTokenProvider");
+
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsQueryApiKey(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("query-api-key.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("API key scheme 'queryKey' uses unsupported location 'query'; only header API keys are supported");
+    }
+
+    @Test
+    void testRejectsInvalidHeaderApiKeyName(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("invalid-header-name.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Header API key scheme 'serviceKey' has an invalid header name 'Bad Header'");
+    }
+
+    @Test
+    void testRejectsCollidingAuthenticationNames(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("colliding-authentication-names.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Security scheme names 'service-key' and 'service_key' generate the same Java property 'serviceKey'");
+    }
+
+    @Test
+    void testRejectsInconsistentOAuthScopes(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("inconsistent-oauth-scopes.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Security scheme 'serviceOAuth' is used with inconsistent required scopes: [read] and [write]");
+    }
+
+    @Test
+    void testGeneratesResponseRanges(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("response-ranges.yaml", outputPath);
+
+        Path clientFile;
+        try (Stream<Path> files = Files.walk(outputPath)) {
+            clientFile = files
+                    .filter(path -> path.getFileName().toString().equals("DefaultClient.java"))
+                    .findFirst()
+                    .orElseThrow();
+        }
+        String clientContent = Files.readString(clientFile);
+        assertThat(clientContent)
+                .contains("createSuccessfulJsonResponseHandler(ITEM_CODEC)")
+                .contains("createSuccessfulStatusResponseHandler()")
+                .doesNotContain("createSafeJsonResponseHandler", "createStatusResponseHandler")
+                .containsSubsequence(
+                        "if (statusCode == 409)",
+                        "EXACT_ERROR_CODEC",
+                        "if (statusCode >= 400 && statusCode < 500)",
+                        "CLIENT_ERROR_CODEC",
+                        "if (true)",
+                        "DEFAULT_ERROR_CODEC");
+
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testSuccessSchemaDefaultIsNotAnErrorType(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("success-schema-default.yaml", outputPath);
+
+        // a default response without a body decodes nothing, whatever default value the success schema declares
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/LabelsClient.java"));
+        assertThat(client).contains("public List<String> listLabels()");
+        assertThat(client).doesNotContain("unlabeled");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsIdempotencyMetadataWithoutHeader(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("idempotency-missing-header.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("x-airlift-idempotency header 'Idempotency-Key' is not an operation header parameter");
+    }
+
+    @Test
+    void testIdempotencyExtensionNameIsConfigurable(@TempDir Path outputPath)
+            throws Exception
+    {
+        new DefaultGenerator()
+                .opts(new CodegenConfigurator()
+                        .setGeneratorName("airlift-http-client")
+                        .setInputSpec(getClass().getClassLoader().getResource("custom-idempotency-extension.yaml").getFile())
+                        .setOutputDir(outputPath.toString())
+                        .addAdditionalProperty(AirliftHttpClientCodegen.IDEMPOTENCY_EXTENSION, "x-my-idempotency")
+                        .toClientOptInput())
+                .generate();
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/JobsClient.java"));
+        assertThat(client).contains("retryPolicy.execute(\"createJob\", \"POST\", idempotencyKey, ");
+        verifyGeneratedCodeCompiles(outputPath);
+
+        // without the option the declaration is not recognized, so the mutation is not retried
+        Path defaultOutputPath = outputPath.resolve("default");
+        generate("custom-idempotency-extension.yaml", defaultOutputPath);
+        assertThat(Files.readString(defaultOutputPath.resolve("src/main/java/org/openapitools/client/api/JobsClient.java")))
+                .contains("retryPolicy.execute(\"createJob\", \"POST\", null, ");
+    }
+
+    @Test
+    void testRejectsIdempotencyMetadataWithNonStringHeader(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("idempotency-non-string-header.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("x-airlift-idempotency header 'Idempotency-Key' must be a string operation header parameter");
+    }
+
+    @Test
+    void testRejectsOpenApi32TypedEventsWhenItemSchemaIsUnavailable(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("openapi32-typed-sse.yaml", outputPath))
+                .isInstanceOf(SpecValidationException.class)
+                .hasMessageContaining("There were issues with the specification");
+    }
+
     @Test
     void testGeneratePetstoreClient(@TempDir Path outputPath)
             throws Exception
@@ -100,8 +314,9 @@ class AirliftHttpClientCodegenIntegrationTest
 
         // Retry-wrapped httpClient.execute() calls
         assertThat(clientContent).contains("retryPolicy.execute(");
-        assertThat(clientContent).contains("httpClient.execute(request, createJsonResponseHandler(");
-        assertThat(clientContent).contains("createStatusResponseHandler()");
+        assertThat(clientContent).contains("httpClient.execute(request, createSafeJsonResponseHandler(");
+        assertThat(clientContent).contains("createStatusResponseHandler(204)");
+        assertThat(clientContent).doesNotContain("createSuccessfulJsonResponseHandler", "createSuccessfulStatusResponseHandler");
 
         // RetryPolicy field and constructor
         assertThat(clientContent).contains("private final RetryPolicy retryPolicy");
@@ -182,10 +397,31 @@ class AirliftHttpClientCodegenIntegrationTest
         String pomContent = Files.readString(pomFile);
         assertThat(pomContent).contains("<artifactId>airbase</artifactId>");
         assertThat(pomContent).contains("<artifactId>bom</artifactId>");
-        assertThat(pomContent).doesNotContain("<artifactId>guava</artifactId>");
+        assertThat(pomContent).contains("<artifactId>guava</artifactId>");
 
         // Verify generated code compiles
         verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    private void assertCredentialsOptional(Path classesDir, String configClassName, String configPrefix, String credentialProperty)
+            throws Exception
+    {
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] {classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> configClass = classLoader.loadClass(configClassName);
+            Map<String, String> baseUriOnly = Map.of(configPrefix + ".base-uri", "https://example.test");
+            assertThat(configurationErrors(configClass, baseUriOnly)).isEmpty();
+
+            Map<String, String> withCredential = new java.util.HashMap<>(baseUriOnly);
+            withCredential.put(configPrefix + "." + credentialProperty, "secret");
+            assertThat(configurationErrors(configClass, withCredential)).isEmpty();
+        }
+    }
+
+    private static List<Message> configurationErrors(Class<?> configClass, Map<String, String> properties)
+    {
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        configurationFactory.registerConfigurationClasses(List.of(binder -> configBinder(binder).bindConfig(configClass)));
+        return configurationFactory.validateRegisteredConfigurationProvider();
     }
 
     @Test
@@ -219,15 +455,21 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).contains("public class OpenAiClient");
         assertThat(clientContent).contains("private final HttpClient httpClient");
         assertThat(clientContent).contains("private final URI baseUri");
-        assertThat(clientContent).contains("private final String apiKey");
+        assertThat(clientContent).contains("private final OpenAiCredentials credentials");
+        assertThat(clientContent).doesNotContain("private final String apiKey");
 
         // Bearer auth: Authorization header
-        assertThat(clientContent).contains("import static io.airlift.http.client.HeaderNames.AUTHORIZATION;");
-        assertThat(clientContent).contains(".setHeader(AUTHORIZATION, \"Bearer \" + apiKey)");
+        assertThat(clientContent).contains("requestBuilder.setHeader(AUTHORIZATION, \"Bearer \" + requireNonNull(bearerToken, \"bearerToken is null\"))");
 
-        // Constructor takes apiKey from config
-        assertThat(clientContent).contains("config.getApiKey()");
-        assertThat(clientContent).contains("requireNonNull(apiKey, \"apiKey is null\")");
+        // credentials are always the generated OpenAiCredentials; no per-scheme convenience constructors
+        assertThat(clientContent).contains("config.getCredentials()");
+        assertThat(clientContent).contains("public OpenAiClient(HttpClient httpClient, URI baseUri, OpenAiCredentials credentials)");
+        assertThat(clientContent).doesNotContain("URI baseUri, String apiKey)", "URI baseUri, BearerTokenProvider bearerTokenProvider)");
+        assertThat(clientContent).contains("retryPolicy.execute(\"generateCompletion\", \"POST\", null, authenticationBearerTokenProvider");
+
+        Path bearerTokenProviderFile = outputPath.resolve(
+                "src/main/java/io/trino/plugin/ai/generated/BearerTokenProvider.java");
+        assertThat(bearerTokenProviderFile).doesNotExist();
 
         // Static codecs matching Trino's naming
         assertThat(clientContent).contains("private static final JsonCodec<ChatRequest> CHAT_REQUEST_CODEC = jsonCodec(ChatRequest.class)");
@@ -243,7 +485,8 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).contains("private static final String JSON_CONTENT_TYPE = \"application/json; charset=utf-8\"");
         assertThat(clientContent).contains("setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)");
         assertThat(clientContent).contains("jsonBodyGenerator(CHAT_REQUEST_CODEC, chatRequest)");
-        assertThat(clientContent).contains("httpClient.execute(request, createJsonResponseHandler(CHAT_RESPONSE_CODEC))");
+        assertThat(clientContent).contains("httpClient.execute(request, createSafeJsonResponseHandler(CHAT_RESPONSE_CODEC, 200))");
+        assertThat(clientContent).doesNotContain("createSuccessfulJsonResponseHandler");
 
         // Retry-wrapped execution
         assertThat(clientContent).contains("retryPolicy.execute(");
@@ -261,15 +504,17 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(clientContent).doesNotContain("listJsonCodec");
         assertThat(clientContent).doesNotContain("mapJsonCodec");
 
-        // Verify config has apiKey
+        // Verify config exposes the bearer token under the scheme name
         Path clientConfig = outputPath.resolve(
                 "src/main/java/io/trino/plugin/ai/generated/OpenAiClientConfig.java");
         assertThat(clientConfig).exists();
         String configContent = Files.readString(clientConfig);
-        assertThat(configContent).contains("getApiKey");
-        assertThat(configContent).contains("setApiKey");
-        assertThat(configContent).contains("@Config(\"openai.api-key\")");
+        assertThat(configContent).contains("getBearerAuthToken");
+        assertThat(configContent).contains("setBearerAuthToken");
+        assertThat(configContent).contains("@Config(\"openai.bearer-auth.token\")");
+        assertThat(configContent).contains("@ConfigSecuritySensitive");
         assertThat(configContent).contains("@Config(\"openai.base-uri\")");
+        assertThat(configContent).doesNotContain("getApiKey", "api-key", "@NotNull\n    public String getBearerAuthToken()");
 
         // Verify binding annotation uses correct PascalCase
         Path annotation = outputPath.resolve(
@@ -277,8 +522,448 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(annotation).exists();
         assertThat(Files.readString(annotation)).contains("public @interface ForOpenAi");
 
-        // Verify generated code compiles
+        // Verify generated code compiles and the bearer token is optional at bootstrap like every other credential
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        assertCredentialsOptional(classesDir, "io.trino.plugin.ai.generated.OpenAiClientConfig", "openai", "bearer-auth.token");
+    }
+
+    @Test
+    void testOAuth2OnlyContractDoesNotRequireStaticApiKey(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("oauth2-only.yaml", outputPath);
+
+        Path configFile = outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java");
+        assertThat(Files.readString(configFile))
+                .contains("@Config(\"api.service-oauth.token\")")
+                .contains("setServiceOAuthToken")
+                .doesNotContain("getApiKey", "@NotNull\n    public String getServiceOAuthToken()");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java")))
+                .contains("public StatusClient(HttpClient httpClient, URI baseUri, ApiCredentials credentials)")
+                .doesNotContain("URI baseUri, String apiKey)");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiOAuth2.java")))
+                .contains("public static ClientCredentialsTokenProvider createServiceOAuthTokenProvider(");
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] {classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> configClass = classLoader.loadClass("org.openapitools.client.ApiClientConfig");
+            assertThat(configurationErrors(configClass, Map.of("api.base-uri", "https://example.test"))).isEmpty();
+        }
+    }
+
+    @Test
+    void testPublicOnlyOperationsDoNotRequireCredentials(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("public-only.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java")))
+                .doesNotContain("getCredentials", "getApiKey", "serviceBearer");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java")))
+                .doesNotContain("authenticationAlternative", "getCredentials()");
+        assertThat(outputPath.resolve("src/main/java/org/openapitools/client/ApiCredentials.java")).doesNotExist();
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        try (URLClassLoader classLoader = new URLClassLoader(new URL[] {classesDir.toUri().toURL()}, getClass().getClassLoader())) {
+            Class<?> configClass = classLoader.loadClass("org.openapitools.client.ApiClientConfig");
+            assertThat(configurationErrors(configClass, Map.of("api.base-uri", "https://example.test"))).isEmpty();
+        }
+    }
+
+    @Test
+    void testOptionalAuthenticationTriesCredentialsFirst(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("optional-authentication.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java"));
+        assertThat(client).contains("if (credentials.hasServiceBearer()) {");
+        assertThat(client).contains("else if (true) {");
+        assertThat(client.indexOf("if (credentials.hasServiceBearer()) {")).isLessThan(client.indexOf("else if (true) {"));
         verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsDigitLeadingAuthenticationName(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("digit-authentication-name.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Security scheme name '1key' does not generate a valid Java identifier");
+    }
+
+    @Test
+    void testWireNamesAreNotHtmlEscaped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("ampersand-authentication.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/StatusClient.java"));
+        assertThat(client).contains("requestBuilder.setHeader(\"X-Trace&Id\", ");
+        assertThat(client).contains("credentials.applyServiceKey(requestBuilder)");
+        assertThat(client).doesNotContain("&amp;");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/ApiCredentials.java")))
+                .contains(".setHeader(\"X-Service&Key\", ")
+                .doesNotContain("&amp;");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testParametersNamedLikeGeneratedLocalsCompile(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("generated-name-parameters.yaml", outputPath);
+
+        // the Java names change so the generated method compiles; the wire names do not
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/RecordsClient.java"));
+        assertThat(client).contains("public void createRecord(String formParameter, List<String> valueParameter, String requestParameter, String bearerTokenParameter, String credentialsParameter)");
+        assertThat(client).contains("uriBuilder.addParameter(\"value\", String.valueOf(value))");
+        assertThat(client).contains("uriBuilder.addParameter(\"request\", String.valueOf(requestParameter))");
+        assertThat(client).contains("requestBuilder.setHeader(\"bearerToken\", String.valueOf(bearerTokenParameter))");
+        assertThat(client).contains("form.addField(\"form\", String.valueOf(requireNonNull(formParameter, \"formParameter is null\")))");
+        assertThat(client).contains("form.addField(\"credentials\", String.valueOf(credentialsParameter))");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testInlineEnumPropertyCompiles(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("inline-enum-model.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Job.java")))
+                .contains("public enum StateEnum");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsMixedSuccessResponseShapes(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("mixed-success-responses.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'getJob' mixes success responses with and without a body");
+    }
+
+    @Test
+    void testAcceptedMarkerBesideBodylessSuccessIsVoid(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("accepted-response.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/FoldersClient.java"));
+        assertThat(client).contains("public void purgeFolder(String folderId)");
+        assertThat(client).containsPattern("createStatusResponseHandler\\((204, 202|202, 204)\\)");
+        assertThat(client).doesNotContain("createSafeJsonResponseHandler", "OBJECT_CODEC");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsNonJsonRequestBody(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("text-request-body.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'createNote' declares unsupported request body media types [text/plain]");
+    }
+
+    @Test
+    void testNonJsonSuccessBodyIsReturnedAsStreamingResponse(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("text-response-body.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/NotesClient.java"));
+        assertThat(client).contains("public StreamingResponse readNote()");
+        assertThat(client).contains("StreamingResponse response = httpClient.executeStreaming(request);");
+        assertThat(client).contains("return response;");
+        assertThat(client).doesNotContain("createSafeJsonResponseHandler", "STRING_CODEC", "ServerSentEventStream");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsDifferingSuccessResponseSchemas(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("differing-success-schemas.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'startJob' declares differing success response schemas");
+    }
+
+    @Test
+    void testIdenticalSuccessSchemasShareOneCodec(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("shared-success-schemas.yaml", outputPath);
+
+        // two responses referencing the same component compare equal, so they decode through one codec
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/JobsClient.java"));
+        assertThat(client).contains("public Job startJob()");
+        assertThat(client).contains("createSafeJsonResponseHandler(JOB_CODEC, 200, 201)");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsJsonBesideEventStreamSuccess(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("json-and-event-stream.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'events' mixes JSON and event stream success responses");
+    }
+
+    @Test
+    void testRejectsCollidingAuthenticationHeaders(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("colliding-authentication-headers.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Security requirement for operation 'status' applies several schemes to the authorization header");
+    }
+
+    @Test
+    void testRejectsHeaderParameterSetBySecurityRequirement(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("security-header-parameter.yaml", outputPath))
+                .isInstanceOf(RuntimeException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Operation 'status' header parameter 'Authorization' is also set by its security requirement");
+    }
+
+    @Test
+    void testParameterizedEventStreamMediaTypeIsTyped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("parameterized-event-stream.yaml", outputPath);
+
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java"));
+        assertThat(client).contains("public ServerSentEventStream<Event> streamEvents()");
+        assertThat(client).doesNotContain("public StreamingResponse streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testSuffixedJsonIsReturnedAsStreamingResponse(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("suffixed-json-response.yaml", outputPath);
+
+        // the runtime JSON handlers accept application/json only, so a structured-suffix body is not decoded
+        String client = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/DocumentsClient.java"));
+        assertThat(client).contains("public StreamingResponse readDocument()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testReferencedEventStreamResponseIsTyped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("referenced-event-stream.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/EventsClient.java")))
+                .contains("public ServerSentEventStream<Event> streamEvents()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testNonUtf8JsonIsReturnedAsStreamingResponse(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("latin1-json-response.yaml", outputPath);
+
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/api/DocumentsClient.java")))
+                .contains("public StreamingResponse readDocument()");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testModelWireNamesAreNotHtmlEscaped(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("ampersand-model.yaml", outputPath);
+
+        String shape = Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Shape.java"));
+        assertThat(shape).contains("property = \"kind&type\"");
+        assertThat(shape).contains("name = \"round&\"");
+        assertThat(Files.readString(outputPath.resolve("src/main/java/org/openapitools/client/model/Circle.java")))
+                .contains("@JsonProperty(\"kind&type\")")
+                .contains("@JsonProperty(\"radius&size\")");
+        assertThat(shape).doesNotContain("&amp;");
+        verifyGeneratedCodeCompiles(outputPath);
+    }
+
+    @Test
+    void testRejectsUntypedServerSentEvents(@TempDir Path outputPath)
+    {
+        assertThatThrownBy(() -> generate("untyped-sse.yaml", outputPath))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Operation 'streamEvents' returns text/event-stream without x-airlift-event-schema; typed server-sent events cannot be generated");
+    }
+
+    @Test
+    void testGeneratesHeaderApiKeyConfiguration(@TempDir Path outputPath)
+            throws Exception
+    {
+        generate("header-api-key.yaml", outputPath);
+
+        Path configFile = outputPath.resolve("src/main/java/org/openapitools/client/ApiClientConfig.java");
+        assertThat(Files.readString(configFile))
+                .contains("@Config(\"api.service-key.api-key\")")
+                .contains("builder.withServiceKey(serviceKeyApiKey)")
+                .doesNotContain("@Config(\"api.api-key\")", "getApiKey()", "unusedBasic", "Username", "Password");
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        assertCredentialsOptional(classesDir, "org.openapitools.client.ApiClientConfig", "api", "service-key.api-key");
+    }
+
+    @Test
+    void testGenerateFormRequestClient(@TempDir Path outputPath)
+            throws Exception
+    {
+        String inputSpec = getClass().getClassLoader().getResource("form-request.yaml").getFile();
+
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec)
+                .setOutputDir(outputPath.toString())
+                .addAdditionalProperty("projectName", "forms")
+                .addAdditionalProperty("apiPackage", "com.example.api")
+                .addAdditionalProperty("modelPackage", "com.example.model")
+                .addAdditionalProperty("invokerPackage", "com.example");
+
+        new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+
+        Path clientFile = outputPath.resolve("src/main/java/com/example/api/FormsClient.java");
+        String clientContent = Files.readString(clientFile);
+        assertThat(clientContent)
+                .contains("FormDataBodyBuilder form = new FormDataBodyBuilder()")
+                .containsSubsequence(
+                        "if (requireNonNull(repeated, \"repeated is null\").isEmpty())",
+                        "throw new IllegalArgumentException(\"repeated is empty\")",
+                        "repeated.forEach(value -> form.addField(\"repeated\", String.valueOf(value)))")
+                .contains("if (optionalText != null)")
+                .contains("optionalModes.forEach(value -> form.addField(\"optionalModes\", String.valueOf(value)))")
+                .contains(".setHeader(CONTENT_TYPE, \"application/x-www-form-urlencoded\")")
+                .contains(".setBodyGenerator(form.build())")
+                .doesNotContain("jsonBodyGenerator", "JSON_CONTENT_TYPE", "JsonCodec");
+
+        Path classesDir = verifyGeneratedCodeCompiles(outputPath);
+        AtomicReference<Request> capturedRequest = new AtomicReference<>();
+        AtomicReference<Request> successfulRequest = new AtomicReference<>();
+        try (TestingHttpClient httpClient = new TestingHttpClient(request -> {
+            capturedRequest.set(request);
+            return new TestingResponse(NO_CONTENT, ImmutableListMultimap.of(), new byte[0]);
+        });
+                URLClassLoader classLoader = new URLClassLoader(
+                        new java.net.URL[] {classesDir.toUri().toURL()},
+                        getClass().getClassLoader())) {
+            Class<?> clientClass = classLoader.loadClass("com.example.api.FormsClient");
+            Class<?> modeClass = classLoader.loadClass("com.example.model.Mode");
+            Object fast = enumConstant(modeClass, "FAST");
+            Object slow = enumConstant(modeClass, "SLOW");
+            Object client = clientClass.getConstructor(HttpClient.class, URI.class)
+                    .newInstance(httpClient, URI.create("https://example.test/api"));
+            Method submitForm = clientClass.getMethod(
+                    "submitForm",
+                    String.class,
+                    modeClass,
+                    List.class,
+                    String.class,
+                    Integer.class,
+                    String.class,
+                    List.class);
+
+            submitForm.invoke(
+                    client,
+                    "snow ☃ & +=",
+                    fast,
+                    List.of("first value", "雪&+"),
+                    "",
+                    7,
+                    null,
+                    List.of(fast, slow));
+            successfulRequest.set(capturedRequest.get());
+
+            capturedRequest.set(null);
+            assertThatThrownBy(() -> submitForm.invoke(
+                    client,
+                    "required",
+                    fast,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null))
+                    .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                    .hasRootCauseMessage("repeated is empty");
+            assertThat(capturedRequest.get()).isNull();
+        }
+
+        Request request = successfulRequest.get();
+        assertThat(request).isNotNull();
+        assertThat(request.getUri()).isEqualTo(URI.create("https://example.test/api/submit"));
+        assertThat(request.getHeader(CONTENT_TYPE)).isEqualTo("application/x-www-form-urlencoded");
+        assertThat(new String(((StaticBodyGenerator) request.getBodyGenerator()).getBody(), UTF_8))
+                .isEqualTo("requiredText=snow+%E2%98%83+%26+%2B%3D&mode=fast&repeated=first+value&repeated=%E9%9B%AA%26%2B&emptyValue=&count=7&optionalModes=fast&optionalModes=slow");
+    }
+
+    @Test
+    void testRejectUnsupportedFormRequestShapes(@TempDir Path outputPath)
+            throws Exception
+    {
+        String baseSpec = Files.readString(Path.of(getClass().getClassLoader().getResource("form-request.yaml").toURI()));
+        String scalarProperty = formYaml(16,
+                """
+                requiredText:
+                  type: string
+                """);
+        String mediaType = formYaml(10,
+                """
+                application/x-www-form-urlencoded:
+                  schema:
+                """);
+
+        List<InvalidFormCase> cases = List.of(
+                new InvalidFormCase("nested", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          type: object
+                          properties:
+                            child:
+                              type: string
+                        """), "must be a scalar or an array of scalars"),
+                new InvalidFormCase("map", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          type: object
+                          additionalProperties:
+                            type: string
+                        """), "must be a scalar or an array of scalars"),
+                new InvalidFormCase("composed", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          oneOf:
+                            - type: string
+                            - type: integer
+                        """), "unsupported composed schema"),
+                new InvalidFormCase("binary", scalarProperty, formYaml(16,
+                        """
+                        requiredText:
+                          type: string
+                          format: binary
+                        """), "must be a scalar or an array of scalars"),
+                new InvalidFormCase("custom-encoding", mediaType, formYaml(10,
+                        """
+                        application/x-www-form-urlencoded:
+                          encoding:
+                            requiredText:
+                              explode: false
+                          schema:
+                        """), "unsupported custom encoding"));
+
+        for (InvalidFormCase invalidCase : cases) {
+            Path spec = outputPath.resolve(invalidCase.name() + ".yaml");
+            Files.writeString(spec, baseSpec.replace(invalidCase.target(), invalidCase.replacement()));
+
+            assertThatThrownBy(() -> generateFormClient(spec, outputPath.resolve(invalidCase.name())))
+                    .hasMessageContaining(invalidCase.expectedMessage());
+        }
     }
 
     @Test
@@ -350,7 +1035,8 @@ class AirliftHttpClientCodegenIntegrationTest
         assertThat(client).contains("filter.forEach(value -> uriBuilder.addParameter(\"filter\", String.valueOf(value)));");
         assertThat(client).contains("tags.forEach(value -> uriBuilder.addParameter(\"tags\", String.valueOf(value)));");
         assertThat(client).contains("uriBuilder.addParameter(\"ids\", ids.stream().map(String::valueOf).collect(joining(\",\")));");
-        assertThat(client).doesNotContain("String.valueOf(filter)", "String.valueOf(ids)", "String.valueOf(tags)");
+        assertThat(client).contains("requestBuilder.setHeader(\"X-Trace\", xTrace.stream().map(String::valueOf).collect(joining(\",\")));");
+        assertThat(client).doesNotContain("String.valueOf(filter)", "String.valueOf(ids)", "String.valueOf(tags)", "String.valueOf(xTrace)");
         // an array header parameter is part of the signature, so the List import must be present even without a list codec
         assertThat(client).contains("List<String> xTrace").contains("import java.util.List;");
         verifyGeneratedCodeCompiles(outputPath);
@@ -418,7 +1104,25 @@ class AirliftHttpClientCodegenIntegrationTest
         }
     }
 
-    private void verifyGeneratedCodeCompiles(Path outputDir)
+    private static void generateFormClient(Path inputSpec, Path outputPath)
+    {
+        CodegenConfigurator configurator = new CodegenConfigurator()
+                .setGeneratorName("airlift-http-client")
+                .setInputSpec(inputSpec.toString())
+                .setOutputDir(outputPath.toString())
+                .addAdditionalProperty("projectName", "forms")
+                .addAdditionalProperty("apiPackage", "com.example.api")
+                .addAdditionalProperty("modelPackage", "com.example.model")
+                .addAdditionalProperty("invokerPackage", "com.example");
+        new DefaultGenerator().opts(configurator.toClientOptInput()).generate();
+    }
+
+    private static String formYaml(int indentation, String yaml)
+    {
+        return yaml.stripIndent().indent(indentation).stripTrailing();
+    }
+
+    private Path verifyGeneratedCodeCompiles(Path outputDir)
             throws IOException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -470,5 +1174,14 @@ class AirliftHttpClientCodegenIntegrationTest
                 fail("Generated code failed to compile:\n%s".formatted(errors));
             }
         }
+        return classesDir;
     }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static Object enumConstant(Class<?> enumClass, String name)
+    {
+        return Enum.valueOf((Class<? extends Enum>) enumClass, name);
+    }
+
+    private record InvalidFormCase(String name, String target, String replacement, String expectedMessage) {}
 }
