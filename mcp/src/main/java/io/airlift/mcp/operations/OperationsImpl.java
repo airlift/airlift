@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import io.airlift.log.Logger;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
@@ -23,6 +24,8 @@ import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.DiscoverResult;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetSkillRequest;
+import io.airlift.mcp.model.GetSkillResult;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
@@ -35,15 +38,19 @@ import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
+import io.airlift.mcp.model.ListSkillsResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.MetaOnly;
 import io.airlift.mcp.model.Prompt;
+import io.airlift.mcp.model.ReadResourceDirectoryRequest;
+import io.airlift.mcp.model.ReadResourceDirectoryResult;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResultType;
+import io.airlift.mcp.model.Skill;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscriptionNotifications;
 import io.airlift.mcp.model.Tool;
@@ -57,7 +64,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Function;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpException.exceptionWithData;
@@ -69,13 +78,17 @@ import static io.airlift.mcp.model.Constants.METADATA_SERVER_INFO;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
+import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_DIRECTORY_READ;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SERVER_DISCOVER;
+import static io.airlift.mcp.model.Constants.METHOD_SKILLS_GET;
+import static io.airlift.mcp.model.Constants.METHOD_SKILLS_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SUBSCRIPTIONS_LISTEN;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
+import static io.airlift.mcp.model.Constants.SKILLS_EXTENSION;
 import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
@@ -93,6 +106,8 @@ import static java.util.Objects.requireNonNull;
 public class OperationsImpl
         implements Operations
 {
+    private static final Logger log = Logger.get(OperationsImpl.class);
+
     private final McpMetadataMapper metadataMapper;
     private final JsonMapper jsonMapper;
     private final IconHelper iconHelper;
@@ -157,6 +172,9 @@ public class OperationsImpl
             case METHOD_COMPLETION_COMPLETE -> completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
             case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, metadata, requestMetadata);
             case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
+            case METHOD_SKILLS_LIST -> listSkills(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_SKILLS_GET -> getSkill(requestContext, metadata, convertParams(jsonMapper, rpcRequest, GetSkillRequest.class));
+            case METHOD_RESOURCES_DIRECTORY_READ -> readResourceDirectory(requestContext, convertParams(jsonMapper, rpcRequest, ReadResourceDirectoryRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
@@ -293,6 +311,50 @@ public class OperationsImpl
         return withCacheableResult(metadata, ReadResourceResult.class, readResources(entities, requestContext, readResourceRequest));
     }
 
+    private ListSkillsResult listSkills(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
+    {
+        List<String> skillUris = entities.skills(requestContext)
+                .stream()
+                .map(Resource::uri)
+                .collect(toImmutableList());
+        return paginationUtil.paginate(listRequest, skillUris, Function.identity(), (uris, nextCursor) -> {
+            List<Skill> skills = uris.stream()
+                    .flatMap(uri -> listedSkill(requestContext, uri).stream())
+                    .collect(toImmutableList());
+            return withCacheableResult(metadata, ListSkillsResult.class, new ListSkillsResult(skills, nextCursor));
+        });
+    }
+
+    // one broken skill must not fail the listing, which the spec allows to be partial
+    private Optional<Skill> listedSkill(RequestContextImpl requestContext, String uri)
+    {
+        try {
+            return entities.skill(requestContext, uri);
+        }
+        catch (RuntimeException e) {
+            log.warn(e, "Omitting skill from %s: %s", METHOD_SKILLS_LIST, uri);
+            return Optional.empty();
+        }
+    }
+
+    private GetSkillResult getSkill(RequestContextImpl requestContext, McpMetadata metadata, GetSkillRequest getSkillRequest)
+    {
+        updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, getSkillRequest.uri()));
+
+        Skill skill = entities.skill(requestContext, getSkillRequest.uri())
+                .orElseThrow(() -> exception(INVALID_PARAMS, "No skill is served at " + getSkillRequest.uri()));
+        return withCacheableResult(metadata, GetSkillResult.class, new GetSkillResult(skill));
+    }
+
+    private ReadResourceDirectoryResult readResourceDirectory(RequestContextImpl requestContext, ReadResourceDirectoryRequest readResourceDirectoryRequest)
+    {
+        updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceDirectoryRequest.uri()));
+
+        List<Resource> children = entities.resourceChildren(requestContext, readResourceDirectoryRequest.uri())
+                .orElseThrow(() -> exception(INVALID_PARAMS, readResourceDirectoryRequest.uri() + " is not a directory resource"));
+        return paginationUtil.paginate(readResourceDirectoryRequest, children, Resource::uri, ReadResourceDirectoryResult::new);
+    }
+
     private CompleteResult completionComplete(RequestContextImpl requestContext, CompleteRequest completeRequest)
     {
         return entities.completionEntry(requestContext, completeRequest.ref())
@@ -317,9 +379,16 @@ public class OperationsImpl
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(true, true)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
-                Optional.empty());
+                Optional.empty(),
+                entities.hasSkills(requestContext) ? Optional.of(ImmutableMap.of(SKILLS_EXTENSION, skillsExtensionSettings(requestContext))) : Optional.empty());
 
         return withCacheableResult(metadata, DiscoverResult.class, new DiscoverResult(SUPPORTED_VERSIONS, serverCapabilities, metadata.instructions(), OptionalInt.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    // directoryRead obliges the server to list every directory in its skill namespace, which templates make impossible
+    private Map<String, Object> skillsExtensionSettings(RequestContextImpl requestContext)
+    {
+        return entities.isSkillNamespaceEnumerable(requestContext) ? ImmutableMap.of("directoryRead", true) : ImmutableMap.of();
     }
 
     private <T extends CacheableResult<?>> T withCacheableResult(McpMetadata metadata, Class<T> clazz, T result)
