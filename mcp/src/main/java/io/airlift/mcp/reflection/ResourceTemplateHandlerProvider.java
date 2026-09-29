@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import io.airlift.mcp.McpResourceTemplate;
+import io.airlift.mcp.handler.ResourceKind;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.model.Annotations;
@@ -48,12 +49,12 @@ public class ResourceTemplateHandlerProvider
     private final boolean isReadResourceResult;
     private final List<String> icons;
     private final String resourceMimeType;
-    private final boolean isSkill;
+    private final ResourceKind kind;
     private final String resourceName;
     private Injector injector;
     private JsonMapper jsonMapper;
 
-    public ResourceTemplateHandlerProvider(McpResourceTemplate mcpResourceTemplate, Class<?> clazz, Method method, List<MethodParameter> parameters, boolean isSkill)
+    public ResourceTemplateHandlerProvider(McpResourceTemplate mcpResourceTemplate, Class<?> clazz, Method method, List<MethodParameter> parameters, ResourceKind kind)
     {
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
@@ -61,7 +62,7 @@ public class ResourceTemplateHandlerProvider
         icons = ImmutableList.copyOf(mcpResourceTemplate.icons());
         resourceName = mcpResourceTemplate.name();
         resourceMimeType = mcpResourceTemplate.mimeType();
-        this.isSkill = isSkill;
+        this.kind = requireNonNull(kind, "kind is null");
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues).or(isInputResponses), returnsString.or(returnsResourceContents).or(returnsResourceContentsList).or(returnsReadResourceResult));
         this.resultIsSingleContent = returnsResourceContents.test(method);
@@ -112,7 +113,7 @@ public class ResourceTemplateHandlerProvider
             return new ReadResourceResult(mapResult(resourceName, readResourceRequest.uri(), resourceMimeType, method, result, resultIsSingleContent));
         };
 
-        return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler, isSkill);
+        return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler, kind);
     }
 
     private static ResourceTemplate buildResourceTemplate(String name, String uriTemplate, String mimeType, String descriptionOrEmpty, Role[] audience, double priority, Optional<Map<String, Object>> meta)

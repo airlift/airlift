@@ -147,6 +147,10 @@ public class TestSerializationEdgeCases
             return 42;
         }
 
+        if (rawType.equals(long.class) || rawType.equals(Long.class)) {
+            return 42L;
+        }
+
         if (rawType.equals(boolean.class) || rawType.equals(Boolean.class)) {
             return true;
         }
