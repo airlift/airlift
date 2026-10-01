@@ -72,17 +72,31 @@ public class BoundedExecutor
         }
     }
 
+    /**
+     * Drains the queue and runs each task one at a time.
+     * Interrupt handling is similar to MoreExecutors#newSequentialExecutor.
+     * Before running each task, clear the interrupt status then restore the interrupt status at the end.
+     */
     private void drainQueue()
     {
         // INVARIANT: queue has at least one task available when this method is called
-        do {
-            try {
-                queue.poll().run();
+        boolean interrupted = false;
+        try {
+            do {
+                interrupted = Thread.interrupted() || interrupted;
+                try {
+                    queue.poll().run();
+                }
+                catch (Throwable e) {
+                    log.error(e, "Task failed");
+                }
             }
-            catch (Throwable e) {
-                log.error(e, "Task failed");
+            while (queueSize.getAndDecrement() > maxThreads);
+        }
+        finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
             }
         }
-        while (queueSize.getAndDecrement() > maxThreads);
     }
 }
