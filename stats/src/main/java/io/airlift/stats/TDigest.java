@@ -15,6 +15,7 @@ package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Doubles;
+import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
@@ -31,6 +32,8 @@ import static io.airlift.slice.SizeOf.instanceSize;
 import static java.lang.Double.isFinite;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
+import static java.lang.Double.longBitsToDouble;
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -41,6 +44,9 @@ public class TDigest
     public static final double DEFAULT_COMPRESSION = 100;
 
     private static final int FORMAT_TAG = 0;
+    // Compact, variable-length format: means as sortable-long deltas (varint), weights as varints when integral.
+    private static final int COMPRESSED_FORMAT_TAG = 1;
+    private static final int WEIGHTS_INTEGRAL_FLAG = 0x1;
     private static final int T_DIGEST_SIZE = instanceSize(TDigest.class);
     private static final int INITIAL_CAPACITY = 1;
     private static final int FUDGE_FACTOR = 10;
@@ -135,8 +141,15 @@ public class TDigest
         SliceInput input = serialized.getInput();
 
         byte format = input.readByte();
-        checkArgument(format == FORMAT_TAG, "Invalid format");
+        return switch (format) {
+            case FORMAT_TAG -> deserializeLegacy(input);
+            case COMPRESSED_FORMAT_TAG -> deserializeCompressed(input);
+            default -> throw new IllegalArgumentException("Invalid format: " + format);
+        };
+    }
 
+    private static TDigest deserializeLegacy(SliceInput input)
+    {
         double min = input.readDouble();
         double max = input.readDouble();
         double compression = input.readDouble();
@@ -151,6 +164,44 @@ public class TDigest
         double[] weights = new double[centroidCount];
         for (int i = 0; i < centroidCount; i++) {
             weights[i] = input.readDouble();
+        }
+
+        return new TDigest(
+                compression,
+                min,
+                max,
+                totalWeight,
+                centroidCount,
+                means,
+                weights,
+                false,
+                false,
+                // serialize() merges before writing, so the deserialized centroids are fully sorted
+                centroidCount);
+    }
+
+    private static TDigest deserializeCompressed(SliceInput input)
+    {
+        double min = input.readDouble();
+        double max = input.readDouble();
+        double compression = input.readDouble();
+        double totalWeight = input.readDouble();
+        int centroidCount = toIntExact(readVarLong(input));
+        int flags = input.readByte();
+
+        // means were written ascending as deltas of their sortable-long encodings
+        double[] means = new double[centroidCount];
+        long previous = 0;
+        for (int i = 0; i < centroidCount; i++) {
+            // the first delta may be negative (negative means), so it is zig-zag encoded
+            previous += (i == 0) ? zigZagDecode(readVarLong(input)) : readVarLong(input);
+            means[i] = longBitsToDouble(sortableLongToDoubleBits(previous));
+        }
+
+        double[] weights = new double[centroidCount];
+        boolean weightsIntegral = (flags & WEIGHTS_INTEGRAL_FLAG) != 0;
+        for (int i = 0; i < centroidCount; i++) {
+            weights[i] = weightsIntegral ? readVarLong(input) : input.readDouble();
         }
 
         return new TDigest(
@@ -411,10 +462,88 @@ public class TDigest
         }
     }
 
+    /**
+     * Serializes this digest, automatically choosing the smaller of two lossless encodings: a
+     * compact, variable-length format (means as sortable-long deltas, weights as varints when
+     * integral) and the legacy fixed-width format. The result is self-describing via a leading
+     * format tag, so it is always read back by {@link #deserialize(Slice)}.
+     *
+     * <p>Because this may emit the compact format, every reader must be on a version whose
+     * {@link #deserialize(Slice)} understands it before this method is relied upon.
+     */
     public Slice serialize()
     {
         merge(compression);
+
+        Slice compressed = serializeCompressedInternal();
+        // serializedSizeInBytes() is the legacy fixed-width size; emit whichever encoding is smaller
+        if (compressed.length() < serializedSizeInBytes()) {
+            return compressed;
+        }
         return serializeInternal();
+    }
+
+    @VisibleForTesting
+    Slice serializeCompressed()
+    {
+        merge(compression);
+        return serializeCompressedInternal();
+    }
+
+    @VisibleForTesting
+    Slice serializeLegacy()
+    {
+        merge(compression);
+        return serializeInternal();
+    }
+
+    private Slice serializeCompressedInternal()
+    {
+        // worst case is bounded by the legacy fixed-width size; the buffer grows on demand if needed
+        DynamicSliceOutput output = new DynamicSliceOutput(serializedSizeInBytes());
+
+        output.writeByte(COMPRESSED_FORMAT_TAG);
+        output.writeDouble(min);
+        output.writeDouble(max);
+        output.writeDouble(compression);
+        output.writeDouble(totalWeight);
+        writeVarLong(output, centroidCount);
+
+        boolean weightsIntegral = weightsAreIntegral();
+        output.writeByte(weightsIntegral ? WEIGHTS_INTEGRAL_FLAG : 0);
+
+        // means are ascending; delta-encode their sortable-long representations
+        long previous = 0;
+        for (int i = 0; i < centroidCount; i++) {
+            long sortable = doubleToSortableLongBits(means[i]);
+            long delta = sortable - previous;
+            // the first delta may be negative; subsequent ones are non-negative because means ascend
+            writeVarLong(output, (i == 0) ? zigZagEncode(delta) : delta);
+            previous = sortable;
+        }
+
+        for (int i = 0; i < centroidCount; i++) {
+            if (weightsIntegral) {
+                writeVarLong(output, (long) weights[i]);
+            }
+            else {
+                output.writeDouble(weights[i]);
+            }
+        }
+
+        return output.slice();
+    }
+
+    private boolean weightsAreIntegral()
+    {
+        for (int i = 0; i < centroidCount; i++) {
+            double weight = weights[i];
+            // reject fractional, negative, and values outside the exactly-representable long range
+            if (weight < 0 || (double) (long) weight != weight) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private Slice serializeInternal()
@@ -661,5 +790,52 @@ public class TDigest
     private static double internalCompressionFactor(double compression)
     {
         return 2 * compression;
+    }
+
+    // Maps a double's bits to a long that orders identically to the double under signed comparison,
+    // so that ascending means produce ascending (hence delta-friendly) longs. Self-inverse.
+    private static long doubleToSortableLongBits(double value)
+    {
+        long bits = Double.doubleToLongBits(value);
+        return bits ^ ((bits >> 63) & Long.MAX_VALUE);
+    }
+
+    private static long sortableLongToDoubleBits(long bits)
+    {
+        return bits ^ ((bits >> 63) & Long.MAX_VALUE);
+    }
+
+    private static long zigZagEncode(long value)
+    {
+        return (value << 1) ^ (value >> 63);
+    }
+
+    private static long zigZagDecode(long value)
+    {
+        return (value >>> 1) ^ -(value & 1);
+    }
+
+    private static void writeVarLong(SliceOutput output, long value)
+    {
+        // unsigned LEB128
+        while ((value & ~0x7FL) != 0) {
+            output.writeByte((int) ((value & 0x7F) | 0x80));
+            value >>>= 7;
+        }
+        output.writeByte((int) (value & 0x7F));
+    }
+
+    private static long readVarLong(SliceInput input)
+    {
+        long result = 0;
+        int shift = 0;
+        while (true) {
+            byte b = input.readByte();
+            result |= (long) (b & 0x7F) << shift;
+            if ((b & 0x80) == 0) {
+                return result;
+            }
+            shift += 7;
+        }
     }
 }
