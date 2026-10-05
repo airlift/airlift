@@ -14,6 +14,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
@@ -46,6 +47,7 @@ import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestOpenTelemetryModule
 {
@@ -384,5 +386,77 @@ public class TestOpenTelemetryModule
         // a value containing control characters is dropped entirely, not merely truncated, since it
         // could otherwise be used to forge extra log lines or header entries
         assertThat(extracted.getEntryValue("note")).isNull();
+    }
+
+    @Test
+    void testSpanFilterDisabledByDefault()
+    {
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
+                        .toInstance(SimpleSpanProcessor.create(InMemorySpanExporter.create())))
+                .quiet()
+                .initialize();
+
+        assertThat(injector.getInstance(OpenTelemetry.class)).isInstanceOf(OpenTelemetrySdk.class);
+        assertThat(injector.getInstance(Tracer.class).getClass().getName())
+                .isEqualTo("io.opentelemetry.sdk.trace.SdkTracer");
+    }
+
+    @Test
+    void testSpanFilter()
+    {
+        @SuppressWarnings("resource")
+        InMemorySpanExporter exporter = InMemorySpanExporter.create();
+
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
+                        .toInstance(SimpleSpanProcessor.create(exporter)))
+                .setRequiredConfigurationProperty("otel.tracing.span-filter.drop", "testService=>process, catalog.*=>listTables")
+                .quiet()
+                .initialize();
+
+        Tracer tracer = injector.getInstance(Tracer.class);
+        OpenTelemetry openTelemetry = injector.getInstance(OpenTelemetry.class);
+        assertThat(openTelemetry).isInstanceOf(FilteringOpenTelemetry.class);
+
+        tracer.spanBuilder("process").startSpan().end();
+        tracer.spanBuilder("kept").startSpan().end();
+        openTelemetry.getTracer("catalog.hive").spanBuilder("listTables").startSpan().end();
+        openTelemetry.getTracer("testService").spanBuilder("process").startSpan().end();
+
+        assertThat(exporter.getFinishedSpanItems()).extracting(SpanData::getName).containsExactly("kept");
+        assertThat(openTelemetry.getPropagators()).isNotNull();
+    }
+
+    @Test
+    void testSpanFilterInvalidRule()
+    {
+        Bootstrap bootstrap = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
+                        .toInstance(SimpleSpanProcessor.create(InMemorySpanExporter.create())))
+                .setRequiredConfigurationProperty("otel.tracing.span-filter.drop", "process;children=keep")
+                .quiet();
+
+        assertThatThrownBy(() -> bootstrap.initialize().getInstance(Tracer.class))
+                .hasStackTraceContaining("Invalid children mode 'keep' in span filter rule: process;children=keep");
+    }
+
+    @Test
+    void testSpanFilterInvalidRuleWithoutExporter()
+    {
+        Bootstrap bootstrap = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"))
+                .setRequiredConfigurationProperty("otel.tracing.span-filter.drop", "process;children=keep")
+                .quiet();
+
+        assertThatThrownBy(bootstrap::initialize)
+                .hasStackTraceContaining("Invalid children mode 'keep' in span filter rule: process;children=keep");
     }
 }
