@@ -103,7 +103,7 @@
         <dep.bouncycastle.version>1.86</dep.bouncycastle.version>
         <dep.mcp.sdk.version>2.0.1</dep.mcp.sdk.version>
         <dep.openapi-generator.version>7.25.0</dep.openapi-generator.version>
-        <dep.jersey.version>4.0.2</dep.jersey.version>
+        <dep.jersey.version>4.0.3</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
         <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
         <dep.swagger-parser.version>2.1.48</dep.swagger-parser.version>
