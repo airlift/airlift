@@ -228,10 +228,11 @@ public class MethodInvoker
             return Optional.empty();
         }
 
-        if (objectParameter.rawType().isRecord() || Optional.class.isAssignableFrom(objectParameter.rawType()) || objectParameter.rawType().isEnum()) {
+        try {
             return jsonMapper.convertValue(value, jsonMapper.constructType(objectParameter.genericType()));
         }
-
-        return value;
+        catch (IllegalArgumentException e) {
+            throw new McpClientException(exception("Invalid value for parameter %s: %s".formatted(objectParameter.name(), e.getMessage())));
+        }
     }
 }
