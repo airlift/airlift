@@ -252,7 +252,7 @@ public class TestMcpSkillBuilder
         String actual = McpSkillBuilder.mcpSkillBuilder("full-skill", "A comprehensive skill")
                 .addFrontmatter("version", "2.0")
                 .addFrontmatter("icons", ImmutableMap.of("default", "star", "main", "starburst"))
-                .addFrontmatter("metadata", ImmutableMap.of("version", "\"1.0.0\"", "author", "me"))
+                .addFrontmatter("metadata", ImmutableMap.of("version", "1.0.0", "author", "me"))
                 .addHeadingContent("Overview", 1)
                 .addContent("This skill demonstrates all builder features.")
                 .addContent("")
@@ -261,6 +261,85 @@ public class TestMcpSkillBuilder
                 .addContent("Follow these steps to use this skill.")
                 .buildSkill();
         assertThat(actual.strip()).isEqualTo(expected.strip());
+    }
+
+    @Test
+    public void testNameLeadingOrTrailingDash()
+    {
+        assertThatThrownBy(() -> McpSkillBuilder.mcpSkillBuilder("-skill", "description"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not start or end with");
+
+        assertThatThrownBy(() -> McpSkillBuilder.mcpSkillBuilder("skill-", "description"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not start or end with");
+    }
+
+    @Test
+    public void testFrontmatterRoundTrip()
+    {
+        String skill = McpSkillBuilder.mcpSkillBuilder("round-trip", "Use when: the value has YAML # special characters")
+                .addFrontmatter("version", "1.0")
+                .addFrontmatter("enabled", "true")
+                .addFrontmatter("metadata", ImmutableMap.of("author", "me", "count", "30"))
+                .addContent("Body")
+                .buildSkill();
+
+        assertThat(McpSkillBuilder.parseFrontmatter(skill)).isEqualTo(ImmutableMap.of(
+                "name", "round-trip",
+                "description", "Use when: the value has YAML # special characters",
+                "version", "1.0",
+                "enabled", "true",
+                "metadata", ImmutableMap.of("author", "me", "count", "30")));
+    }
+
+    @Test
+    public void testParseFrontmatterPreservesAuthorFields()
+    {
+        String skill =
+                """
+                ---
+                name: parsed
+                description: A parsed skill
+                license: Apache-2.0
+                allowed-tools: Bash(git:*) Read
+                metadata:
+                  author: me
+                ---
+
+                # Parsed
+                """;
+
+        assertThat(McpSkillBuilder.parseFrontmatter(skill)).isEqualTo(ImmutableMap.of(
+                "name", "parsed",
+                "description", "A parsed skill",
+                "license", "Apache-2.0",
+                "allowed-tools", "Bash(git:*) Read",
+                "metadata", ImmutableMap.of("author", "me")));
+    }
+
+    @Test
+    public void testParseFrontmatterInvalid()
+    {
+        assertThatThrownBy(() -> McpSkillBuilder.parseFrontmatter("# No frontmatter"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must begin with YAML frontmatter");
+
+        assertThatThrownBy(() -> McpSkillBuilder.parseFrontmatter("---\nname: x\ndescription: y\n"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not terminated");
+
+        assertThatThrownBy(() -> McpSkillBuilder.parseFrontmatter("---\ndescription: y\n---\n"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("\"name\" is required");
+
+        assertThatThrownBy(() -> McpSkillBuilder.parseFrontmatter("---\nname: x\n---\n"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("\"description\" is required");
+
+        assertThatThrownBy(() -> McpSkillBuilder.parseFrontmatter("---\nname: Bad Name\ndescription: y\n---\n"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("illegal characters");
     }
 
     @Test
@@ -292,9 +371,9 @@ public class TestMcpSkillBuilder
         String content = loadResource("skills/metadata-skill.md");
         assertThat(content).startsWith("---");
         assertThat(content).contains("name: metadata-skill");
-        assertThat(content).contains("version: 1.0");
+        assertThat(content).contains("version: \"1.0\"");
         assertThat(content).contains("config:");
-        assertThat(content).contains("timeout: 30");
+        assertThat(content).contains("timeout: \"30\"");
     }
 
     @Test
@@ -304,7 +383,7 @@ public class TestMcpSkillBuilder
         String content = loadResource("skills/full-skill.md");
         assertThat(content).startsWith("---");
         assertThat(content).contains("name: full-skill");
-        assertThat(content).contains("version: 2.0");
+        assertThat(content).contains("version: \"2.0\"");
         assertThat(content).contains("icons:");
         assertThat(content).contains("default: star");
         assertThat(content).contains("# Overview");

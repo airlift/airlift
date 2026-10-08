@@ -8,6 +8,7 @@ import com.google.inject.Provider;
 import io.airlift.mcp.McpResource;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
+import io.airlift.mcp.handler.ResourceKind;
 import io.airlift.mcp.model.Annotations;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
@@ -47,14 +48,14 @@ public class ResourceHandlerProvider
     private final boolean resultIsSingleContent;
     private final boolean isReadResourceResult;
     private final List<String> icons;
-    private final boolean isSkill;
+    private final ResourceKind kind;
     private final String resourceName;
     private final String resourceMimeType;
     private final String resourceUri;
     private Injector injector;
     private JsonMapper jsonMapper;
 
-    public ResourceHandlerProvider(McpResource mcpResource, Class<?> clazz, Method method, List<MethodParameter> parameters, boolean isSkill)
+    public ResourceHandlerProvider(McpResource mcpResource, Class<?> clazz, Method method, List<MethodParameter> parameters, ResourceKind kind)
     {
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
@@ -63,7 +64,7 @@ public class ResourceHandlerProvider
         resourceMimeType = mcpResource.mimeType();
         resourceUri = mcpResource.uri();
         icons = ImmutableList.copyOf(mcpResource.icons());
-        this.isSkill = isSkill;
+        this.kind = requireNonNull(kind, "kind is null");
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource).or(isInputResponses), returnsString.or(returnsResourceContents).or(returnsResourceContentsList).or(returnsReadResourceResult));
         resultIsSingleContent = returnsResourceContents.test(method);
@@ -114,7 +115,7 @@ public class ResourceHandlerProvider
             return new ReadResourceResult(mapResult(resourceName, resourceUri, resourceMimeType, method, result, resultIsSingleContent));
         };
 
-        return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler, isSkill);
+        return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler, kind);
     }
 
     @SuppressWarnings("unchecked")

@@ -28,4 +28,10 @@ public @interface McpSkillTemplate
     Role[] audience() default {};
 
     double priority() default Double.NaN;
+
+    /**
+     * Set when the skill's content can differ between reads. Its skill entry
+     * then advertises {@code "resources": "dynamic"} instead of file digests.
+     */
+    boolean dynamic() default false;
 }

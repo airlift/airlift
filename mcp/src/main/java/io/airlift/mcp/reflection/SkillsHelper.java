@@ -5,6 +5,7 @@ import io.airlift.mcp.McpResource;
 import io.airlift.mcp.McpResourceTemplate;
 import io.airlift.mcp.McpSkill;
 import io.airlift.mcp.McpSkillTemplate;
+import io.airlift.mcp.handler.ResourceKind;
 import io.airlift.mcp.model.Role;
 
 import java.lang.annotation.Annotation;
@@ -15,6 +16,8 @@ import java.util.stream.Stream;
 
 import static io.airlift.mcp.McpSkillBuilder.mcpSkillBuilder;
 import static io.airlift.mcp.McpSkillBuilder.skillUri;
+import static io.airlift.mcp.handler.ResourceKind.DYNAMIC_SKILL;
+import static io.airlift.mcp.handler.ResourceKind.SKILL;
 import static io.airlift.mcp.model.Constants.SKILL_MIME_TYPE;
 
 public interface SkillsHelper
@@ -215,6 +218,11 @@ public interface SkillsHelper
                                 && Double.compare(priority(), mcpResourceTemplate.priority()) == 0));
             }
         };
+    }
+
+    static ResourceKind skillKind(boolean dynamic)
+    {
+        return dynamic ? DYNAMIC_SKILL : SKILL;
     }
 
     static String buildBasePath(String name, String[] parentPath)
