@@ -22,6 +22,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.nio.file.Files.newBufferedWriter;
@@ -107,6 +108,41 @@ final class TestBootstrapWithSecretsProvider
         Injector injector = bootstrap.initialize();
 
         assertThat(injector.getInstance(FooConfig.class).getValue()).isEqualTo("test_value");
+    }
+
+    @Test
+    void testConfigurationProviderReceivesResolvedSecrets()
+            throws Exception
+    {
+        Path configurationPluginDirectory = Files.createTempDirectory(null);
+
+        File configurationResolverFile = createConfigurationResolverFile(
+                """
+                secrets-plugins-dir="%s"
+
+                [multi]
+                secrets-provider.name="env"
+                """.formatted(configurationPluginDirectory));
+
+        System.setProperty("secretsConfig", configurationResolverFile.getAbsolutePath());
+
+        AtomicReference<String> providerValue = new AtomicReference<>();
+        Bootstrap bootstrap = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .loadSecretsPlugins()
+                .setRequiredConfigurationProperties(ImmutableMap.of("foo.value", "${MULTI:TEST_KEY}"))
+                .withConfigurationProvider(properties -> {
+                    providerValue.set(properties.get("foo.value"));
+                    return ImmutableMap.of();
+                });
+
+        try {
+            bootstrap.initialize();
+        }
+        finally {
+            System.clearProperty("secretsConfig");
+        }
+
+        assertThat(providerValue).hasValue("test_value");
     }
 
     private File createConfigurationResolverFile(String configurationFile)
