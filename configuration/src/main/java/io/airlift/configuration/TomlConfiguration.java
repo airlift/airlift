@@ -13,6 +13,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableMap;
 import io.github.wasabithumb.jtoml.key.TomlKey;
 import io.github.wasabithumb.jtoml.value.TomlValue;
 import io.github.wasabithumb.jtoml.value.array.TomlArray;
@@ -47,8 +48,8 @@ public class TomlConfiguration
 
     public Map<String, String> getParentConfiguration()
     {
-        return tomlTable.keys().stream()
-                .filter(key -> key.size() == 1)
+        return tomlTable.keys(false).stream()
+                .filter(key -> !tomlTable.get(key).isTable())
                 .collect(toImmutableMap(
                         TomlKey::toString,
                         key -> tomlValueToString(tomlTable.get(key))));
@@ -67,11 +68,24 @@ public class TomlConfiguration
         checkArgument(tomlTable.contains(namespace), "Namespace %s not found", namespace);
         TomlValue namespaceValue = tomlTable.get(namespace);
         checkArgument(namespaceValue.isTable(), "Namespace %s is not a TOML table", namespace);
-        TomlTable namespaceTable = namespaceValue.asTable();
-        return namespaceTable.keys().stream()
-                .collect(toImmutableMap(
-                        TomlKey::toString,
-                        key -> tomlValueToString(namespaceTable.get(key))));
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        flattenTable(namespaceValue.asTable(), null, builder);
+        return builder.buildOrThrow();
+    }
+
+    // Walks the table manually instead of using TomlTable.keys(true), which skips nested tables in jtoml 1.8.x
+    private static void flattenTable(TomlTable table, TomlKey prefix, ImmutableMap.Builder<String, String> builder)
+    {
+        for (TomlKey key : table.keys(false)) {
+            TomlValue value = table.get(key);
+            TomlKey fullKey = (prefix == null) ? key : TomlKey.join(prefix, key);
+            if (value.isTable()) {
+                flattenTable(value.asTable(), fullKey, builder);
+            }
+            else {
+                builder.put(fullKey.toString(), tomlValueToString(value));
+            }
+        }
     }
 
     private static String tomlValueToString(TomlValue value)
