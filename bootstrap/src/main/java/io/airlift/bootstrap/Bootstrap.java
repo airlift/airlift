@@ -95,6 +95,7 @@ public class Bootstrap
     private boolean quiet = parseBoolean(System.getProperty("airlift.quiet"));
     private boolean loadSecretsPlugins;
     private boolean skipErrorReporting;
+    private final List<ConfigurationProvider> configurationProviders = new ArrayList<>();
 
     private State state = State.UNINITIALIZED;
     private ConfigurationFactory configurationFactory;
@@ -241,6 +242,12 @@ public class Bootstrap
         return this;
     }
 
+    public Bootstrap withConfigurationProvider(ConfigurationProvider provider)
+    {
+        configurationProviders.add(requireNonNull(provider, "provider is null"));
+        return this;
+    }
+
     /**
      * Validate configuration and return used properties.
      */
@@ -307,6 +314,8 @@ public class Bootstrap
             unusedProperties.remove(key);
             errors.add(new Message(error.getMessage()));
         }));
+
+        properties = addProvidedProperties(properties, errors);
 
         List<Message> warnings = new ArrayList<>();
         configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
@@ -402,6 +411,46 @@ public class Bootstrap
         }
 
         return configurationFactory.getUsedProperties();
+    }
+
+    private Map<String, String> addProvidedProperties(Map<String, String> properties, List<Message> errors)
+    {
+        if (configurationProviders.isEmpty()) {
+            return properties;
+        }
+
+        Map<String, String> providedProperties = new HashMap<>();
+        Map<String, ConfigurationProvider> propertyProviders = new HashMap<>();
+        for (ConfigurationProvider provider : configurationProviders) {
+            Map<String, String> provided;
+            try {
+                provided = ImmutableMap.copyOf(provider.provide(properties));
+            }
+            catch (RuntimeException e) {
+                // exception message may contain resolved secrets
+                errors.add(new Message("Configuration provider %s failed: %s".formatted(provider.getClass().getName(), e.getClass().getName())));
+                continue;
+            }
+            provided.forEach((key, value) -> {
+                if (properties.containsKey(key)) {
+                    return;
+                }
+                ConfigurationProvider previous = propertyProviders.putIfAbsent(key, provider);
+                if (previous == null) {
+                    providedProperties.put(key, value);
+                }
+                else if (!providedProperties.get(key).equals(value)) {
+                    errors.add(new Message("Configuration property '%s' has conflicting values from providers %s and %s".formatted(
+                            key,
+                            previous.getClass().getName(),
+                            provider.getClass().getName())));
+                }
+            });
+        }
+
+        Map<String, String> result = new HashMap<>(properties);
+        providedProperties.forEach(result::putIfAbsent);
+        return ImmutableSortedMap.copyOf(result);
     }
 
     public Injector initialize()
