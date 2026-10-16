@@ -33,7 +33,8 @@ final class TestKeystoreSecretProviderConfig
         assertRecordedDefaults(recordDefaults(KeystoreSecretProviderConfig.class)
                 .setKeyStoreFilePath(null)
                 .setKeyStoreType(null)
-                .setKeyStorePassword(null));
+                .setKeyStorePassword(null)
+                .setKeyStoreEntryPassword(null));
     }
 
     @Test
@@ -46,12 +47,14 @@ final class TestKeystoreSecretProviderConfig
                 .put("keystore-file-path", keystoreFile.toString())
                 .put("keystore-type", "JCEKS")
                 .put("keystore-password", "keystore_password")
+                .put("keystore-entry-password", "entry_password")
                 .buildOrThrow();
 
         KeystoreSecretProviderConfig expected = new KeystoreSecretProviderConfig()
                 .setKeyStoreFilePath(keystoreFile.toString())
                 .setKeyStoreType("JCEKS")
-                .setKeyStorePassword("keystore_password");
+                .setKeyStorePassword("keystore_password")
+                .setKeyStoreEntryPassword("entry_password");
 
         assertFullMapping(properties, expected);
     }
