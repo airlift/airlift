@@ -168,6 +168,20 @@ public class TestingEndpoints
                 .buildSkill();
     }
 
+    @McpResource(name = "my-test-skill-guide", uri = "skill://a/b/c/my-test-skill/references/GUIDE.md", mimeType = "text/markdown", description = "Supporting file for my-test-skill")
+    public String testSkillGuide()
+    {
+        return "# Guide\n\nMore details.\n";
+    }
+
+    @McpSkill(name = "my-dynamic-skill", description = "An example dynamic skill.", dynamic = true)
+    public String testDynamicSkill(Resource resource)
+    {
+        return mcpSkillBuilder(resource)
+                .addContent("Generated at " + System.nanoTime())
+                .buildSkill();
+    }
+
     @McpSkillTemplate(name = "my-test-skill-template", uriTemplateParts = {"a", "{name}"}, description = "An example skill template.")
     public String testSkillTemplate(ResourceTemplate resourceTemplate, ResourceTemplateValues resourceTemplateValues)
     {
@@ -277,7 +291,11 @@ public class TestingEndpoints
                                 firstResource.resource().annotations(),
                                 firstResource.resource().icons(),
                                 firstResource.resource().meta());
-                        entities.addResource(alteredResource, firstResource.handler(), firstResource.isSkill());
+                        switch (firstResource.kind()) {
+                            case RESOURCE -> entities.addResource(alteredResource, firstResource.handler());
+                            case SKILL -> entities.addSkill(alteredResource, firstResource.handler(), false);
+                            case DYNAMIC_SKILL -> entities.addSkill(alteredResource, firstResource.handler(), true);
+                        }
                     }
 
                     default -> throw new IllegalArgumentException("Unknown system session version name: " + name);

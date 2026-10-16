@@ -15,6 +15,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.Skill;
 import io.airlift.mcp.model.Tool;
 
 import java.util.List;
@@ -42,11 +43,21 @@ public interface McpEntities
 
     List<ResourceTemplate> resourceTemplates(McpRequestContext requestContext);
 
+    Optional<List<Resource>> resourceChildren(McpRequestContext requestContext, String uri);
+
     List<CompleteReference> completions(McpRequestContext requestContext);
 
     Optional<CompletionEntry> completionEntry(McpRequestContext requestContext, CompleteReference ref);
 
     Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
+
+    List<Resource> skills(McpRequestContext requestContext);
+
+    Optional<Skill> skill(McpRequestContext requestContext, String uri);
+
+    boolean hasSkills(McpRequestContext requestContext);
+
+    boolean isSkillNamespaceEnumerable(McpRequestContext requestContext);
 
     void addTool(Tool tool, ToolHandler toolHandler);
 
@@ -56,17 +67,19 @@ public interface McpEntities
 
     void removePrompt(String promptName);
 
-    void addResource(Resource resource, ResourceHandler handler, boolean isSkill);
+    void addResource(Resource resource, ResourceHandler handler);
 
     void removeResource(String resourceUri);
 
-    void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler, boolean isSkill);
+    void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler);
 
     void removeResourceTemplate(String uriTemplate);
+
+    void addSkill(Resource skill, ResourceHandler handler, boolean dynamic);
+
+    void addSkillTemplate(ResourceTemplate skillTemplate, ResourceTemplateHandler handler, boolean dynamic);
 
     void addCompletion(CompleteReference reference, CompletionHandler handler);
 
     void removeCompletion(CompleteReference reference);
-
-    boolean hasSkills(McpRequestContext requestContext);
 }

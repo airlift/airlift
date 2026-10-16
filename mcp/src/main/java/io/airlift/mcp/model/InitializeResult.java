@@ -12,7 +12,7 @@ public record InitializeResult(
         Implementation serverInfo,
         Optional<String> instructions)
 {
-    public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools, Optional<Map<String, Object>> experimental)
+    public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools, Optional<Map<String, Object>> experimental, Optional<Map<String, Object>> extensions)
             implements Experimental
     {
         public ServerCapabilities
@@ -23,11 +23,12 @@ public record InitializeResult(
             resources = requireNonNullElse(resources, Optional.empty());
             tools = requireNonNullElse(tools, Optional.empty());
             experimental = requireNonNullElse(experimental, Optional.empty());
+            extensions = requireNonNullElse(extensions, Optional.empty());
         }
 
         public ServerCapabilities()
         {
-            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
     }
 

@@ -66,11 +66,13 @@ import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
+import static io.airlift.mcp.handler.ResourceKind.RESOURCE;
 import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
 import static io.airlift.mcp.model.Protocol.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
+import static io.airlift.mcp.reflection.SkillsHelper.skillKind;
 import static java.util.Objects.requireNonNull;
 
 public class McpModule
@@ -286,9 +288,9 @@ public class McpModule
                         prompts.add(new PromptHandlerProvider(mcpPrompt, clazz, method, parameters)));
 
                 forAllInClass(clazz, McpResource.class, identityClass, (mcpResource, method, parameters) ->
-                        resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters, false)));
+                        resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters, RESOURCE)));
                 forAllInClass(clazz, McpResourceTemplate.class, identityClass, (mcpResourceTemplate, method, parameters) ->
-                        resourceTemplates.add(new ResourceTemplateHandlerProvider(mcpResourceTemplate, clazz, method, parameters, false)));
+                        resourceTemplates.add(new ResourceTemplateHandlerProvider(mcpResourceTemplate, clazz, method, parameters, RESOURCE)));
 
                 forAllInClass(clazz, McpPromptCompletion.class, identityClass, (mcpPromptCompletion, method, parameters) ->
                         completions.add(new CompletionHandlerProvider(mcpPromptCompletion, clazz, method, parameters)));
@@ -296,9 +298,9 @@ public class McpModule
                         completions.add(new CompletionHandlerProvider(mcpResourceCompletion, clazz, method, parameters)));
 
                 forAllInClass(clazz, McpSkill.class, identityClass, (mcpSkill, method, parameters) ->
-                        resources.add(new ResourceHandlerProvider(resourceFromSkill(mcpSkill), clazz, method, parameters, true)));
+                        resources.add(new ResourceHandlerProvider(resourceFromSkill(mcpSkill), clazz, method, parameters, skillKind(mcpSkill.dynamic()))));
                 forAllInClass(clazz, McpSkillTemplate.class, identityClass, (mcpSkillTemplate, method, parameters) ->
-                        resourceTemplates.add(new ResourceTemplateHandlerProvider(resourceTemplateFromSkillTemplate(mcpSkillTemplate), clazz, method, parameters, true)));
+                        resourceTemplates.add(new ResourceTemplateHandlerProvider(resourceTemplateFromSkillTemplate(mcpSkillTemplate), clazz, method, parameters, skillKind(mcpSkillTemplate.dynamic()))));
             });
 
             Set<Provider<ToolEntry>> localTools = tools.build();
