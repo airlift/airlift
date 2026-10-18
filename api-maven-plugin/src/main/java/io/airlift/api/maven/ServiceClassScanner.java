@@ -40,7 +40,7 @@ public class ServiceClassScanner
     public List<Class<?>> scan()
     {
         ClassGraph classGraph = new ClassGraph()
-                .addClassLoader(classLoader)
+                .enableClassLoaders(classLoader)
                 .enableClassInfo()
                 .enableAnnotationInfo();
 
