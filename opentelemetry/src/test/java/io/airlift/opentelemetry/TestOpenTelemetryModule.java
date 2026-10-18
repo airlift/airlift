@@ -49,20 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestOpenTelemetryModule
 {
-    private static final TextMapGetter<Map<String, String>> MAP_GETTER = new TextMapGetter<>()
-    {
-        @Override
-        public Iterable<String> keys(Map<String, String> carrier)
-        {
-            return carrier.keySet();
-        }
-
-        @Override
-        public String get(Map<String, String> carrier, String key)
-        {
-            return (carrier == null) ? null : carrier.get(key);
-        }
-    };
+    private static final TextMapGetter<Map<String, String>> MAP_GETTER = (carrier, key) -> (carrier == null) ? null : carrier.get(key);
 
     @Test
     void testNoopProviders()
