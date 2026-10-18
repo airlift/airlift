@@ -78,12 +78,6 @@ public final class SpanSerialization
             public static final MapTextMapGetter INSTANCE = new MapTextMapGetter();
 
             @Override
-            public Iterable<String> keys(Map<String, String> map)
-            {
-                return map.keySet();
-            }
-
-            @Override
             public String get(Map<String, String> map, String key)
             {
                 return requireNonNull(map).get(key);

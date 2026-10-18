@@ -155,12 +155,6 @@ public final class TracingServletFilter
         public static final ServletTextMapGetter INSTANCE = new ServletTextMapGetter();
 
         @Override
-        public Iterable<String> keys(HttpServletRequest request)
-        {
-            return request.getHeaderNames()::asIterator;
-        }
-
-        @Override
         public String get(HttpServletRequest request, String key)
         {
             return requireNonNull(request).getHeader(key);
