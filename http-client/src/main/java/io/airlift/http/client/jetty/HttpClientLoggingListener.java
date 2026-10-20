@@ -26,7 +26,9 @@ import java.util.Optional;
 import static java.util.Objects.requireNonNull;
 
 class HttpClientLoggingListener
-        implements Response.Listener, Request.Listener
+        implements Request.Listener,
+                   Response.BeginListener,
+                   Response.CompleteListener
 {
     private final HttpClientLogger logger;
     private final long requestTimestampMillis;

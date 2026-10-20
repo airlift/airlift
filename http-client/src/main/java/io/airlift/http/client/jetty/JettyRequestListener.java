@@ -8,7 +8,9 @@ import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
 
 class JettyRequestListener
-        implements Request.Listener, Response.Listener
+        implements Request.Listener,
+                   Response.BeginListener,
+                   Response.CompleteListener
 {
     private final URI uri;
     private final long created = System.nanoTime();

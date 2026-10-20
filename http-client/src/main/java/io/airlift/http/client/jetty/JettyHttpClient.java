@@ -1009,9 +1009,11 @@ public class JettyHttpClient
         jettyRequest.idleTimeout(finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
 
         // Add stats collecting listener
+        // Response listeners here take no content events, so Jetty runs response handlers off the thread reading the HTTP/2 connection
         JettyRequestListener requestListener = new JettyRequestListener(finalRequest.getUri());
         jettyRequest.onRequestListener(requestListener);
-        jettyRequest.onResponseListener(requestListener);
+        jettyRequest.onResponseBegin(requestListener);
+        jettyRequest.onComplete(requestListener);
         jettyRequest.attribute(STATS_KEY, requestListener);
 
         // Add diagnostics listener
@@ -1024,7 +1026,8 @@ public class JettyHttpClient
         if (logEnabled) {
             HttpClientLoggingListener httpClientLoggingListener = new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
             jettyRequest.onRequestListener(httpClientLoggingListener);
-            jettyRequest.onResponseListener(httpClientLoggingListener);
+            jettyRequest.onResponseBegin(httpClientLoggingListener);
+            jettyRequest.onComplete(httpClientLoggingListener);
         }
 
         // Add request size listener
