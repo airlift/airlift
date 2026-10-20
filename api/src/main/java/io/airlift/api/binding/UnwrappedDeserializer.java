@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.airlift.api.ApiUnwrapped;
+import io.airlift.log.Logger;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -20,6 +21,8 @@ import java.util.stream.Stream;
 class UnwrappedDeserializer
         extends JsonDeserializer<Object>
 {
+    private static final Logger log = Logger.get(UnwrappedDeserializer.class);
+
     private final RecordComponent[] recordComponents;
     private final Constructor<?> constructor;
 
@@ -71,6 +74,8 @@ class UnwrappedDeserializer
             return constructor.newInstance(arguments);
         }
         catch (Exception e) {
+            // do not expose the constructor failure (e.g. a validation message) to API clients
+            log.debug(e, "Could not create instance of %s", constructor.getDeclaringClass().getName());
             throw new JsonParseException(parser, "Could not create instance");
         }
     }
