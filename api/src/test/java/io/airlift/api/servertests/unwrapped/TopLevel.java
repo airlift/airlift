@@ -8,4 +8,12 @@ import io.airlift.api.ApiUnwrapped;
 public record TopLevel(
         @ApiDescription("unused") String name,
         @ApiDescription("unused") int age,
-        @ApiUnwrapped ChildLevel childLevel) {}
+        @ApiUnwrapped ChildLevel childLevel)
+{
+    public TopLevel
+    {
+        if (age < 0) {
+            throw new IllegalArgumentException("age must not be negative");
+        }
+    }
+}

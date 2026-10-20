@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import jakarta.ws.rs.core.MediaType;
@@ -19,7 +20,10 @@ import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestUnwrapped
@@ -66,6 +70,24 @@ public class TestUnwrapped
                 .setBodyGenerator(jsonBodyGenerator(topLevelJsonCodec, topLevel)).build();
         StatusResponseHandler.StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(204);
+    }
+
+    @Test
+    public void testPostConstructorFailure()
+    {
+        String json = "{\"name\":\"topLevel\",\"age\":-1,\"timestamp\":\"%s\",\"rate\":456.0,\"flag\":false}".formatted(Instant.now());
+
+        URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/top").build();
+        Request request = preparePost()
+                .setUri(uri)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setBodyGenerator(createStaticBodyGenerator(json, UTF_8)).build();
+        StringResponse response = httpClient.execute(request, createStringResponseHandler());
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        // the constructor's message is not exposed to the client
+        assertThat(response.getBody())
+                .contains("Could not create instance")
+                .doesNotContain("age must not be negative");
     }
 
     @Test
