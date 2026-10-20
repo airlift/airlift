@@ -65,7 +65,7 @@ class MultiPartReader
         }
         catch (IOException e) {
             log.error(e, "Could not read multipart form");
-            throw badRequest("Could not read multipart form. Details: %s" + e.getMessage());
+            throw badRequest("Could not read multipart form. Details: %s".formatted(e.getMessage()));
         }
     }
 
