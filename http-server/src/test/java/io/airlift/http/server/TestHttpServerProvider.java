@@ -82,9 +82,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.collect.Sets.newIdentityHashSet;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
@@ -102,6 +104,7 @@ import static io.airlift.testing.Closeables.closeAll;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.Collections.list;
+import static java.util.Collections.synchronizedSet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -235,6 +238,34 @@ public class TestHttpServerProvider
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(response.getHeader(X_PROTOCOL_HEADER)).hasValue("HTTP/2.0");
         }
+    }
+
+    @Test
+    public void testHttp2RequestsUseSeparateOutputs()
+            throws Exception
+    {
+        Set<OutputStream> outputs = synchronizedSet(newIdentityHashSet());
+        createAndStartServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
+            {
+                outputs.add(response.getOutputStream());
+                response.setHeader(X_PROTOCOL_HEADER.toString(), request.getProtocol());
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+        });
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true).setMaxConnectionsPerServer(1))) {
+            for (int i = 0; i < 10; i++) {
+                StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+
+                assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+                assertThat(response.getHeader(X_PROTOCOL_HEADER)).hasValue("HTTP/2.0");
+            }
+        }
+        assertThat(outputs).hasSize(10);
     }
 
     @Test
