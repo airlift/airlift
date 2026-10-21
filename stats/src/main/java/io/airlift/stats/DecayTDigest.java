@@ -175,6 +175,20 @@ public class DecayTDigest
 
     public void merge(DecayTDigest other)
     {
-        digest.mergeWith(other.digest);
+        if (decay == null || other.decay == null) {
+            digest.mergeWith(other.digest);
+            return;
+        }
+
+        long otherLandmarkInSeconds = other.decay.getLandmarkInSeconds();
+        if (decay.getLandmarkInSeconds() < otherLandmarkInSeconds) {
+            // this digest's landmark is behind the other's: move it forward so the weights are comparable
+            rescale(otherLandmarkInSeconds);
+            digest.mergeWith(other.digest);
+        }
+        else {
+            // rescale the other digest's weights (without mutating it) to this digest's landmark
+            digest.mergeWith(other.digest, decay.weightFromLandmark(otherLandmarkInSeconds));
+        }
     }
 }

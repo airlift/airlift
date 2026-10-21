@@ -19,6 +19,7 @@ import static io.airlift.stats.TimeDistribution.MERGE_THRESHOLD_NANOS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.offset;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
 @Isolated
@@ -144,6 +145,21 @@ class TestTimeDistribution
         distribution.getPercentiles(); // force a final merge
         assertThat(distribution.getCount()).isEqualTo((double) threads * addsPerThread);
         assertThat(distribution.getAvg()).isEqualTo(3d);
+    }
+
+    @Test
+    void testDecayAcrossMerges()
+    {
+        TestingTicker ticker = new TestingTicker();
+        TimeDistribution distribution = new TimeDistribution(ticker, DecayConfig.oneMinute(ticker), NANOSECONDS);
+        distribution.add(1);
+        assertThat(distribution.getPercentiles()).isNotEmpty(); // force a merge
+        assertThat(distribution.getCount()).isEqualTo(1);
+
+        ticker.increment(40, SECONDS);
+        distribution.add(1);
+        distribution.getPercentiles(); // force a merge
+        assertThat(distribution.getCount()).isCloseTo(Math.exp(-40.0 / 60) + 1, offset(1e-9));
     }
 
     private static void await(CyclicBarrier barrier)

@@ -37,6 +37,33 @@ import static org.assertj.core.api.Assertions.within;
 public class TestTDigest
 {
     @Test
+    public void testScaledMergeWithSelf()
+    {
+        TDigest digest = new TDigest();
+        digest.add(10, 4);
+
+        digest.mergeWith(digest, 2);
+
+        assertThat(digest.getCount()).isEqualTo(6);
+        assertThat(digest.valueAt(0.5)).isEqualTo(10);
+    }
+
+    @Test
+    public void testScaledMergeDoesNotCompactSource()
+    {
+        TDigest source = new TDigest();
+        for (int i = 0; i < 1000; i++) {
+            source.add(i, 10);
+        }
+        TDigest target = new TDigest();
+
+        target.mergeWith(source, 2);
+
+        assertThat(source.getCount()).isEqualTo(10_000);
+        assertThat(target.getCount()).isEqualTo(5_000);
+    }
+
+    @Test
     public void testEmpty()
     {
         TDigest digest = new TDigest();

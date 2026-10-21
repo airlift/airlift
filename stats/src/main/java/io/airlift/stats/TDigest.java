@@ -261,6 +261,43 @@ public class TDigest
     }
 
     /**
+     * Merges {@code other} into this digest with every weight of {@code other} divided by
+     * {@code divisor}, without modifying {@code other}'s centroids. Centroids whose scaled weight
+     * falls below 1 are dropped, as in a decay rescale, but their weight is still
+     * counted in the total weight.
+     */
+    public void mergeWith(TDigest other, double divisor)
+    {
+        if (divisor == 1) {
+            mergeWith(other);
+            return;
+        }
+
+        // only this digest is compacted to make room: other's centroids are left untouched
+        if (centroidCount + other.centroidCount > means.length) {
+            mergeIfNeeded(internalCompressionFactor(compression));
+            ensureCapacity(centroidCount + other.centroidCount);
+        }
+
+        // read the source extent up front so merging a digest into itself does not iterate over its own appends
+        int sourceCount = other.centroidCount;
+        double scaledTotalWeight = other.totalWeight / divisor;
+        for (int i = 0; i < sourceCount; i++) {
+            double weight = other.weights[i] / divisor;
+            if (weight < 1) {
+                continue;
+            }
+            means[centroidCount] = other.means[i];
+            weights[centroidCount] = weight;
+            centroidCount++;
+            min = Math.min(min, other.means[i]);
+            max = Math.max(max, other.means[i]);
+            needsMerge = true;
+        }
+        totalWeight += scaledTotalWeight;
+    }
+
+    /**
      * Releases unused capacity, shrinking this digest to its current set of centroids.
      *
      * <p>Pending additions are compressed, the centroid arrays are trimmed to the live centroid
