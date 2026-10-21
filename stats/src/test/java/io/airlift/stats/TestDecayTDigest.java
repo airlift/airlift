@@ -9,9 +9,28 @@ import java.util.concurrent.TimeUnit;
 import static io.airlift.stats.DecayTDigest.RESCALE_THRESHOLD_SECONDS;
 import static io.airlift.stats.DecayTDigest.ZERO_WEIGHT_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.offset;
 
 public class TestDecayTDigest
 {
+    @Test
+    public void testMergeKeepsWeightOfPrunedCentroids()
+    {
+        TestingTicker ticker = new TestingTicker();
+        DecayTDigest older = new DecayTDigest(100, 0.1, ticker);
+        for (int i = 0; i < 10; i++) {
+            older.add(i);
+        }
+
+        ticker.increment(122, TimeUnit.SECONDS);
+        DecayTDigest newer = new DecayTDigest(100, 0.1, ticker);
+
+        // each scaled centroid weighs below 1 and is pruned, but its weight still counts
+        newer.merge(older);
+
+        assertThat(newer.getCount()).isCloseTo(10 * Math.exp(-0.1 * 122), offset(1e-9));
+    }
+
     @Test
     public void testRescaleMinMax()
     {
