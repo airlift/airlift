@@ -81,15 +81,20 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Sets.newIdentityHashSet;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
+import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static io.airlift.http.client.HeaderNames.X_FORWARDED_FOR;
 import static io.airlift.http.client.HeaderNames.X_FORWARDED_HOST;
 import static io.airlift.http.client.HeaderNames.X_FORWARDED_PROTO;
@@ -125,6 +130,7 @@ public class TestHttpServerProvider
     private HttpConfig httpConfig;
     private HttpsConfig httpsConfig;
     private ClientCertificate clientCertificate;
+    private Set<ServerFeature> serverFeatures;
     private HttpServerInfo httpServerInfo;
 
     @BeforeAll
@@ -148,6 +154,7 @@ public class TestHttpServerProvider
         httpsConfig = new HttpsConfig()
                 .setHttpsPort(0);
         clientCertificate = ClientCertificate.NONE;
+        serverFeatures = ServerFeature.defaults();
         nodeInfo = new NodeInfo(new NodeConfig()
                 .setEnvironment("test")
                 .setNodeInternalAddress("localhost"));
@@ -266,6 +273,43 @@ public class TestHttpServerProvider
             }
         }
         assertThat(outputs).hasSize(10);
+    }
+
+    @Test
+    @Timeout(30)
+    public void testVirtualThreadHandlersAboveMaxThreads()
+            throws Exception
+    {
+        int requests = 20;
+        config.setMaxThreads(10);
+        serverFeatures = ServerFeature.builder().withVirtualThreads(true).build();
+        CountDownLatch started = new CountDownLatch(requests);
+        CountDownLatch release = new CountDownLatch(1);
+        createAndStartServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            {
+                started.countDown();
+                awaitUninterruptibly(release);
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+        });
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true).setMaxConnectionsPerServer(1))) {
+            List<HttpResponseFuture<StatusResponse>> futures = IntStream.range(0, requests)
+                    .mapToObj(_ -> httpClient.executeAsync(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler()))
+                    .collect(toImmutableList());
+            try {
+                assertThat(started.await(10, SECONDS)).isTrue();
+            }
+            finally {
+                release.countDown();
+            }
+            for (HttpResponseFuture<StatusResponse> future : futures) {
+                assertThat(future.get(10, SECONDS).getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            }
+        }
     }
 
     @Test
@@ -864,7 +908,7 @@ public class TestHttpServerProvider
                     servlet,
                     ImmutableSet.of(new DummyFilter()),
                     ImmutableSet.of(),
-                    ServerFeature.defaults(),
+                    serverFeatures,
                     clientCertificate,
                     Optional.of(new TestingMBeanServer()),
                     sslContextFactoryOverride);
