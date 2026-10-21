@@ -39,12 +39,16 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.AuthorityCustomizer;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -396,7 +400,14 @@ public class HttpServer
     private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
     {
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
+        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration)
+        {
+            @Override
+            public Connection newConnection(Connector connector, EndPoint endPoint)
+            {
+                return withoutChannelRecycling(super.newConnection(connector, endPoint));
+            }
+        };
         http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
         http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
         http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
@@ -415,7 +426,14 @@ public class HttpServer
 
         SslConnectionFactory tls = new SslConnectionFactory(server, alpn.getProtocol());
 
-        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration)
+        {
+            @Override
+            public Connection newConnection(Connector connector, EndPoint endPoint)
+            {
+                return withoutChannelRecycling(super.newConnection(connector, endPoint));
+            }
+        };
         http2.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
         http2.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
         http2.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
@@ -424,6 +442,14 @@ public class HttpServer
         http2.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
 
         return new ConnectionFactory[] {tls, alpn, http2, http1};
+    }
+
+    // A recycled channel can receive the late output completion of the synchronous request it served before
+    // TODO: recycle channels again once https://github.com/jetty/jetty.project/issues/16014 is fixed
+    private static Connection withoutChannelRecycling(Connection connection)
+    {
+        ((HTTP2ServerConnection) connection).setRecycleHttpChannels(false);
+        return connection;
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
