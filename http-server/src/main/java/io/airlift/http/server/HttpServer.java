@@ -170,7 +170,9 @@ public class HttpServer
         threadPool.setDetailedDump(true);
         if (serverFeatures.contains(VIRTUAL_THREADS)) {
             VirtualThreadPool virtualExecutor = new VirtualThreadPool();
-            virtualExecutor.setMaxConcurrentTasks(config.getMaxThreads());
+            // No limit, since handlers blocked writing to an HTTP/2 connection can hold every slot their write completion needs
+            // TODO: limit to http-server.threads.max once https://github.com/jetty/jetty.project/issues/16015 is fixed
+            virtualExecutor.setMaxConcurrentTasks(0);
             virtualExecutor.setName(name + "-worker#v");
             virtualExecutor.setDetailedDump(true);
             log.info("Virtual threads support is enabled");
