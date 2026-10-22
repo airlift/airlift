@@ -54,6 +54,15 @@ public class DecayTDigest
         this(new TDigest(compression), config == null ? null : config.newState());
     }
 
+    /**
+     * A digest whose landmark is anchored at the given second instead of at the clock, so a
+     * container can keep several structures it feeds with one timestamp on the same timeline.
+     */
+    DecayTDigest(double compression, @Nullable DecayConfig config, long landmarkInSeconds)
+    {
+        this(new TDigest(compression), config == null ? null : config.newState(landmarkInSeconds));
+    }
+
     private DecayTDigest(TDigest digest, @Nullable DecayState decay)
     {
         this.digest = requireNonNull(digest, "digest is null");
@@ -80,12 +89,15 @@ public class DecayTDigest
 
     public double getCount()
     {
-        rescaleIfNeeded();
-
-        double result = digest.getCount();
-
-        if (decay != null) {
-            result /= (decay.currentWeight() * SCALE_FACTOR);
+        double result;
+        if (decay == null) {
+            result = digest.getCount();
+        }
+        else {
+            // read the clock once: it is shared by the rescale check and the weight
+            long nowInSeconds = decay.nowInSeconds();
+            rescaleIfNeeded(nowInSeconds);
+            result = digest.getCount() / (decay.weightAt(nowInSeconds) * SCALE_FACTOR);
         }
 
         if (result < ZERO_WEIGHT_THRESHOLD) {
@@ -102,21 +114,29 @@ public class DecayTDigest
 
     public void add(double value, double weight)
     {
-        rescaleIfNeeded();
+        add(value, weight, nowInSeconds());
+    }
 
+    private long nowInSeconds()
+    {
+        return decay == null ? 0 : decay.nowInSeconds();
+    }
+
+    /**
+     * Same as {@link #add(double, double)} with the current second already read from this digest's ticker.
+     */
+    void add(double value, double weight, long nowInSeconds)
+    {
         if (decay != null) {
-            weight *= decay.currentWeight() * SCALE_FACTOR;
+            rescaleIfNeeded(nowInSeconds);
+            weight *= decay.weightAt(nowInSeconds) * SCALE_FACTOR;
         }
 
         digest.add(value, weight);
     }
 
-    private void rescaleIfNeeded()
+    private void rescaleIfNeeded(long nowInSeconds)
     {
-        if (decay == null) {
-            return;
-        }
-        long nowInSeconds = decay.nowInSeconds();
         if (decay.needsRescale(nowInSeconds)) {
             rescale(nowInSeconds);
         }

@@ -11,6 +11,22 @@ sealed interface TimeDistributionImplementation
 {
     void add(long value);
 
+    /**
+     * The current second on the decay ticker, or 0 if this implementation does not decay.
+     */
+    default long nowInSeconds()
+    {
+        return 0;
+    }
+
+    /**
+     * Same as {@link #add(long)} with the current second already read via {@link #nowInSeconds()}.
+     */
+    default void add(long value, long nowInSeconds)
+    {
+        add(value);
+    }
+
     double getCount();
 
     double getP50();

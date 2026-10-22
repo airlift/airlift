@@ -69,6 +69,20 @@ public class Distribution
         implementation.add(value, count);
     }
 
+    /**
+     * The current second on this distribution's decay ticker, or 0 if it does not decay. Lets a
+     * container that owns several distributions on the same ticker read the clock once per update.
+     */
+    long nowInSeconds()
+    {
+        return implementation.nowInSeconds();
+    }
+
+    void add(long value, long count, long nowInSeconds)
+    {
+        implementation.add(value, count, nowInSeconds);
+    }
+
     public Distribution duplicate()
     {
         return new Distribution(implementation.duplicate());

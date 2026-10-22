@@ -55,6 +55,15 @@ public final class DecayCounter
         this(0, config == null ? null : config.newState());
     }
 
+    /**
+     * A counter whose landmark is anchored at the given second instead of at the clock, so a
+     * container can keep several structures it feeds with one timestamp on the same timeline.
+     */
+    DecayCounter(@Nullable DecayConfig config, long landmarkInSeconds)
+    {
+        this(0, config == null ? null : config.newState(landmarkInSeconds));
+    }
+
     private DecayCounter(double count, @Nullable DecayState decay)
     {
         this.count = count;
@@ -74,9 +83,26 @@ public final class DecayCounter
             pending.add(value);
             return;
         }
+        add(value, decay.nowInSeconds());
+    }
 
-        long nowInSeconds = decay.nowInSeconds();
-        if (nowInSeconds > pendingSecond) {
+    /**
+     * The current second on this counter's ticker, or 0 for a counter that does not decay. Lets a
+     * container that owns several counters on the same ticker read the clock once per update.
+     */
+    long nowInSeconds()
+    {
+        return decay == null ? 0 : decay.nowInSeconds();
+    }
+
+    /**
+     * Same as {@link #add(long)} with the current second already read from this counter's ticker.
+     * The clock read is the most expensive part of an uncontended add, so callers that update several
+     * counters sharing a ticker should read it once and pass it to each.
+     */
+    void add(long value, long nowInSeconds)
+    {
+        if (decay != null && nowInSeconds > pendingSecond) {
             rollPendingTo(nowInSeconds);
         }
         pending.add(value);
