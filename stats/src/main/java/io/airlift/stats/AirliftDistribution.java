@@ -232,7 +232,7 @@ final class AirliftDistribution
     public synchronized double getAvg()
     {
         mergePartials();
-        return getTotal() / getCount();
+        return total.getCount() / digest.getCount();
     }
 
     @Override
