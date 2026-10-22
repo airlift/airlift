@@ -95,9 +95,11 @@ public class TimeStat
             throw new IllegalArgumentException("value is negative: " + nanos);
         }
         if (oneMinute != null && fiveMinutes != null && fifteenMinutes != null) {
-            oneMinute.add(nanos);
-            fiveMinutes.add(nanos);
-            fifteenMinutes.add(nanos);
+            // all three windows decay on the system ticker, so read the clock once
+            long nowInSeconds = oneMinute.nowInSeconds();
+            oneMinute.add(nanos, nowInSeconds);
+            fiveMinutes.add(nanos, nowInSeconds);
+            fifteenMinutes.add(nanos, nowInSeconds);
         }
         allTime.add(nanos);
     }

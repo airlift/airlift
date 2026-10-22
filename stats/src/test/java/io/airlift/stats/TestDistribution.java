@@ -1,5 +1,6 @@
 package io.airlift.stats;
 
+import com.google.common.base.Ticker;
 import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import io.airlift.testing.TestingTicker;
 import org.junit.jupiter.api.AfterEach;
@@ -204,6 +205,89 @@ public class TestDistribution
         ticker.increment(40, SECONDS);
         distribution.add(1);
         assertThat(distribution.getCount()).isCloseTo(Math.exp(-40.0 / 60) + 1, offset(1e-9));
+    }
+
+    @Test
+    public void testDecayWithinPartial()
+    {
+        TestingTicker ticker = new TestingTicker();
+        Distribution distribution = new Distribution(DecayConfig.oneMinute(ticker));
+        distribution.add(1);
+        ticker.increment(40, SECONDS);
+        distribution.add(1);
+        assertThat(distribution.getTotal()).isCloseTo(Math.exp(-40.0 / 60) + 1, offset(1e-9));
+    }
+
+    @Test
+    public void testPartialsCreatedAcrossSecondBoundary()
+    {
+        // the ticker advances on every read, so both partials must be anchored at the caller's second
+        SteppingTicker ticker = new SteppingTicker();
+        Distribution distribution = new Distribution(DecayConfig.oneMinute(ticker));
+
+        ticker.setStepping(true);
+        distribution.add(100);
+        ticker.setStepping(false);
+        distribution.add(300);
+
+        assertThat(distribution.getAvg()).isCloseTo(200, offset(1e-9));
+    }
+
+    @Test
+    public void testStaleClockReadAfterNewerUpdate()
+    {
+        // an update that read the clock before waiting for the stripe lock may be applied after an
+        // update that read a later second; both must be weighted at the later second
+        TestingTicker ticker = new TestingTicker();
+        Distribution distribution = new Distribution(DecayConfig.oneMinute(ticker));
+
+        distribution.add(100, 1, 5);
+        distribution.add(300, 1, 0);
+
+        assertThat(distribution.getAvg()).isCloseTo(200, offset(1e-9));
+    }
+
+    @Test
+    public void testNegativeTicker()
+    {
+        // System.nanoTime may be negative; the first update on a stripe must be weighted at that
+        // negative second, not at zero
+        Ticker ticker = new Ticker()
+        {
+            @Override
+            public long read()
+            {
+                return SECONDS.toNanos(-100);
+            }
+        };
+        Distribution distribution = new Distribution(DecayConfig.oneMinute(ticker));
+
+        distribution.add(100);
+        distribution.add(300);
+
+        assertThat(distribution.getCount()).isCloseTo(2, offset(1e-9));
+        assertThat(distribution.getAvg()).isCloseTo(200, offset(1e-9));
+    }
+
+    private static class SteppingTicker
+            extends Ticker
+    {
+        private long seconds;
+        private boolean stepping;
+
+        @Override
+        public synchronized long read()
+        {
+            if (stepping) {
+                seconds++;
+            }
+            return SECONDS.toNanos(seconds);
+        }
+
+        public synchronized void setStepping(boolean stepping)
+        {
+            this.stepping = stepping;
+        }
     }
 
     private static void await(CyclicBarrier barrier)

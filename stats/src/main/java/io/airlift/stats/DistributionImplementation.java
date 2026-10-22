@@ -12,6 +12,22 @@ sealed interface DistributionImplementation
 
     void add(long value, long count);
 
+    /**
+     * The current second on the decay ticker, or 0 if this implementation does not decay.
+     */
+    default long nowInSeconds()
+    {
+        return 0;
+    }
+
+    /**
+     * Same as {@link #add(long, long)} with the current second already read via {@link #nowInSeconds()}.
+     */
+    default void add(long value, long count, long nowInSeconds)
+    {
+        add(value, count);
+    }
+
     DistributionImplementation duplicate();
 
     void reset();

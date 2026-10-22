@@ -15,6 +15,7 @@ import static io.airlift.stats.Percentiles.toMap;
 import static io.airlift.stats.TimeDistributionImplementation.convertToUnit;
 import static java.lang.Math.clamp;
 import static java.lang.Math.floorMod;
+import static java.lang.Math.max;
 
 final class AirliftTimeDistribution
         implements TimeDistributionImplementation
@@ -30,6 +31,9 @@ final class AirliftTimeDistribution
     // @GuardedBy("locks[i]") for partials[i] and partialTotals[i]; the total is kept with its digest so a merge moves both atomically
     private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
     private final DecayCounter[] partialTotals = new DecayCounter[STRIPES];
+    // @GuardedBy("locks[i]") the second the last update to stripe i was weighted at; only
+    // meaningful while partials[i] is non-null, and seeded when the partial is created
+    private final long[] partialSeconds = new long[STRIPES];
     @GuardedBy("this")
     private DecayTDigest merged;
     @GuardedBy("this")
@@ -52,16 +56,43 @@ final class AirliftTimeDistribution
     }
 
     @Override
+    public long nowInSeconds()
+    {
+        return config == null ? 0 : config.nowInSeconds();
+    }
+
+    @Override
     public void add(long value)
+    {
+        // the digest and the total share the config (and so the ticker), so read the clock once
+        // per add rather than once per structure
+        add(value, nowInSeconds());
+    }
+
+    @Override
+    public void add(long value, long nowInSeconds)
     {
         int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
         synchronized (locks[segment]) {
+            long second;
             if (partials[segment] == null) {
-                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config);
-                partialTotals[segment] = new DecayCounter(config);
+                // Anchor at the caller's second, since a new clock read could split this update across seconds.
+                // The ticker may be negative, so the stripe's second restarts here instead of at zero.
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, config, nowInSeconds);
+                partialTotals[segment] = new DecayCounter(config, nowInSeconds);
+                second = nowInSeconds;
             }
-            partials[segment].add(value);
-            partialTotals[segment].add(value);
+            else {
+                // The caller read the clock before waiting for the lock, so keep the stripe's second monotonic.
+                second = max(nowInSeconds, partialSeconds[segment]);
+            }
+            // written only when the second changes: the array is shared by every stripe, so a write
+            // on every add would bounce its cache line between threads
+            if (second != partialSeconds[segment]) {
+                partialSeconds[segment] = second;
+            }
+            partials[segment].add(value, 1, second);
+            partialTotals[segment].add(value, second);
         }
     }
 

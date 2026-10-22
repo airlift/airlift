@@ -38,20 +38,17 @@ public class DistributionStat
 
     public void add(long value)
     {
-        if (oneMinute != null && fiveMinutes != null && fifteenMinutes != null) {
-            oneMinute.add(value);
-            fiveMinutes.add(value);
-            fifteenMinutes.add(value);
-        }
-        allTime.add(value);
+        add(value, 1);
     }
 
     public void add(long value, long count)
     {
         if (oneMinute != null && fiveMinutes != null && fifteenMinutes != null) {
-            oneMinute.add(value, count);
-            fiveMinutes.add(value, count);
-            fifteenMinutes.add(value, count);
+            // all three windows decay on the system ticker, so read the clock once
+            long nowInSeconds = oneMinute.nowInSeconds();
+            oneMinute.add(value, count, nowInSeconds);
+            fiveMinutes.add(value, count, nowInSeconds);
+            fifteenMinutes.add(value, count, nowInSeconds);
         }
         allTime.add(value, count);
     }

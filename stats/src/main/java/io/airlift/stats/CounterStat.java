@@ -63,9 +63,11 @@ public final class CounterStat
     public void update(long count)
     {
         if (oneMinute != null && fiveMinute != null && fifteenMinute != null) {
-            oneMinute.add(count);
-            fiveMinute.add(count);
-            fifteenMinute.add(count);
+            // all three counters are built on the system ticker, so read the clock once
+            long nowInSeconds = oneMinute.nowInSeconds();
+            oneMinute.add(count, nowInSeconds);
+            fiveMinute.add(count, nowInSeconds);
+            fifteenMinute.add(count, nowInSeconds);
         }
         this.count.add(count);
     }
