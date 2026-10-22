@@ -12,6 +12,11 @@
     <name>log</name>
     <description>Airlift - Logging</description>
 
+    <properties>
+        <!-- junit-extensions depends on log-manager, which depends on this module -->
+        <air.check.skip-junit-extensions>true</air.check.skip-junit-extensions>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.google.errorprone</groupId>

@@ -12,6 +12,11 @@
     <name>configuration-testing</name>
     <description>Airlift - Configuration testing</description>
 
+    <properties>
+        <!-- junit-extensions depends on log-manager, which depends on this module -->
+        <air.check.skip-junit-extensions>true</air.check.skip-junit-extensions>
+    </properties>
+
     <dependencies>
 
         <dependency>
