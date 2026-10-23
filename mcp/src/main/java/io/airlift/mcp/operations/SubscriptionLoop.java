@@ -1,7 +1,5 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.Hasher;
@@ -15,8 +13,8 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.SubscriptionFilter;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -205,11 +203,6 @@ class SubscriptionLoop
 
     private <T> String asJson(T item)
     {
-        try {
-            return jsonMapper.writeValueAsString(item);
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        return jsonMapper.writeValueAsString(item);
     }
 }

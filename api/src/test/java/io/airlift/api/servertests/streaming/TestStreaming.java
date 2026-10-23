@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.streaming;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelService;
@@ -14,6 +13,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
 import java.time.Duration;

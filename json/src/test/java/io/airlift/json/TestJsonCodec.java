@@ -15,28 +15,40 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.reflect.TypeToken;
 import io.airlift.jackson.RecordAutoDetectModule;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.time.Instant;
+import java.time.Month;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static tools.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 
 public class TestJsonCodec
 {
@@ -267,6 +279,157 @@ public class TestJsonCodec
     }
 
     @Test
+    public void testToJsonWithLengthLimitWrappedBySerializer()
+    {
+        JsonCodec<WrappingSerializerValue> jsonCodec = jsonCodec(WrappingSerializerValue.class);
+
+        assertThat(jsonCodec.toJsonWithLengthLimit(new WrappingSerializerValue("a".repeat(1000)), 100)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(new WrappingSerializerValue("a".repeat(10)), 100)).isPresent();
+    }
+
+    @JsonSerialize(using = WrappingSerializer.class)
+    public record WrappingSerializerValue(String value) {}
+
+    public static class WrappingSerializer
+            extends ValueSerializer<WrappingSerializerValue>
+    {
+        @Override
+        public void serialize(WrappingSerializerValue value, JsonGenerator generator, SerializationContext context)
+        {
+            try {
+                generator.writeString(value.value());
+                generator.flush();
+            }
+            catch (JacksonException e) {
+                throw DatabindException.from(generator, "wrapped", e);
+            }
+        }
+    }
+
+    @Test
+    public void testToJsonWithLengthLimitFailure()
+    {
+        JsonCodec<FailingGetter> jsonCodec = jsonCodec(FailingGetter.class);
+
+        assertThatThrownBy(() -> jsonCodec.toJsonWithLengthLimit(new FailingGetter(), 1000))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("%s could not be converted to JSON".formatted(FailingGetter.class.getName()));
+    }
+
+    public static class FailingGetter
+    {
+        @JsonProperty
+        public String getValue()
+        {
+            throw new IllegalStateException("getter failed");
+        }
+    }
+
+    @Test
+    public void testSingleComponentRecord()
+    {
+        JsonCodec<MyRecord> jsonCodec = jsonCodec(MyRecord.class);
+
+        assertThat(jsonCodec.toJson(new MyRecord("value"))).isEqualTo("{\n  \"foo\" : \"value\"\n}");
+        assertThat(jsonCodec.fromJson("{\"foo\":\"value\"}")).isEqualTo(new MyRecord("value"));
+        assertThatThrownBy(() -> jsonCodec.fromJson("\"value\""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void testSingleComponentRecordWithOverriddenIntrospection()
+    {
+        // records using legacy introspection or explicit @JsonAutoDetect are still not read from a bare scalar
+        JsonCodec<LegacySingleComponentRecord> legacyCodec = jsonCodec(LegacySingleComponentRecord.class);
+        assertThat(legacyCodec.fromJson("{\"value\":\"abc\"}")).isEqualTo(new LegacySingleComponentRecord("abc"));
+        assertThatThrownBy(() -> legacyCodec.fromJson("\"abc\""))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        JsonCodec<AutoDetectSingleComponentRecord> autoDetectCodec = jsonCodec(AutoDetectSingleComponentRecord.class);
+        assertThat(autoDetectCodec.fromJson("{\"value\":\"abc\"}")).isEqualTo(new AutoDetectSingleComponentRecord("abc"));
+        assertThatThrownBy(() -> autoDetectCodec.fromJson("\"abc\""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @SuppressWarnings("removal")
+    @RecordAutoDetectModule.LegacyRecordIntrospection
+    public record LegacySingleComponentRecord(String value) {}
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record AutoDetectSingleComponentRecord(String value) {}
+
+    @Test
+    public void testUpperCaseAccessorNaming()
+    {
+        // Jackson 3 uses standard bean naming: getURL() maps to "URL" (Jackson 2 used "url"); name the property to keep "url"
+        assertThat(mapJsonCodec(String.class, String.class).fromJson(jsonCodec(UpperCaseGetters.class).toJson(new UpperCaseGetters())))
+                .containsExactlyInAnyOrderEntriesOf(Map.of("URL", "implicit", "url", "explicit"));
+    }
+
+    public static class UpperCaseGetters
+    {
+        @JsonProperty
+        public String getURL()
+        {
+            return "implicit";
+        }
+
+        @JsonProperty("url")
+        public String getExplicitURL()
+        {
+            return "explicit";
+        }
+    }
+
+    @Test
+    public void testMonthFromNumberIsZeroBased()
+    {
+        assertThat(jsonCodec(Month.class).fromJson("0")).isEqualTo(Month.JANUARY);
+        assertThat(jsonCodec(Month.class).fromJson("11")).isEqualTo(Month.DECEMBER);
+        assertThat(jsonCodec(Month.class).toJson(Month.MARCH)).isEqualTo("\"MARCH\"");
+    }
+
+    @Test
+    public void testMonthAndYearHonorJsonFormat()
+    {
+        assertThat(jsonCodec(FormattedMonthAndYear.class).toJson(new FormattedMonthAndYear(Month.MARCH, Month.MARCH, Year.of(2024), Year.of(2024), Year.of(2024))))
+                .isEqualTo(
+                        """
+                        {
+                          "plainMonth" : "MARCH",
+                          "numberMonth" : 2,
+                          "plainYear" : "2024",
+                          "patternYear" : "24",
+                          "numberYear" : 2024
+                        }\
+                        """);
+    }
+
+    public record FormattedMonthAndYear(
+            Month plainMonth,
+            @JsonFormat(shape = JsonFormat.Shape.NUMBER) Month numberMonth,
+            Year plainYear,
+            @JsonFormat(pattern = "uu") Year patternYear,
+            @JsonFormat(shape = JsonFormat.Shape.NUMBER) Year numberYear) {}
+
+    @Test
+    public void testSupplementaryCharactersAreEscapedInBytes()
+    {
+        // Jackson 2.x wrote characters outside the BMP as escaped surrogate pairs
+        assertThat(new String(jsonCodec(String.class).toJsonBytes("\uD83D\uDE00"), UTF_8)).isEqualTo("\"\\uD83D\\uDE00\"");
+        assertThat(jsonCodec(String.class).fromJson(jsonCodec(String.class).toJsonBytes("\uD83D\uDE00"))).isEqualTo("\uD83D\uDE00");
+    }
+
+    @Test
+    public void testJavaTimeAndDateWireFormat()
+    {
+        assertThat(jsonCodec(Year.class).toJson(Year.of(2024))).isEqualTo("\"2024\"");
+        assertThat(jsonCodec(Year.class).fromJson("\"2024\"")).isEqualTo(Year.of(2024));
+        assertThat(jsonCodec(Date.class).toJson(new Date(0))).isEqualTo("\"1970-01-01T00:00:00.000+00:00\"");
+        assertThat(jsonCodec(Instant.class).toJson(Instant.EPOCH)).isEqualTo("\"1970-01-01T00:00:00Z\"");
+    }
+
+    @Test
     public void testTrailingContent()
     {
         JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
@@ -339,8 +502,8 @@ public class TestJsonCodec
                 new MyRecordAdditionalGetter("my value", true, true),
                 """
                 {
-                  "condition" : true,
                   "foo" : "my value",
+                  "condition" : true,
                   "isCool" : true,
                   "additionalProperty" : "additional property value"
                 }\

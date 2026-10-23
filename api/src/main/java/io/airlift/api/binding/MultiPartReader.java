@@ -1,6 +1,5 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiMultiPart.ApiMultiPartForm;
@@ -13,6 +12,8 @@ import org.apache.commons.fileupload2.core.FileItemInputIterator;
 import org.apache.commons.fileupload2.core.RequestContext;
 import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
 import org.glassfish.jersey.server.ContainerRequest;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,7 +64,7 @@ class MultiPartReader
 
             return new ApiMultiPartForm<>(itemInputIterator(itemIterator));
         }
-        catch (IOException e) {
+        catch (IOException | JacksonException e) {
             log.error(e, "Could not read multipart form");
             throw badRequest("Could not read multipart form. Details: %s".formatted(e.getMessage()));
         }

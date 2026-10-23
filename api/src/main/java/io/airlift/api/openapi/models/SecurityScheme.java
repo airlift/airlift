@@ -213,7 +213,7 @@ public class SecurityScheme
         return this;
     }
 
-    @JsonProperty
+    @JsonProperty("$ref")
     public String get$ref()
     {
         return $ref;
