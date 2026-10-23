@@ -1041,6 +1041,7 @@
         "x-tags" : [ "Responses" ]
       },
       "PaginatedWidget" : {
+        "required" : [ "nextPageToken", "result" ],
         "properties" : {
           "nextPageToken" : {
             "type" : "string",
