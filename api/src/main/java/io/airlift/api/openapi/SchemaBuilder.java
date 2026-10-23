@@ -386,6 +386,8 @@ class SchemaBuilder
             Schema<?> schema = newNamedSchema(name);
             schema.addProperty("nextPageToken", new StringSchema().description("The next page token to use or \"\" if there are no more pages."));
             schema.addProperty("result", modelSchema.description("A page of results."));
+            schema.addRequiredItem("nextPageToken");
+            schema.addRequiredItem("result");
             schemas.put(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), BuildSchemaMode.STANDARD), schema);
             return asRef(schema);
         }

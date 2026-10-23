@@ -1,5 +1,6 @@
 package io.airlift.api.servertests.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -279,6 +280,8 @@ public class IntegrationTests
 
         SwaggerParseResult result = new OpenAPIV3Parser().readLocation(uri.toString(), null, null);
         assertThat(result.getMessages()).isEmpty();
+        assertThat(jsonCodec(JsonNode.class).fromJson(actual).at("/components/schemas/PaginatedWidget/required"))
+                .isEqualTo(jsonCodec(JsonNode.class).fromJson("[\"nextPageToken\",\"result\"]"));
     }
 
     private static Stream<Arguments> testPaginationArguments()
