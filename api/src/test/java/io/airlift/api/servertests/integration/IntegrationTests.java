@@ -13,6 +13,7 @@ import io.airlift.api.ApiOrderBy.Ordering;
 import io.airlift.api.ApiPaginatedResult;
 import io.airlift.api.ApiPagination;
 import io.airlift.api.ApiResourceVersion;
+import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.api.servertests.integration.testingserver.TestingServer;
 import io.airlift.api.servertests.integration.testingserver.external.Detail;
 import io.airlift.api.servertests.integration.testingserver.external.Detail.NameAndAge;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.URI;
@@ -147,6 +149,38 @@ public class IntegrationTests
 
         assertThat(randomResult.getStatusCode()).isEqualTo(200);
         assertThat(randomResult.getValue()).isEqualTo(expected.result().get(randomIndex));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Widget 1", "Widget 2", ""})
+    public void testRepeatedFilterValues(String secondValue)
+    {
+        URI uri = UriBuilder.fromUri(testingServer.baseUri())
+                .path(BASE_WIDGET_PATH)
+                .queryParam("name", "Widget 1", secondValue)
+                .build();
+
+        StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
+
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        assertThat(jsonCodec(ApiBadRequest.class).fromJson(response.getBody()).message())
+                .contains("Invalid filter name: multiple values are not allowed");
+    }
+
+    @Test
+    public void testRepeatedFilterListValues()
+    {
+        URI uri = UriBuilder.fromUri(testingServer.baseUri())
+                .path(BASE_WIDGET_PATH)
+                .queryParam("size", InternalWidget.SIZE_LARGE, InternalWidget.SIZE_SMALL)
+                .build();
+
+        JsonResponse<ApiPaginatedResult<ExternalWidget>> response = call(prepareGet(), uri, EXTERNAL_WIDGET_LIST_CODEC);
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.getValue().result())
+                .isNotEmpty()
+                .allSatisfy(widget -> assertThat(widget.widgetDefinition().size()).isEqualTo(ExternalWidgetSize.Small));
     }
 
     @ParameterizedTest

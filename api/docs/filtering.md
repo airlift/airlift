@@ -17,3 +17,6 @@ public MyResource myFilteredGet(@ApiParameter ApiFilter name, @ApiParameter ApiF
 
 Filtering supports single values or multiple values. For multiple values, multiple query parameters
 with the filter name will be made into a list. Use `ApiFilterList` as the parameter.
+
+A single-value `ApiFilter` parameter must occur at most once. Request validation returns HTTP 400
+if it occurs more than once. Use `ApiFilterList` to accept repeated values.

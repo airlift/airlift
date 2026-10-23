@@ -203,6 +203,10 @@ public interface Mappers
 
     static ApiFilter buildFilter(UriInfo uriInfo, String name)
     {
+        List<String> values = uriInfo.getQueryParameters().get(name);
+        if (values != null && values.size() > 1) {
+            throw badRequest("Invalid filter %s: multiple values are not allowed".formatted(name));
+        }
         return buildFilter(Optional.ofNullable(uriInfo.getQueryParameters().getFirst(name)));
     }
 
