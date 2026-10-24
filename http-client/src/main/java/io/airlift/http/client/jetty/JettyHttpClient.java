@@ -127,6 +127,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static io.airlift.http.client.ResponseHandlerUtils.sanitizeUri;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
@@ -1042,7 +1043,7 @@ public class JettyHttpClient
                 .orElseGet(() -> tracer.spanBuilder(name + " " + request.getMethod()))
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(CLIENT_NAME, name)
-                .setAttribute(UrlAttributes.URL_FULL, request.getUri().toString())
+                .setAttribute(UrlAttributes.URL_FULL, sanitizeUri(request.getUri()).toString())
                 .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, request.getMethod())
                 .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getUri().getHost())
                 .setAttribute(ServerAttributes.SERVER_PORT, (long) port)

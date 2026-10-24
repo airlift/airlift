@@ -179,6 +179,31 @@ public class TestHttpClientLogger
     }
 
     @Test
+    public void testClientLogExcludesCredentials()
+            throws Exception
+    {
+        URI uri = new URI("http://user:password@www.google.com/a%2Fb?api_key=secret#fragment");
+        Request request = new TestRequest(HTTP_1_1, "GET", uri, HttpFields.build());
+
+        DefaultHttpClientLogger logger = new DefaultHttpClientLogger(
+                file.getAbsolutePath(),
+                1,
+                256,
+                DataSize.of(1, MEGABYTE),
+                new Duration(10, SECONDS),
+                Long.MAX_VALUE,
+                false);
+        RequestInfo requestInfo = RequestInfo.from(request, System.currentTimeMillis());
+        ResponseInfo responseInfo = ResponseInfo.failed(Optional.empty(), Optional.of(new TimeoutException("timeout")));
+        logger.log(requestInfo, responseInfo);
+        logger.close();
+
+        String actual = Files.asCharSource(file, UTF_8).read();
+        String[] columns = actual.trim().split("\\t");
+        assertThat(columns[3]).isEqualTo("http://www.google.com/a%2Fb");
+    }
+
+    @Test
     public void testClientLogPeriodicFlush()
             throws Exception
     {

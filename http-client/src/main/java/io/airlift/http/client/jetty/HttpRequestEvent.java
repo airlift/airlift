@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
 
+import static io.airlift.http.client.ResponseHandlerUtils.sanitizeUri;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -147,7 +148,7 @@ class HttpRequestEvent
 
         String requestUri = null;
         if (request.getURI() != null) {
-            requestUri = request.getURI().toString();
+            requestUri = sanitizeUri(request.getURI()).toString();
         }
 
         String method = request.getMethod();

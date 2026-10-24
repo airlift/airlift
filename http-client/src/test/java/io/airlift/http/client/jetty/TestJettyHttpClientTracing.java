@@ -19,6 +19,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.semconv.UrlAttributes;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -117,6 +118,27 @@ public class TestJettyHttpClientTracing
                     .singleElement()
                     .extracting(span -> span.getStatus().getStatusCode())
                     .isEqualTo(StatusCode.ERROR);
+        }
+    }
+
+    @Test
+    public void testSpanUrlExcludesCredentials()
+            throws Exception
+    {
+        InMemorySpanExporter spanExporter = InMemorySpanExporter.create();
+        try (SdkTracerProvider tracerProvider = createTracerProvider(spanExporter)) {
+            try (JettyHttpClient client = createClient(tracerProvider)) {
+                Request request = prepareGet()
+                        .setUri(URI.create("http://user:password@airlift.invalid/a%2Fb?api_key=secret#fragment"))
+                        .build();
+
+                assertThat(client.executeAsync(request, new RecoveringResponseHandler()).get()).isEqualTo("recovered");
+            }
+
+            assertThat(spanExporter.getFinishedSpanItems())
+                    .singleElement()
+                    .extracting(span -> span.getAttributes().get(UrlAttributes.URL_FULL))
+                    .isEqualTo("http://airlift.invalid/a%2Fb");
         }
     }
 
