@@ -80,12 +80,14 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
@@ -273,6 +275,55 @@ public class TestHttpServerProvider
             }
         }
         assertThat(outputs).hasSize(10);
+    }
+
+    @Test
+    @Timeout(30)
+    public void testIdleTimeoutOnQueuedRequest()
+            throws Exception
+    {
+        int maxThreads = 10;
+        config.setMaxThreads(maxThreads);
+        config.setHttp2StreamIdleTimeout(new Duration(1, SECONDS));
+        Semaphore handling = new Semaphore(0);
+        CountDownLatch release = new CountDownLatch(1);
+        createAndStartServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            {
+                handling.release();
+                awaitUninterruptibly(release);
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+        });
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true).setMaxConnectionsPerServer(1))) {
+            List<HttpResponseFuture<StringResponse>> handled = new ArrayList<>();
+            HttpResponseFuture<StringResponse> queued = null;
+            try {
+                // requests are handled until the thread pool is full, then the next one waits in the pool queue until the stream idle timeout fails it
+                while (queued == null) {
+                    assertThat(handled).hasSizeLessThan(maxThreads);
+                    HttpResponseFuture<StringResponse> future = httpClient.executeAsync(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+                    if (handling.tryAcquire(3, SECONDS)) {
+                        handled.add(future);
+                    }
+                    else {
+                        queued = future;
+                    }
+                }
+                StringResponse response = queued.get(10, SECONDS);
+                assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                assertThat(response.getBody()).contains("Idle timeout");
+            }
+            finally {
+                release.countDown();
+            }
+            for (HttpResponseFuture<StringResponse> future : handled) {
+                assertThat(future.get(10, SECONDS).getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            }
+        }
     }
 
     @Test

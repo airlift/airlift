@@ -55,6 +55,8 @@ import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -62,6 +64,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -86,6 +89,7 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -106,6 +110,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.eclipse.jetty.http.HttpStatus.SERVICE_UNAVAILABLE_503;
 import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
@@ -383,7 +388,7 @@ public class HttpServer
                     config.isLogImmediateFlush()));
         }
         server.setHandler(new GracefulHandler(statsHandler));
-        ErrorHandler errorHandler = new ErrorHandler();
+        ErrorHandler errorHandler = new IdleTimeoutErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
         errorHandler.setDefaultResponseMimeType(TEXT_PLAIN.asString());
@@ -486,7 +491,7 @@ public class HttpServer
             boolean requestCancellationEnabled)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        ErrorHandler handler = new ErrorHandler();
+        ErrorHandler handler = new IdleTimeoutErrorHandler();
         handler.setShowStacks(showStackTrace);
         handler.setShowMessageInTitle(showStackTrace);
         context.setErrorHandler(handler);
@@ -700,5 +705,22 @@ public class HttpServer
         }
 
         return OptionalLong.of(dataSize.toBytes());
+    }
+
+    /**
+     * Reports a request abandoned by an idle timeout as 503 so clients retry it instead of treating it as a server bug.
+     */
+    private static class IdleTimeoutErrorHandler
+            extends ErrorHandler
+    {
+        @Override
+        public boolean handle(Request request, Response response, Callback callback)
+                throws Exception
+        {
+            if (request.getAttribute(ERROR_EXCEPTION) instanceof TimeoutException) {
+                response.setStatus(SERVICE_UNAVAILABLE_503);
+            }
+            return super.handle(request, response, callback);
+        }
     }
 }
