@@ -37,9 +37,9 @@ public class InternalController
         this.quotaController = requireNonNull(quotaController, "quotaController is null");
     }
 
-    public ApiPaginatedResult<InternalWidget> list(ApiPagination pagination, ApiFilter name, ApiFilterList size)
+    public ApiPaginatedResult<InternalWidget> list(ApiPagination<String> pagination, ApiFilter<Object> name, ApiFilterList<Object> size)
     {
-        Ordering ordering = pagination.ordering().orElseGet(() -> new Ordering("id", ASCENDING));
+        Ordering<String> ordering = pagination.ordering().orElseGet(() -> new Ordering<>("id", ASCENDING));
 
         Comparator<InternalWidget> idComparator = Comparator.comparingInt(widget -> widget.id().id());
 

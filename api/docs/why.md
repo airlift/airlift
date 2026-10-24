@@ -224,7 +224,7 @@ public PaginatedResponse<Role> listAll(
 @ApiList(description = "...")
 public ApiPaginatedResult<Role> listAll(
         @Context UserInfo userInfo,
-        @ApiParameter ApiPagination pagination)
+        @ApiParameter ApiPagination<String> pagination)
 {
     return roleApi.listAllPaginated(userInfo, pagination);
 }
@@ -240,12 +240,12 @@ The framework handles:
 ```java
 @ApiList(description = "...")
 public ApiPaginatedResult<Role> listRoles(
-        @ApiParameter ApiPagination pagination,
-        @ApiParameter ApiFilter nameFilter,
-        @ApiParameter ApiFilter createdAfter,
-        @ApiParameter ApiOrderBy orderBy)
+        @ApiParameter ApiPagination<String> pagination,
+        @ApiParameter ApiFilter<String> nameFilter,
+        @ApiParameter ApiFilter<Instant> createdAfter,
+        @ApiParameter(allowedValues = {"name", "createdAt"}) ApiOrderBy<String> orderBy)
 {
-    return roleApi.list(nameFilter, createdAfter.map(Instant::new), orderBy);
+    return roleApi.list(nameFilter.value(), createdAfter.value(), orderBy);
 }
 ```
 
