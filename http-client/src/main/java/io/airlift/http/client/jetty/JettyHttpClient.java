@@ -942,7 +942,7 @@ public class JettyHttpClient
             if (maxResponseContentLength.isPresent()) {
                 inputStream = new ThrowingLimitingInputStream(inputStream, maxResponseContentLength.orElseThrow());
             }
-            JettyResponse jettyResponse = new JettyResponse(response, inputStream);
+            JettyResponse jettyResponse = new JettyResponse(new JettyResponseMetadata(response), inputStream);
             Runnable completionHandler = buildCompletionHandler(request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
