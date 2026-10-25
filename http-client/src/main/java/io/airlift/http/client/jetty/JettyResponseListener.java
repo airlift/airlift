@@ -8,10 +8,6 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-
 import static io.airlift.http.client.ResponseHandlerUtils.sanitizeUri;
 import static java.util.Objects.requireNonNull;
 
@@ -68,11 +64,7 @@ class JettyResponseListener<T, E extends Exception>
 
     private void deliver(Response response)
     {
-        try (InputStream stream = takeContentAsInputStream()) {
-            future.completed(response, stream);
-        }
-        catch (IOException e) {
-            future.failed(new UncheckedIOException("Failed communicating with server: " + sanitizeUri(request.getURI()).toASCIIString(), e));
-        }
+        // The accumulated body is handed over as a single array that response handlers read directly
+        future.completed(response, getContent());
     }
 }
