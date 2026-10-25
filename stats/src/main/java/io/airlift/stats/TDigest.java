@@ -537,7 +537,11 @@ public class TDigest
             double tentativeQuantile = Math.min((weightSoFar + tentativeWeight) / totalWeight, 1);
 
             double maxClusterWeight = totalWeight * Math.min(currentQuantileMaxClusterSize, maxRelativeClusterSize(tentativeQuantile, normalizer));
-            if (tentativeWeight <= maxClusterWeight) {
+            if (entryMean == centroidMean) {
+                // equal means collapse into one centroid without loss, whatever the cluster size bound
+                centroidWeight = tentativeWeight;
+            }
+            else if (tentativeWeight <= maxClusterWeight) {
                 // weighted average of the two centroids
                 centroidMean = centroidMean + (entryMean - centroidMean) * entryWeight / tentativeWeight;
                 centroidWeight = tentativeWeight;

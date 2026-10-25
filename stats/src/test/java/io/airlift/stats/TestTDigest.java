@@ -363,6 +363,38 @@ public class TestTDigest
     }
 
     @Test
+    public void testEqualValuesCollapse()
+    {
+        TDigest digest = new TDigest();
+        for (int i = 0; i < 10_000; i++) {
+            digest.add(42);
+        }
+        digest.forceMerge();
+
+        assertThat(digest.getCentroidCount()).isEqualTo(1);
+        assertThat(digest.getCount()).isEqualTo(10_000.0);
+        assertThat(digest.valuesAt(0, 0.5, 1)).containsExactly(42.0, 42.0, 42.0);
+
+        TDigest repeated = new TDigest();
+        for (int value = 0; value < 50; value++) {
+            for (int i = 0; i < 100; i++) {
+                repeated.add(value);
+            }
+        }
+        repeated.forceMerge();
+
+        // a value repeated across many additions ends up in at most one centroid
+        assertThat(repeated.getCentroidCount()).isLessThanOrEqualTo(50);
+        assertThat(repeated.getCount()).isEqualTo(5_000.0);
+        assertThat(repeated.valueAt(0)).isEqualTo(0.0);
+        assertThat(repeated.valueAt(0.5)).isCloseTo(24.5, within(1.0));
+        assertThat(repeated.valueAt(1)).isEqualTo(49.0);
+
+        TDigest deserialized = TDigest.deserialize(repeated.serialize());
+        assertSimilar(deserialized, repeated);
+    }
+
+    @Test
     public void testCompactEmpty()
     {
         TDigest digest = new TDigest();
@@ -391,7 +423,7 @@ public class TestTDigest
         assertThat(merged.getCount()).isEqualTo(10.0);
 
         assertThat(merged.valueAt(0)).isEqualTo(1.0);
-        assertThat(merged.valueAt(0.5)).isEqualTo(5.0);
+        assertThat(merged.valueAt(0.5)).isEqualTo(4.5);
         assertThat(merged.valueAt(1)).isEqualTo(8.0);
     }
 
@@ -403,10 +435,10 @@ public class TestTDigest
         byte[] serialized = Resources.toByteArray(Resources.getResource("io/airlift/stats/unmergeable-tdigest"));
         TDigest digest = TDigest.deserialize(Slices.wrappedBuffer(serialized));
 
-        // validate the assumption
+        // validate the assumption; equal-mean centroids collapse, the rest cannot be merged
         int centroids = digest.getCentroidCount();
         digest.forceMerge();
-        assertThat(digest.getCentroidCount()).as("Assumption that digest is not mergeable no longer holds").isEqualTo(centroids);
+        assertThat(digest.getCentroidCount()).as("Assumption that digest is not mergeable no longer holds").isLessThanOrEqualTo(centroids);
 
         for (int i = 0; i < 1000; i++) {
             // add some values somewhere in the middle of the distribution
