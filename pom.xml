@@ -126,6 +126,18 @@
             </dependency>
 
             <dependency>
+                <groupId>com.aayushatharva.brotli4j</groupId>
+                <artifactId>brotli4j</artifactId>
+                <version>${dep.brotli4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.aayushatharva.brotli4j</groupId>
+                <artifactId>service</artifactId>
+                <version>${dep.brotli4j.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>api</artifactId>
                 <version>${project.version}</version>
