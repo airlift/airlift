@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -1219,6 +1220,59 @@ public abstract class AbstractHttpClientTest
         }
     }
 
+    @Test
+    public void testChunkedResponseWithoutContentLength()
+            throws Exception
+    {
+        String text = "0123456789abcdef".repeat(20 * 1024);
+        try (CloseableTestHttpServer server = newServerWithServlet(new PiecewiseResponseServlet(text.getBytes(US_ASCII), false))) {
+            // Response within limit
+            Request request = prepareGet()
+                    .setUri(server.baseURI().resolve("/a/path"))
+                    .setMaxResponseContentLength(DataSize.of(text.length(), BYTE))
+                    .build();
+            StringResponse response = executeRequest(server, request, createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(response.getHeader(CONTENT_LENGTH)).isEmpty();
+            assertThat(response.getBody()).isEqualTo(text);
+            assertThat(executeRequest(server, request, new ReadBodyResponseHandler())).isEqualTo(text.getBytes(US_ASCII));
+
+            // Response exceeds limit in the middle of the body
+            int maxLength = text.length() - 1;
+            Request limitedRequest = fromRequest(request)
+                    .setMaxResponseContentLength(DataSize.of(maxLength, BYTE))
+                    .build();
+            assertThatThrownBy(() -> executeRequest(server, limitedRequest, createStringResponseHandler()))
+                    .satisfies(throwable -> {
+                        if (Strings.nullToEmpty(throwable.getMessage()).startsWith("Failed reading response from server")) {
+                            assertThat(throwable)
+                                    .hasStackTraceContaining("InputStream exceeded maximum length of " + maxLength);
+                        }
+                        else {
+                            assertThat(throwable)
+                                    .hasMessage("Buffering capacity " + maxLength + " exceeded");
+                        }
+                    });
+        }
+    }
+
+    @Test
+    public void testLargeResponseWithContentLength()
+            throws Exception
+    {
+        String text = "0123456789abcdef".repeat(64 * 1024);
+        try (CloseableTestHttpServer server = newServerWithServlet(new PiecewiseResponseServlet(text.getBytes(US_ASCII), true))) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI().resolve("/a/path"))
+                    .setMaxResponseContentLength(DataSize.of(text.length(), BYTE))
+                    .build();
+            StringResponse response = executeRequest(server, request, createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(response.getHeader(CONTENT_LENGTH)).contains(String.valueOf(text.length()));
+            assertThat(response.getBody()).isEqualTo(text);
+        }
+    }
+
     private void executeExceptionRequest(HttpClientConfig config, Request request)
             throws Exception
     {
@@ -1727,6 +1781,38 @@ public abstract class AbstractHttpClientTest
             // Throwing after the response is committed makes the container abort the
             // exchange rather than complete it, truncating the body on the wire.
             throw new IllegalStateException("simulated failure after commit");
+        }
+    }
+
+    public static final class PiecewiseResponseServlet
+            extends HttpServlet
+    {
+        private static final int PIECE_SIZE = 16 * 1024;
+
+        private final byte[] body;
+        private final boolean declareLength;
+
+        public PiecewiseResponseServlet(byte[] body, boolean declareLength)
+        {
+            this.body = requireNonNull(body, "body is null");
+            this.declareLength = declareLength;
+        }
+
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws IOException
+        {
+            response.setStatus(200);
+            if (declareLength) {
+                response.setContentLength(body.length);
+            }
+            // Flushing after each piece commits the response before its length is known,
+            // so without Content-Length the body is sent chunked.
+            OutputStream output = response.getOutputStream();
+            for (int offset = 0; offset < body.length; offset += PIECE_SIZE) {
+                output.write(body, offset, Math.min(PIECE_SIZE, body.length - offset));
+                response.flushBuffer();
+            }
         }
     }
 
