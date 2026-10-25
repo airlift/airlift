@@ -28,6 +28,15 @@ public interface HttpClient
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
 
     /**
+     * Executes the given request and passes the response body to the handler as it arrives.
+     * The default implementation passes the body after it has been fully received.
+     */
+    default <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, StreamingResponseHandler<T, E> responseHandler)
+    {
+        return executeAsync(request, new StreamingResponseHandlerAdapter<>(responseHandler));
+    }
+
+    /**
      * Executes the given request and returns a response stream.
      * <p>
      * <b>Note:</b> {@link Request#getMaxResponseContentLength} is ignored.
