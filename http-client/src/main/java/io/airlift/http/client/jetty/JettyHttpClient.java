@@ -20,6 +20,7 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
+import io.airlift.http.client.StreamingResponseHandler;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.log.Logger;
@@ -991,6 +992,12 @@ public class JettyHttpClient
     @Override
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
+        return executeAsync(request, new BufferingResponseHandler<>(responseHandler));
+    }
+
+    @Override
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, StreamingResponseHandler<T, E> responseHandler)
+    {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
 
@@ -1012,7 +1019,7 @@ public class JettyHttpClient
 
         DataSize maxResponseContentLength = getMaxResponseContentLength(request);
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(sizedByteBufferPool, jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
 
         try {
             return listener.send();
@@ -1399,15 +1406,19 @@ public class JettyHttpClient
         if (response == null) {
             return;
         }
+        recordRequestComplete(requestStats, request, requestBytes, requestStart, response.getStatusCode(), response.getBytesRead(), responseStart);
+    }
 
+    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, int statusCode, long responseBytes, long responseStart)
+    {
         Duration responseProcessingTime = Duration.nanosSince(responseStart);
         Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
 
         requestStats.recordResponseReceived(
                 request.getMethod(),
-                response.getStatusCode(),
+                statusCode,
                 requestBytes,
-                response.getBytesRead(),
+                responseBytes,
                 requestProcessingTime,
                 responseProcessingTime);
     }

@@ -4,7 +4,8 @@ import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
-import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.StreamingResponseHandler;
+import io.airlift.http.client.StreamingResponseHandler.BodyConsumer;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
@@ -13,7 +14,6 @@ import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import org.eclipse.jetty.client.Response;
 
-import java.io.InputStream;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
@@ -41,7 +41,7 @@ class JettyResponseFuture<T, E extends Exception>
     private final Request request;
     private final org.eclipse.jetty.client.Request jettyRequest;
     private final LongSupplier requestSize;
-    private final ResponseHandler<T, E> responseHandler;
+    private final StreamingResponseHandler<T, E> responseHandler;
     private final Span span;
     private final RequestStats stats;
     private final boolean recordRequestComplete;
@@ -50,7 +50,7 @@ class JettyResponseFuture<T, E extends Exception>
             Request request,
             org.eclipse.jetty.client.Request jettyRequest,
             LongSupplier requestSize,
-            ResponseHandler<T, E> responseHandler,
+            StreamingResponseHandler<T, E> responseHandler,
             Span span,
             RequestStats stats,
             boolean recordRequestComplete)
@@ -89,24 +89,23 @@ class JettyResponseFuture<T, E extends Exception>
         }
     }
 
-    void completed(Response response, InputStream content)
+    BodyConsumer<T, E> headersReceived(Response response)
+            throws E
+    {
+        return requireNonNull(responseHandler.handleHeaders(request, new JettyResponseMetadata(response)), "body consumer is null");
+    }
+
+    void completed(Response response, BodyConsumer<T, E> consumer, long bytesReceived)
     {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
         }
 
-        span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
-        // negotiated http version
-        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
-        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
-
-        if (request.getBodyGenerator() != null) {
-            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_SIZE, requestSize.getAsLong());
-        }
+        setResponseAttributes(response);
 
         T value;
         try {
-            value = processResponse(response, content);
+            value = processResponse(response, consumer, bytesReceived);
         }
         catch (Throwable e) {
             // this will be an instance of E from the response handler or an Error
@@ -120,29 +119,51 @@ class JettyResponseFuture<T, E extends Exception>
         span.end();
     }
 
-    private T processResponse(Response response, InputStream content)
+    private T processResponse(Response response, BodyConsumer<T, E> consumer, long bytesReceived)
             throws E
     {
         // this time will not include the data fetching portion of the response,
-        // since the response is fully cached in memory at this point
+        // since the response is fully received at this point
         long responseStart = System.nanoTime();
 
         state.set(JettyAsyncHttpState.PROCESSING_RESPONSE);
-        JettyResponse jettyResponse = null;
-        T value;
         try {
-            jettyResponse = new JettyResponse(new JettyResponseMetadata(response), content);
-            value = responseHandler.handle(request, jettyResponse);
+            return consumer.complete();
         }
         finally {
-            if (jettyResponse != null) {
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
-            }
-            if (recordRequestComplete) {
-                JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
-            }
+            recordResponseBody(response, bytesReceived, responseStart);
         }
-        return value;
+    }
+
+    void handlerFailed(Response response, Throwable failure, long bytesReceived)
+    {
+        if (state.get() == JettyAsyncHttpState.CANCELED) {
+            return;
+        }
+
+        setResponseAttributes(response);
+        recordResponseBody(response, bytesReceived, System.nanoTime());
+        storeException(failure);
+    }
+
+    private void setResponseAttributes(Response response)
+    {
+        span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+        // negotiated http version
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
+
+        if (request.getBodyGenerator() != null) {
+            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_SIZE, requestSize.getAsLong());
+        }
+    }
+
+    private void recordResponseBody(Response response, long bytesReceived, long responseStart)
+    {
+        span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, bytesReceived);
+        if (recordRequestComplete) {
+            JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, response.getStatus(), bytesReceived, responseStart);
+        }
     }
 
     void failed(Throwable throwable)
