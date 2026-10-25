@@ -131,7 +131,7 @@ class JettyResponseFuture<T, E extends Exception>
         JettyResponse jettyResponse = null;
         T value;
         try {
-            jettyResponse = new JettyResponse(response, content);
+            jettyResponse = new JettyResponse(new JettyResponseMetadata(response), content);
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {

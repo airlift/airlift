@@ -25,22 +25,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
 public interface Response
+        extends ResponseMetadata
 {
-    HttpVersion getHttpVersion();
-
-    int getStatusCode();
-
-    default Optional<String> getHeader(HeaderName name)
-    {
-        List<String> values = getHeaders(name);
-        return values.isEmpty() ? Optional.empty() : Optional.of(values.getFirst());
-    }
-
     /**
      * @deprecated Use {@link #getHeader(HeaderName)} instead
      */
@@ -58,13 +48,6 @@ public interface Response
     {
         return getHeaders().get(HeaderName.of(name));
     }
-
-    default List<String> getHeaders(HeaderName name)
-    {
-        return getHeaders().get(name);
-    }
-
-    ListMultimap<HeaderName, String> getHeaders();
 
     @Beta
     Content getContent();

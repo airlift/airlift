@@ -1,68 +1,59 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpVersion;
-import org.eclipse.jetty.client.Response;
+import io.airlift.http.client.Response;
+import io.airlift.http.client.ResponseMetadata;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.http.client.Response.toHeadersMap;
 
 class JettyResponse
-        implements io.airlift.http.client.Response
+        implements Response
 {
-    private final Response response;
+    private final ResponseMetadata metadata;
     private final Content content;
     private final InputStream inputStream;
     private final LongSupplier bytesRead;
-    private final Supplier<ListMultimap<HeaderName, String>> headers;
 
-    public JettyResponse(Response response, byte[] content)
+    public JettyResponse(ResponseMetadata metadata, byte[] content)
     {
-        this.response = response;
+        this.metadata = metadata;
         this.content = new BytesContent(content);
         this.inputStream = new ByteArrayInputStream(content);
         this.bytesRead = () -> content.length;
-        this.headers = Suppliers.memoize(() -> toHeadersMap(response.getHeaders()));
     }
 
-    public JettyResponse(Response response, InputStream inputStream)
+    public JettyResponse(ResponseMetadata metadata, InputStream inputStream)
     {
-        this.response = response;
+        this.metadata = metadata;
         CountingInputStream countingInputStream = new CountingInputStream(inputStream);
         this.content = new InputStreamContent(countingInputStream);
         this.inputStream = countingInputStream;
         this.bytesRead = countingInputStream::getCount;
-        this.headers = Suppliers.memoize(() -> toHeadersMap(response.getHeaders()));
     }
 
     @Override
     public int getStatusCode()
     {
-        return response.getStatus();
+        return metadata.getStatusCode();
     }
 
     @Override
     public HttpVersion getHttpVersion()
     {
-        return switch (response.getVersion()) {
-            case HTTP_0_9, HTTP_1_0, HTTP_1_1 -> HttpVersion.HTTP_1;
-            case HTTP_2 -> HttpVersion.HTTP_2;
-            case HTTP_3 -> HttpVersion.HTTP_3;
-        };
+        return metadata.getHttpVersion();
     }
 
     @Override
     public ListMultimap<HeaderName, String> getHeaders()
     {
-        return headers.get();
+        return metadata.getHeaders();
     }
 
     @Override
