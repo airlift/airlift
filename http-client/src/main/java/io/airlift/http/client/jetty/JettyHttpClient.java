@@ -532,8 +532,8 @@ public class JettyHttpClient
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
     {
-        long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
-        long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
+        long maxHeapMemory = config.getMaxHeapMemory().toBytes();
+        long maxOffHeapMemory = config.getMaxDirectMemory().toBytes();
 
         ArrayByteBufferPool pool = config.isTrackMemoryAllocations() ?
                 new ArrayByteBufferPool.Tracking(

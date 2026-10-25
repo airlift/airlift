@@ -32,7 +32,6 @@ import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
 import jakarta.annotation.PostConstruct;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -78,8 +77,10 @@ public class HttpClientConfig
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private DataSize maxRequestHeaderSize = DataSize.of(8, KILOBYTE);
     private DataSize maxResponseHeaderSize = DataSize.of(16, KILOBYTE);
-    private Optional<DataSize> maxHeapMemory = Optional.empty();
-    private Optional<DataSize> maxDirectMemory = Optional.empty();
+    // Bounds the buffers each client retains between requests. Jetty's own default lets a pool
+    // keep an eighth of the heap on each side and never gives it back after a load spike.
+    private DataSize maxHeapMemory = DataSize.of(128, MEGABYTE);
+    private DataSize maxDirectMemory = DataSize.of(128, MEGABYTE);
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -309,7 +310,9 @@ public class HttpClientConfig
         return this;
     }
 
-    public Optional<@MinDataSize("8MB") DataSize> getMaxHeapMemory()
+    @NotNull
+    @MinDataSize("8MB")
+    public DataSize getMaxHeapMemory()
     {
         return maxHeapMemory;
     }
@@ -317,11 +320,13 @@ public class HttpClientConfig
     @Config("http-client.max-heap-memory")
     public HttpClientConfig setMaxHeapMemory(DataSize maxHeapMemory)
     {
-        this.maxHeapMemory = Optional.ofNullable(maxHeapMemory);
+        this.maxHeapMemory = maxHeapMemory;
         return this;
     }
 
-    public Optional<@MinDataSize("8MB") DataSize> getMaxDirectMemory()
+    @NotNull
+    @MinDataSize("8MB")
+    public DataSize getMaxDirectMemory()
     {
         return maxDirectMemory;
     }
@@ -329,7 +334,7 @@ public class HttpClientConfig
     @Config("http-client.max-direct-memory")
     public HttpClientConfig setMaxDirectMemory(DataSize maxDirectMemory)
     {
-        this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
+        this.maxDirectMemory = maxDirectMemory;
         return this;
     }
 
@@ -830,12 +835,6 @@ public class HttpClientConfig
     {
         this.trackMemoryAllocations = trackMemoryAllocations;
         return this;
-    }
-
-    @AssertTrue(message = "either both http-client.max-heap-memory and http-client.max-direct-memory are set or none of them")
-    public boolean eitherBothMemorySettingsAreSetOrNone()
-    {
-        return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
     }
 
     @PostConstruct
