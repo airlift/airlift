@@ -7,6 +7,7 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.ResponseMetadata;
+import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.StreamingResponseHandler;
 import io.airlift.units.DataSize;
@@ -116,7 +117,7 @@ public class TestAsyncJettyHttpClient
                 FailingResponseHandler handler = new FailingResponseHandler(Stage.NONE);
                 assertThat(client.executeAsync(request, handler).get()).isNull();
                 assertThat(handler.handledException.get())
-                        .isInstanceOf(IllegalArgumentException.class)
+                        .isInstanceOf(ResponseTooLargeException.class)
                         .hasMessage("Buffering capacity " + maxLength + " exceeded");
             }
         }
