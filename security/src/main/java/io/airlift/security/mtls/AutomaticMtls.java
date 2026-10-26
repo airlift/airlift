@@ -15,13 +15,10 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import javax.security.auth.x500.X500Principal;
 
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -30,15 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECFieldFp;
 import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPoint;
-import java.security.spec.ECPrivateKeySpec;
-import java.security.spec.ECPublicKeySpec;
-import java.security.spec.EllipticCurve;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
@@ -47,7 +36,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -76,10 +64,9 @@ public final class AutomaticMtls
 
     // The CA key pair must be byte-for-byte identical on every node, so the derivation parameters are
     // fixed constants (never configuration): two nodes deriving different CA keys could not trust each
-    // other. The "v2" tag versions the derivation scheme; bump it if the algorithm ever changes.
-    private static final String KDF_SALT_PREFIX = "airlift-automatic-mtls-v2:";
+    // other. The "v3" tag versions the Ed25519 seed derivation scheme; bump it if the algorithm changes.
+    private static final String KDF_SALT_PREFIX = "airlift-automatic-mtls-v3:";
     private static final int KDF_ITERATIONS = 600_000; // OWASP 2023 floor for PBKDF2-HMAC-SHA256
-    private static final int MODULO_BIAS_MARGIN_BITS = 64; // keeps scalar reduction bias below 2^-64
     private static final int MIN_SHARED_SECRET_LENGTH = 32;
 
     // The CA key pair is a pure, expensive (PBKDF2) function of (environment, sharedSecret). Memoize
@@ -132,7 +119,7 @@ public final class AutomaticMtls
                     .setKeyPair(leafKeyPair)
                     .addSanIpAddresses(ipSubjectAltNames)
                     .addSanDnsNames(dnsSubjectAltNames)
-                    .buildIssuedBy((ECPrivateKey) caKeyPair.getPrivate(), (ECPublicKey) caKeyPair.getPublic());
+                    .buildIssuedBy(caKeyPair.getPrivate(), caKeyPair.getPublic());
 
             char[] password = keyStorePassword == null ? new char[0] : keyStorePassword.toCharArray();
             keyStore.setKeyEntry(environment, leafKeyPair.getPrivate(), password, new Certificate[] {leafCertificate, caCertificate});
@@ -304,10 +291,9 @@ public final class AutomaticMtls
      * node derives the same CA. The secret is stretched through a salted, high-iteration KDF: a
      * captured certificate lets an attacker verify a guessed secret offline, so without stretching a
      * weak secret could be brute-forced cheaply. The salt binds the derivation to the environment so
-     * that work cannot be amortized across clusters. The private scalar is computed with fixed
-     * arithmetic rather than by seeding a provider RNG, and the public key is computed by explicit EC
-     * point multiplication (see {@link #derivePublicKey}), so the derived CA is identical across JCA
-     * providers and JDK versions without depending on any third-party library.
+     * that work cannot be amortized across clusters. The output is an RFC 8032 Ed25519 private seed;
+     * SunEC performs the public-key derivation, with runtime checks that reject changes to its seed
+     * handling or the known-answer public key. No secret-dependent EC arithmetic is implemented here.
      */
     private static KeyPair deriveCertificateAuthorityKeyPair(String sharedSecret, String environment)
     {
@@ -315,98 +301,25 @@ public final class AutomaticMtls
                 "automatic HTTPS shared secret must be at least %s characters; use a randomly generated high-entropy value",
                 MIN_SHARED_SECRET_LENGTH);
         try {
-            AlgorithmParameters algorithmParameters = AlgorithmParameters.getInstance("EC");
-            algorithmParameters.init(new ECGenParameterSpec(CURVE_NAME));
-            ECParameterSpec ecParameterSpec = algorithmParameters.getParameterSpec(ECParameterSpec.class);
-            BigInteger order = ecParameterSpec.getOrder();
-
-            // Stretch the secret with PBKDF2, requesting enough extra bits that reducing into
-            // [1, order-1] introduces negligible modulo bias.
-            int derivedBits = order.bitLength() + MODULO_BIAS_MARGIN_BITS;
             byte[] salt = (KDF_SALT_PREFIX + environment).getBytes(UTF_8);
-            PBEKeySpec keySpec = new PBEKeySpec(sharedSecret.toCharArray(), salt, KDF_ITERATIONS, derivedBits);
-            byte[] derived = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(keySpec).getEncoded();
-
-            // Map the derived bytes to a valid private scalar d in [1, order-1].
-            BigInteger d = new BigInteger(1, derived).mod(order.subtract(BigInteger.ONE)).add(BigInteger.ONE);
-
-            KeyFactory keyFactory = KeyFactory.getInstance("EC");
-            ECPrivateKey privateKey = (ECPrivateKey) keyFactory.generatePrivate(new ECPrivateKeySpec(d, ecParameterSpec));
-            ECPublicKey publicKey = derivePublicKey(d, ecParameterSpec, keyFactory);
-            return new KeyPair(publicKey, privateKey);
+            PBEKeySpec keySpec = new PBEKeySpec(sharedSecret.toCharArray(), salt, KDF_ITERATIONS, 256);
+            try {
+                byte[] seed = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(keySpec).getEncoded();
+                try {
+                    return DeterministicEd25519.generateKeyPair(seed);
+                }
+                finally {
+                    Arrays.fill(seed, (byte) 0);
+                }
+            }
+            finally {
+                keySpec.clearPassword();
+            }
         }
         catch (Exception e) {
             throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Computes the public key {@code Q = d*G} for the private scalar {@code d} by explicit elliptic
-     * curve point multiplication over the curve's prime field, using only the curve parameters
-     * supplied by the JCA. This depends on nothing beyond {@link java.math.BigInteger} arithmetic, so
-     * the derived CA is identical across JCA providers and JDK versions.
-     */
-    private static ECPublicKey derivePublicKey(BigInteger d, ECParameterSpec ecParameterSpec, KeyFactory keyFactory)
-            throws GeneralSecurityException
-    {
-        EllipticCurve curve = ecParameterSpec.getCurve();
-        checkState(curve.getField() instanceof ECFieldFp, "curve is not defined over a prime field");
-        BigInteger p = ((ECFieldFp) curve.getField()).getP();
-        ECPoint publicPoint = scalarMultiply(d, ecParameterSpec.getGenerator(), curve.getA(), p);
-        return (ECPublicKey) keyFactory.generatePublic(new ECPublicKeySpec(publicPoint, ecParameterSpec));
-    }
-
-    // Double-and-add scalar multiplication on the short Weierstrass curve y^2 = x^3 + a*x + b over F_p.
-    private static ECPoint scalarMultiply(BigInteger k, ECPoint generator, BigInteger a, BigInteger p)
-    {
-        ECPoint result = ECPoint.POINT_INFINITY;
-        ECPoint addend = generator;
-        for (int bit = 0; bit < k.bitLength(); bit++) {
-            if (k.testBit(bit)) {
-                result = pointAdd(result, addend, a, p);
-            }
-            addend = pointDouble(addend, a, p);
-        }
-        return result;
-    }
-
-    private static ECPoint pointAdd(ECPoint first, ECPoint second, BigInteger a, BigInteger p)
-    {
-        if (first == ECPoint.POINT_INFINITY) {
-            return second;
-        }
-        if (second == ECPoint.POINT_INFINITY) {
-            return first;
-        }
-        if (first.getAffineX().equals(second.getAffineX())) {
-            if (first.getAffineY().add(second.getAffineY()).mod(p).signum() == 0) {
-                return ECPoint.POINT_INFINITY;
-            }
-            return pointDouble(first, a, p);
-        }
-        BigInteger slope = second.getAffineY().subtract(first.getAffineY())
-                .multiply(second.getAffineX().subtract(first.getAffineX()).modInverse(p))
-                .mod(p);
-        return pointFromSlope(slope, first, second.getAffineX(), p);
-    }
-
-    private static ECPoint pointDouble(ECPoint point, BigInteger a, BigInteger p)
-    {
-        if (point == ECPoint.POINT_INFINITY || point.getAffineY().signum() == 0) {
-            return ECPoint.POINT_INFINITY;
-        }
-        BigInteger slope = point.getAffineX().pow(2).multiply(BigInteger.valueOf(3)).add(a)
-                .multiply(point.getAffineY().shiftLeft(1).modInverse(p))
-                .mod(p);
-        return pointFromSlope(slope, point, point.getAffineX(), p);
-    }
-
-    private static ECPoint pointFromSlope(BigInteger slope, ECPoint first, BigInteger secondX, BigInteger p)
-    {
-        BigInteger x = slope.pow(2).subtract(first.getAffineX()).subtract(secondX).mod(p);
-        BigInteger y = slope.multiply(first.getAffineX().subtract(x)).subtract(first.getAffineY()).mod(p);
-        return new ECPoint(x, y);
     }
 
     public static KeyStore inMemoryKeyStore()

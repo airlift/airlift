@@ -20,14 +20,20 @@ import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.net.InetAddress;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECKey;
+import java.security.interfaces.EdECPrivateKey;
+import java.security.interfaces.EdECPublicKey;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -51,13 +57,14 @@ import static java.util.Objects.requireNonNull;
 public class CertificateBuilder
 {
     private static final byte[] SHA_256_WITH_ECDSA_ENCRYPTION_OID = encodeOid("1.2.840.10045.4.3.2");
+    private static final byte[] ED25519_OID = encodeOid("1.3.101.112");
     private static final byte[] SUBJECT_KEY_IDENTIFIER_OID = encodeOid("2.5.29.14");
     private static final byte[] AUTHORITY_KEY_IDENTIFIER_OID = encodeOid("2.5.29.35");
     private static final byte[] BASIC_CONSTRAINTS_OID = encodeOid("2.5.29.19");
     private static final byte[] SUBJECT_ALT_NAME_OID = encodeOid("2.5.29.17");
 
-    private ECPublicKey publicKey;
-    private ECPrivateKey privateKey;
+    private PublicKey publicKey;
+    private PrivateKey privateKey;
 
     private long serialNumber;
     private X500Principal issuer;
@@ -78,22 +85,34 @@ public class CertificateBuilder
     public CertificateBuilder setKeyPair(KeyPair keyPair)
     {
         requireNonNull(keyPair, "keyPair is null");
-        checkArgument(keyPair.getPublic() instanceof ECPublicKey, "not an EC key: %s", keyPair.getPublic());
-        checkArgument(keyPair.getPrivate() instanceof ECPrivateKey, "not an EC key: %s", keyPair.getPrivate());
-        setPublicKey((ECPublicKey) keyPair.getPublic());
-        setPrivateKey((ECPrivateKey) keyPair.getPrivate());
+        setPublicKey(keyPair.getPublic());
+        setPrivateKey(keyPair.getPrivate());
         return this;
     }
 
     public CertificateBuilder setPublicKey(ECPublicKey publicKey)
     {
-        this.publicKey = requireNonNull(publicKey, "publicKey is null");
+        return setPublicKey((PublicKey) publicKey);
+    }
+
+    public CertificateBuilder setPublicKey(PublicKey publicKey)
+    {
+        requireNonNull(publicKey, "publicKey is null");
+        checkArgument(publicKey instanceof ECPublicKey || (publicKey instanceof EdECPublicKey && isEd25519(publicKey)), "not an EC or Ed25519 public key");
+        this.publicKey = publicKey;
         return this;
     }
 
     public CertificateBuilder setPrivateKey(ECPrivateKey privateKey)
     {
-        this.privateKey = requireNonNull(privateKey, "privateKey is null");
+        return setPrivateKey((PrivateKey) privateKey);
+    }
+
+    public CertificateBuilder setPrivateKey(PrivateKey privateKey)
+    {
+        requireNonNull(privateKey, "privateKey is null");
+        checkArgument(privateKey instanceof ECPrivateKey || (privateKey instanceof EdECPrivateKey && isEd25519(privateKey)), "not an EC or Ed25519 private key");
+        this.privateKey = privateKey;
         return this;
     }
 
@@ -193,14 +212,21 @@ public class CertificateBuilder
     public X509Certificate buildIssuedBy(ECPrivateKey caPrivateKey, ECPublicKey caPublicKey)
             throws GeneralSecurityException
     {
+        return buildIssuedBy((PrivateKey) caPrivateKey, (PublicKey) caPublicKey);
+    }
+
+    public X509Certificate buildIssuedBy(PrivateKey caPrivateKey, PublicKey caPublicKey)
+            throws GeneralSecurityException
+    {
         requireNonNull(caPrivateKey, "caPrivateKey is null");
         requireNonNull(caPublicKey, "caPublicKey is null");
         return build(caPrivateKey, caPublicKey);
     }
 
-    private X509Certificate build(ECPrivateKey signingKey, ECPublicKey authorityKey)
+    private X509Certificate build(PrivateKey signingKey, PublicKey authorityKey)
             throws GeneralSecurityException
     {
+        checkArgument(signingKey instanceof ECPrivateKey || (signingKey instanceof EdECPrivateKey && isEd25519(signingKey)), "not an EC or Ed25519 signing key");
         checkState(publicKey != null, "publicKey is not set");
         checkState(issuer != null, "issuer is not set");
         checkState(notBefore != null, "notBefore is not set");
@@ -210,6 +236,11 @@ public class CertificateBuilder
 
         byte[] subjectKeyHash = hashPublicKey(publicKey);
         byte[] authorityKeyHash = hashPublicKey(authorityKey);
+        String signatureAlgorithm = isEd25519(signingKey) ? "Ed25519" : "SHA256withECDSA";
+        // RFC 8410 requires absent parameters for Ed25519, rather than an ASN.1 NULL.
+        byte[] signatureAlgorithmIdentifier = isEd25519(signingKey)
+                ? encodeSequence(ED25519_OID)
+                : encodeSequence(SHA_256_WITH_ECDSA_ENCRYPTION_OID, encodeNull());
 
         List<byte[]> sans = new ArrayList<>();
         sanDnsNames.stream()
@@ -251,9 +282,7 @@ public class CertificateBuilder
                 // serialNumber
                 encodeInteger(serialNumber),
                 // signature kind
-                encodeSequence(
-                        SHA_256_WITH_ECDSA_ENCRYPTION_OID,
-                        encodeNull()),
+                signatureAlgorithmIdentifier,
                 // issuer
                 issuer.getEncoded(),
                 // validity
@@ -269,14 +298,12 @@ public class CertificateBuilder
                 // extensions
                 encodeContextSpecificSequence(3, encodeSequence(extensions.toArray(new byte[0][]))));
 
-        byte[] signature = signCertificate(signingKey, rawCertificate);
+        byte[] signature = signCertificate(signingKey, signatureAlgorithm, rawCertificate);
 
         byte[] encodedCertificate = encodeSequence(
                 rawCertificate,
                 // signature kind
-                encodeSequence(
-                        SHA_256_WITH_ECDSA_ENCRYPTION_OID,
-                        encodeNull()),
+                signatureAlgorithmIdentifier,
                 // signature
                 DerUtils.encodeBitString(0, signature));
 
@@ -284,22 +311,32 @@ public class CertificateBuilder
         return (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(encodedCertificate));
     }
 
-    private static byte[] signCertificate(ECPrivateKey signingKey, byte[] rawCertificate)
+    private static byte[] signCertificate(PrivateKey signingKey, String algorithm, byte[] rawCertificate)
             throws GeneralSecurityException
     {
-        Signature signature = Signature.getInstance("SHA256withECDSA");
+        Signature signature = Signature.getInstance(algorithm);
         signature.initSign(signingKey);
         signature.update(rawCertificate);
         return signature.sign();
     }
 
-    private static byte[] hashPublicKey(ECPublicKey publicKey)
+    private static byte[] hashPublicKey(PublicKey publicKey)
             throws NoSuchAlgorithmException
     {
-        byte[] rawKey = encodeSequence(
-                encodeInteger(publicKey.getW().getAffineX()),
-                encodeInteger(publicKey.getW().getAffineY()));
+        byte[] rawKey = publicKey.getEncoded();
+        // Preserve the existing key identifier for EC certificates. For Ed25519, use the encoded
+        // public key; RFC 5280 permits other methods of deriving a unique key identifier.
+        if (publicKey instanceof ECPublicKey ecPublicKey) {
+            rawKey = encodeSequence(
+                    encodeInteger(ecPublicKey.getW().getAffineX()),
+                    encodeInteger(ecPublicKey.getW().getAffineY()));
+        }
         MessageDigest digest = MessageDigest.getInstance("SHA-1");
         return digest.digest(rawKey);
+    }
+
+    private static boolean isEd25519(Key key)
+    {
+        return key instanceof EdECKey edKey && edKey.getParams() != null && edKey.getParams().getName().equals("Ed25519");
     }
 }

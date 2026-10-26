@@ -13,6 +13,10 @@
  */
 package io.airlift.security.cert;
 
+import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
+import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.TrustManager;
@@ -77,5 +81,65 @@ public class TestCertificateBuilder
                 x509TrustManager.checkServerTrusted(new X509Certificate[] {certificate}, "EC");
             }
         }
+    }
+
+    @Test
+    public void testEcLeafIssuedByEd25519Ca()
+            throws Exception
+    {
+        KeyPair caKeyPair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+        X500Principal caSubject = new X500Principal("CN=Ed25519 CA");
+        X509Certificate caCertificate = newCertificateBuilder(caKeyPair, caSubject)
+                .buildSelfSigned();
+        caCertificate.verify(caKeyPair.getPublic());
+
+        KeyPairGenerator leafGenerator = KeyPairGenerator.getInstance("EC");
+        leafGenerator.initialize(new ECGenParameterSpec("secp256r1"));
+        KeyPair leafKeyPair = leafGenerator.generateKeyPair();
+        X509Certificate leafCertificate = newCertificateBuilder(leafKeyPair, new X500Principal("CN=leaf"))
+                .setSerialNumber(2)
+                .setIssuer(caSubject)
+                .setCertificateAuthority(false)
+                .addSanDnsName("localhost")
+                .buildIssuedBy(caKeyPair.getPrivate(), caKeyPair.getPublic());
+        leafCertificate.verify(caKeyPair.getPublic());
+        assertThat(leafCertificate.getPublicKey()).isEqualTo(leafKeyPair.getPublic());
+        assertThat(leafCertificate.getBasicConstraints()).isEqualTo(-1);
+
+        Certificate ca = Certificate.getInstance(caCertificate.getEncoded());
+        Certificate leaf = Certificate.getInstance(leafCertificate.getEncoded());
+        for (Certificate certificate : new Certificate[] {ca, leaf}) {
+            assertThat(certificate.getSignatureAlgorithm().getAlgorithm().getId()).isEqualTo("1.3.101.112");
+            assertThat(certificate.getSignatureAlgorithm().getParameters()).isNull();
+            assertThat(certificate.getTBSCertificate().getSignature()).isEqualTo(certificate.getSignatureAlgorithm());
+        }
+        byte[] caKeyIdentifier = SubjectKeyIdentifier.getInstance(ca.getTBSCertificate().getExtensions()
+                .getExtensionParsedValue(Extension.subjectKeyIdentifier)).getKeyIdentifier();
+        byte[] leafAuthorityKeyIdentifier = AuthorityKeyIdentifier.getInstance(leaf.getTBSCertificate().getExtensions()
+                .getExtensionParsedValue(Extension.authorityKeyIdentifier)).getKeyIdentifierOctets();
+        assertThat(leafAuthorityKeyIdentifier).isEqualTo(caKeyIdentifier);
+
+        KeyStore trustStore = KeyStore.getInstance("JKS");
+        trustStore.load(null, null);
+        trustStore.setCertificateEntry("ca", caCertificate);
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(trustStore);
+        for (TrustManager trustManager : trustManagerFactory.getTrustManagers()) {
+            if (trustManager instanceof X509TrustManager x509TrustManager) {
+                x509TrustManager.checkServerTrusted(new X509Certificate[] {leafCertificate, caCertificate}, "ECDHE_ECDSA");
+            }
+        }
+    }
+
+    private static CertificateBuilder newCertificateBuilder(KeyPair keyPair, X500Principal subject)
+    {
+        LocalDate today = LocalDate.now(UTC);
+        return certificateBuilder()
+                .setKeyPair(keyPair)
+                .setSerialNumber(1)
+                .setIssuer(subject)
+                .setSubject(subject)
+                .setNotBefore(today.minusDays(1))
+                .setNotAfter(today.plusYears(1));
     }
 }
