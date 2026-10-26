@@ -1,6 +1,5 @@
 package io.airlift.http.client;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -1197,16 +1196,9 @@ public abstract class AbstractHttpClientTest
                     .setMaxResponseContentLength(DataSize.of(text.length() - 1, BYTE))
                     .build();
             assertThatThrownBy(() -> executeRequest(server, limitedRequest, createStringResponseHandler()))
-                    .satisfies(throwable -> {
-                        if (Strings.nullToEmpty(throwable.getMessage()).startsWith("Failed reading response from server")) {
-                            assertThat(throwable)
-                                    .hasStackTraceContaining("InputStream exceeded maximum length of 3071");
-                        }
-                        else {
-                            assertThat(throwable)
-                                    .hasMessage("Buffering capacity 3071 exceeded");
-                        }
-                    });
+                    .rootCause()
+                    .isInstanceOf(ResponseTooLargeException.class)
+                    .hasMessageContaining("3071");
 
             // Streaming execution bypasses content limits
             executeStreamingRequest(server, limitedRequest).ifPresent(streamingResponse -> {
@@ -1243,16 +1235,9 @@ public abstract class AbstractHttpClientTest
                     .setMaxResponseContentLength(DataSize.of(maxLength, BYTE))
                     .build();
             assertThatThrownBy(() -> executeRequest(server, limitedRequest, createStringResponseHandler()))
-                    .satisfies(throwable -> {
-                        if (Strings.nullToEmpty(throwable.getMessage()).startsWith("Failed reading response from server")) {
-                            assertThat(throwable)
-                                    .hasStackTraceContaining("InputStream exceeded maximum length of " + maxLength);
-                        }
-                        else {
-                            assertThat(throwable)
-                                    .hasMessage("Buffering capacity " + maxLength + " exceeded");
-                        }
-                    });
+                    .rootCause()
+                    .isInstanceOf(ResponseTooLargeException.class)
+                    .hasMessageContaining(String.valueOf(maxLength));
         }
     }
 

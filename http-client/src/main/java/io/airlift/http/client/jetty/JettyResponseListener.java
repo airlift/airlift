@@ -1,5 +1,6 @@
 package io.airlift.http.client.jetty;
 
+import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StreamingResponseHandler.BodyConsumer;
 import io.airlift.log.Logger;
 import org.eclipse.jetty.client.Request;
@@ -88,9 +89,9 @@ class JettyResponseListener<T, E extends Exception>
         demander.run();
     }
 
-    private IllegalArgumentException bufferingCapacityExceeded()
+    private ResponseTooLargeException bufferingCapacityExceeded()
     {
-        return new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded");
+        return new ResponseTooLargeException("Buffering capacity " + maxLength + " exceeded");
     }
 
     private void abortWithHandlerFailure(Response response, Throwable failure)

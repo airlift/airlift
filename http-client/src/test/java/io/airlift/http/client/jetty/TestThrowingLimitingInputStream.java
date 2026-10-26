@@ -1,5 +1,6 @@
 package io.airlift.http.client.jetty;
 
+import io.airlift.http.client.ResponseTooLargeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -9,7 +10,6 @@ import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,7 +80,7 @@ class TestThrowingLimitingInputStream
             assertThat(inputStream.read()).as("first #3").isEqualTo('c');
             assertThat(inputStream.read()).as("first #4").isEqualTo('d');
             assertThatThrownBy(inputStream::read)
-                    .isInstanceOf(IOException.class)
+                    .isInstanceOf(ResponseTooLargeException.class)
                     .hasMessage("InputStream exceeded maximum length of 4 [remaining: 0, read: 1]");
             checkStreamExhausted(inputStream);
         }
@@ -155,7 +155,7 @@ class TestThrowingLimitingInputStream
                 // Some streams (e.g. FileInputStream) allow skipping past EOF, but ThrowingLimitingInputStream
                 // does not allow that because, by default, InputStream.skip is implemented by reading and discarding bytes.
                 assertThatThrownBy(() -> inputStream.skip(13))
-                        .isInstanceOf(IOException.class)
+                        .isInstanceOf(ResponseTooLargeException.class)
                         .hasMessageStartingWith("InputStream exceeded maximum length of");
             }
             else {
@@ -186,7 +186,7 @@ class TestThrowingLimitingInputStream
                 // Some streams (e.g. FileInputStream) allow skipping past EOF, but ThrowingLimitingInputStream
                 // does not allow that because, by default, InputStream.skip is implemented by reading and discarding bytes.
                 assertThatThrownBy(() -> inputStream.skipNBytes(13))
-                        .isInstanceOf(IOException.class)
+                        .isInstanceOf(ResponseTooLargeException.class)
                         .hasMessageStartingWith("InputStream exceeded maximum length of");
             }
             else {
@@ -270,7 +270,7 @@ class TestThrowingLimitingInputStream
         }
         else if (inputStream instanceof ThrowingLimitingInputStream throwing && throwing.bytesLeft() == 0) {
             assertThatThrownBy(() -> inputStream.skip(1))
-                    .isInstanceOf(IOException.class)
+                    .isInstanceOf(ResponseTooLargeException.class)
                     .hasMessageStartingWith("InputStream exceeded maximum length of");
         }
         else {
@@ -281,34 +281,34 @@ class TestThrowingLimitingInputStream
     private static void checkStreamExhausted(InputStream inputStream)
     {
         assertThatThrownBy(inputStream::read).as("read()")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(inputStream::available).as("available()")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.read(new byte[0])).as("read(byte[0])")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.read(new byte[3])).as("read(byte[3])")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.readNBytes(0)).as("readNBytes(0)")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.readNBytes(1)).as("readNBytes(1)")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.skip(0)).as("skip(0)")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.skip(1)).as("skip(1)")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.skipNBytes(0)).as("skipNBytes(0)")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
         assertThatThrownBy(() -> inputStream.skipNBytes(1)).as("skipNBytes(1)")
-                .isInstanceOf(IOException.class)
+                .isInstanceOf(ResponseTooLargeException.class)
                 .hasMessageMatching("InputStream already exceeded maximum length of \\d+ \\[remaining: -\\d+]");
     }
 

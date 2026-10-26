@@ -1,6 +1,7 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.airlift.http.client.ResponseTooLargeException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -105,7 +106,7 @@ class ThrowingLimitingInputStream
         long originalBytesLeft = bytesLeft;
         bytesLeft -= n;
         if (bytesLeft < 0) {
-            throw new IOException("InputStream exceeded maximum length of %s [remaining: %s, read: %s]".formatted(maxBytes, originalBytesLeft, n));
+            throw new ResponseTooLargeException("InputStream exceeded maximum length of %s [remaining: %s, read: %s]".formatted(maxBytes, originalBytesLeft, n));
         }
     }
 
@@ -113,7 +114,7 @@ class ThrowingLimitingInputStream
             throws IOException
     {
         if (bytesLeft < 0) {
-            throw new IOException("InputStream already exceeded maximum length of %s [remaining: %s]".formatted(maxBytes, bytesLeft));
+            throw new ResponseTooLargeException("InputStream already exceeded maximum length of %s [remaining: %s]".formatted(maxBytes, bytesLeft));
         }
     }
 
