@@ -34,9 +34,10 @@ public class MyModule
 }
 ```
 
-IMPORTANT: When using `AbstractConfigurationAwareModule` to install additional modules you must use
-the overloaded `install()` method making sure not to use `binder.install()` when installing
-a module that itself extends `ConfigurationAwareModule` or `AbstractConfigurationAwareModule`.
+NOTE: `AbstractConfigurationAwareModule` reads configuration from the `ConfigurationFactory` that
+`Bootstrap` makes available as a binder attribute, so it can be installed from any module, using either
+`install()` or `binder.install()`. To create an injector for these modules without `Bootstrap`, use
+`Guice.withAttribute(ConfigurationFactory.CONFIGURATION_FACTORY_ATTRIBUTE, configurationFactory)`.
 
 ### How Do I Serve Static HTML Files
 

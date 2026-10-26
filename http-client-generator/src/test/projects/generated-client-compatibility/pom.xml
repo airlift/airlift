@@ -11,9 +11,9 @@
     <properties>
         <dep.airlift.version>@project.version@</dep.airlift.version>
         <dep.assertj.version>3.27.7</dep.assertj.version>
-        <dep.guice.version>7.0.0</dep.guice.version>
         <dep.junit.version>6.0.3</dep.junit.version>
         <dep.openapi-generator.version>@dep.openapi-generator.version@</dep.openapi-generator.version>
+        <dep.zest.version>@dep.zest.version@</dep.zest.version>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -64,10 +64,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>${dep.guice.version}</version>
-            <classifier>classes</classifier>
+            <groupId>io.airlift</groupId>
+            <artifactId>zest</artifactId>
+            <version>${dep.zest.version}</version>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>

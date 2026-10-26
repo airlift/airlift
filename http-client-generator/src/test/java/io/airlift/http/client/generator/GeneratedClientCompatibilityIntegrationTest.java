@@ -51,7 +51,8 @@ class GeneratedClientCompatibilityIntegrationTest
                         "-B",
                         "-U",
                         "-Ddep.airlift.version=" + requireNonNull(getProperty("project.version"), "project.version system property is null"),
-                        "-Ddep.openapi-generator.version=" + requireNonNull(getProperty("dep.openapi-generator.version"), "dep.openapi-generator.version system property is null"))
+                        "-Ddep.openapi-generator.version=" + requireNonNull(getProperty("dep.openapi-generator.version"), "dep.openapi-generator.version system property is null"),
+                        "-Ddep.zest.version=" + requireNonNull(getProperty("dep.zest.version"), "dep.zest.version system property is null"))
                 .build();
     }
 

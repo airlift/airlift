@@ -107,6 +107,7 @@
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
         <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
         <dep.swagger-parser.version>2.1.48</dep.swagger-parser.version>
+        <dep.zest.version>12-SNAPSHOT</dep.zest.version>
     </properties>
 
     <dependencyManagement>
@@ -165,12 +166,6 @@
                 <groupId>io.airlift</groupId>
                 <artifactId>discovery</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.airlift</groupId>
-                <artifactId>guice</artifactId>
-                <version>${dep.airlift.guice.version}</version>
             </dependency>
 
             <dependency>
@@ -331,6 +326,12 @@
                 <groupId>io.airlift</groupId>
                 <artifactId>units</artifactId>
                 <version>1.13</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>zest</artifactId>
+                <version>${dep.zest.version}</version>
             </dependency>
 
             <dependency>
