@@ -24,8 +24,11 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
+import com.google.inject.spi.Element;
+import com.google.inject.spi.Elements;
 import com.google.inject.spi.Message;
 import io.airlift.configuration.ConfigPropertyMetadata;
+import io.airlift.configuration.ConfigurationAwareModule;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
@@ -98,6 +101,7 @@ public class Bootstrap
 
     private State state = State.UNINITIALIZED;
     private ConfigurationFactory configurationFactory;
+    private List<Element> elements;
     private SecretsResolver secretsResolver;
 
     public Bootstrap(String name, Module... modules)
@@ -361,7 +365,12 @@ public class Bootstrap
         }
 
         // Register configuration classes defined in the modules
-        errors.addAll(configurationFactory.registerConfigurationClasses(modules));
+        modules.stream()
+                .filter(ConfigurationAwareModule.class::isInstance)
+                .map(ConfigurationAwareModule.class::cast)
+                .forEach(module -> module.setConfigurationFactory(configurationFactory));
+        elements = Elements.getElements(Stage.PRODUCTION, modules);
+        errors.addAll(configurationFactory.registerConfigurationElements(elements));
 
         // Validate configuration classes
         errors.addAll(configurationFactory.validateRegisteredConfigurationProvider());
@@ -428,7 +437,8 @@ public class Bootstrap
             moduleList.add(Binder::requireExactBindingAnnotations);
 
             moduleList.add(binder -> binder.bind(SecretsResolver.class).toInstance(secretsResolver));
-            moduleList.addAll(modules);
+            moduleList.add(Elements.getModule(elements));
+            elements = null;
 
             // create the injector
             Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());

@@ -173,7 +173,6 @@ public class ConfigurationFactory
      *
      * @return A collection of Guice errors encountered
      */
-    @SuppressWarnings("deprecation")
     public Collection<Message> registerConfigurationClasses(Collection<? extends Module> modules)
     {
         // some modules need access to configuration factory so they can lazy register additional config classes
@@ -183,9 +182,21 @@ public class ConfigurationFactory
                 .map(ConfigurationAwareModule.class::cast)
                 .forEach(module -> module.setConfigurationFactory(this));
 
+        return registerConfigurationElements(Elements.getElements(modules));
+    }
+
+    /**
+     * Registers all configuration classes in the recorded module elements, so they
+     * can be part of configuration inspection.
+     *
+     * @return A collection of Guice errors encountered
+     */
+    @SuppressWarnings("deprecation")
+    public Collection<Message> registerConfigurationElements(Iterable<? extends Element> elements)
+    {
         List<Message> errors = new ArrayList<>();
 
-        for (Element element : Elements.getElements(modules)) {
+        for (Element element : elements) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
                 @Override
