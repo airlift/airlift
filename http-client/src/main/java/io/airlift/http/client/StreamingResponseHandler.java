@@ -23,6 +23,8 @@ public interface StreamingResponseHandler<T, E extends Exception>
     {
         /**
          * Consumes the next part of the body. The content is only valid until this method returns.
+         * Runs on a network thread and must not block, since that stalls the connection and, on HTTP/2,
+         * every stream sharing it.
          */
         void accept(ByteBuffer content)
                 throws E;
