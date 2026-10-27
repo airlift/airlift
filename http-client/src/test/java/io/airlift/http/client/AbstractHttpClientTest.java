@@ -2,13 +2,16 @@ package io.airlift.http.client;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.json.JsonCodec;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.servlet.ServletException;
@@ -45,6 +48,7 @@ import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -61,6 +65,7 @@ import java.util.stream.IntStream;
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.HeaderNames.CONTENT_LENGTH;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
@@ -75,6 +80,7 @@ import static io.airlift.http.client.Request.Builder.prepareQuery;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerator;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Thread.currentThread;
@@ -750,6 +756,28 @@ public abstract class AbstractHttpClientTest
             StringResponse response = executeRequest(server, request, createStringResponseHandler());
             assertThat(response.getHeader(CONTENT_TYPE)).hasValue("application/json");
             assertThat(response.getBody()).isEqualTo(json);
+        }
+    }
+
+    @Test
+    public void testLargeJsonResponse()
+            throws Exception
+    {
+        JsonCodec<Map<String, String>> codec = mapJsonCodec(String.class, String.class);
+        String json = codec.toJson(ImmutableMap.of("value", "x".repeat(320 * 1024)));
+
+        try (CloseableTestHttpServer server = newServer()) {
+            server.servlet().setResponseBody(json);
+            server.servlet().addResponseHeader(CONTENT_TYPE.toString(), "application/json");
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .build();
+
+            JsonResponse<Map<String, String>> response = executeRequest(server, request, createFullJsonResponseHandler(codec));
+            assertThat(response.hasValue()).isTrue();
+            assertThat(response.getValue()).containsEntry("value", "x".repeat(320 * 1024));
+            assertThat(response.getResponseSize()).isEqualTo(json.length());
+            assertThat(response.getResponseBody()).isEqualTo(json);
         }
     }
 

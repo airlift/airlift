@@ -59,6 +59,20 @@ public class TestSegmentedInputStream
     }
 
     @Test
+    public void testMarkAndReset()
+    {
+        SegmentedInputStream stream = new SegmentedInputStream(BODY);
+        assertThat(stream.markSupported()).isTrue();
+        assertThat(stream.readNBytes(2)).containsExactly(1, 2);
+        stream.mark(0);
+        assertThat(stream.readNBytes(5)).containsExactly(3, 4, 5, 6, 7);
+        stream.reset();
+        assertThat(stream.readAllBytes()).containsExactly(3, 4, 5, 6, 7, 8, 9);
+        stream.reset();
+        assertThat(stream.read()).isEqualTo(3);
+    }
+
+    @Test
     public void testEmptyBody()
     {
         SegmentedInputStream stream = new SegmentedInputStream(ResponseBody.EMPTY);
