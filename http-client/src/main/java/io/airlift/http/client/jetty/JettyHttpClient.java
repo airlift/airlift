@@ -1,5 +1,6 @@
 package io.airlift.http.client.jetty;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -121,6 +122,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -159,6 +161,9 @@ public class JettyHttpClient
     private static final Tracer NOOP_TRACER = TracerProvider.noop().get("noop");
 
     private static final AttributeKey<String> CLIENT_NAME = stringKey("airlift.http.client_name");
+
+    // Jetty's default pool limit, which keeps TLS packet buffers pooled
+    private static final int MIN_POOLED_BUFFER_SIZE = 64 * 1024;
 
     private final HttpClient httpClient;
     private final DataSize maxResponseContentLength;
@@ -325,9 +330,7 @@ public class JettyHttpClient
             }
         }
 
-        int maxBufferSize = toIntExact(max(max(config.getMaxResponseContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
-
-        ByteBufferPool byteBufferPool = createByteBufferPool(maxBufferSize, config);
+        ByteBufferPool byteBufferPool = createByteBufferPool(maxPooledBufferSize(config), config);
         this.sizedByteBufferPool = new ByteBufferPool.Sized(byteBufferPool, false, toIntExact(config.getResponseBufferSize().toBytes()));
         httpClient.setByteBufferPool(byteBufferPool);
 
@@ -529,6 +532,19 @@ public class JettyHttpClient
             }
         }
         return !loadedEncodings.isEmpty();
+    }
+
+    // Response bodies are copied out of network buffers, so the pool only holds network buffers
+    @VisibleForTesting
+    static int maxPooledBufferSize(HttpClientConfig config)
+    {
+        return Stream.of(
+                        config.getRequestBufferSize(),
+                        config.getResponseBufferSize(),
+                        config.getMaxRequestHeaderSize(),
+                        config.getHttp2InputBufferSize())
+                .mapToInt(size -> toIntExact(size.toBytes()))
+                .reduce(MIN_POOLED_BUFFER_SIZE, Math::max);
     }
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
