@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static io.airlift.http.client.jetty.JettyHttpClient.maxPooledBufferSize;
+import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,6 +55,12 @@ public class TestJettyHttpClient
         assertThat(maxPooledBufferSize(new HttpClientConfig().setRequestBufferSize(DataSize.of(128, KILOBYTE)))).isEqualTo(128 * 1024);
         assertThat(maxPooledBufferSize(new HttpClientConfig().setResponseBufferSize(DataSize.of(256, KILOBYTE)))).isEqualTo(256 * 1024);
         assertThat(maxPooledBufferSize(new HttpClientConfig().setMaxRequestHeaderSize(DataSize.of(96, KILOBYTE)))).isEqualTo(96 * 1024);
+        assertThat(maxPooledBufferSize(new HttpClientConfig().setMaxResponseHeaderSize(DataSize.of(128, KILOBYTE)))).isEqualTo(128 * 1024);
         assertThat(maxPooledBufferSize(new HttpClientConfig().setHttp2InputBufferSize(DataSize.of(512, KILOBYTE)))).isEqualTo(512 * 1024);
+        assertThat(maxPooledBufferSize(new HttpClientConfig().setMaxResponseContentLength(DataSize.of(Integer.MAX_VALUE, BYTE)))).isEqualTo(64 * 1024);
+        assertThat(maxPooledBufferSize(new HttpClientConfig().setBrotliCompressionEnabled(true))).isEqualTo(16 * 1024 * 1024);
+        assertThat(maxPooledBufferSize(new HttpClientConfig()
+                .setBrotliCompressionEnabled(true)
+                .setMaxResponseContentLength(DataSize.of(Integer.MAX_VALUE, BYTE)))).isEqualTo(16 * 1024 * 1024);
     }
 }

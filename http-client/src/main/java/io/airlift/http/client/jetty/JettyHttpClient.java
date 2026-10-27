@@ -165,6 +165,10 @@ public class JettyHttpClient
     // Jetty's default pool limit, which keeps TLS packet buffers pooled
     private static final int MIN_POOLED_BUFFER_SIZE = 64 * 1024;
 
+    // BrotliDecoderSource copies decoded output through the pool. A chunk can span the whole
+    // Brotli window (up to 24 bits, RFC 7932 section 9.1), independently of the network buffer size.
+    private static final int MAX_BROTLI_BUFFER_SIZE = 16 * 1024 * 1024;
+
     private final HttpClient httpClient;
     private final DataSize maxResponseContentLength;
     private final Duration requestTimeout;
@@ -534,7 +538,7 @@ public class JettyHttpClient
         return !loadedEncodings.isEmpty();
     }
 
-    // Response bodies are copied out of network buffers, so the pool only holds network buffers
+    // Response bodies are copied out of pooled buffers. The pool holds network and decoder buffers.
     @VisibleForTesting
     static int maxPooledBufferSize(HttpClientConfig config)
     {
@@ -542,9 +546,10 @@ public class JettyHttpClient
                         config.getRequestBufferSize(),
                         config.getResponseBufferSize(),
                         config.getMaxRequestHeaderSize(),
+                        config.getMaxResponseHeaderSize(),
                         config.getHttp2InputBufferSize())
                 .mapToInt(size -> toIntExact(size.toBytes()))
-                .reduce(MIN_POOLED_BUFFER_SIZE, Math::max);
+                .reduce(config.isBrotliCompressionEnabled() ? MAX_BROTLI_BUFFER_SIZE : MIN_POOLED_BUFFER_SIZE, Math::max);
     }
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
