@@ -28,7 +28,6 @@ import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
-import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -36,9 +35,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * FullJsonResponseHandler is a {@link ResponseHandler} that creates a JSON entity from the response bytes when Content-Type
- * is application/json. In contrast to {@link StreamingJsonResponseHandler} it always buffers a whole response, materializing
- * it to a byte[]. This allows for retrieval of the response bytes if decoding JSON fails, but at the same time does
- * data copying which sits in Jetty client buffers. If the response is rather large and debugabillity can be sacrified,
+ * is application/json. In contrast to {@link StreamingJsonResponseHandler} it keeps the whole response, and joins it into
+ * a byte[] when the response bytes are requested. This allows for retrieval of the response bytes if decoding JSON fails,
+ * but at the same time keeps the response in memory. If the response is rather large and debugabillity can be sacrified,
  * {@link StreamingJsonResponseHandler} should be used instead.
  */
 public class FullJsonResponseHandler<T>
@@ -65,11 +64,11 @@ public class FullJsonResponseHandler<T>
     @Override
     public JsonResponse<T> handle(Request request, Response response)
     {
-        byte[] bytes = getResponseBytes(request, response);
+        JsonResponseBody body = JsonResponseBody.of(request, response);
         if (!isJsonUtf8Content(response)) {
-            return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
+            return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), body);
         }
-        return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);
+        return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, body);
     }
 
     public static class JsonResponse<T>
@@ -77,36 +76,46 @@ public class FullJsonResponseHandler<T>
         private final int statusCode;
         private final ListMultimap<HeaderName, String> headers;
         private final boolean hasValue;
-        private final byte[] jsonBytes;
-        private final byte[] responseBytes;
+        private final boolean json;
+        private final JsonResponseBody body;
         private final T value;
         private final IllegalArgumentException exception;
 
         public JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, byte[] responseBytes)
         {
-            this.statusCode = statusCode;
-            this.headers = ImmutableListMultimap.copyOf(headers);
-
-            this.hasValue = false;
-            this.jsonBytes = null;
-            this.responseBytes = requireNonNull(responseBytes, "responseBytes is null");
-            this.value = null;
-            this.exception = null;
+            this(statusCode, headers, JsonResponseBody.of(requireNonNull(responseBytes, "responseBytes is null")));
         }
 
-        @SuppressWarnings("ThrowableInstanceNeverThrown")
-        public JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
+        private JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, JsonResponseBody body)
         {
             this.statusCode = statusCode;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
-            this.jsonBytes = requireNonNull(jsonBytes, "jsonBytes is null");
-            this.responseBytes = requireNonNull(jsonBytes, "responseBytes is null");
+            this.hasValue = false;
+            this.json = false;
+            this.body = requireNonNull(body, "body is null");
+            this.value = null;
+            this.exception = null;
+        }
+
+        public JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
+        {
+            this(statusCode, headers, jsonCodec, JsonResponseBody.of(requireNonNull(jsonBytes, "jsonBytes is null")));
+        }
+
+        @SuppressWarnings("ThrowableInstanceNeverThrown")
+        private JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, JsonCodec<T> jsonCodec, JsonResponseBody body)
+        {
+            this.statusCode = statusCode;
+            this.headers = ImmutableListMultimap.copyOf(headers);
+
+            this.json = true;
+            this.body = requireNonNull(body, "body is null");
 
             T value = null;
             IllegalArgumentException exception = null;
             try {
-                value = jsonCodec.fromJson(jsonBytes);
+                value = body.parseJson(jsonCodec);
             }
             catch (IllegalArgumentException e) {
                 exception = new IllegalArgumentException("Unable to create %s from JSON response:\n[%s]".formatted(jsonCodec.getType(), getJson()), e);
@@ -171,27 +180,33 @@ public class FullJsonResponseHandler<T>
 
         public int getResponseSize()
         {
-            return responseBytes.length;
+            return body.length();
         }
 
         public byte[] getResponseBytes()
         {
-            return responseBytes.clone();
+            return body.bytes().clone();
         }
 
         public String getResponseBody()
         {
-            return new String(responseBytes, getCharset());
+            return new String(body.bytes(), getCharset());
         }
 
         public byte[] getJsonBytes()
         {
-            return (jsonBytes == null) ? null : jsonBytes.clone();
+            if (!json) {
+                return null;
+            }
+            return body.bytes().clone();
         }
 
         public String getJson()
         {
-            return (jsonBytes == null) ? null : new String(jsonBytes, UTF_8);
+            if (!json) {
+                return null;
+            }
+            return new String(body.bytes(), UTF_8);
         }
 
         public IllegalArgumentException getException()

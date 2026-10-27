@@ -20,7 +20,6 @@ import io.airlift.json.JsonCodec;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.captureUnexpectedResponse;
-import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -88,19 +87,15 @@ public class JsonResponseHandler<T>
             throw new UnexpectedResponseException("Expected %s response from server but got %s".formatted(JSON_UTF_8, response.getHeader(CONTENT_TYPE).orElse(null)), request, response);
         }
 
-        // TODO avoid buffering whole response before invoking the JSON codec.
-        // When response is an InputStream this requires additional data copy and increases peak memory usage.
-        // The data buffering is used only for error reporting, so perhaps it can be applied only on a retry.
-        byte[] bytes = getResponseBytes(request, response);
-
+        JsonResponseBody body = JsonResponseBody.of(request, response);
         try {
-            return jsonCodec.fromJson(bytes);
+            return body.parseJson(jsonCodec);
         }
         catch (IllegalArgumentException e) {
             if (safeDiagnostics) {
                 throw new IllegalArgumentException("Unable to create %s from JSON response".formatted(jsonCodec.getType()));
             }
-            String json = new String(bytes, UTF_8);
+            String json = new String(body.bytes(), UTF_8);
             throw new IllegalArgumentException("Unable to create %s from JSON response: <%s>".formatted(jsonCodec.getType(), json), e);
         }
     }

@@ -11,8 +11,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * Reads a {@link ResponseBody} in place. Bulk reads and transfers copy straight out of the segments,
  * and {@link #readAllBytes()} joins the unread part of the body into one exact array.
+ * Mark and reset ignore the read limit, since the whole body stays in memory.
  */
-final class SegmentedInputStream
+public final class SegmentedInputStream
         extends InputStream
 {
     private final List<byte[]> segments;
@@ -21,6 +22,10 @@ final class SegmentedInputStream
     private int segmentIndex;
     private int segmentStart;
     private int position;
+
+    private int markSegmentIndex;
+    private int markSegmentStart;
+    private int markPosition;
 
     SegmentedInputStream(ResponseBody body)
     {
@@ -112,6 +117,28 @@ final class SegmentedInputStream
     public int available()
     {
         return length - position;
+    }
+
+    @Override
+    public boolean markSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public void mark(int readLimit)
+    {
+        markSegmentIndex = segmentIndex;
+        markSegmentStart = segmentStart;
+        markPosition = position;
+    }
+
+    @Override
+    public void reset()
+    {
+        segmentIndex = markSegmentIndex;
+        segmentStart = markSegmentStart;
+        position = markPosition;
     }
 
     private void advanceSegment()
