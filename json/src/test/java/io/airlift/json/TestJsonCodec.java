@@ -367,6 +367,18 @@ public class TestJsonCodec
     }
 
     @Test
+    public void testFromJsonNull()
+    {
+        JsonCodec<String> codec = jsonCodec(String.class);
+
+        assertThat(codec.fromJson("null")).isNull();
+        assertThat(codec.fromJson("null".getBytes(UTF_8))).isNull();
+        assertThat(codec.fromJson(utf8Slice("null"))).isNull();
+        assertThat(codec.fromJson(new ByteArrayInputStream("null".getBytes(UTF_8)))).isNull();
+        assertThat(codec.fromJson(Reader.of("null"))).isNull();
+    }
+
+    @Test
     public void testRecordSerialization()
     {
         assertSerializationRoundTrip(

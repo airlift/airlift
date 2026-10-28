@@ -138,7 +138,7 @@ public class JsonCodec<T>
      * Converts the specified json string into an instance of type T.
      *
      * @param json the json string to parse
-     * @return parsed response; never null
+     * @return parsed value; may be {@code null} if the input is the JSON {@code null} literal
      * @throws IllegalArgumentException if the json string can not be converted to the type T
      */
     public T fromJson(String json)
@@ -194,10 +194,10 @@ public class JsonCodec<T>
     }
 
     /**
-     * Coverts the specified json bytes (UTF-8) into an instance of type T.
+     * Converts the specified json bytes (UTF-8) into an instance of type T.
      *
      * @param json the json bytes (UTF-8) to parse
-     * @return parsed response; never null
+     * @return parsed value; may be {@code null} if the input is the JSON {@code null} literal
      * @throws IllegalArgumentException if the json bytes can not be converted to the type T
      */
     public T fromJson(byte[] json)
@@ -212,10 +212,10 @@ public class JsonCodec<T>
     }
 
     /**
-     * Coverts the specified Slice bytes (UTF-8) into an instance of type T.
+     * Converts the specified Slice bytes (UTF-8) into an instance of type T.
      *
      * @param slice the Slice bytes (UTF-8) to parse
-     * @return parsed response; never null
+     * @return parsed value; may be {@code null} if the input is the JSON {@code null} literal
      * @throws IllegalArgumentException if the Slice bytes can not be converted to the type T
      */
     public T fromJson(Slice slice)
@@ -248,10 +248,10 @@ public class JsonCodec<T>
     }
 
     /**
-     * Coverts the specified {@link InputStream} (UTF-8) into an instance of type T.
+     * Converts the specified {@link InputStream} (UTF-8) into an instance of type T.
      *
      * @param json the json stream (UTF-8) to parse
-     * @return parsed response; never null
+     * @return parsed value; may be {@code null} if the input is the JSON {@code null} literal
      * @throws IllegalArgumentException if the json bytes can not be converted to the type T
      */
     public T fromJson(InputStream json)
@@ -266,10 +266,10 @@ public class JsonCodec<T>
     }
 
     /**
-     * Coverts the specified {@link Reader} into an instance of type T.
+     * Converts the specified {@link Reader} into an instance of type T.
      *
      * @param json the json character stream to parse
-     * @return parsed response; never null
+     * @return parsed value; may be {@code null} if the input is the JSON {@code null} literal
      * @throws IllegalArgumentException if the json characters can not be converted to the type T
      */
     public T fromJson(Reader json)
