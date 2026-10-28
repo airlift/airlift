@@ -75,10 +75,14 @@ class SpecialApiTypeValueParamProvider
             return containerRequest -> buildValidateOnly(containerRequest.getUriInfo());
         }
         if (ApiFilter.class.isAssignableFrom(parameter.getRawType())) {
-            return containerRequest -> buildFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
+            ApiParameter apiParameter = requireNonNull(parameter.getAnnotation(ApiParameter.class), "ApiParameter is missing");
+            Set<String> allowedValues = ImmutableSet.copyOf(apiParameter.allowedValues());
+            return containerRequest -> buildFilter(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), allowedValues);
         }
         if (ApiFilterList.class.isAssignableFrom(parameter.getRawType())) {
-            return containerRequest -> buildFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest));
+            ApiParameter apiParameter = requireNonNull(parameter.getAnnotation(ApiParameter.class), "ApiParameter is missing");
+            Set<String> allowedValues = ImmutableSet.copyOf(apiParameter.allowedValues());
+            return containerRequest -> buildFilterList(containerRequest.getUriInfo(), getParameterName(parameter, containerRequest), allowedValues);
         }
         if (ApiOrderBy.class.isAssignableFrom(parameter.getRawType())) {
             return containerRequest -> validate(parameter, buildOrderBy(containerRequest.getUriInfo()));

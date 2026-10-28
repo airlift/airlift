@@ -201,13 +201,15 @@ public interface Mappers
         return new ApiHeader(Optional.ofNullable(value));
     }
 
-    static ApiFilter buildFilter(UriInfo uriInfo, String name)
+    static ApiFilter buildFilter(UriInfo uriInfo, String name, Set<String> allowedValues)
     {
+        requireNonNull(allowedValues, "allowedValues is null");
         List<String> values = uriInfo.getQueryParameters().get(name);
         if (values != null && values.size() > 1) {
             throw badRequest("Invalid filter %s: multiple values are not allowed".formatted(name));
         }
-        return buildFilter(Optional.ofNullable(uriInfo.getQueryParameters().getFirst(name)));
+        return buildFilter(Optional.ofNullable(uriInfo.getQueryParameters().getFirst(name))
+                .map(value -> validateFilterValue(name, value, allowedValues)));
     }
 
     static ApiFilter buildFilter(Optional<Object> queryParameter)
@@ -215,16 +217,27 @@ public interface Mappers
         return new ApiFilter(queryParameter);
     }
 
-    static ApiFilterList buildFilterList(UriInfo uriInfo, String name)
+    static ApiFilterList buildFilterList(UriInfo uriInfo, String name, Set<String> allowedValues)
     {
+        requireNonNull(allowedValues, "allowedValues is null");
         List<String> strings = uriInfo.getQueryParameters().get(name);
-        List<Object> values = (strings != null) ? strings.stream().collect(toImmutableList()) : ImmutableList.of();
+        List<Object> values = (strings != null) ? strings.stream()
+                                                  .map(value -> validateFilterValue(name, value, allowedValues))
+                                                  .collect(toImmutableList()) : ImmutableList.of();
         return buildFilterList(values);
     }
 
     static ApiFilterList buildFilterList(List<Object> values)
     {
         return new ApiFilterList(values);
+    }
+
+    private static String validateFilterValue(String name, String value, Set<String> allowedValues)
+    {
+        if (!allowedValues.isEmpty() && !allowedValues.contains(value)) {
+            throw badRequest("Invalid filter %s: %s".formatted(name, value));
+        }
+        return value;
     }
 
     static ApiOrderBy buildOrderBy(UriInfo uriInfo)
