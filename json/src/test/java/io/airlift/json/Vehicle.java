@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
 
+import static io.airlift.slice.Slices.wrappedBuffer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,6 +34,7 @@ public interface Vehicle
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -46,6 +48,7 @@ public interface Vehicle
 
         bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -63,6 +66,7 @@ public interface Vehicle
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -81,6 +85,7 @@ public interface Vehicle
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 

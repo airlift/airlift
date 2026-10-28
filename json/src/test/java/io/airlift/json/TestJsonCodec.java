@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.reflect.TypeToken;
 import io.airlift.jackson.RecordAutoDetectModule;
+import io.airlift.slice.Slice;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -34,6 +35,9 @@ import static com.fasterxml.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRIN
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static io.airlift.slice.Slices.EMPTY_SLICE;
+import static io.airlift.slice.Slices.utf8Slice;
+import static io.airlift.slice.Slices.wrappedBuffer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -236,6 +240,8 @@ public class TestJsonCodec
         byte[] bytes = jsonCodec.toJsonBytes(person);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(person);
 
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(person);
+
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(person);
 
         assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(person);
@@ -285,6 +291,11 @@ public class TestJsonCodec
                 .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
+        assertThatThrownBy(() -> codec.fromJson(utf8Slice(jsonWithTrailingContent)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid JSON slice for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+
         assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingContent.getBytes(UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid JSON stream for [simple type, class io.airlift.json.ImmutablePerson]")
@@ -304,6 +315,10 @@ public class TestJsonCodec
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
 
+        assertThatThrownBy(() -> codec.fromJson(utf8Slice(jsonWithTrailingJsonContent)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Found characters after the expected end of input");
+
         assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingJsonContent.getBytes(UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
@@ -311,6 +326,44 @@ public class TestJsonCodec
         assertThatThrownBy(() -> codec.fromJson(Reader.of(jsonWithTrailingJsonContent)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
+    }
+
+    @Test
+    public void testFromJsonSlice()
+    {
+        JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
+
+        assertThat(codec.fromJson(utf8Slice("{\"name\":\"Me\",\"rocks\":true}")))
+                .isEqualTo(new ImmutablePerson("Me", true));
+
+        // multibyte UTF-8 characters
+        assertThat(codec.fromJson(utf8Slice("{\"name\":\"Za\u017C\u00F3\u0142\u0107 \uD83D\uDE80\",\"rocks\":false}")))
+                .isEqualTo(new ImmutablePerson("Za\u017C\u00F3\u0142\u0107 \uD83D\uDE80", false));
+
+        assertThatThrownBy(() -> codec.fromJson(EMPTY_SLICE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid JSON slice for [simple type, class io.airlift.json.ImmutablePerson]");
+    }
+
+    @Test
+    public void testFromJsonSliceWithOffset()
+    {
+        JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
+        ImmutablePerson expected = new ImmutablePerson("Me", true);
+
+        // surrounding bytes are not valid JSON, so reading outside the slice bounds fails
+        String prefix = "garbage ";
+        String json = "{\"name\":\"Me\",\"rocks\":true}";
+        byte[] buffer = (prefix + json + " trailer").getBytes(UTF_8);
+        int jsonLength = json.getBytes(UTF_8).length;
+
+        Slice wrapped = wrappedBuffer(buffer, prefix.length(), jsonLength);
+        assertThat(wrapped.byteArrayOffset()).isEqualTo(prefix.length());
+        assertThat(codec.fromJson(wrapped)).isEqualTo(expected);
+
+        Slice sliced = wrappedBuffer(buffer).slice(prefix.length(), jsonLength);
+        assertThat(sliced.byteArrayOffset()).isEqualTo(prefix.length());
+        assertThat(codec.fromJson(sliced)).isEqualTo(expected);
     }
 
     @Test

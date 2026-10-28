@@ -25,6 +25,7 @@ import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import io.airlift.slice.Slice;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -207,6 +208,24 @@ public class JsonCodec<T>
         }
         catch (Exception e) {
             throw mapException(e, "bytes", type);
+        }
+    }
+
+    /**
+     * Coverts the specified Slice bytes (UTF-8) into an instance of type T.
+     *
+     * @param slice the Slice bytes (UTF-8) to parse
+     * @return parsed response; never null
+     * @throws IllegalArgumentException if the Slice bytes can not be converted to the type T
+     */
+    public T fromJson(Slice slice)
+            throws IllegalArgumentException
+    {
+        try {
+            return reader.get().readValue(slice.byteArray(), slice.byteArrayOffset(), slice.length());
+        }
+        catch (Exception e) {
+            throw mapException(e, "slice", type);
         }
     }
 

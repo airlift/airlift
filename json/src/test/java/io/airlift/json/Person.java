@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.slice.Slices.wrappedBuffer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,6 +51,7 @@ public class Person
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -64,6 +66,7 @@ public class Person
 
         bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -78,6 +81,7 @@ public class Person
 
         bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -101,6 +105,7 @@ public class Person
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -120,6 +125,7 @@ public class Person
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 

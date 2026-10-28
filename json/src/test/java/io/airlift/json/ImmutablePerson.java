@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.slice.Slices.wrappedBuffer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,6 +46,7 @@ public class ImmutablePerson
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -63,6 +65,7 @@ public class ImmutablePerson
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
@@ -82,6 +85,7 @@ public class ImmutablePerson
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(wrappedBuffer(bytes))).isEqualTo(expected);
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
