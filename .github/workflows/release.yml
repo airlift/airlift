@@ -6,6 +6,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    concurrency:
+      group: release
+      cancel-in-progress: false
     permissions:
       contents: write
       packages: write
@@ -23,6 +26,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if release is running from latest master
+        run: |
+          git fetch origin master
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]; then
+            echo "Release is only allowed from the latest master commit"
+            exit 1
+          fi
+
       - name: Install java
         uses: actions/setup-java@v4
         with:
@@ -36,12 +47,6 @@ jobs:
         run: |
           git config user.name "Airlift Release"
           git config user.email "airlift-bot@airlift.io"
-
-      - name: Lock branch before release
-        uses: github/lock@v2
-        id: release-lock
-        with:
-          mode: 'lock'
 
       - name: Run mvn release:prepare
         env:
@@ -91,11 +96,6 @@ jobs:
           git push origin master
           git push origin --tags
 
-      - name: Unlock branch after a release
-        uses: github/lock@v2
-        id: release-unlock
-        with:
-          mode: 'unlock'
       - name: Create release notes
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
