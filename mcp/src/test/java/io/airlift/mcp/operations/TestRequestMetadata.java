@@ -20,6 +20,7 @@ import static io.airlift.mcp.model.Constants.HEADER_PROTOCOL_VERSION;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_CAPABILITIES;
 import static io.airlift.mcp.model.Constants.METADATA_CLIENT_INFO;
 import static io.airlift.mcp.model.Constants.METADATA_PROTOCOL_VERSION;
+import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.operations.ValidationMode.STRICT;
@@ -60,6 +61,55 @@ public class TestRequestMetadata
 
         assertThat(requestMetadata.clientInfo()).isEmpty();
         assertThat(requestMetadata.clientCapabilities()).isEqualTo(ClientCapabilities.EMPTY);
+        verifyRequestInteractions(request);
+    }
+
+    @Test
+    public void testPlainMcpName()
+    {
+        HttpServletRequest request = request();
+        when(request.getHeader(HEADER_MCP_NAME)).thenReturn("add");
+
+        RequestMetadata requestMetadata = RequestMetadata.fromRequest(JSON_MAPPER, request, metadata(requiredMetadata()), MCP_METHOD, STRICT);
+
+        assertThat(requestMetadata.mcpName()).contains("add");
+        verifyRequestInteractions(request);
+    }
+
+    @Test
+    public void testEncodedMcpNameIsDecoded()
+    {
+        HttpServletRequest request = request();
+        // "=?base64?" + base64("file://café.txt") + "?="
+        when(request.getHeader(HEADER_MCP_NAME)).thenReturn("=?base64?ZmlsZTovL2NhZsOpLnR4dA==?=");
+
+        RequestMetadata requestMetadata = RequestMetadata.fromRequest(JSON_MAPPER, request, metadata(requiredMetadata()), MCP_METHOD, STRICT);
+
+        assertThat(requestMetadata.mcpName()).contains("file://café.txt");
+        verifyRequestInteractions(request);
+    }
+
+    @Test
+    public void testEncodedMcpNameKeepsSurroundingWhitespace()
+    {
+        HttpServletRequest request = request();
+        // "=?base64?" + base64(" padded ") + "?="
+        when(request.getHeader(HEADER_MCP_NAME)).thenReturn("=?base64?IHBhZGRlZCA=?=");
+
+        RequestMetadata requestMetadata = RequestMetadata.fromRequest(JSON_MAPPER, request, metadata(requiredMetadata()), MCP_METHOD, STRICT);
+
+        assertThat(requestMetadata.mcpName()).contains(" padded ");
+        verifyRequestInteractions(request);
+    }
+
+    @Test
+    public void testMalformedEncodedMcpNameIsRejected()
+    {
+        HttpServletRequest request = request();
+        when(request.getHeader(HEADER_MCP_NAME)).thenReturn("=?base64?not base64!?=");
+
+        assertThatThrownBy(() -> RequestMetadata.fromRequest(JSON_MAPPER, request, metadata(requiredMetadata()), MCP_METHOD, STRICT))
+                .isInstanceOfSatisfying(McpException.class, exception -> assertThat(exception.errorDetail().code()).isEqualTo(HEADER_MISMATCH.code()));
         verifyRequestInteractions(request);
     }
 
