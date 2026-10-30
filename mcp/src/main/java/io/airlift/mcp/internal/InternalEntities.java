@@ -15,6 +15,7 @@ import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
+import io.airlift.mcp.handler.ResourceKind;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolEntry;
@@ -46,6 +47,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpSkillBuilder.mcpSkillBuilder;
+import static io.airlift.mcp.handler.ResourceKind.RESOURCE;
+import static io.airlift.mcp.handler.ResourceKind.SKILL;
 import static io.airlift.mcp.model.Constants.SKILL_INDEX_URI;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
@@ -81,8 +84,8 @@ public class InternalEntities
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
-        resources.forEach(resource -> addResource(resource.resource(), resource.handler(), resource.isSkill()));
-        resourceTemplates.forEach(resourceTemplate -> addResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler(), resourceTemplate.isSkill()));
+        resources.forEach(resource -> putResource(resource.resource(), resource.handler(), resource.kind()));
+        resourceTemplates.forEach(resourceTemplate -> putResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler(), resourceTemplate.kind()));
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
     }
 
@@ -111,14 +114,25 @@ public class InternalEntities
     }
 
     @Override
-    public void addResource(Resource resource, ResourceHandler handler, boolean isSkill)
+    public void addResource(Resource resource, ResourceHandler handler)
+    {
+        putResource(resource, handler, RESOURCE);
+    }
+
+    @Override
+    public void addSkill(Resource skill, ResourceHandler handler)
+    {
+        putResource(skill, handler, SKILL);
+    }
+
+    private void putResource(Resource resource, ResourceHandler handler, ResourceKind kind)
     {
         checkArgument(!resource.uri().equals(SKILL_INDEX_URI), "%s is a reserved URI and cannot be used", SKILL_INDEX_URI);
-        if (isSkill) {
+        if (kind.isSkill()) {
             // this will validate required fields, etc.
             mcpSkillBuilder(resource).buildSkill();
         }
-        resources.put(toUri(resource.uri()), new ResourceEntry(resource, handler, isSkill));
+        resources.put(toUri(resource.uri()), new ResourceEntry(resource, handler, kind));
     }
 
     @Override
@@ -128,14 +142,25 @@ public class InternalEntities
     }
 
     @Override
-    public void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler, boolean isSkill)
+    public void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler)
+    {
+        putResourceTemplate(resourceTemplate, handler, RESOURCE);
+    }
+
+    @Override
+    public void addSkillTemplate(ResourceTemplate skillTemplate, ResourceTemplateHandler handler)
+    {
+        putResourceTemplate(skillTemplate, handler, SKILL);
+    }
+
+    private void putResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler, ResourceKind kind)
     {
         checkArgument(!resourceTemplate.uriTemplate().equals(SKILL_INDEX_URI), "%s is a reserved URI and cannot be used", SKILL_INDEX_URI);
-        if (isSkill) {
+        if (kind.isSkill()) {
             // this will validate required fields, etc.
             mcpSkillBuilder(resourceTemplate).buildSkill();
         }
-        resourceTemplates.put(toUriTemplate(resourceTemplate.uriTemplate()), new ResourceTemplateEntry(resourceTemplate, handler, isSkill));
+        resourceTemplates.put(toUriTemplate(resourceTemplate.uriTemplate()), new ResourceTemplateEntry(resourceTemplate, handler, kind));
     }
 
     @Override

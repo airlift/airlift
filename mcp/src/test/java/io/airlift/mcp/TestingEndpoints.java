@@ -277,7 +277,10 @@ public class TestingEndpoints
                                 firstResource.resource().annotations(),
                                 firstResource.resource().icons(),
                                 firstResource.resource().meta());
-                        entities.addResource(alteredResource, firstResource.handler(), firstResource.isSkill());
+                        switch (firstResource.kind()) {
+                            case RESOURCE -> entities.addResource(alteredResource, firstResource.handler());
+                            case SKILL -> entities.addSkill(alteredResource, firstResource.handler());
+                        }
                     }
 
                     default -> throw new IllegalArgumentException("Unknown system session version name: " + name);

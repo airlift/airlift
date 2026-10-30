@@ -130,6 +130,17 @@ mcpServer.addTool(tool, (requestContext, callToolRequest) -> {
 });
 ```
 
+Skills are added with `addSkill()` / `addSkillTemplate()`. The `Resource` must follow the same rules as `@McpSkill`
+(URI `skill://<parentPath...>/<name>/SKILL.md`, MIME type `text/markdown`, and a description):
+
+```java
+Resource skill = new Resource("git-workflow", "skill://git-workflow/SKILL.md", Optional.of("Follow this team's Git conventions"), "text/markdown", OptionalLong.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+mcpServer.addSkill(skill, (requestContext, resource, readResourceRequest) -> {
+    String content = mcpSkillBuilder(resource).addContent("...").buildSkill();
+    return new ReadResourceResult(ImmutableList.of(new ResourceContents(resource.name(), resource.uri(), resource.mimeType(), content)));
+});
+```
+
 ## Tester/Demo
 
 Run [LocalServers](../src/test/java/io/airlift/mcp/LocalServer.java) to showcase an example testing MCP server.
