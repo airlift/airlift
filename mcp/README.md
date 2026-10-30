@@ -27,7 +27,6 @@ variations of MCP servers defined by the standard. This module supports:
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
-- MCP Skills (upcoming protocol extension)
 
 This module does not currently support:
 
@@ -36,6 +35,7 @@ This module does not currently support:
 This module currently supports these MCP extensions:
 
 - MCP Apps [(see spec)](https://modelcontextprotocol.github.io/ext-apps/api/documents/Overview.html)
+- MCP Skills [(see spec)](https://github.com/modelcontextprotocol/ext-skills/blob/main/specification/beta/skills.mdx)
 
 ## Creating tools, prompts, resources, and completions declaratively
 
@@ -138,7 +138,7 @@ Resource skill = new Resource("git-workflow", "skill://git-workflow/SKILL.md", O
 mcpServer.addSkill(skill, (requestContext, resource, readResourceRequest) -> {
     String content = mcpSkillBuilder(resource).addContent("...").buildSkill();
     return new ReadResourceResult(ImmutableList.of(new ResourceContents(resource.name(), resource.uri(), resource.mimeType(), content)));
-});
+}, false);
 ```
 
 ## Tester/Demo
@@ -263,6 +263,51 @@ and [DebugApp](src/test/java/io/airlift/mcp/DebugApp.java).
 
 ## Skills
 
-The upcoming MCP Skills spec is supported via `@McpSkill` and `@McpSkillTemplate` annotations. These annotations mark
-a method as returning MCP Skills. These are generated as normal MCP resources but marked as being Skills so that they
-are listed in the skills index and MCP server instructions.
+Airlift supports the [MCP Skills extension](https://github.com/modelcontextprotocol/ext-skills/blob/main/specification/beta/skills.mdx)
+via the `@McpSkill` and `@McpSkillTemplate` annotations. An annotated method returns the content of the skill's
+`SKILL.md` (use `McpSkillBuilder` to generate it). The skill is served as a normal resource at
+`skill://<parentPath...>/<name>/SKILL.md` and is also:
+
+- declared in the `io.modelcontextprotocol/skills` extension of the `server/discover` capabilities
+- listed by `skills/list` (`@McpSkill` only - skill templates cannot be enumerated)
+- returned by `skills/get` (both `@McpSkill` and any URI matching an `@McpSkillTemplate`)
+- browsable via `resources/directory/read` for any `skill://` directory containing static resources, any explicit
+  `inode/directory` resource, and the root directory of any `@McpSkillTemplate` instance. `directoryRead: true` is
+  only declared when no resource template (including skill templates) can serve `skill://` URIs, as templated
+  directories can't be enumerated
+
+Skill entries carry the `SKILL.md` frontmatter and a manifest of the skill's files with SHA-256 digests. Any static
+resource (e.g. an `@McpResource`) whose URI is under the skill's directory is a supporting file of that skill and is
+included in its manifest. Skill content must be the same for every read - set `dynamic = true` for a skill whose
+content changes between reads so that its entry advertises `"resources": "dynamic"` instead of digests. A skill is
+also advertised as dynamic when a complete, stable manifest can't be published: when it contains a dynamic nested
+skill, when a resource template can serve URIs under its directory, or when a supporting file's read doesn't
+return exactly one content item.
+
+A skill whose entry can't be built (e.g. its `SKILL.md` frontmatter is invalid) is omitted from `skills/list` and
+fails `skills/get` with an internal error. The omission is logged as a warning the first time and at debug level
+until the skill's entry next builds successfully.
+
+Hosts are not required to load a skill exceeding the spec's per-skill limits (512 files or 16 MiB in total). Such a
+skill is logged at debug level each time its entry is built.
+
+`skills/list`, `skills/get`, and `resources/directory/read` are available with protocol `2026-07-28` and later. For
+older protocols, skills are available as ordinary resources and a pointer to them is added to the server
+instructions (disable via `McpMetadata.autoAddSkillInstructions`).
+
+```java
+@McpSkill(name = "git-workflow", description = "Follow this team's Git conventions for branching and commits")
+public String gitWorkflow(Resource resource)
+{
+    return mcpSkillBuilder(resource)
+            .addHeadingContent("Branching", 1)
+            .addContent("See references/BRANCHING.md for naming rules.")
+            .buildSkill();
+}
+
+@McpResource(name = "git-workflow-branching", uri = "skill://git-workflow/references/BRANCHING.md", mimeType = "text/markdown", description = "Branch naming rules")
+public String gitWorkflowBranching()
+{
+    return "...";
+}
+```

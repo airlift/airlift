@@ -13,6 +13,7 @@ public interface Constants
     String METHOD_RESOURCES_LIST = "resources/list";
     String METHOD_RESOURCES_READ = "resources/read";
     String METHOD_RESOURCES_TEMPLATES_LIST = "resources/templates/list";
+    String METHOD_RESOURCES_DIRECTORY_READ = "resources/directory/read";
     String METHOD_RESOURCES_SUBSCRIBE = "resources/subscribe";
     String METHOD_RESOURCES_UNSUBSCRIBE = "resources/unsubscribe";
     String METHOD_PROMPT_LIST = "prompts/list";
@@ -24,6 +25,8 @@ public interface Constants
     String METHOD_ELICITATION_CREATE = "elicitation/create";
     String METHOD_SERVER_DISCOVER = "server/discover";
     String METHOD_SUBSCRIPTIONS_LISTEN = "subscriptions/listen";
+    String METHOD_SKILLS_LIST = "skills/list";
+    String METHOD_SKILLS_GET = "skills/get";
 
     String NOTIFICATION_INITIALIZED = "notifications/initialized";
     String NOTIFICATION_PROGRESS = "notifications/progress";
@@ -56,6 +59,8 @@ public interface Constants
     String ACCEPTS_STREAMING_ATTRIBUTE = Constants.class.getName() + ".serverSentEvents";
 
     String SKILL_MIME_TYPE = "text/markdown";
-    String SKILL_INDEX_URI = "skill://index.json";
     String SKILL_MD_FILE = "SKILL.md";
+    String SKILLS_EXTENSION = "io.modelcontextprotocol/skills";
+    String SKILL_URI_PREFIX = "skill://";
+    String DIRECTORY_MIME_TYPE = "inode/directory";
 }
