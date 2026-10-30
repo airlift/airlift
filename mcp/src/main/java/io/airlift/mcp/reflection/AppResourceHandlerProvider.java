@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.mcp.McpApp.SERVER_DOMAIN;
+import static io.airlift.mcp.handler.ResourceKind.RESOURCE;
 import static java.util.Objects.requireNonNull;
 
 public class AppResourceHandlerProvider
@@ -92,7 +93,7 @@ public class AppResourceHandlerProvider
 
         this.resourceContentsSupplier = () -> ImmutableList.of(new ResourceContents(resource.uri(), resource.uri(), resource.mimeType(), contentSupplier.get()).withMeta(meta.build()));
 
-        return new ResourceEntry(resource, this, false);
+        return new ResourceEntry(resource, this, RESOURCE);
     }
 
     @Override
