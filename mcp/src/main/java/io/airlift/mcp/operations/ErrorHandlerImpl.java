@@ -64,7 +64,12 @@ public class ErrorHandlerImpl
                 if (webApplicationException.getCause() instanceof McpException mcpException) {
                     throw mcpException;
                 }
-                throw webApplicationException;
+                if (response.isCommitted()) {
+                    throw webApplicationException;
+                }
+                // errors are handled in a servlet filter, outside of JAX-RS, so nothing else turns the exception into
+                // the status it carries - rethrown, it would reach the client as a 500
+                response.setStatus(webApplicationException.getResponse().getStatus());
             }
 
             case InterruptedException _ -> {

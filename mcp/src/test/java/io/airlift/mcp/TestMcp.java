@@ -544,8 +544,9 @@ public abstract class TestMcp
         // simulate session expiring
         sessionController.orElseThrow().deleteSession(clientSessionId);
 
+        // the server answers with a 404, which the client recognizes as its session having ended
         assertThatThrownBy(client.mcpClient()::listTools)
-                .hasMessageContaining("HTTP 404 Not Found");
+                .hasMessageContaining("MCP session with server terminated");
     }
 
     @Test
@@ -567,8 +568,9 @@ public abstract class TestMcp
                 .build();
         httpClient.execute(request, createStatusResponseHandler());
 
+        // the server answers with a 404, which the client recognizes as its session having ended
         assertThatThrownBy(client.mcpClient()::listTools)
-                .hasMessageContaining("HTTP 404 Not Found");
+                .hasMessageContaining("MCP session with server terminated");
     }
 
     @RepeatedTest(5)
