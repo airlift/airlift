@@ -34,11 +34,9 @@ public record Tool(
         title = requireNonNullElse(title, Optional.empty());
         requireNonNull(inputSchema, "inputSchema is null");
         outputSchema = requireNonNullElse(outputSchema, Optional.empty());
-        requireNonNull(annotations, "annotations is null");
+        annotations = requireNonNullElse(annotations, new ToolAnnotations(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()));
         icons = requireNonNullElse(icons, Optional.<List<Icon>>empty()).map(ImmutableList::copyOf);
         meta = normalize(meta);
-
-        validateName(name);
     }
 
     public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations, Optional<List<Icon>> icons)
@@ -57,13 +55,17 @@ public record Tool(
         return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.of(meta));
     }
 
+    /**
+     * Checks a name against the spec's naming rules. These are recommendations, so a tool read from another server is
+     * not held to them - the server applies them to the tools it registers itself.
+     *
+     * @see <a href="https://modelcontextprotocol.io/specification/2026-07-28/server/tools#tool-names">Tool Names</a>
+     */
     public static void validateName(String name)
     {
-        // see: https://modelcontextprotocol.io/specification/2025-11-25/server/tools#tool-names
-
         requireNonNull(name, "name is null");
-        checkState(!name.isEmpty() && name.length() <= 128, "Tool name must be between 1 and 128 characters");
-        checkState(name.chars().allMatch(c -> ALLOWED_CHARACTERS.contains((char) c)), "Tool name must be between 1 and 128 characters");
+        checkState(!name.isEmpty() && name.length() <= 128, "Tool name must be between 1 and 128 characters: %s", name);
+        checkState(name.chars().allMatch(c -> ALLOWED_CHARACTERS.contains((char) c)), "Tool name may only contain ASCII letters, digits, '_', '-' and '.': %s", name);
     }
 
     public Tool withIcons(Optional<List<Icon>> icons)

@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
