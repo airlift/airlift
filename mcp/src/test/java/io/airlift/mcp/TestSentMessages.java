@@ -15,7 +15,7 @@ import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
 import io.airlift.mcp.operations.legacy.sessions.SessionId;
 import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
-import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -60,8 +60,9 @@ public class TestSentMessages
     {
         testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withLegacyBindings(legacy -> legacy
+                        .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                        .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON)))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
