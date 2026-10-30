@@ -50,6 +50,11 @@ public interface McpEntities
 
     void addTool(Tool tool, ToolHandler toolHandler);
 
+    /**
+     * Adds a tool, including how it can be executed as a task.
+     */
+    void addTool(ToolEntry toolEntry);
+
     void removeTool(String toolName);
 
     void addPrompt(Prompt prompt, PromptHandler promptHandler);

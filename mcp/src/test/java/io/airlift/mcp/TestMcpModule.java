@@ -10,6 +10,8 @@ import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsSelector;
 import io.airlift.mcp.operations.legacy.LegacyOperations;
+import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
+import io.airlift.mcp.operations.legacy.storage.MemoryStorageController;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,6 +69,29 @@ public class TestMcpModule
         assertThatThrownBy(() -> builder.withMaxProtocolLevel(PROTOCOL_MCP_2025_06_18))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Max protocol level is already set");
+    }
+
+    @Test
+    public void testLegacyBindingsCanBeMadeInAnyOrder()
+    {
+        // the order within the lambda is not something a caller should have to think about
+        McpModule.builder()
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class))
+                .withLegacyBindings(legacy -> legacy
+                        .withSessions(binding -> binding.to(StandardSessionController.class))
+                        .withStorage(binding -> binding.to(MemoryStorageController.class)))
+                .build();
+    }
+
+    @Test
+    public void testSessionsRequireStorage()
+    {
+        assertThatThrownBy(() -> McpModule.builder()
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class))
+                .withLegacyBindings(legacy -> legacy.withSessions(binding -> binding.to(StandardSessionController.class)))
+                .build())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Storage controller binding is required");
     }
 
     private static Key<?> operationsTarget(Optional<Protocol> maxProtocolLevel)
