@@ -266,8 +266,9 @@ public class OperationsImpl
     private void validateMcpName(RequestMetadata requestMetadata, String name)
     {
         if (validationMode == ValidationMode.STRICT) {
+            // already decoded, so it is compared exactly
             String mcpName = requestMetadata.mcpName().orElse("");
-            if (!mcpName.strip().equals(name)) {
+            if (!mcpName.equals(name)) {
                 throw exception(HEADER_MISMATCH, "%s does not match request name: %s".formatted(HEADER_MCP_NAME, name));
             }
         }
