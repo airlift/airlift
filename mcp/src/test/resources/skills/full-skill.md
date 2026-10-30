@@ -1,13 +1,13 @@
 ---
 name: full-skill
 description: A comprehensive skill
-version: 2.0
+version: "2.0"
 icons:
-  - default: star
-  - main: starburst
+  default: star
+  main: starburst
 metadata:
-  - version: "1.0.0"
-  - author: me
+  version: 1.0.0
+  author: me
 ---
 
 # Overview
