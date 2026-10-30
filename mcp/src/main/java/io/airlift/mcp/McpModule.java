@@ -67,12 +67,12 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jackson.JacksonSubTypeBinder.jacksonSubTypeBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.mcp.handler.ResourceKind.RESOURCE;
-import static io.airlift.mcp.handler.ResourceKind.SKILL;
 import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
 import static io.airlift.mcp.model.Protocol.LAST_LEGACY_PROTOCOL;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
 import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
+import static io.airlift.mcp.reflection.SkillsHelper.skillKind;
 import static java.util.Objects.requireNonNull;
 
 public class McpModule
@@ -298,9 +298,9 @@ public class McpModule
                         completions.add(new CompletionHandlerProvider(mcpResourceCompletion, clazz, method, parameters)));
 
                 forAllInClass(clazz, McpSkill.class, identityClass, (mcpSkill, method, parameters) ->
-                        resources.add(new ResourceHandlerProvider(resourceFromSkill(mcpSkill), clazz, method, parameters, SKILL)));
+                        resources.add(new ResourceHandlerProvider(resourceFromSkill(mcpSkill), clazz, method, parameters, skillKind(mcpSkill.dynamic()))));
                 forAllInClass(clazz, McpSkillTemplate.class, identityClass, (mcpSkillTemplate, method, parameters) ->
-                        resourceTemplates.add(new ResourceTemplateHandlerProvider(resourceTemplateFromSkillTemplate(mcpSkillTemplate), clazz, method, parameters, SKILL)));
+                        resourceTemplates.add(new ResourceTemplateHandlerProvider(resourceTemplateFromSkillTemplate(mcpSkillTemplate), clazz, method, parameters, skillKind(mcpSkillTemplate.dynamic()))));
             });
 
             Set<Provider<ToolEntry>> localTools = tools.build();

@@ -3,7 +3,8 @@ package io.airlift.mcp.handler;
 public enum ResourceKind
 {
     RESOURCE,
-    SKILL;
+    SKILL,
+    DYNAMIC_SKILL;
 
     public boolean isSkill()
     {
