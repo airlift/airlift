@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.mcp.model.Meta.normalize;
-import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record InitializeResult(
@@ -46,9 +45,9 @@ public record InitializeResult(
 
     public InitializeResult
     {
-        requireNonNull(protocolVersion, "protocolVersion is null");
-        requireNonNull(capabilities, "capabilities is null");
-        requireNonNull(serverInfo, "serverInfo is null");
+        protocolVersion = requireNonNullElse(protocolVersion, "");
+        capabilities = requireNonNullElse(capabilities, new ServerCapabilities());
+        serverInfo = requireNonNullElse(serverInfo, new Implementation("", ""));
         instructions = requireNonNullElse(instructions, Optional.empty());
     }
 }

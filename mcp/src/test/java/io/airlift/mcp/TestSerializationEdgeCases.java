@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
+import com.google.common.reflect.ClassPath.ClassInfo;
 import io.airlift.jackson.JacksonSubType;
 import io.airlift.json.JsonMapperProvider;
 import io.airlift.log.Logger;
@@ -20,14 +22,12 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +37,8 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.model.McpJacksonSubTypes.buildJacksonSubType;
-import static java.util.Objects.requireNonNullElse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -246,25 +246,16 @@ public class TestSerializationEdgeCases
     public static List<Class<?>> getClasses(String packageName)
     {
         try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            String path = packageName.replace('.', '/');
-            Enumeration<URL> resources = classLoader.getResources(path);
-            List<Class<?>> classes = new ArrayList<>();
-
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                File directory = new File(resource.toURI());
-                for (File file : requireNonNullElse(directory.listFiles(), new File[0])) {
-                    if (file.getName().endsWith(".class")) {
-                        String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-                        classes.add(Class.forName(className));
-                    }
-                }
-            }
-            return classes;
+            // the package spans the mcp and mcp-model modules, which may be either directories or jars
+            return ClassPath.from(Thread.currentThread().getContextClassLoader())
+                    .getAllClasses()
+                    .stream()
+                    .filter(classInfo -> classInfo.getPackageName().equals(packageName))
+                    .<Class<?>>map(ClassInfo::load)
+                    .collect(toImmutableList());
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

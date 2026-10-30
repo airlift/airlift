@@ -119,7 +119,7 @@ binder.install(module);
 
 Example of creating a tool programmatically:
 
-- Create a [Tool](src/main/java/io/airlift/mcp/model/Tool.java) instance
+- Create a [Tool](../mcp-model/src/main/java/io/airlift/mcp/model/Tool.java) instance
 - Register the tool with the [McpEntities](src/main/java/io/airlift/mcp/McpEntities.java) (which can be `@Inject`ed):
 
 ```java
@@ -157,7 +157,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - `HttpServletRequest`
     - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
-    - [CallToolRequest](src/main/java/io/airlift/mcp/model/CallToolRequest.java)
+    - [CallToolRequest](../mcp-model/src/main/java/io/airlift/mcp/model/CallToolRequest.java)
     - supported Java types
       - `String`
       - `boolean`, `Boolean`
@@ -172,11 +172,11 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 - Returns either:
     - `void`
     - the supported Java types
-    - one of the [Content](src/main/java/io/airlift/mcp/model/Content.java) subtypes
-    - [CallToolResult](src/main/java/io/airlift/mcp/model/CallToolResult.java)
-    - [StructuredContentResult](src/main/java/io/airlift/mcp/model/StructuredContentResult.java)
-    - [ToolResult](src/main/java/io/airlift/mcp/model/ToolResult.java) - a `CallToolResult` or the
-      [Task](src/main/java/io/airlift/mcp/model/Task.java) the tool created (see [Tasks](#tasks))
+    - one of the [Content](../mcp-model/src/main/java/io/airlift/mcp/model/Content.java) subtypes
+    - [CallToolResult](../mcp-model/src/main/java/io/airlift/mcp/model/CallToolResult.java)
+    - [StructuredContentResult](../mcp-model/src/main/java/io/airlift/mcp/model/StructuredContentResult.java)
+    - [ToolResult](../mcp-model/src/main/java/io/airlift/mcp/model/ToolResult.java) - a `CallToolResult` or the
+      [Task](../mcp-model/src/main/java/io/airlift/mcp/model/Task.java) the tool created (see [Tasks](#tasks))
 
 #### Prompts
 
@@ -184,11 +184,11 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - `String` for the prompt arguments
     - `HttpServletRequest`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
-    - [GetPromptRequest](src/main/java/io/airlift/mcp/model/GetPromptRequest.java)
+    - [GetPromptRequest](../mcp-model/src/main/java/io/airlift/mcp/model/GetPromptRequest.java)
 - Returns either:
     - `String`
-    - one of the [Content](src/main/java/io/airlift/mcp/model/Content.java) subtypes
-    - [GetPromptResult](src/main/java/io/airlift/mcp/model/GetPromptResult.java)
+    - one of the [Content](../mcp-model/src/main/java/io/airlift/mcp/model/Content.java) subtypes
+    - [GetPromptResult](../mcp-model/src/main/java/io/airlift/mcp/model/GetPromptResult.java)
 
 #### Resources
 
@@ -196,12 +196,12 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - `HttpServletRequest`
     - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
-    - [Resource](src/main/java/io/airlift/mcp/model/Resource.java) - the source resource being read
-    - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
+    - [Resource](../mcp-model/src/main/java/io/airlift/mcp/model/Resource.java) - the source resource being read
+    - [ReadResourceRequest](../mcp-model/src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
 - Returns either:
     - `String`
-    - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
-    - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
+    - [ResourceContents](../mcp-model/src/main/java/io/airlift/mcp/model/ResourceContents.java)
+    - [List&lt;ResourceContents&gt;](../mcp-model/src/main/java/io/airlift/mcp/model/ResourceContents.java)
 
 #### ResourceTemplates
 
@@ -209,13 +209,13 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - `HttpServletRequest`
     - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
-    - [ResourceTemplate](src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource template being read
-    - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
-    - [ResourceTemplateValues](src/main/java/io/airlift/mcp/model/ResourceTemplateValues.java)
+    - [ResourceTemplate](../mcp-model/src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource template being read
+    - [ReadResourceRequest](../mcp-model/src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
+    - [ResourceTemplateValues](../mcp-model/src/main/java/io/airlift/mcp/model/ResourceTemplateValues.java)
 - Returns either:
     - `String`
-    - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
-    - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
+    - [ResourceContents](../mcp-model/src/main/java/io/airlift/mcp/model/ResourceContents.java)
+    - [List&lt;ResourceContents&gt;](../mcp-model/src/main/java/io/airlift/mcp/model/ResourceContents.java)
 
 #### Completions (for prompts and resource templates)
 
@@ -223,10 +223,10 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - `HttpServletRequest`
     - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
-    - [CompleteArgument](src/main/java/io/airlift/mcp/model/CompleteRequest.java)
-    - [CompleteContext](src/main/java/io/airlift/mcp/model/CompleteRequest.java)
+    - [CompleteArgument](../mcp-model/src/main/java/io/airlift/mcp/model/CompleteRequest.java)
+    - [CompleteContext](../mcp-model/src/main/java/io/airlift/mcp/model/CompleteRequest.java)
 - Returns either:
-    - [CompleteCompletion](src/main/java/io/airlift/mcp/model/CompleteResult.java)
+    - [CompleteCompletion](../mcp-model/src/main/java/io/airlift/mcp/model/CompleteResult.java)
     - `List<String>`
 
 ## Sessions
@@ -294,10 +294,10 @@ restart and are visible to every instance of the server - the tools themselves d
 ### Tools that create tasks
 
 A tool creates a task for the call it is handling with `createTask()` of the `McpRequestContext`, and returns the
-[Task](src/main/java/io/airlift/mcp/model/Task.java) - Airlift answers the `tools/call` with the task handle.
+[Task](../mcp-model/src/main/java/io/airlift/mcp/model/Task.java) - Airlift answers the `tools/call` with the task handle.
 Creating a task does not run it, and `createAndExecuteTask()` does both in one step. Either way the work is a
 [TaskExecutor](src/main/java/io/airlift/mcp/tasks/TaskExecutor.java), which returns the tool's `CallToolResult` or
-another [TaskResult](src/main/java/io/airlift/mcp/model/TaskResult.java) - `Failed`, `Cancelled` or `Suspended`.
+another [TaskResult](../mcp-model/src/main/java/io/airlift/mcp/model/TaskResult.java) - `Failed`, `Cancelled` or `Suspended`.
 Whatever it throws is turned into a result for it, so it does not have to catch anything:
 
 ```java
