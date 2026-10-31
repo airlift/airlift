@@ -3,10 +3,17 @@ package io.airlift.api.builders;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiEnumValueResolver;
+import io.airlift.api.ApiFilter;
+import io.airlift.api.ApiFilterList;
+import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiPagination;
+import io.airlift.api.ApiParameter;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelServices;
 import io.airlift.api.validation.ValidationContext;
 
+import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.util.Optional;
 import java.util.Set;
 
@@ -79,6 +86,22 @@ public class ApiBuilder
 
             modelService.methods().forEach(modelMethod -> {
                 validateMethod(context, modelMethod, modelService.service().type().serviceTraits());
+
+                for (Parameter parameter : modelMethod.method().getParameters()) {
+                    if (parameter.isAnnotationPresent(ApiParameter.class) &&
+                            (parameter.getType().equals(ApiFilter.class) ||
+                                    parameter.getType().equals(ApiFilterList.class) ||
+                                    parameter.getType().equals(ApiOrderBy.class) ||
+                                    parameter.getType().equals(ApiPagination.class)) &&
+                            parameter.getParameterizedType() instanceof ParameterizedType parameterizedType &&
+                            parameterizedType.getActualTypeArguments()[0] instanceof Class<?> enumClass &&
+                            enumClass.isEnum()) {
+                        context.inContext("Method %s, parameter %s, enumeration %s".formatted(modelMethod.method(), parameter.getName(), enumClass.getTypeName()),
+                                subContext -> enumValueResolver.values(enumClass).forEach(value ->
+                                        subContext.validateEnumName(value, modelService.service().type().enumNamingFormat())));
+                    }
+                }
+
                 validateResult(context, modelService.service(), modelMethod, enumValueResolver);
 
                 modelMethod.responses().forEach(modelResponse -> validateResource(context, modelService.service(), modelResponse.resource(), enumValueResolver));

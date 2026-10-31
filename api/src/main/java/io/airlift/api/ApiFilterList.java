@@ -9,14 +9,14 @@ import java.util.function.Function;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.api.responses.ApiException.badRequest;
 
-public record ApiFilterList(List<Object> values)
+public record ApiFilterList<T>(List<T> values)
 {
     public ApiFilterList
     {
         values = ImmutableList.copyOf(values);
     }
 
-    public <T> List<T> map(Function<String, T> mapper)
+    public <R> List<R> map(Function<String, R> mapper)
     {
         return values.stream().map(v -> {
             String str = String.valueOf(v);

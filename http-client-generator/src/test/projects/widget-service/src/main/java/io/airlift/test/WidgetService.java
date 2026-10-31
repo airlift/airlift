@@ -55,8 +55,8 @@ public class WidgetService
 
     @ApiList(description = "List all widgets with pagination and filtering")
     public ApiPaginatedResult<Widget> listWidgets(
-            @ApiParameter ApiPagination pagination,
-            @ApiParameter(allowedValues = {"name", "status", "createdAt"}) ApiOrderBy orderBy,
+            @ApiParameter ApiPagination<String> pagination,
+            @ApiParameter(allowedValues = {"name", "status", "createdAt"}) ApiOrderBy<String> orderBy,
             @ApiParameter ApiFilter nameFilter)
     {
         List<Widget> allWidgets = ImmutableList.copyOf(widgets.values());

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static java.util.Objects.requireNonNull;
 
-public record ApiPagination(Optional<String> pageToken, int pageSize, Optional<Ordering> ordering)
+public record ApiPagination<T>(Optional<String> pageToken, int pageSize, Optional<Ordering<T>> ordering)
 {
     public static final String PAGE_TOKEN_QUERY_PARAMETER_NAME = "pageToken";
     public static final String PAGE_SIZE_QUERY_PARAMETER_NAME = "pageSize";
@@ -25,19 +25,19 @@ public record ApiPagination(Optional<String> pageToken, int pageSize, Optional<O
         pageSize = validatePageSize(pageSize);
     }
 
-    public ApiPagination withOrdering(ApiOrderBy ordering)
+    public ApiPagination<T> withOrdering(ApiOrderBy<T> ordering)
     {
-        return new ApiPagination(pageToken, pageSize, validateOrdering(ordering));
+        return new ApiPagination<>(pageToken, pageSize, validateOrdering(ordering));
     }
 
-    public ApiPagination next(ApiPaginatedResult<?> result)
+    public ApiPagination<T> next(ApiPaginatedResult<?> result)
     {
         String nextPageToken = result.nextPageToken();
         Optional<String> appliedNextPageToken = nextPageToken.equals(ApiPaginatedResult.EMPTY_PAGE_TOKEN) ? Optional.empty() : Optional.of(nextPageToken);
-        return new ApiPagination(appliedNextPageToken, pageSize, ordering);
+        return new ApiPagination<>(appliedNextPageToken, pageSize, ordering);
     }
 
-    private Optional<Ordering> validateOrdering(ApiOrderBy ordering)
+    private Optional<Ordering<T>> validateOrdering(ApiOrderBy<T> ordering)
     {
         return switch (ordering.orderings().size()) {
             case 0 -> Optional.empty();

@@ -1,5 +1,6 @@
 package io.airlift.api.servertests.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -12,6 +13,7 @@ import io.airlift.api.ApiOrderBy.Ordering;
 import io.airlift.api.ApiPaginatedResult;
 import io.airlift.api.ApiPagination;
 import io.airlift.api.ApiResourceVersion;
+import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.api.servertests.integration.testingserver.TestingServer;
 import io.airlift.api.servertests.integration.testingserver.external.Detail;
 import io.airlift.api.servertests.integration.testingserver.external.Detail.NameAndAge;
@@ -44,6 +46,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.net.URI;
@@ -135,7 +138,7 @@ public class IntegrationTests
     {
         var pageOfResults = call(prepareGet(), UriBuilder.fromUri(testingServer.baseUri()).path(BASE_WIDGET_PATH).build(), EXTERNAL_WIDGET_LIST_CODEC);
 
-        ApiPaginatedResult<ExternalWidget> expected = internalController.list(new ApiPagination(Optional.empty(), DEFAULT_PAGE_SIZE, Optional.empty()), new ApiFilter(Optional.empty()), new ApiFilterList(ImmutableList.of()))
+        ApiPaginatedResult<ExternalWidget> expected = internalController.list(new ApiPagination<>(Optional.empty(), DEFAULT_PAGE_SIZE, Optional.empty()), new ApiFilter<>(Optional.empty()), new ApiFilterList<>(ImmutableList.of()))
                 .map(InternalWidget::map);
         assertThat(pageOfResults.getStatusCode()).isEqualTo(200);
         assertThat(pageOfResults.getValue().result()).isEqualTo(expected.result());
@@ -149,10 +152,42 @@ public class IntegrationTests
     }
 
     @ParameterizedTest
-    @MethodSource("testPaginationArguments")
-    public void testPagination(int pageSize, Ordering ordering)
+    @ValueSource(strings = {"Widget 1", "Widget 2", ""})
+    public void testRepeatedFilterValues(String secondValue)
     {
-        ApiPagination pagination = new ApiPagination(Optional.empty(), pageSize, Optional.of(ordering));
+        URI uri = UriBuilder.fromUri(testingServer.baseUri())
+                .path(BASE_WIDGET_PATH)
+                .queryParam("name", "Widget 1", secondValue)
+                .build();
+
+        StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
+
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        assertThat(jsonCodec(ApiBadRequest.class).fromJson(response.getBody()).message())
+                .contains("Invalid filter name: multiple values are not allowed");
+    }
+
+    @Test
+    public void testRepeatedFilterListValues()
+    {
+        URI uri = UriBuilder.fromUri(testingServer.baseUri())
+                .path(BASE_WIDGET_PATH)
+                .queryParam("size", InternalWidget.SIZE_LARGE, InternalWidget.SIZE_SMALL)
+                .build();
+
+        JsonResponse<ApiPaginatedResult<ExternalWidget>> response = call(prepareGet(), uri, EXTERNAL_WIDGET_LIST_CODEC);
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.getValue().result())
+                .isNotEmpty()
+                .allSatisfy(widget -> assertThat(widget.widgetDefinition().size()).isEqualTo(ExternalWidgetSize.Small));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testPaginationArguments")
+    public void testPagination(int pageSize, Ordering<String> ordering)
+    {
+        ApiPagination<String> pagination = new ApiPagination<>(Optional.empty(), pageSize, Optional.of(ordering));
 
         int totalReturned = 0;
         do {
@@ -166,7 +201,7 @@ public class IntegrationTests
             URI uri = uriBuilder.build();
             var pageOfResults = call(prepareGet(), uri, EXTERNAL_WIDGET_LIST_CODEC);
 
-            ApiPaginatedResult<ExternalWidget> expected = internalController.list(pagination, new ApiFilter(Optional.empty()), new ApiFilterList(ImmutableList.of()))
+            ApiPaginatedResult<ExternalWidget> expected = internalController.list(pagination, new ApiFilter<>(Optional.empty()), new ApiFilterList<>(ImmutableList.of()))
                     .map(InternalWidget::map);
 
             assertThat(pageOfResults.getStatusCode()).isEqualTo(200);
@@ -279,6 +314,8 @@ public class IntegrationTests
 
         SwaggerParseResult result = new OpenAPIV3Parser().readLocation(uri.toString(), null, null);
         assertThat(result.getMessages()).isEmpty();
+        assertThat(jsonCodec(JsonNode.class).fromJson(actual).at("/components/schemas/PaginatedWidget/required"))
+                .isEqualTo(jsonCodec(JsonNode.class).fromJson("[\"nextPageToken\",\"result\"]"));
     }
 
     private static Stream<Arguments> testPaginationArguments()
@@ -286,7 +323,7 @@ public class IntegrationTests
         return Stream.of(1, 25, DEFAULT_PAGE_SIZE, RECORD_QTY * 2)
                 .flatMap(pageSize -> Stream.of("id", "name", "size")
                         .flatMap(field -> Stream.of(ASCENDING, DESCENDING)
-                                .map(sortBy -> Arguments.of(pageSize, new Ordering(field, sortBy)))));
+                                .map(sortBy -> Arguments.of(pageSize, new Ordering<>(field, sortBy)))));
     }
 
     private <T> JsonResponse<T> call(Request.Builder requestBuilder, URI uri, JsonCodec<T> responseCodec)

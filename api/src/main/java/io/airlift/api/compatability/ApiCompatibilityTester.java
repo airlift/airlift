@@ -1,5 +1,7 @@
 package io.airlift.api.compatability;
 
+import io.airlift.api.ApiBuilderConfig;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiTrait;
 import io.airlift.api.model.ModelServices;
 import io.airlift.log.Logger;
@@ -96,12 +98,23 @@ public final class ApiCompatibilityTester
 
     public void test(ModelServices modelServices)
     {
+        test(modelServices, ApiBuilderConfig.jackson().enumValueResolver());
+    }
+
+    public void test(ModelServices modelServices, ApiEnumValueResolver enumValueResolver)
+    {
         boolean newFileCreationEnabled = Boolean.getBoolean(newFileCreationPropertyName);
-        test(modelServices, newFileCreationEnabled, _ -> System.exit(1));
+        test(modelServices, newFileCreationEnabled, _ -> System.exit(1), enumValueResolver);
     }
 
     public void test(ModelServices modelServices, boolean newFileCreationEnabled, Consumer<List<String>> errorHandler)
     {
+        test(modelServices, newFileCreationEnabled, errorHandler, ApiBuilderConfig.jackson().enumValueResolver());
+    }
+
+    public void test(ModelServices modelServices, boolean newFileCreationEnabled, Consumer<List<String>> errorHandler, ApiEnumValueResolver enumValueResolver)
+    {
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
         List<String> errors = new ArrayList<>();
         Collection<String> usedSet = new HashSet<>();
         modelServices.services().forEach(modelService -> {
@@ -117,7 +130,7 @@ public final class ApiCompatibilityTester
                         usedSet.add(hashFileName);
                         if (specFileExists(directory, modelService.service(), modelMethod)) {
                             try {
-                                validateMethodSpec(directory, modelService.service(), modelMethod);
+                                validateMethodSpec(directory, modelService.service(), modelMethod, enumValueResolver);
                             }
                             catch (Exception e) {
                                 errors.add(e.getMessage());
@@ -125,7 +138,7 @@ public final class ApiCompatibilityTester
                         }
                         else if (newFileCreationEnabled) {
                             errors.add("Created new compatibility file for API: %s method: %s at: %s".formatted(buildServicePath(modelService.service()), buildMethodPath(modelMethod, FOR_DISPLAY), hashFileName));
-                            writeMethodSpecFile(directory, modelService.service(), modelMethod);
+                            writeMethodSpecFile(directory, modelService.service(), modelMethod, enumValueResolver);
                         }
                         else {
                             errors.add("New API detected: %s. Add \"-D%s=true\" to the command line to generate compatibility file.".formatted(buildFullPath(modelService.service(), modelMethod, FOR_DISPLAY), newFileCreationPropertyName));

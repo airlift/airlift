@@ -43,6 +43,7 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.Context;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
@@ -70,8 +71,11 @@ import static io.airlift.api.ApiValidateOnly.VALIDATE_ONLY_PARAMETER_NAME;
 import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
+import static io.airlift.api.internals.Mappers.isTypedFilterType;
 import static io.airlift.api.internals.Mappers.openApiName;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
+import static io.airlift.api.internals.Mappers.typedFilterValueType;
+import static io.airlift.api.internals.Mappers.typedOrderByValueType;
 import static io.airlift.api.model.ModelOptionalParameter.Location.HEADER;
 import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
@@ -367,12 +371,20 @@ public class MethodBuilder
 
     private Optional<ModelOptionalParameter> buildOptionalParameter(Parameter parameter, ApiParameter apiParameter)
     {
-        ModelOptionalParameter optionalParameter = OPTIONAL_PARAMETER_MAP.get(parameter.getType());
-        if (optionalParameter == null) {
-            throw new ValidatorException("%s parameter is not allowed".formatted(parameter.getType().getSimpleName()));
-        }
+        ModelOptionalParameter optionalParameter = optionalParameterFor(parameter);
 
         boolean hasAllowedValues = (apiParameter.allowedValues().length > 0);
+
+        if (hasAllowedValues &&
+                (ApiFilter.class.isAssignableFrom(parameter.getType()) || ApiFilterList.class.isAssignableFrom(parameter.getType())) &&
+                isTypedFilterType(parameter.getParameterizedType(), parameter.getType()) &&
+                typedFilterValueType(parameter.getParameterizedType()).isEnum()) {
+            throw new ValidatorException("%s parameter derives allowed values from its enum type".formatted(parameter.getType().getSimpleName()));
+        }
+
+        if (ApiOrderBy.class.isAssignableFrom(parameter.getType()) && typedOrderByValueType(parameter.getParameterizedType()).isEnum() && hasAllowedValues) {
+            throw new ValidatorException("%s parameter derives allowed values from its enum type".formatted(parameter.getType().getSimpleName()));
+        }
 
         if (optionalParameter.metadata().contains(REQUIRES_ALLOWED_VALUES) && !hasAllowedValues) {
             throw new ValidatorException("%s parameter requires allowedValues".formatted(parameter.getType().getSimpleName()));
@@ -406,6 +418,43 @@ public class MethodBuilder
         }
 
         return Optional.of(optionalParameter.withExternalParameters(adjustedExternalParameters));
+    }
+
+    public static ModelOptionalParameter optionalParameterFor(Parameter parameter)
+    {
+        if (ApiFilter.class.isAssignableFrom(parameter.getType()) && isTypedFilterType(parameter.getParameterizedType(), ApiFilter.class)) {
+            Class<?> valueType = typedFilterValueType(parameter.getParameterizedType());
+            return new ModelOptionalParameter(
+                    QUERY,
+                    parameter.getParameterizedType(),
+                    ImmutableSet.of(new ExternalParameter("", "Query filter", valueType)))
+                    .withMetadata(MULTIPLE_ALLOWED);
+        }
+        if (ApiFilterList.class.isAssignableFrom(parameter.getType()) && isTypedFilterType(parameter.getParameterizedType(), ApiFilterList.class)) {
+            Class<?> valueType = typedFilterValueType(parameter.getParameterizedType());
+            Class<?> arrayType = Array.newInstance(valueType, 0).getClass();
+            return new ModelOptionalParameter(
+                    QUERY,
+                    parameter.getParameterizedType(),
+                    ImmutableSet.of(new ExternalParameter("", "Query filter", arrayType)))
+                    .withMetadata(MULTIPLE_ALLOWED);
+        }
+        if (ApiOrderBy.class.isAssignableFrom(parameter.getType())) {
+            Class<?> valueType = typedOrderByValueType(parameter.getParameterizedType());
+            if (valueType.isEnum()) {
+                return new ModelOptionalParameter(
+                        QUERY,
+                        parameter.getParameterizedType(),
+                        ImmutableSet.of(new ExternalParameter(ORDER_BY_PARAMETER_NAME, "Sort/ordering in standard SQL ORDER BY format.", valueType)))
+                        .withMetadata(VALIDATES_ARGUMENT);
+            }
+        }
+
+        ModelOptionalParameter optionalParameter = OPTIONAL_PARAMETER_MAP.get(parameter.getType());
+        if (optionalParameter == null) {
+            throw new ValidatorException("%s parameter is not allowed".formatted(parameter.getType().getSimpleName()));
+        }
+        return optionalParameter;
     }
 
     private ModelResource buildResultResource(Method method, ApiType apiType)
