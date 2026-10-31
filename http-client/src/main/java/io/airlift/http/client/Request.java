@@ -20,6 +20,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import io.airlift.spi.secrets.HttpHeadersSecret;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -306,6 +307,13 @@ public final class Request
         {
             this.headers.removeAll(name);
             this.headers.put(name, value);
+            return this;
+        }
+
+        @CanIgnoreReturnValue
+        public Builder setHeaders(HttpHeadersSecret headersSecret)
+        {
+            headersSecret.headers().forEach(this::setHeader);
             return this;
         }
 

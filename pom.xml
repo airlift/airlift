@@ -68,6 +68,7 @@
         <module>packaging</module>
         <module>sample-server</module>
         <module>secrets-keystore-plugin</module>
+        <module>secrets-oidc-plugin</module>
         <module>secrets-spi</module>
         <module>security</module>
         <module>security-jwks</module>
