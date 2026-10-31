@@ -1,11 +1,16 @@
 package io.airlift.security.mtls;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.airlift.node.AddressToHostname;
 import io.airlift.security.cert.CertificateBuilder;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -38,7 +43,14 @@ import static javax.net.ssl.KeyManagerFactory.getDefaultAlgorithm;
 
 public final class AutomaticMtls
 {
+    // Key derivation is deterministic but expensive (PBKDF2 work factor), so cache per process
+    private static final LoadingCache<DerivationKey, KeyPair> KEY_PAIR_CACHE = CacheBuilder.newBuilder()
+            .maximumSize(256)
+            .build(CacheLoader.from(key -> deriveKeyPair(key.sharedSecret(), key.commonName())));
+
     private AutomaticMtls() {}
+
+    private record DerivationKey(String sharedSecret, String commonName) {}
 
     @CanIgnoreReturnValue
     public static X509Certificate addCertificateAndKeyForCurrentNode(String sharedSecret, String commonName, KeyStore keyStore, String keyStorePassword)
@@ -64,7 +76,7 @@ public final class AutomaticMtls
     static X509Certificate addCertificateToKeyStore(String sharedSecret, String commonName, X509Certificate certificate, KeyStore keyStore, String keyStorePassword)
     {
         try {
-            KeyPair keyPair = fromSharedSecret(sharedSecret);
+            KeyPair keyPair = fromSharedSecret(sharedSecret, commonName);
             char[] password = keyStorePassword == null ? new char[0] : keyStorePassword.toCharArray();
             keyStore.setKeyEntry(commonName, keyPair.getPrivate(), password, new Certificate[] {certificate});
             return certificate;
@@ -90,7 +102,7 @@ public final class AutomaticMtls
     public static X509TrustManager createTrustManager(String sharedSecret, String commonName)
     {
         try {
-            KeyPair keyPair = fromSharedSecret(sharedSecret);
+            KeyPair keyPair = fromSharedSecret(sharedSecret, commonName);
             return new SingleCertificateTrustManager(keyPair.getPublic(), commonName);
         }
         catch (Exception e) {
@@ -127,11 +139,29 @@ public final class AutomaticMtls
         return list.build();
     }
 
-    private static KeyPair fromSharedSecret(String sharedSecret)
+    private static KeyPair fromSharedSecret(String sharedSecret, String commonName)
+    {
+        return KEY_PAIR_CACHE.getUnchecked(new DerivationKey(sharedSecret, commonName));
+    }
+
+    private static KeyPair deriveKeyPair(String sharedSecret, String commonName)
     {
         try {
-            byte[] seed = sharedSecret.getBytes(UTF_8);
-            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            // Every parameter of this derivation is part of the compatibility contract: peers derive
+            // the same key pair independently from the shared secret, so any change here breaks mTLS
+            // with nodes running a previous derivation (bump the salt version when changing it)
+            PBEKeySpec keySpec = new PBEKeySpec(
+                    sharedSecret.toCharArray(),
+                    ("io.airlift.security.mtls.v2:" + commonName).getBytes(UTF_8),
+                    600_000,
+                    256);
+            byte[] seed = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                    .generateSecret(keySpec)
+                    .getEncoded();
+
+            // SHA1PRNG from the SUN provider is fully deterministic when seeded before first use;
+            // other providers offer no such guarantee, so fail rather than fall back to one
+            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG", "SUN");
             secureRandom.setSeed(seed);
 
             KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
@@ -146,7 +176,7 @@ public final class AutomaticMtls
     @VisibleForTesting
     static CertificateBuilder certificateBuilder(String sharedSecret, String commonName)
     {
-        KeyPair keyPair = fromSharedSecret(sharedSecret);
+        KeyPair keyPair = fromSharedSecret(sharedSecret, commonName);
         Instant notBefore = Instant.now().truncatedTo(DAYS);
         Instant notAfter = notBefore.atZone(UTC).plusYears(10).toInstant();
         X500Principal subject = certificateSubject(commonName);
