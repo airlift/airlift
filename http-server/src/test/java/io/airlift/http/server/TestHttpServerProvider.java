@@ -404,7 +404,7 @@ public class TestHttpServerProvider
                 .setKeystorePath(getResource("test.keystore.with.two.passwords").getPath())
                 .setKeystorePassword("airlift")
                 .setKeyManagerPassword("airliftkey")
-                .setAutomaticHttpsSharedSecret("shared-secret");
+                .setAutomaticHttpsSharedSecret("shared-secret-with-sufficient-entropy-1234");
 
         createAndStartServer();
         assertThat(server.getHttpConnectionStats()).isNull();
@@ -414,7 +414,7 @@ public class TestHttpServerProvider
                 .setHttp2Enabled(false)
                 .setTrustStorePath(getResource("test.truststore").getPath())
                 .setTrustStorePassword("airlift")
-                .setAutomaticHttpsSharedSecret("shared-secret");
+                .setAutomaticHttpsSharedSecret("shared-secret-with-sufficient-entropy-1234");
 
         try (JettyHttpClient httpClient = createJettyClient(http1ClientConfig)) {
             verifyHttps(httpClient, "localhost");
@@ -539,7 +539,7 @@ public class TestHttpServerProvider
                 .setHttpsEnabled(true);
         httpsConfig.setKeystorePath(getResource("clientcert-java/server.keystore").getPath())
                 .setKeystorePassword("airlift")
-                .setAutomaticHttpsSharedSecret("shared-secret");
+                .setAutomaticHttpsSharedSecret("shared-secret-with-sufficient-entropy-1234");
         clientCertificate = ClientCertificate.REQUIRED;
 
         createAndStartServer(createCertTestServlet());
@@ -549,7 +549,7 @@ public class TestHttpServerProvider
                 .setKeyStorePassword("airlift")
                 .setTrustStorePath(getResource("clientcert-java/client.truststore").getPath())
                 .setTrustStorePassword("airlift")
-                .setAutomaticHttpsSharedSecret("shared-secret");
+                .setAutomaticHttpsSharedSecret("shared-secret-with-sufficient-entropy-1234");
 
         assertClientCertificateRequest(clientConfig, "localhost");
         assertClientCertificateRequest(clientConfig, "127-0-0-1.ip");
@@ -826,7 +826,7 @@ public class TestHttpServerProvider
                     .setTrustStorePath(tempFile.file().getAbsolutePath())
                     .setTrustStorePassword("airlift")
                     .setTrustStoreType("BCFKS")
-                    .setAutomaticHttpsSharedSecret("shared-secret");
+                    .setAutomaticHttpsSharedSecret("shared-secret-with-sufficient-entropy-1234");
             clientCertificate = ClientCertificate.REQUIRED;
 
             createAndStartServer(createCertTestServlet());
@@ -836,7 +836,7 @@ public class TestHttpServerProvider
                     .setKeyStorePassword("airlift")
                     .setTrustStorePath(getResource("clientcert-java/client.truststore").getPath())
                     .setTrustStorePassword("airlift")
-                    .setAutomaticHttpsSharedSecret("shared-secret");
+                    .setAutomaticHttpsSharedSecret("shared-secret-with-sufficient-entropy-1234");
 
             assertClientCertificateRequest(clientConfig, "localhost");
         }
