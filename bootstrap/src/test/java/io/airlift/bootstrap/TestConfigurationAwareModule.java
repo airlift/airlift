@@ -14,9 +14,12 @@
 package io.airlift.bootstrap;
 
 import com.google.inject.Binder;
+import com.google.inject.CreationException;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigurationAwareModule;
@@ -43,14 +46,48 @@ public class TestConfigurationAwareModule
     }
 
     @Test
-    public void testInvalidInstall()
+    public void testBinderInstall()
     {
-        Bootstrap bootstrap = new Bootstrap(new BrokenInstallModule())
-                .doNotInitializeLogging();
+        Injector injector = initialize(new BinderInstallModule());
 
-        assertThatThrownBy(bootstrap::initialize)
-                .isInstanceOf(ApplicationConfigurationException.class)
-                .hasMessageContaining("Use super.install() for ConfigurationAwareModule, not binder.install()");
+        assertThat(injector.getInstance(Key.get(String.class, named("foo")))).isEqualTo("fooInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("bar")))).isEqualTo("barInstance");
+    }
+
+    @Test
+    public void testInstallFromPlainModule()
+    {
+        Injector injector = initialize(binder -> binder.install(new FooModule()));
+
+        assertThat(injector.getInstance(Key.get(String.class, named("foo")))).isEqualTo("fooInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("bar")))).isEqualTo("barInstance");
+    }
+
+    @Test
+    public void testOverride()
+    {
+        Injector injector = initialize(Modules.override(new FooModule())
+                .with(binder -> binder.bind(String.class).annotatedWith(named("foo")).toInstance("overrideInstance")));
+
+        assertThat(injector.getInstance(Key.get(String.class, named("foo")))).isEqualTo("overrideInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("bar")))).isEqualTo("barInstance");
+    }
+
+    @Test
+    public void testReuse()
+    {
+        Module module = new FooModule();
+
+        assertThat(initialize(module).getInstance(Key.get(String.class, named("foo")))).isEqualTo("fooInstance");
+        assertThat(initialize(module).getInstance(Key.get(String.class, named("foo")))).isEqualTo("fooInstance");
+    }
+
+    @Test
+    public void testMissingConfigurationFactory()
+    {
+        assertThatThrownBy(() -> Guice.createInjector(new FooModule()))
+                .isInstanceOf(CreationException.class)
+                .hasMessageContaining("configurationFactory was not set");
     }
 
     @Test
@@ -120,11 +157,20 @@ public class TestConfigurationAwareModule
         }
     }
 
-    public static class BrokenInstallModule
-            extends AbstractConfigurationAwareModule
+    private static Injector initialize(Module module)
+    {
+        return new Bootstrap(module)
+                .doNotInitializeLogging()
+                .setRequiredConfigurationProperty("foo.enabled", "true")
+                .setRequiredConfigurationProperty("bar.enabled", "true")
+                .initialize();
+    }
+
+    public static class BinderInstallModule
+            implements Module
     {
         @Override
-        protected void setup(Binder binder)
+        public void configure(Binder binder)
         {
             binder.install(new FooModule());
         }

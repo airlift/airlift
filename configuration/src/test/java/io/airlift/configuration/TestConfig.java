@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.ConfigurationFactory.CONFIGURATION_FACTORY_ATTRIBUTE;
 import static io.airlift.configuration.MyEnum.BAR;
 import static io.airlift.configuration.MyEnum.FOO;
 import static java.lang.annotation.ElementType.FIELD;
@@ -289,23 +290,18 @@ public class TestConfig
         Module a = binder -> binder.bind(String.class).toInstance("used value a");
         Module b = binder -> binder.bind(String.class).toInstance("used value b");
 
-        Supplier<Module> module = () -> new AbstractConfigurationAwareModule()
-        {
-            @Override
-            protected void setup(Binder binder)
-            {
-                ConfigBinder configBinder = configBinder(binder);
-                configBinder.bindConfig(SwitchConfig.class);
+        Supplier<Module> module = () -> binder -> {
+            ConfigBinder configBinder = configBinder(binder);
+            configBinder.bindConfig(SwitchConfig.class);
 
-                install(SwitchModule.switchModule(
-                        SwitchConfig.class,
-                        SwitchConfig::getValue,
-                        value -> switch (value) {
-                            case A -> a;
-                            case B -> b;
-                            default -> throw new RuntimeException("Not supported value: " + value);
-                        }));
-            }
+            binder.install(SwitchModule.switchModule(
+                    SwitchConfig.class,
+                    SwitchConfig::getValue,
+                    value -> switch (value) {
+                        case A -> a;
+                        case B -> b;
+                        default -> throw new RuntimeException("Not supported value: " + value);
+                    }));
         };
 
         assertThat(createInjector(ImmutableMap.of("value", "a"), module.get()).getInstance(String.class)).isEqualTo("used value a");
@@ -319,7 +315,7 @@ public class TestConfig
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
-        return Guice.createInjector(
+        return Guice.withAttribute(CONFIGURATION_FACTORY_ATTRIBUTE, configurationFactory).createInjector(
                 new ConfigurationModule(configurationFactory),
                 module,
                 new ValidationErrorModule(messages),

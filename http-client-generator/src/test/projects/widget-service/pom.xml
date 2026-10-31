@@ -16,7 +16,7 @@
         <dep.airlift.version>@project.version@</dep.airlift.version>
         <dep.jackson.version>2.18.11</dep.jackson.version>
         <dep.openapi-generator.version>7.14.0</dep.openapi-generator.version>
-        <dep.guice.version>10</dep.guice.version>
+        <dep.zest.version>@dep.zest.version@</dep.zest.version>
     </properties>
 
     <dependencies>
@@ -65,8 +65,8 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>guice</artifactId>
-            <version>${dep.guice.version}</version>
+            <artifactId>zest</artifactId>
+            <version>${dep.zest.version}</version>
         </dependency>
 
     </dependencies>
