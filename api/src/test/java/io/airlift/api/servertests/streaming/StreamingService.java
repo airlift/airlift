@@ -12,6 +12,7 @@ import io.airlift.api.ApiStreamResponse.ApiOutputStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiServerSentEventStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.ServiceType;
+import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.api.responses.ApiException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Request;
@@ -19,6 +20,7 @@ import jakarta.ws.rs.core.Request;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static io.airlift.api.ApiType.CREATE;
@@ -70,6 +72,12 @@ public class StreamingService
     {
         quotaController.recordQuotaUsage(request, "STREAMING");
         return new ApiTextStreamResponse<>("This is streaming post: " + streamingRequest.something());
+    }
+
+    @ApiCustom(type = CREATE, verb = "postError", description = "streaming error", responses = ApiBadRequest.class, quotas = "STREAMING")
+    public ApiByteStreamResponse<StreamingResource> streamPostError(StreamingRequest streamingRequest)
+    {
+        throw ApiException.response(new ApiBadRequest(Optional.of("Invalid streaming request"), Optional.of(List.of("something"))));
     }
 
     @ApiCustom(type = GET, verb = "events", description = "server-sent events")

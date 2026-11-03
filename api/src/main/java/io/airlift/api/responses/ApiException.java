@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.api.internals.Mappers.buildStatus;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 
 public final class ApiException
 {
@@ -82,7 +83,10 @@ public final class ApiException
     public static RuntimeException response(Object apiResponseInstance)
     {
         HttpStatus httpStatus = buildStatus(apiResponseInstance);
-        Response httpResponse = Response.status(httpStatus.code()).entity(apiResponseInstance).build();
+        Response httpResponse = Response.status(httpStatus.code())
+                .type(APPLICATION_JSON_TYPE)
+                .entity(apiResponseInstance)
+                .build();
         return new WebApplicationException(httpResponse);
     }
 
@@ -91,7 +95,10 @@ public final class ApiException
         ApiResponse apiResponse = Optional.ofNullable(apiResponseInstance.getClass().getAnnotation(ApiResponse.class))
                 .orElseThrow(() -> new IllegalArgumentException("Response class is not annotated with @%s".formatted(ApiResponse.class.getSimpleName())));
 
-        Response httpResponse = Response.status(apiResponse.status().code()).entity(apiResponseInstance).build();
+        Response httpResponse = Response.status(apiResponse.status().code())
+                .type(APPLICATION_JSON_TYPE)
+                .entity(apiResponseInstance)
+                .build();
         return new WebApplicationException(httpResponse);
     }
 }
