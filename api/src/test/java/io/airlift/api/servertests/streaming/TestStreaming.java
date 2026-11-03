@@ -7,6 +7,7 @@ import io.airlift.api.model.ModelService;
 import io.airlift.api.model.ModelServices;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiProvider;
+import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -28,6 +29,7 @@ import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
@@ -138,6 +140,42 @@ public class TestStreaming
         StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
         assertThat(response.getHeader(CONTENT_TYPE)).hasValue("application/json");
         assertThat(response.getStatusCode()).isEqualTo(401);
+    }
+
+    @Test
+    public void testStreamingErrorWithBinaryAcceptReturnsJson()
+    {
+        URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/streamer:postError").build();
+        Request request = preparePost()
+                .setUri(uri)
+                .setHeader(ACCEPT, MediaType.APPLICATION_OCTET_STREAM)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setBodyGenerator(jsonBodyGenerator(jsonCodec(StreamingRequest.class), new StreamingRequest("payload")))
+                .build();
+
+        StringResponse response = httpClient.execute(request, createStringResponseHandler());
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        assertThat(response.getHeader(CONTENT_TYPE)).hasValue(MediaType.APPLICATION_JSON);
+        assertThat(jsonCodec(ApiBadRequest.class).fromJson(response.getBody()))
+                .isEqualTo(new ApiBadRequest(Optional.of("Invalid streaming request"), Optional.of(List.of("something"))));
+    }
+
+    @Test
+    public void testStreamingMalformedJsonWithBinaryAcceptReturnsJson()
+    {
+        URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/streamer:postError").build();
+        Request request = preparePost()
+                .setUri(uri)
+                .setHeader(ACCEPT, MediaType.APPLICATION_OCTET_STREAM)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setBodyGenerator(createStaticBodyGenerator("this is definitely not json".getBytes(UTF_8)))
+                .build();
+
+        StringResponse response = httpClient.execute(request, createStringResponseHandler());
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        assertThat(response.getHeader(CONTENT_TYPE)).hasValue(MediaType.APPLICATION_JSON);
+        assertThat(jsonCodec(ApiBadRequest.class).fromJson(response.getBody()))
+                .isEqualTo(new ApiBadRequest(Optional.of("Unrecognized token 'this': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')"), Optional.empty()));
     }
 
     private StringResponse doRequest(Optional<String> verb)
