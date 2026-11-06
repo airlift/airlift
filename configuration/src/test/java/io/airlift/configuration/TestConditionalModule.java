@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static io.airlift.configuration.ConfigurationFactory.CONFIGURATION_FACTORY_ATTRIBUTE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("deprecation")
@@ -21,17 +22,12 @@ public class TestConditionalModule
     @Test
     public void testConditionalModule()
     {
-        Supplier<AbstractConfigurationAwareModule> moduleXY = () -> {
+        Supplier<Module> moduleXY = () -> {
             Module moduleX = ConditionalModule.conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
             Module moduleY = ConditionalModule.conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
-            return new AbstractConfigurationAwareModule()
-            {
-                @Override
-                protected void setup(Binder binder)
-                {
-                    install(moduleX);
-                    install(moduleY);
-                }
+            return binder -> {
+                binder.install(moduleX);
+                binder.install(moduleY);
             };
         };
 
@@ -58,17 +54,12 @@ public class TestConditionalModule
     @Test
     public void testConditionalModuleWithPrefix()
     {
-        Supplier<AbstractConfigurationAwareModule> moduleXY = () -> {
+        Supplier<Module> moduleXY = () -> {
             Module moduleX = ConditionalModule.conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
             Module moduleY = ConditionalModule.conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
-            return new AbstractConfigurationAwareModule()
-            {
-                @Override
-                protected void setup(Binder binder)
-                {
-                    install(moduleX);
-                    install(moduleY);
-                }
+            return binder -> {
+                binder.install(moduleX);
+                binder.install(moduleY);
             };
         };
         Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(
@@ -97,7 +88,7 @@ public class TestConditionalModule
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
-        return Guice.createInjector(
+        return Guice.withAttribute(CONFIGURATION_FACTORY_ATTRIBUTE, configurationFactory).createInjector(
                 new ConfigurationModule(configurationFactory),
                 module,
                 new ValidationErrorModule(messages),

@@ -56,6 +56,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.bootstrap.ClosingBinder.closingBinder;
 import static io.airlift.bootstrap.FuzzyMatcher.findSimilar;
+import static io.airlift.configuration.ConfigurationFactory.CONFIGURATION_FACTORY_ATTRIBUTE;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
@@ -431,7 +432,8 @@ public class Bootstrap
             moduleList.addAll(modules);
 
             // create the injector
-            Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
+            Injector injector = Guice.withAttribute(CONFIGURATION_FACTORY_ATTRIBUTE, configurationFactory)
+                    .createInjector(Stage.PRODUCTION, moduleList.build());
 
             injector.getInstance(LifeCycleManager.class).start();
             notifyInitialized(listeners, injector);
