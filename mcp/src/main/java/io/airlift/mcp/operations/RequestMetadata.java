@@ -11,6 +11,7 @@ import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Protocol;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +31,7 @@ import static io.airlift.mcp.model.Constants.METADATA_PROTOCOL_VERSION;
 import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.UNSUPPORTED_PROTOCOL;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public record RequestMetadata(
@@ -43,6 +45,9 @@ public record RequestMetadata(
     public static final List<String> SUPPORTED_VERSIONS = Stream.of(Protocol.values())
             .map(Protocol::value)
             .collect(toImmutableList());
+
+    private static final String ENCODED_VALUE_PREFIX = "=?base64?";
+    private static final String ENCODED_VALUE_SUFFIX = "?=";
 
     public RequestMetadata
     {
@@ -74,7 +79,7 @@ public record RequestMetadata(
                 throw exception(HEADER_MISMATCH, "%s does not match request method: %s".formatted(HEADER_MCP_METHOD, mcpMethodHeader));
             }
         }
-        Optional<String> mcpNameHeader = optional(request, HEADER_MCP_NAME);
+        Optional<String> mcpNameHeader = optional(request, HEADER_MCP_NAME).map(RequestMetadata::decodeHeaderValue);
 
         Optional<Implementation> clientInfo = optional(jsonMapper, metadata, METADATA_CLIENT_INFO, Implementation.class);
         ClientCapabilities clientCapabilities = required(jsonMapper, metadata, METADATA_CLIENT_CAPABILITIES, ClientCapabilities.class);
@@ -89,6 +94,28 @@ public record RequestMetadata(
         // https://modelcontextprotocol.io/specification/2026-07-28/basic/lifecycle#protocol-version-negotiation
         Map<String, Object> params = ImmutableMap.of("supported", SUPPORTED_VERSIONS, "requested", protocolVersionHeader);
         return exceptionWithData(UNSUPPORTED_PROTOCOL, "Unsupported protocol version", params);
+    }
+
+    // https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#value-encoding
+    // a value that cannot be sent as a plain header value arrives base64 encoded, and must be decoded before it is
+    // compared to the request body
+    private static String decodeHeaderValue(String value)
+    {
+        String stripped = value.strip();
+        boolean isEncoded = stripped.startsWith(ENCODED_VALUE_PREFIX)
+                && stripped.endsWith(ENCODED_VALUE_SUFFIX)
+                && (stripped.length() >= ENCODED_VALUE_PREFIX.length() + ENCODED_VALUE_SUFFIX.length());
+        if (!isEncoded) {
+            return stripped;
+        }
+
+        String encoded = stripped.substring(ENCODED_VALUE_PREFIX.length(), stripped.length() - ENCODED_VALUE_SUFFIX.length());
+        try {
+            return new String(Base64.getDecoder().decode(encoded), UTF_8);
+        }
+        catch (IllegalArgumentException _) {
+            throw exception(HEADER_MISMATCH, "%s is not valid base64: %s".formatted(HEADER_MCP_NAME, value));
+        }
     }
 
     @SuppressWarnings("SameParameterValue")
