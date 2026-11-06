@@ -347,7 +347,7 @@ public class ApiModule
         Map<ModelServiceType, List<ModelService>> servicesByType = modelApi.modelServices().services().stream().collect(Collectors.groupingBy(modelService -> modelService.service().type()));
         binder.bind(annotatedKey(new TypeLiteral<Set<ModelServiceType>>() {}, bindingAnnotation)).toInstance(servicesByType.keySet());
 
-        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation);
+        JaxrsResourceBuilder jaxrsResourceBuilder = jaxrsResourceBuilder(binder, withApiLogging, bindingAnnotation, enumValueResolver);
         cancellableRequestExecutor.ifPresent(executor -> jaxrsBinder(binder, bindingAnnotation).bindInstance(new ApiCancellableRequestExecutorProvider(executor)));
 
         MapBinder<Method, ModelDeprecation> deprecationBinder = newMapBinder(
@@ -438,7 +438,7 @@ public class ApiModule
         ApiBindingProvider bindingProvider = new ApiBindingProvider(binder, bindingAnnotation);
         Provider<ApiCompatibilityTester> tester = bindingProvider.get(ApiCompatibilityTester.class);
         Provider<ModelServices> modelServices = bindingProvider.get(ModelServices.class);
-        return () -> new ApiCompatibility(tester.get(), modelServices.get());
+        return () -> new ApiCompatibility(tester.get(), modelServices.get(), enumValueResolver);
     }
 
     private void bindUnwrapped(Binder binder, Set<Class<?>> resourcesWithUnwrappedComponents)

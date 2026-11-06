@@ -1,5 +1,7 @@
 package io.airlift.api.compatability;
 
+import io.airlift.api.ApiBuilderConfig;
+import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelOptionalParameter;
 import io.airlift.api.model.ModelOptionalParameter.ExternalParameter;
@@ -28,6 +30,7 @@ import static io.airlift.api.internals.Mappers.buildFullPath;
 import static io.airlift.api.internals.Mappers.buildMethodPath;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 public class ApiCompatibilityUtil
@@ -38,6 +41,12 @@ public class ApiCompatibilityUtil
 
     public static String methodSpec(ModelServiceMetadata service, ModelMethod modelMethod)
     {
+        return methodSpec(service, modelMethod, ApiBuilderConfig.jackson().enumValueResolver());
+    }
+
+    public static String methodSpec(ModelServiceMetadata service, ModelMethod modelMethod, ApiEnumValueResolver enumValueResolver)
+    {
+        requireNonNull(enumValueResolver, "enumValueResolver is null");
         Set<String> alreadyVisited = new HashSet<>();
         return buildMethodPath(modelMethod, FOR_DISPLAY) + DELIMITER +
                 service.type().id() + DELIMITER +
@@ -46,11 +55,16 @@ public class ApiCompatibilityUtil
                 resourceData(service.type(), modelMethod.returnType(), alreadyVisited, Mode.OUTPUT) + DELIMITER +
                 modelMethod.requestBody().map(requestBody -> resourceData(service.type(), requestBody, alreadyVisited, Mode.INPUT)).orElse("") + DELIMITER +
                 modelMethod.parameters().stream().map(ApiCompatibilityUtil::resourceMetadata).collect(joining(DELIMITER, "[", "]")) + DELIMITER +
-                modelMethod.optionalParameters().stream().map(ApiCompatibilityUtil::optionalParameter).sorted().collect(joining(DELIMITER, "[", "]")) + DELIMITER +
+                modelMethod.optionalParameters().stream().map(parameter -> optionalParameter(service.type(), parameter, enumValueResolver)).sorted().collect(joining(DELIMITER, "[", "]")) + DELIMITER +
                 modelMethod.responses().stream().mapToInt(modelResponse -> modelResponse.status().code()).distinct().sorted().mapToObj(Integer::toString).collect(joining(DELIMITER, "[", "]"));
     }
 
     public static void validateMethodSpec(File directory, ModelServiceMetadata service, ModelMethod modelMethod)
+    {
+        validateMethodSpec(directory, service, modelMethod, ApiBuilderConfig.jackson().enumValueResolver());
+    }
+
+    public static void validateMethodSpec(File directory, ModelServiceMetadata service, ModelMethod modelMethod, ApiEnumValueResolver enumValueResolver)
     {
         checkArgument(directory.isDirectory(), "%s is not a directory".formatted(directory));
         File file = directory.toPath().resolve(specFileName(service, modelMethod)).toFile();
@@ -60,7 +74,7 @@ public class ApiCompatibilityUtil
             try (Stream<String> lines = Files.lines(file.toPath(), UTF_8)) {
                 specFromFile = lines.findFirst().orElseThrow(() -> new IllegalStateException("Could not read spec from first line of: " + file));
             }
-            String currentSpec = methodSpec(service, modelMethod);
+            String currentSpec = methodSpec(service, modelMethod, enumValueResolver);
             if (!currentSpec.equals(specFromFile)) {
                 throw new IllegalStateException(
                         """
@@ -89,10 +103,15 @@ public class ApiCompatibilityUtil
 
     public static void writeMethodSpecFile(File directory, ModelServiceMetadata service, ModelMethod modelMethod)
     {
+        writeMethodSpecFile(directory, service, modelMethod, ApiBuilderConfig.jackson().enumValueResolver());
+    }
+
+    public static void writeMethodSpecFile(File directory, ModelServiceMetadata service, ModelMethod modelMethod, ApiEnumValueResolver enumValueResolver)
+    {
         checkArgument(directory.isDirectory(), "%s is not a directory".formatted(directory));
         File file = directory.toPath().resolve(specFileName(service, modelMethod)).toFile();
         try {
-            String contents = methodSpec(service, modelMethod) + "\n\n" + methodMetadata(service, modelMethod) + "\n";
+            String contents = methodSpec(service, modelMethod, enumValueResolver) + "\n\n" + methodMetadata(service, modelMethod) + "\n";
             Files.writeString(file.toPath(), contents, StandardOpenOption.CREATE_NEW);
         }
         catch (IOException e) {
@@ -187,17 +206,27 @@ public class ApiCompatibilityUtil
         }
     }
 
-    private static String optionalParameter(ModelOptionalParameter optionalParameter)
+    private static String optionalParameter(ModelServiceType serviceType, ModelOptionalParameter optionalParameter, ApiEnumValueResolver enumValueResolver)
     {
         return optionalParameter.location().name() + DELIMITER +
                 optionalParameter.metadata().contains(ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED) + DELIMITER +
                 limitedValues(optionalParameter) +
-                optionalParameter.externalParameters().stream().map(ApiCompatibilityUtil::externalParameter).collect(joining(DELIMITER, "[", "]"));
+                optionalParameter.externalParameters().stream().map(parameter -> externalParameter(serviceType, parameter, enumValueResolver)).collect(joining(DELIMITER, "[", "]"));
     }
 
-    private static String externalParameter(ExternalParameter externalParameter)
+    private static String externalParameter(ModelServiceType serviceType, ExternalParameter externalParameter, ApiEnumValueResolver enumValueResolver)
     {
-        return externalParameter.name() + DELIMITER + externalParameter.externalType().getSimpleName();
+        String spec = externalParameter.name() + DELIMITER + externalParameter.externalType().getSimpleName();
+        Class<?> valueType = externalParameter.externalType();
+        if (valueType.isArray()) {
+            valueType = valueType.getComponentType();
+        }
+        if (valueType.isEnum() && !serviceType.serviceTraits().contains(ENUMS_AS_STRINGS)) {
+            spec += enumValueResolver.values(valueType).stream()
+                    .sorted()
+                    .collect(joining(DELIMITER, "[", "]"));
+        }
+        return spec;
     }
 
     private static String limitedValues(ModelOptionalParameter optionalParameter)

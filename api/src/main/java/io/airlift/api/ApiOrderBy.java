@@ -7,41 +7,44 @@ import io.airlift.api.responses.ApiException;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
-public record ApiOrderBy(List<Ordering> orderings)
+public record ApiOrderBy<T>(List<Ordering<T>> orderings)
 {
     public static final String ORDER_BY_PARAMETER_NAME = "orderBy";
 
     public ApiOrderBy
     {
-        orderings = ImmutableList.copyOf(orderings);
+        orderings = ImmutableList.copyOf(requireNonNull(orderings, "orderings is null"));
     }
 
-    public ApiOrderBy(String field, ApiOrderByDirection direction)
+    public ApiOrderBy(T field, ApiOrderByDirection direction)
     {
-        this(ImmutableList.of(new Ordering(field, direction)));
+        this(ImmutableList.of(new Ordering<>(field, direction)));
     }
 
-    public void validate(String... allowedFields)
+    @SafeVarargs
+    public final void validate(T... allowedFields)
     {
         validate(ImmutableSet.copyOf(allowedFields));
     }
 
-    public void validate(Set<String> allowedFields)
+    public void validate(Set<T> allowedFields)
     {
-        Set<String> invalidFields = orderings.stream()
+        Set<T> invalidFields = orderings.stream()
                 .map(Ordering::field)
                 .filter(field -> !allowedFields.contains(field))
                 .collect(toImmutableSet());
 
         if (!invalidFields.isEmpty()) {
-            throw ApiException.badRequest("Invalid order by: " + String.join(", ", invalidFields));
+            throw ApiException.badRequest("Invalid order by: " + invalidFields.stream().map(String::valueOf).collect(joining(", ")));
         }
     }
 
-    public record Ordering(String field, ApiOrderByDirection direction)
+    public record Ordering<T>(T field, ApiOrderByDirection direction)
     {
         public Ordering
         {
@@ -51,7 +54,15 @@ public record ApiOrderBy(List<Ordering> orderings)
 
         public String toQueryValue()
         {
+            checkState(field instanceof String, "toQueryValue() requires a String field");
             return field + " " + direction.value();
+        }
+
+        public String toQueryValue(ApiEnumValueResolver enumValueResolver)
+        {
+            requireNonNull(enumValueResolver, "enumValueResolver is null");
+            checkState(field instanceof Enum<?>, "toQueryValue(ApiEnumValueResolver) requires an enum field");
+            return enumValueResolver.value((Enum<?>) field) + " " + direction.value();
         }
     }
 }
