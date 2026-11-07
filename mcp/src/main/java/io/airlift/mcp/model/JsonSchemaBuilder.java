@@ -10,6 +10,7 @@ import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
+import com.github.victools.jsonschema.module.jackson.JsonSubTypesResolver;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -52,7 +53,15 @@ public class JsonSchemaBuilder
         SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
                 .withObjectMapper(mapper)
                 .without(Option.SCHEMA_VERSION_INDICATOR);
+        // Only the Jackson module's subtype support is used: the full JacksonModule also changes the schemas
+        // of non-polymorphic types (property naming, ignored members, descriptions)
+        JsonSubTypesResolver subtypesResolver = new JsonSubTypesResolver();
+        configBuilder.forTypesInGeneral()
+                .withSubtypeResolver(subtypesResolver)
+                .withCustomDefinitionProvider(subtypesResolver);
         configBuilder.forFields()
+                .withTargetTypeOverridesResolver(subtypesResolver::findTargetTypeOverrides)
+                .withCustomDefinitionProvider(subtypesResolver::provideCustomPropertySchemaDefinition)
                 .withDescriptionResolver(JsonSchemaBuilder::findDescription)
                 .withRequiredCheck(target -> {
                     boolean isOptional = Optional.class.equals(target.getDeclaredType().getErasedType());
