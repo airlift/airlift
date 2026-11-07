@@ -14,9 +14,11 @@
 package io.airlift.configuration.secrets;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.spi.secrets.Secret;
 import io.airlift.spi.secrets.SecretProvider;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -77,5 +79,12 @@ public class SecretsResolver
         SecretProvider secretProvider = secretProvidersFactory.apply(secretProviderName);
         checkArgument(secretProvider != null, "No secret provider for key '%s'", secretProviderName);
         return secretProvider.resolveSecretValue(keyName);
+    }
+
+    public <T extends Secret> Optional<T> resolveSecret(String secretProviderName, String keyName, Class<T> type, Function<String, Optional<Object>> contextResolver)
+    {
+        SecretProvider secretProvider = secretProvidersFactory.apply(secretProviderName);
+        checkArgument(secretProvider != null, "No secret provider for key '%s'", secretProviderName);
+        return secretProvider.resolveSecret(keyName, type, contextResolver);
     }
 }
