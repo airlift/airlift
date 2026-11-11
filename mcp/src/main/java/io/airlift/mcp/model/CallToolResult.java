@@ -18,7 +18,10 @@ public record CallToolResult(
         Optional<String> requestState,
         Optional<Map<String, InputRequest>> inputRequests,
         Optional<Map<String, Object>> meta)
-        implements InputRequests, Meta<CallToolResult>
+        implements InputRequests,
+                   Meta<CallToolResult>,
+                   TaskResult,
+                   ToolResult
 {
     private static final Factory<CallToolResult> FACTORY = (requestState, inputRequests) -> new CallToolResult(
             Optional.empty(),
@@ -65,6 +68,11 @@ public record CallToolResult(
     public CallToolResult(List<Content> content)
     {
         this(content, Optional.empty(), false, Optional.empty());
+    }
+
+    public static CallToolResult errorResult(String message)
+    {
+        return new CallToolResult(ImmutableList.of(new Content.TextContent(message)), Optional.empty(), true, Optional.empty());
     }
 
     @Override

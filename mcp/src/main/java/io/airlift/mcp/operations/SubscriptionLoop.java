@@ -8,6 +8,7 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpEntities;
+import io.airlift.mcp.McpTasks;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Meta;
@@ -15,6 +16,8 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.SubscriptionFilter;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.model.TaskNotification;
 
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -24,11 +27,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_SUBSCRIPTIONS_ACKNOWLEDGED;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_TASKS;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
 import static io.airlift.mcp.model.Meta.normalize;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -48,6 +53,7 @@ class SubscriptionLoop
     private final McpEntities entities;
     private final RequestContextImpl requestContext;
     private final SubscriptionFilter subscriptionFilter;
+    private final Optional<McpTasks> tasks;
     private final Duration streamingTimeout;
     private final Duration resourceSubscriptionCachePeriod;
     private final UUID subscriptionId;
@@ -60,6 +66,7 @@ class SubscriptionLoop
             McpEntities entities,
             RequestContextImpl requestContext,
             SubscriptionFilter subscriptionFilter,
+            Optional<McpTasks> tasks,
             Duration streamingTimeout,
             Duration resourceSubscriptionCachePeriod)
     {
@@ -67,7 +74,8 @@ class SubscriptionLoop
         this.requestId = requireNonNull(requestId, "requestId is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.requestContext = requireNonNull(requestContext, "requestContext is null");
-        this.subscriptionFilter = requireNonNull(subscriptionFilter, "subscriptionFilter is null");
+        this.tasks = requireNonNull(tasks, "tasks is null");
+        this.subscriptionFilter = withAccessibleTasks(requireNonNull(subscriptionFilter, "subscriptionFilter is null"));
         this.streamingTimeout = requireNonNull(streamingTimeout, "streamingTimeout is null");
         this.resourceSubscriptionCachePeriod = requireNonNull(resourceSubscriptionCachePeriod, "resourceSubscriptionCachePeriod is null");
 
@@ -99,6 +107,9 @@ class SubscriptionLoop
 
         Acknowledgment acknowledgment = withSubscriptionId(Acknowledgment.class, new Acknowledgment(subscriptionFilter, Optional.empty()));
         requestContext.sendMessage(NOTIFICATION_SUBSCRIPTIONS_ACKNOWLEDGED, Optional.of(acknowledgment));
+
+        // a task's current state is sent at once - one that settled before the subscription would otherwise never be reported
+        subscriptionFilter.taskIds().ifPresent(taskIds -> taskIds.forEach(taskId -> sendChange(new TaskKey(taskId))));
 
         while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
             try {
@@ -139,8 +150,18 @@ class SubscriptionLoop
         }
     }
 
+    private record TaskKey(String taskId) {}
+
     private void sendChange(Object key)
     {
+        if (key instanceof TaskKey(String taskId)) {
+            currentTask(taskId).ifPresent(task -> {
+                TaskNotification notification = withSubscriptionId(TaskNotification.class, new TaskNotification(task, Optional.empty()));
+                requestContext.sendMessage(NOTIFICATION_TASKS, Optional.of(notification));
+            });
+            return;
+        }
+
         String message;
         Optional<String> uri;
         if (key.equals(TOOLS_LIST_KEY)) {
@@ -162,6 +183,29 @@ class SubscriptionLoop
 
         Notification notification = withSubscriptionId(Notification.class, new Notification(uri, Optional.empty()));
         requestContext.sendMessage(message, Optional.of(notification));
+    }
+
+    // the acknowledgement must list only the task ids notifications will be sent for - an
+    // unknown, expired or another caller's task is dropped, indistinguishably, as tasks/get would
+    private SubscriptionFilter withAccessibleTasks(SubscriptionFilter subscriptionFilter)
+    {
+        Optional<List<String>> taskIds = subscriptionFilter.taskIds().map(requested -> requested.stream()
+                .filter(taskId -> tasks.map(tasks -> tasks.validateTaskAccess(requestContext, taskId)).orElse(false))
+                .distinct()
+                .collect(toImmutableList()));
+
+        return new SubscriptionFilter(
+                subscriptionFilter.toolsListChanged(),
+                subscriptionFilter.promptsListChanged(),
+                subscriptionFilter.resourcesListChanged(),
+                subscriptionFilter.resourceSubscriptions(),
+                taskIds);
+    }
+
+    private Optional<Task> currentTask(String taskId)
+    {
+        return tasks.filter(tasks -> tasks.validateTaskAccess(requestContext, taskId))
+                .flatMap(tasks -> tasks.getTask(taskId));
     }
 
     private <T extends Meta<?>> T withSubscriptionId(Class<T> clazz, T instance)
@@ -190,6 +234,12 @@ class SubscriptionLoop
                     .map(contents -> listHash(contents.stream()))
                     .orElse("");
             builder.put(uri, hash);
+        }));
+        subscriptionFilter.taskIds().ifPresent(taskIds -> taskIds.forEach(taskId -> {
+            String hash = currentTask(taskId)
+                    .map(this::asJson)
+                    .orElse("");
+            builder.put(new TaskKey(taskId), hash);
         }));
         return builder.build();
     }

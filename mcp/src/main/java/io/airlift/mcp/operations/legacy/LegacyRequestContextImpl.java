@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.EXTENSION_TASKS;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
@@ -179,13 +180,16 @@ class LegacyRequestContextImpl
     @Override
     public ClientCapabilities clientCapabilities()
     {
-        return sessionController.map(controller -> {
+        ClientCapabilities clientCapabilities = sessionController.map(controller -> {
             SessionId sessionId = requireSessionId(request);
 
             // ClientCapabilities are cached via CachingSessionController
             return controller.getSessionValue(sessionId, CLIENT_CAPABILITIES)
                     .orElseThrow(() -> exception("Session does not contain client capabilities"));
         }).orElse(ClientCapabilities.EMPTY);
+
+        // the legacy protocols cannot carry a task, so a tool must not be told it can create one
+        return clientCapabilities.withoutExtension(EXTENSION_TASKS);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
