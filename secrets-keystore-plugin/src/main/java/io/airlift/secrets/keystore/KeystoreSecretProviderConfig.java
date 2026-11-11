@@ -23,6 +23,7 @@ public class KeystoreSecretProviderConfig
     private String keyStoreFilePath;
     private String keyStoreType;
     private String keyStorePassword;
+    private String keyStoreEntryPassword;
 
     @Config("keystore-file-path")
     public KeystoreSecretProviderConfig setKeyStoreFilePath(String keyStoreFilePath)
@@ -62,5 +63,18 @@ public class KeystoreSecretProviderConfig
     public String getKeyStorePassword()
     {
         return keyStorePassword;
+    }
+
+    @Config("keystore-entry-password")
+    @ConfigSecuritySensitive
+    public KeystoreSecretProviderConfig setKeyStoreEntryPassword(String keyStoreEntryPassword)
+    {
+        this.keyStoreEntryPassword = keyStoreEntryPassword;
+        return this;
+    }
+
+    public String getKeyStoreEntryPassword()
+    {
+        return keyStoreEntryPassword;
     }
 }
