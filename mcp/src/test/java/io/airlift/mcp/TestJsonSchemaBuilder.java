@@ -1,5 +1,7 @@
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -61,6 +63,22 @@ public class TestJsonSchemaBuilder
 
     public record RecordWithMap(Map<String, String> metadata, String name) {}
 
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = Circle.class, name = "CIRCLE"),
+            @JsonSubTypes.Type(value = Square.class, name = "SQUARE"),
+    })
+    public sealed interface Shape
+            permits Circle, Square {}
+
+    public record Circle(double radius)
+            implements Shape {}
+
+    public record Square(double side)
+            implements Shape {}
+
+    public record RecordWithOptionalShape(String name, Optional<Shape> shape) {}
+
     @Test
     public void testPrimitives()
     {
@@ -96,6 +114,13 @@ public class TestJsonSchemaBuilder
         assertSchema(BasicRecord.class, "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"qty\":{\"type\":\"integer\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"name\",\"qty\",\"tags\"],\"$schema\":\"https://json-schema.org/draft/2020-12/schema\"}");
         assertSchema(RecursiveRecord.class, "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"qty\":{\"type\":\"integer\"},\"records\":{\"type\":\"array\",\"items\":{\"$ref\":\"#\"}}},\"required\":[\"name\",\"qty\",\"records\"],\"$schema\":\"https://json-schema.org/draft/2020-12/schema\"}");
         assertSchema(DescribedRecord.class, Optional.of("It has been described"), "{\"type\":\"object\",\"properties\":{\"d\":{\"type\":\"number\",\"description\":\"this is a double\"},\"i\":{\"type\":\"integer\",\"description\":\"this is an int\"},\"l\":{\"type\":\"integer\",\"description\":\"this is a long\"},\"optDouble\":{\"type\":\"object\",\"properties\":{\"isPresent\":{\"type\":\"boolean\"},\"value\":{\"type\":\"number\"}},\"required\":[\"isPresent\",\"value\"],\"description\":\"this might be a double\"},\"optInt\":{\"type\":\"object\",\"properties\":{\"isPresent\":{\"type\":\"boolean\"},\"value\":{\"type\":\"integer\"}},\"required\":[\"isPresent\",\"value\"],\"description\":\"this might be an int\"},\"optLong\":{\"type\":\"object\",\"properties\":{\"isPresent\":{\"type\":\"boolean\"},\"value\":{\"type\":\"integer\"}},\"required\":[\"isPresent\",\"value\"],\"description\":\"this might be a long\"},\"optStr\":{\"type\":[\"string\",\"null\"],\"description\":\"this might be a string\"},\"s\":{\"type\":\"string\",\"description\":\"this is a string\"}},\"required\":[\"d\",\"i\",\"l\",\"s\"],\"description\":\"It has been described\",\"$schema\":\"https://json-schema.org/draft/2020-12/schema\"}");
+    }
+
+    @Test
+    public void testPolymorphicTypes()
+    {
+        assertSchema(Shape.class, "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"radius\":{\"type\":\"number\"},\"type\":{\"const\":\"CIRCLE\"}},\"required\":[\"radius\",\"type\"]},{\"type\":\"object\",\"properties\":{\"side\":{\"type\":\"number\"},\"type\":{\"const\":\"SQUARE\"}},\"required\":[\"side\",\"type\"]}],\"$schema\":\"https://json-schema.org/draft/2020-12/schema\"}");
+        assertSchema(RecordWithOptionalShape.class, "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"shape\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"object\",\"properties\":{\"radius\":{\"type\":\"number\"},\"type\":{\"const\":\"CIRCLE\"}},\"required\":[\"radius\",\"type\"]},{\"type\":\"object\",\"properties\":{\"side\":{\"type\":\"number\"},\"type\":{\"const\":\"SQUARE\"}},\"required\":[\"side\",\"type\"]}]}},\"required\":[\"name\"],\"$schema\":\"https://json-schema.org/draft/2020-12/schema\"}");
     }
 
     @Test
@@ -329,6 +354,16 @@ public class TestJsonSchemaBuilder
     }
 
     @Test
+    public void testBuildWithOptionalPolymorphicMethodParameter()
+    {
+        List<MethodParameter> parameters = ImmutableList.of(
+                new ObjectParameter("shape", Optional.class, optionalParameterType(3), Optional.empty(), Optional.empty(), false));
+
+        ObjectNode schema = jsonSchemaBuilder.build(Optional.empty(), parameters);
+        assertThat(schema.toString()).isEqualTo("{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"shape\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"radius\":{\"type\":\"number\"},\"type\":{\"const\":\"CIRCLE\"}},\"required\":[\"radius\",\"type\"]},{\"type\":\"object\",\"properties\":{\"side\":{\"type\":\"number\"},\"type\":{\"const\":\"SQUARE\"}},\"required\":[\"side\",\"type\"]}]}},\"required\":[]}");
+    }
+
+    @Test
     public void testBuildWithMethodParametersAndDescription()
     {
         List<MethodParameter> parameters = ImmutableList.of(
@@ -406,13 +441,14 @@ public class TestJsonSchemaBuilder
     private static void optionalParameterTypes(
             Optional<String> label,
             Optional<List<String>> tags,
-            Optional<Map<String, String>> attributes)
+            Optional<Map<String, String>> attributes,
+            Optional<Shape> shape)
     {}
 
     private static Type optionalParameterType(int index)
     {
         try {
-            Method method = TestJsonSchemaBuilder.class.getDeclaredMethod("optionalParameterTypes", Optional.class, Optional.class, Optional.class);
+            Method method = TestJsonSchemaBuilder.class.getDeclaredMethod("optionalParameterTypes", Optional.class, Optional.class, Optional.class, Optional.class);
             return method.getGenericParameterTypes()[index];
         }
         catch (ReflectiveOperationException e) {
