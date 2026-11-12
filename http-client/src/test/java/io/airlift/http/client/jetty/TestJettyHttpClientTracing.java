@@ -9,9 +9,15 @@ import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingHttpServer;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -73,6 +79,54 @@ public class TestJettyHttpClientTracing
             client.execute(request, createStringResponseHandler());
 
             assertThat(servlet.getRequestHeaders(TRACE_HEADER)).isEmpty();
+        }
+    }
+
+    @Test
+    public void testNoopTracerPropagatesParentSpanContext()
+            throws Exception
+    {
+        SpanContext parent = SpanContext.create("0af7651916cd43dd8448eb211c80319c", "b7ad6b7169203331", TraceFlags.getSampled(), TraceState.getDefault());
+        EchoServlet servlet = new EchoServlet();
+        try (TestingHttpServer server = new TestingHttpServer(Optional.empty(), servlet);
+                JettyHttpClient client = new JettyHttpClient(
+                        "tracing-test",
+                        new HttpClientConfig(),
+                        ImmutableList.of(),
+                        propagating(ContextPropagators.create(W3CTraceContextPropagator.getInstance())),
+                        TracerProvider.noop().get("testing"),
+                        Optional.empty(),
+                        Optional.empty());
+                Scope _ = Span.wrap(parent).makeCurrent()) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .build();
+            client.execute(request, createStringResponseHandler());
+
+            assertThat(servlet.getRequestHeaders(HeaderName.of("traceparent")))
+                    .containsExactly("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01");
+        }
+    }
+
+    @Test
+    public void testRequestSpanBuilderUsedWithNoopTracer()
+            throws Exception
+    {
+        InMemorySpanExporter spanExporter = InMemorySpanExporter.create();
+        try (SdkTracerProvider tracerProvider = createTracerProvider(spanExporter)) {
+            try (JettyHttpClient client = new JettyHttpClient("tracing-test", new HttpClientConfig())) {
+                Request request = prepareGet()
+                        .setUri(URI.create("http://airlift.invalid/"))
+                        .setSpanBuilder(tracerProvider.get("testing").spanBuilder("custom"))
+                        .build();
+
+                assertThat(client.executeAsync(request, new RecoveringResponseHandler()).get()).isEqualTo("recovered");
+            }
+
+            assertThat(spanExporter.getFinishedSpanItems())
+                    .singleElement()
+                    .extracting(span -> span.getAttributes().get(UrlAttributes.URL_FULL))
+                    .isEqualTo("http://airlift.invalid/");
         }
     }
 

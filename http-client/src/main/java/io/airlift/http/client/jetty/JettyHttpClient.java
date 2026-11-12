@@ -1066,6 +1066,11 @@ public class JettyHttpClient
 
     private Span startSpan(Request request)
     {
+        if (!tracer.isEnabled() && request.getSpanBuilder().isEmpty()) {
+            // the span a noop tracer would return, without building its name and attributes
+            return Span.wrap(Span.current().getSpanContext());
+        }
+
         int port = normalizePort(request.getUri().getScheme(), request.getUri().getPort());
         return request.getSpanBuilder()
                 .orElseGet(() -> tracer.spanBuilder(name + " " + request.getMethod()))
