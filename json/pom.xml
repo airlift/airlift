@@ -42,12 +42,12 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>guice</artifactId>
+            <artifactId>jackson</artifactId>
         </dependency>
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>jackson</artifactId>
+            <artifactId>zest</artifactId>
         </dependency>
 
         <dependency>

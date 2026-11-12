@@ -31,7 +31,7 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>guice</artifactId>
+            <artifactId>zest</artifactId>
         </dependency>
 
         <dependency>

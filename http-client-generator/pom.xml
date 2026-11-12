@@ -45,12 +45,6 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>guice</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
             <artifactId>http-client</artifactId>
             <scope>test</scope>
         </dependency>
@@ -71,6 +65,12 @@
                     <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>zest</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -173,6 +173,7 @@
                     <systemPropertyVariables>
                         <project.version>${project.version}</project.version>
                         <dep.openapi-generator.version>${dep.openapi-generator.version}</dep.openapi-generator.version>
+                        <dep.zest.version>${dep.zest.version}</dep.zest.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

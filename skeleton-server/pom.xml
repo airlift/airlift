@@ -30,11 +30,6 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
             <artifactId>http-server</artifactId>
         </dependency>
 
@@ -80,6 +75,11 @@
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>tracing</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>zest</artifactId>
         </dependency>
 
         <dependency>

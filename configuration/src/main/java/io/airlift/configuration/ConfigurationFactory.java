@@ -33,6 +33,7 @@ import com.google.inject.ConfigurationException;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
+import com.google.inject.Stage;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Elements;
@@ -83,6 +84,14 @@ import static java.util.function.Function.identity;
 public class ConfigurationFactory
         implements Closeable
 {
+    /**
+     * Name of the {@link com.google.inject.Binder#getAttribute binder attribute} holding the
+     * factory used by {@link AbstractConfigurationAwareModule}. To create an injector for such
+     * modules without {@code Bootstrap}, use
+     * {@code Guice.withAttribute(CONFIGURATION_FACTORY_ATTRIBUTE, configurationFactory)}.
+     */
+    public static final String CONFIGURATION_FACTORY_ATTRIBUTE = ConfigurationFactory.class.getName();
+
     private static final ClassValue<Map<String, Method>> STRING_FACTORY_METHODS = new ClassValue<>()
     {
         @Override
@@ -176,16 +185,10 @@ public class ConfigurationFactory
     @SuppressWarnings("deprecation")
     public Collection<Message> registerConfigurationClasses(Collection<? extends Module> modules)
     {
-        // some modules need access to configuration factory so they can lazy register additional config classes
-        // initialize configuration factory
-        modules.stream()
-                .filter(ConfigurationAwareModule.class::isInstance)
-                .map(ConfigurationAwareModule.class::cast)
-                .forEach(module -> module.setConfigurationFactory(this));
-
         List<Message> errors = new ArrayList<>();
 
-        for (Element element : Elements.getElements(modules)) {
+        // some modules need access to configuration factory so they can lazy register additional config classes
+        for (Element element : Elements.getElements(Stage.DEVELOPMENT, ImmutableMap.of(CONFIGURATION_FACTORY_ATTRIBUTE, this), modules)) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
             {
                 @Override
