@@ -1,0 +1,25 @@
+package io.airlift.mcp.model;
+
+import com.google.common.collect.ImmutableList;
+
+import java.util.List;
+import java.util.Optional;
+
+import static java.util.Objects.requireNonNullElse;
+
+public record SubscriptionFilter(
+        Optional<Boolean> toolsListChanged,
+        Optional<Boolean> promptsListChanged,
+        Optional<Boolean> resourcesListChanged,
+        Optional<List<String>> resourceSubscriptions,
+        Optional<List<String>> taskIds)
+{
+    public SubscriptionFilter
+    {
+        toolsListChanged = requireNonNullElse(toolsListChanged, Optional.empty());
+        promptsListChanged = requireNonNullElse(promptsListChanged, Optional.empty());
+        resourcesListChanged = requireNonNullElse(resourcesListChanged, Optional.empty());
+        resourceSubscriptions = requireNonNullElse(resourceSubscriptions, Optional.<List<String>>empty()).map(ImmutableList::copyOf);
+        taskIds = requireNonNullElse(taskIds, Optional.<List<String>>empty()).map(ImmutableList::copyOf);
+    }
+}
