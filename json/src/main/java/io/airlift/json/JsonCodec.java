@@ -18,6 +18,8 @@ package io.airlift.json;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
@@ -105,15 +107,17 @@ public class JsonCodec<T>
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
     }
 
-    private final ObjectMapper mapper;
     private final Type type;
     private final JavaType javaType;
+    private final ObjectReader reader;
+    private final ObjectWriter writer;
 
     JsonCodec(ObjectMapper mapper, Type type)
     {
-        this.mapper = mapper;
         this.type = type;
         this.javaType = mapper.getTypeFactory().constructType(type);
+        this.reader = mapper.readerFor(javaType);
+        this.writer = mapper.writerFor(javaType);
     }
 
     /**
@@ -134,8 +138,8 @@ public class JsonCodec<T>
     public T fromJson(String json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.createParser(json)) {
+            T value = reader.readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
@@ -155,7 +159,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.writerFor(javaType).writeValueAsString(instance);
+            return writer.writeValueAsString(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
@@ -174,7 +178,7 @@ public class JsonCodec<T>
     {
         try (StringWriter stringWriter = new StringWriter();
                 LengthLimitedWriter lengthLimitedWriter = new LengthLimitedWriter(stringWriter, lengthLimit)) {
-            mapper.writeValue(lengthLimitedWriter, instance);
+            writer.writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
         }
         catch (LengthLimitExceededException e) {
@@ -195,8 +199,8 @@ public class JsonCodec<T>
     public T fromJson(byte[] json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.createParser(json)) {
+            T value = reader.readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
@@ -216,7 +220,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.writerFor(javaType).writeValueAsBytes(instance);
+            return writer.writeValueAsBytes(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
@@ -233,8 +237,8 @@ public class JsonCodec<T>
     public T fromJson(InputStream json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.createParser(json)) {
+            T value = reader.readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
@@ -253,8 +257,8 @@ public class JsonCodec<T>
     public T fromJson(Reader json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.createParser(json)) {
+            T value = reader.readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
