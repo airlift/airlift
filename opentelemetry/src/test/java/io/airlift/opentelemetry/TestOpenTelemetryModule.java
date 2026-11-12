@@ -45,6 +45,7 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.util.Map.entry;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestOpenTelemetryModule
@@ -224,7 +225,7 @@ public class TestOpenTelemetryModule
         meter.counterBuilder("my-counter")
                 .build()
                 .add(123);
-        reader.forceFlush();
+        assertThat(reader.forceFlush().join(10, SECONDS).isSuccess()).isTrue();
 
         assertThat(exporter.getFinishedMetricItems()).hasSize(1);
         MetricData metric = exporter.getFinishedMetricItems().stream().collect(onlyElement());

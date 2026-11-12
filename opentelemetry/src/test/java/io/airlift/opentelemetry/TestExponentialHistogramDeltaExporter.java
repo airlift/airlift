@@ -1068,12 +1068,14 @@ class TestExponentialHistogramDeltaExporter
             assertThat(collections.get()).isEqualTo(1);
             assertThat(requests.get()).isEqualTo(1);
             release.countDown();
-            // The reader reports flush completion even when its exporter returns a failure.
-            assertThat(firstExport.join(10, SECONDS).isSuccess()).isTrue();
+            // The reader reports a failed flush when its exporter returns a failure.
+            assertThat(firstExport.join(10, SECONDS).isSuccess()).isFalse();
             counter.add(2);
             assertThat(reader.forceFlush().join(10, SECONDS).isSuccess()).isTrue();
-            assertThat(collections.get()).isEqualTo(2);
-            assertThat(requests.get()).isEqualTo(2);
+            // The reader queues flushes requested during the slow export, so each one collects once it is released.
+            // Nothing is collected while the export is in progress, and every collection is exported exactly once.
+            assertThat(collections.get()).isGreaterThanOrEqualTo(2);
+            assertThat(requests.get()).isEqualTo(collections.get());
         }
         finally {
             release.countDown();
