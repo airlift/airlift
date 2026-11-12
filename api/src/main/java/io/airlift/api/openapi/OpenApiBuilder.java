@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import io.airlift.api.ApiEnumValueResolver;
 import io.airlift.api.ApiIdSupportsLookup;
+import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiOrderByDirection;
 import io.airlift.api.ApiTrait;
 import io.airlift.api.model.ModelDeprecation;
 import io.airlift.api.model.ModelMethod;
@@ -42,6 +44,7 @@ import io.airlift.api.validation.ValidationContext;
 import jakarta.ws.rs.core.UriBuilder;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -82,6 +85,7 @@ import static java.util.function.Function.identity;
 class OpenApiBuilder
 {
     private final SchemaBuilder schemaBuilder;
+    private final ApiEnumValueResolver enumValueResolver;
     private final List<OpenApiExtensionFilter> extensionFilters;
     private final Paths paths = new Paths();
     private final List<Tag> tags = new ArrayList<>();
@@ -471,7 +475,22 @@ class OpenApiBuilder
         return optionalParameter.externalParameters().stream().map(externalParameter -> {
             Parameter parameter = (optionalParameter.location() == ModelOptionalParameter.Location.QUERY) ? new QueryParameter() : new HeaderParameter();
             Optional<Schema<?>> schema;
-            if (externalParameter.externalType().isArray()) {
+            if (optionalParameter.type() instanceof ParameterizedType type &&
+                    type.getRawType().equals(ApiOrderBy.class) &&
+                    type.getActualTypeArguments()[0] instanceof Class<?> fieldType && fieldType.isEnum()) {
+                StringSchema itemSchema = new StringSchema();
+                if (!serviceType.serviceTraits().contains(ENUMS_AS_STRINGS)) {
+                    for (String field : enumValueResolver.values(fieldType)) {
+                        itemSchema.addEnumItem(field);
+                        for (ApiOrderByDirection direction : ApiOrderByDirection.values()) {
+                            itemSchema.addEnumItem(field + " " + direction.value());
+                        }
+                    }
+                }
+                schema = Optional.of(new ArraySchema().items(itemSchema));
+                parameter.setExplode(false);
+            }
+            else if (externalParameter.externalType().isArray()) {
                 schema = schemaBuilder.buildBasicSchema(externalParameter.externalType().getComponentType())
                         .map(withEnumValues(optionalParameter.limitedValues()))
                         .map(new ArraySchema()::items);
@@ -583,6 +602,7 @@ class OpenApiBuilder
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.securityMetadata = resolveSecurityMetadata(metadata, requireNonNull(securityMetadata, "securityMetadata is null"));
         this.methodFilter = requireNonNull(methodFilter, "methodFilter is null");
+        this.enumValueResolver = requireNonNull(enumValueResolver, "enumValueResolver is null");
         this.schemaBuilder = new SchemaBuilder(serviceType.serviceTraits().contains(ENUMS_AS_STRINGS), enumValueResolver, metadata.openApiVersion());
         this.extensionFilters = ImmutableList.copyOf(extensionFilters);
     }
