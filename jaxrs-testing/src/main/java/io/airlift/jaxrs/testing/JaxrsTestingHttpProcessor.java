@@ -114,7 +114,7 @@ public class JaxrsTestingHttpProcessor
                     }
                 }
             };
-            Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get(CONTENT_TYPE).stream().collect(onlyElement()));
+            Entity<byte[]> entity = Entity.entity(bytes, contentType(request, requestHeaders));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
 
@@ -153,6 +153,23 @@ public class JaxrsTestingHttpProcessor
             log.warn("%-8s %s -> OK", request.getMethod(), request.getUri());
         }
         return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
+    }
+
+    /**
+     * The request header wins. Without it, the content type is the one the body was created with,
+     * which is what the HTTP client sends for such a body.
+     */
+    private static String contentType(Request request, MultivaluedMap<HeaderName, Object> requestHeaders)
+    {
+        List<Object> contentTypes = requestHeaders.get(CONTENT_TYPE);
+        if (contentTypes != null) {
+            return (String) contentTypes.stream().collect(onlyElement());
+        }
+        return switch (request.getBodyGenerator()) {
+            case StreamingBodyGenerator generator -> generator.contentType();
+            case FileBodyGenerator generator -> generator.getContentType().toString();
+            case StaticBodyGenerator _, ByteBufferBodyGenerator _ -> throw new IllegalArgumentException("Request with a body has no Content-Type header");
+        };
     }
 
     private static byte[] getBytes(ByteBuffer[] byteBuffers)
