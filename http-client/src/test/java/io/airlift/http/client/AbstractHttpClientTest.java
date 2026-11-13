@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
+import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FilterInputStream;
@@ -43,6 +45,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
@@ -55,6 +58,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,6 +69,7 @@ import java.util.stream.IntStream;
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static io.airlift.http.client.AsyncBodyGenerator.asyncBodyGenerator;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.HeaderNames.CONTENT_LENGTH;
@@ -82,12 +87,14 @@ import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerat
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.units.DataSize.Unit.BYTE;
+import static io.airlift.units.DataSize.Unit.TERABYTE;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Thread.currentThread;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -1000,6 +1007,217 @@ public abstract class AbstractHttpClientTest
         assertThat(bytesPulled.get()).isLessThan(bodySize);
     }
 
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGenerator()
+            throws Exception
+    {
+        IncrementalUploadServlet servlet = new IncrementalUploadServlet();
+        try (CloseableTestHttpServer server = newServerWithServlet(servlet)) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            Future<StringResponse> response = executor.submit(() -> executeRequest(server, request, createStringResponseHandler()));
+
+            // the server receives content while the body is still open
+            ListenableFuture<Void> firstWrite = body.write(ByteBuffer.wrap("first ".getBytes(UTF_8)));
+            servlet.awaitReceived("first ");
+            firstWrite.get(10, SECONDS);
+            assertThat(response).isNotDone();
+
+            ListenableFuture<Void> secondWrite = body.write(ByteBuffer.wrap("second".getBytes(UTF_8)));
+            body.close();
+            assertThat(response.get(10, SECONDS).getBody()).isEqualTo("first second");
+            secondWrite.get(10, SECONDS);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorWrittenBeforeRequest()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            AsyncBodyGenerator body = asyncBodyGenerator(MediaType.PLAIN_TEXT_UTF_8);
+            ListenableFuture<Void> firstWrite = body.write(ByteBuffer.wrap("written ".getBytes(UTF_8)));
+            ListenableFuture<Void> secondWrite = body.write(ByteBuffer.wrap("early".getBytes(UTF_8)));
+            body.close();
+
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            StatusResponse response = executeRequest(server, request, createStatusResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(server.servlet().getRequestBytes()).isEqualTo("written early".getBytes(UTF_8));
+            assertThat(server.servlet().getRequestHeaders(CONTENT_TYPE)).containsExactly("text/plain; charset=utf-8");
+            firstWrite.get(10, SECONDS);
+            secondWrite.get(10, SECONDS);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailure()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServerWithServlet(new IncrementalUploadServlet())) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            Future<StringResponse> response = executor.submit(() -> executeRequest(server, request, createStringResponseHandler()));
+
+            body.write(ByteBuffer.wrap("partial".getBytes(UTF_8))).get(10, SECONDS);
+            body.fail(new IOException("upload failed"));
+
+            assertThatThrownBy(() -> response.get(10, SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasStackTraceContaining("upload failed");
+            assertThatThrownBy(() -> body.write(ByteBuffer.wrap("late".getBytes(UTF_8))).get(10, SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasStackTraceContaining("upload failed");
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailsQueuedWriteWhenHeadersCannotBeGenerated()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            // content that is ready when the request starts, in a body that stays open
+            ListenableFuture<Void> write = body.write(ByteBuffer.wrap("never sent".getBytes(UTF_8)));
+            ListenableFuture<Void> queuedWrite = body.write(ByteBuffer.wrap("also never sent".getBytes(UTF_8)));
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .addHeader(HeaderName.of("X-Oversized"), "x".repeat(1024 * 1024))
+                    .setBodyGenerator(body)
+                    .build();
+
+            assertThatThrownBy(() -> executeRequest(server, request, createStatusResponseHandler()))
+                    .isInstanceOf(Exception.class);
+
+            // the bytes were not written, so a completed future would report them as delivered
+            assertThatThrownBy(() -> write.get(10, SECONDS)).isInstanceOf(ExecutionException.class);
+            assertThatThrownBy(() -> queuedWrite.get(10, SECONDS)).isInstanceOf(ExecutionException.class);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailsQueuedWriteWhenRequestIsRejectedBeforeExchange()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            ListenableFuture<Void> write = body.write(ByteBuffer.wrap("never sent".getBytes(UTF_8)));
+            // a client without HTTP/2 cannot resolve a destination for it, so no exchange is created
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setVersion(HttpVersion.HTTP_2)
+                    .setBodyGenerator(body)
+                    .build();
+
+            assertThatThrownBy(() -> executeRequest(server, createClientConfig().setHttp2Enabled(false), request, createStatusResponseHandler()))
+                    .isInstanceOf(Exception.class);
+
+            assertThatThrownBy(() -> write.get(10, SECONDS)).isInstanceOf(ExecutionException.class);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailsQueuedWriteWhenHandlerRecoversFromRejectedRequest()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            ListenableFuture<Void> write = body.write(ByteBuffer.wrap("never sent".getBytes(UTF_8)));
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setVersion(HttpVersion.HTTP_2)
+                    .setBodyGenerator(body)
+                    .build();
+
+            // the handler turns the failure into a value, so the request does not fail for the caller
+            String result = executeRequest(server, createClientConfig().setHttp2Enabled(false), request, new ResponseHandler<String, RuntimeException>()
+            {
+                @Override
+                public String handleException(Request request, Exception exception)
+                {
+                    return "recovered";
+                }
+
+                @Override
+                public String handle(Request request, Response response)
+                {
+                    return "response";
+                }
+            });
+            assertThat(result).isEqualTo("recovered");
+
+            assertThatThrownBy(() -> write.get(10, SECONDS)).isInstanceOf(ExecutionException.class);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorReusedByAnotherRequest()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServerWithServlet(new IncrementalUploadServlet())) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            Future<StringResponse> response = executor.submit(() -> executeRequest(server, request, createStringResponseHandler()));
+            body.write(ByteBuffer.wrap("first ".getBytes(UTF_8))).get(10, SECONDS);
+
+            // the second request is rejected, and the first one is not affected
+            assertThatThrownBy(() -> executeRequest(server, request, createStringResponseHandler()))
+                    .hasStackTraceContaining("Body is already attached to a request");
+            assertThat(response).isNotDone();
+
+            body.write(ByteBuffer.wrap("second".getBytes(UTF_8))).get(10, SECONDS);
+            body.close();
+            assertThat(response.get(10, SECONDS).getBody()).isEqualTo("first second");
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorReusedWithInvalidResponseLimit()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServerWithServlet(new IncrementalUploadServlet())) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            Future<StringResponse> response = executor.submit(() -> executeRequest(server, request, createStringResponseHandler()));
+            body.write(ByteBuffer.wrap("first ".getBytes(UTF_8))).get(10, SECONDS);
+
+            // rejected on its response limit, which must not fail the body of the first request
+            Request reusing = Request.Builder.fromRequest(request)
+                    .setMaxResponseContentLength(DataSize.of(1, TERABYTE))
+                    .build();
+            assertThatThrownBy(() -> executeRequest(server, reusing, createStringResponseHandler()))
+                    .hasStackTraceContaining("must be less than or equal to maxResponseContentLength");
+            assertThat(response).isNotDone();
+
+            body.write(ByteBuffer.wrap("second".getBytes(UTF_8))).get(10, SECONDS);
+            body.close();
+            assertThat(response.get(10, SECONDS).getBody()).isEqualTo("first second");
+        }
+    }
+
     protected static Request rejectingUploadRequest(CloseableTestHttpServer server)
     {
         // The Expect header makes the client withhold the body until the server
@@ -1825,6 +2043,51 @@ public abstract class AbstractHttpClientTest
             for (int offset = 0; offset < body.length; offset += PIECE_SIZE) {
                 output.write(body, offset, Math.min(PIECE_SIZE, body.length - offset));
                 response.flushBuffer();
+            }
+        }
+    }
+
+    /**
+     * Echoes the request body, and lets a test wait for the part of it that was received so far.
+     */
+    public static final class IncrementalUploadServlet
+            extends HttpServlet
+    {
+        private final ByteArrayOutputStream received = new ByteArrayOutputStream();
+
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws IOException
+        {
+            InputStream input = request.getInputStream();
+            byte[] buffer = new byte[1024];
+            while (true) {
+                int length = input.read(buffer);
+                if (length < 0) {
+                    break;
+                }
+                synchronized (this) {
+                    received.write(buffer, 0, length);
+                    notifyAll();
+                }
+            }
+
+            response.setStatus(200);
+            synchronized (this) {
+                response.getOutputStream().write(received.toByteArray());
+            }
+        }
+
+        public synchronized void awaitReceived(String expected)
+                throws InterruptedException
+        {
+            long deadline = System.nanoTime() + SECONDS.toNanos(10);
+            while (!received.toString(UTF_8).equals(expected)) {
+                long remainingMillis = NANOSECONDS.toMillis(deadline - System.nanoTime());
+                assertThat(remainingMillis)
+                        .describedAs("time left to receive [%s], received [%s]", expected, received.toString(UTF_8))
+                        .isPositive();
+                wait(remainingMillis);
             }
         }
     }
