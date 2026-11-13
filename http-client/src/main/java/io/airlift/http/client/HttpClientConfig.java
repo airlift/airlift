@@ -118,6 +118,7 @@ public class HttpClientConfig
     private DataSize http2InitialSessionReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);
+    private DataSize http2MaxFrameSize = DataSize.of(16, KILOBYTE);
 
     private String logPath = "var/log/";
     private boolean logEnabled;
@@ -552,6 +553,23 @@ public class HttpClientConfig
     public HttpClientConfig setHttp2InputBufferSize(DataSize http2InputBufferSize)
     {
         this.http2InputBufferSize = http2InputBufferSize;
+        return this;
+    }
+
+    // the range that HTTP/2 allows for SETTINGS_MAX_FRAME_SIZE
+    @NotNull
+    @MinDataSize("16kB")
+    @MaxDataSize("16777215B") // 16 MB - 1 B
+    public DataSize getHttp2MaxFrameSize()
+    {
+        return http2MaxFrameSize;
+    }
+
+    @Config("http-client.http2.max-frame-size")
+    @ConfigDescription("Maximum size of a frame that the server may send for HTTP/2")
+    public HttpClientConfig setHttp2MaxFrameSize(DataSize http2MaxFrameSize)
+    {
+        this.http2MaxFrameSize = http2MaxFrameSize;
         return this;
     }
 
