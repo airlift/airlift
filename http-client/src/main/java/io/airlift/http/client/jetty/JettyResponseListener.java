@@ -127,7 +127,9 @@ class JettyResponseListener<T, E extends Exception>
         }
         Response response = result.getResponse();
         Throwable requestFailure = result.getRequestFailure();
-        if (response == null) {
+        // A request that Jetty rejects before it creates an exchange completes with an empty response
+        // and no headers received, so no response was received that could be delivered.
+        if (response == null || (requestFailure != null && consumer == null)) {
             if (requestFailure == null) {
                 // Settle the future so the caller is not left blocking on a violated invariant.
                 future.failed(new IllegalStateException("Result has neither response nor failure: " + result));

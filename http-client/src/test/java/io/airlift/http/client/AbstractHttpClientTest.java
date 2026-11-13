@@ -1859,4 +1859,21 @@ public abstract class AbstractHttpClientTest
         catch (IOException | RuntimeException ignored) {
         }
     }
+
+    @Test
+    @Timeout(30)
+    public void testRequestRejectedBeforeExchange()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            // a client without HTTP/2 cannot resolve a destination for it, so no exchange is created
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .setVersion(HttpVersion.HTTP_2)
+                    .build();
+
+            assertThatThrownBy(() -> executeRequest(server, createClientConfig().setHttp2Enabled(false), request, createStatusResponseHandler()))
+                    .isInstanceOf(Exception.class);
+        }
+    }
 }
