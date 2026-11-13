@@ -21,8 +21,10 @@ import com.google.inject.CreationException;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
+import com.google.inject.Stage;
 import com.google.inject.TypeLiteral;
 import com.google.inject.spi.Message;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -396,6 +399,66 @@ public class TestBootstrap
 
         bootstrap.configure();
         assertThat(fooInstanceCreated).isFalse();
+    }
+
+    @Test
+    public void testModulesConfiguredOnce()
+    {
+        List<Stage> stages = new ArrayList<>();
+        Module installed = binder -> stages.add(binder.currentStage());
+        Bootstrap bootstrap = new Bootstrap(binder -> binder.install(installed));
+
+        bootstrap.initialize();
+        assertThat(stages).containsExactly(Stage.PRODUCTION);
+    }
+
+    @Test
+    public void testModulesConfiguredOnceWithSeparateConfigure()
+    {
+        AtomicInteger configureCount = new AtomicInteger();
+        Module installed = _ -> configureCount.incrementAndGet();
+        Bootstrap bootstrap = new Bootstrap(binder -> binder.install(installed));
+
+        bootstrap.configure();
+        assertThat(configureCount).hasValue(1);
+        bootstrap.initialize();
+        assertThat(configureCount).hasValue(1);
+    }
+
+    @Test
+    public void testConfigurationAwareModuleConfiguredOnce()
+    {
+        AtomicInteger setupCount = new AtomicInteger();
+        AbstractConfigurationAwareModule module = new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                setupCount.incrementAndGet();
+                if (buildConfigObject(FooConfig.class).isFoo()) {
+                    configBinder(binder).bindConfig(BarConfig.class);
+                }
+            }
+        };
+        Injector injector = new Bootstrap(module)
+                .setOptionalConfigurationProperty("foo.enabled", "true")
+                .setOptionalConfigurationProperty("bar.enabled", "true")
+                .initialize();
+
+        assertThat(setupCount).hasValue(1);
+        assertThat(injector.getInstance(BarConfig.class).isBar()).isTrue();
+    }
+
+    @Test
+    public void testProviderLookupDuringConfigure()
+    {
+        AtomicReference<Provider<Instance>> provider = new AtomicReference<>();
+        Injector injector = new Bootstrap(binder -> {
+            binder.bind(Instance.class).in(Scopes.SINGLETON);
+            provider.set(binder.getProvider(Instance.class));
+        }).initialize();
+
+        assertThat(provider.get().get()).isSameAs(injector.getInstance(Instance.class));
     }
 
     @Test
