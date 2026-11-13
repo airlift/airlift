@@ -16,6 +16,8 @@ package io.airlift.jaxrs.testing;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
+import io.airlift.http.client.AsyncBodyGenerator;
 import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HeaderName;
@@ -49,7 +51,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.collect.MoreCollectors.onlyElement;
+import static com.google.common.util.concurrent.Futures.immediateVoidFuture;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 
 public class JaxrsTestingHttpProcessor
@@ -99,6 +103,7 @@ public class JaxrsTestingHttpProcessor
                 .forEach((headerName, values) -> values
                         .forEach(value -> invocationBuilder.header(headerName.toString(), value)));
 
+        ClosedBody asyncBody = null;
         Invocation invocation;
         if (request.getBodyGenerator() == null) {
             invocation = invocationBuilder.build(request.getMethod());
@@ -113,8 +118,13 @@ public class JaxrsTestingHttpProcessor
                         yield stream.readAllBytes();
                     }
                 }
+                case AsyncBodyGenerator generator -> {
+                    ClosedBody body = readClosedBody(generator);
+                    asyncBody = body;
+                    yield body.bytes();
+                }
             };
-            Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get(CONTENT_TYPE).stream().collect(onlyElement()));
+            Entity<byte[]> entity = Entity.entity(bytes, contentType(request, requestHeaders));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
 
@@ -140,6 +150,10 @@ public class JaxrsTestingHttpProcessor
             }
             throw throwable;
         }
+        // a body that fails while the resource runs fails the request, although the resource got all of it
+        if (asyncBody != null) {
+            asyncBody.throwFailure();
+        }
 
         // process response from jax-rs resource
         ImmutableListMultimap.Builder<HeaderName, String> responseHeaders = ImmutableListMultimap.builder();
@@ -153,6 +167,95 @@ public class JaxrsTestingHttpProcessor
             log.warn("%-8s %s -> OK", request.getMethod(), request.getUri());
         }
         return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
+    }
+
+    /**
+     * The request header wins. Without it, the content type is the one the body was created with,
+     * which is what the HTTP client sends for such a body.
+     */
+    private static String contentType(Request request, MultivaluedMap<HeaderName, Object> requestHeaders)
+    {
+        List<Object> contentTypes = requestHeaders.get(CONTENT_TYPE);
+        if (contentTypes != null) {
+            return (String) contentTypes.stream().collect(onlyElement());
+        }
+        return switch (request.getBodyGenerator()) {
+            case AsyncBodyGenerator generator -> generator.contentType();
+            case StreamingBodyGenerator generator -> generator.contentType();
+            case FileBodyGenerator generator -> generator.getContentType().toString();
+            case StaticBodyGenerator _, ByteBufferBodyGenerator _ -> throw new IllegalArgumentException("Request with a body has no Content-Type header");
+        };
+    }
+
+    /**
+     * The resource is invoked with the complete body, so the body must be closed already. Waiting for it
+     * instead would block forever when the same thread is the one that is going to close it.
+     */
+    private static ClosedBody readClosedBody(AsyncBodyGenerator generator)
+            throws Exception
+    {
+        ClosedBody body = new ClosedBody();
+        // content written so far and the end of the body are delivered before this returns
+        generator.attach(body);
+        body.throwFailure();
+        if (!body.isClosed()) {
+            // the request ends here, so later writes must not be accepted by the abandoned sink
+            IllegalStateException rejection = new IllegalStateException("AsyncBodyGenerator must be closed before the request is executed");
+            generator.fail(rejection);
+            throw rejection;
+        }
+        return body;
+    }
+
+    private static class ClosedBody
+            implements AsyncBodyGenerator.Sink
+    {
+        private final ByteArrayOutputStream content = new ByteArrayOutputStream();
+        private volatile boolean closed;
+        private volatile Throwable failure;
+
+        @Override
+        public ListenableFuture<Void> write(ByteBuffer content)
+        {
+            // the caller's buffer is left as it is
+            ByteBuffer copy = content.duplicate();
+            byte[] bytes = new byte[copy.remaining()];
+            copy.get(bytes);
+            this.content.writeBytes(bytes);
+            return immediateVoidFuture();
+        }
+
+        @Override
+        public void close()
+        {
+            closed = true;
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            this.failure = failure;
+        }
+
+        public boolean isClosed()
+        {
+            return closed;
+        }
+
+        public byte[] bytes()
+        {
+            return content.toByteArray();
+        }
+
+        public void throwFailure()
+                throws Exception
+        {
+            Throwable failure = this.failure;
+            if (failure != null) {
+                throwIfInstanceOf(failure, Exception.class);
+                throw new RuntimeException(failure);
+            }
+        }
     }
 
     private static byte[] getBytes(ByteBuffer[] byteBuffers)

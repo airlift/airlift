@@ -8,6 +8,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import io.airlift.http.client.AsyncBodyGenerator;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
@@ -121,6 +124,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -129,6 +133,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.ResponseHandlerUtils.sanitizeUri;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
@@ -939,6 +944,11 @@ public class JettyHttpClient
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             IO.close(listener);
             Throwable cause = e.getCause();
+            // Jetty can reject a request before it creates an exchange, which only fails the response, and
+            // the handler can turn the failure into a value, so the body is failed here with the cause
+            if (request.getBodyGenerator() instanceof AsyncBodyGenerator body) {
+                body.fail(cause);
+            }
             if (cause instanceof Exception) {
                 return new InternalExceptionResponse<>(exceptionHandler.handleException(request, (Exception) cause));
             }
@@ -1036,11 +1046,32 @@ public class JettyHttpClient
         Span span = startSpan(request);
         request = injectTracing(request, span);
 
-        RequestContext jettyRequest = buildRequestContext(request);
-
+        // before the request is built, which takes over its body
         DataSize maxResponseContentLength = getMaxResponseContentLength(request);
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
+
+        RequestContext jettyRequest = buildRequestContext(request);
+        AsyncBodyGenerator asyncBody = request.getBodyGenerator() instanceof AsyncBodyGenerator generator ? generator : null;
+        // Notified of a failure of the request before the response handler can turn it into a value
+        Consumer<Throwable> failureListener = asyncBody != null ? asyncBody::fail : _ -> {};
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete, failureListener);
         JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
+        if (asyncBody != null) {
+            // Jetty can reject a request before it creates an exchange, which none of the request listeners see
+            // and only fails the response. The body is attached to this request, so it is this request's to fail.
+            // The failure listener sees a failure of the request, this callback also sees a cancelled future and
+            // a response handler that throws on a successful response, which the listener is not notified of.
+            Futures.addCallback(future, new FutureCallback<>()
+            {
+                @Override
+                public void onSuccess(T result) {}
+
+                @Override
+                public void onFailure(Throwable failure)
+                {
+                    asyncBody.fail(failure);
+                }
+            }, directExecutor());
+        }
 
         try {
             return listener.send();
@@ -1110,6 +1141,7 @@ public class JettyHttpClient
 
         jettyRequest.method(finalRequest.getMethod());
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(((headerName, values) -> headers.add(headerName.toString(), values))));
+        JettyAsyncRequestBody asyncBody = null;
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
             switch (bodyGenerator) {
@@ -1117,6 +1149,7 @@ public class JettyHttpClient
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(new PathRequestContent(generator.getContentType().toString(), generator.getPath(), sizedByteBufferPool));
                 case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), sizedByteBufferPool));
+                case AsyncBodyGenerator generator -> asyncBody = new JettyAsyncRequestBody(generator, jettyRequest);
             }
         }
 
@@ -1151,6 +1184,11 @@ public class JettyHttpClient
         // Add request size listener
         RequestSizeListener requestSizeListener = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSizeListener);
+
+        if (asyncBody != null) {
+            // last, so the body is only taken over by a request that is about to be sent
+            asyncBody.attach();
+        }
 
         return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
     }

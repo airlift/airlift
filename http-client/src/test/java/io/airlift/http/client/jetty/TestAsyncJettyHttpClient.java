@@ -1,29 +1,46 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.AsyncBodyGenerator;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.ResponseMetadata;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.StreamingResponseHandler;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.units.DataSize;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.airlift.http.client.AsyncBodyGenerator.asyncBodyGenerator;
+import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -76,6 +93,192 @@ public class TestAsyncJettyHttpClient
                 assertThat(handler.statusCode.get()).isEqualTo(200);
                 assertThat(handler.chunks.get()).isGreaterThan(1);
             }
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailsWithCancelledRequest()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServerWithServlet(new IncrementalUploadServlet());
+                JettyHttpClient client = server.createClient(createClientConfig())) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            HttpResponseFuture<StringResponse> response = client.executeAsync(request, createStringResponseHandler());
+            body.write(ByteBuffer.wrap("partial".getBytes(US_ASCII))).get(10, SECONDS);
+
+            response.cancel(true);
+
+            // The request is aborted asynchronously, so content may still be accepted for a moment,
+            // but it must not be accepted for good
+            long deadline = System.nanoTime() + SECONDS.toNanos(10);
+            Throwable failure = null;
+            while (failure == null && System.nanoTime() < deadline) {
+                try {
+                    body.write(ByteBuffer.wrap("late".getBytes(US_ASCII))).get(10, SECONDS);
+                }
+                catch (ExecutionException e) {
+                    failure = e.getCause();
+                }
+            }
+            assertThat(failure).isNotNull();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailsWhenRequestIsRejected()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            JettyHttpClient client = server.createClient(createClientConfig());
+            client.close();
+
+            for (boolean closeBody : new boolean[] {false, true}) {
+                AsyncBodyGenerator body = asyncBodyGenerator();
+                ListenableFuture<Void> write = body.write(ByteBuffer.wrap("never sent".getBytes(US_ASCII)));
+                if (closeBody) {
+                    body.close();
+                }
+                Request request = preparePost()
+                        .setUri(server.baseURI())
+                        .setBodyGenerator(body)
+                        .build();
+                HttpResponseFuture<StringResponse> response = client.executeAsync(request, createStringResponseHandler());
+
+                assertThatThrownBy(() -> response.get(10, SECONDS))
+                        .isInstanceOf(ExecutionException.class)
+                        .hasCauseInstanceOf(RejectedExecutionException.class);
+                // the content written before the request fails with it, whether the body is still open or not
+                assertThatThrownBy(() -> write.get(10, SECONDS))
+                        .isInstanceOf(ExecutionException.class)
+                        .hasCauseInstanceOf(RejectedExecutionException.class);
+            }
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorIsLeftToCallerWhenRequestIsRejected()
+            throws Exception
+    {
+        RuntimeException failure = new IllegalStateException("filter failed");
+        HttpRequestFilter failingFilter = _ -> {
+            throw failure;
+        };
+        try (CloseableTestHttpServer server = newServer();
+                JettyHttpClient client = new JettyHttpClient("test", createClientConfig(), ImmutableList.of(failingFilter), ImmutableSet.of())) {
+            AsyncBodyGenerator asyncBody = asyncBodyGenerator();
+            ListenableFuture<Void> asyncWrite = asyncBody.write(ByteBuffer.wrap("never sent".getBytes(US_ASCII)));
+            Request asyncRequest = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(asyncBody)
+                    .build();
+            assertThatThrownBy(() -> client.executeAsync(asyncRequest, createStringResponseHandler()).get(10, SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCause(failure);
+
+            // the blocking call rejects the request the same way
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            ListenableFuture<Void> write = body.write(ByteBuffer.wrap("never sent".getBytes(US_ASCII)));
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            assertThatThrownBy(() -> client.execute(request, createStringResponseHandler()))
+                    .isSameAs(failure);
+
+            // a request that was never sent leaves its body to the caller
+            assertThat(asyncWrite).isNotDone();
+            assertThat(write).isNotDone();
+            asyncBody.fail(failure);
+            body.fail(failure);
+            assertThatThrownBy(() -> asyncWrite.get(10, SECONDS)).hasCause(failure);
+            assertThatThrownBy(() -> write.get(10, SECONDS)).hasCause(failure);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorFailsRequestAfterBodyWasSent()
+            throws Exception
+    {
+        HoldingUploadServlet servlet = new HoldingUploadServlet();
+        try (CloseableTestHttpServer server = newServerWithServlet(servlet);
+                JettyHttpClient client = server.createClient(createClientConfig())) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            body.write(ByteBuffer.wrap("complete".getBytes(US_ASCII)));
+            body.close();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+            HttpResponseFuture<StringResponse> response = client.executeAsync(request, createStringResponseHandler());
+
+            // the server has all of the body, and the request is waiting for the response
+            assertThat(servlet.bodyReceived.await(10, SECONDS)).isTrue();
+            assertThat(response).isNotDone();
+
+            body.fail(new IOException("abandoned"));
+            assertThatThrownBy(() -> response.get(10, SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasStackTraceContaining("abandoned");
+        }
+        finally {
+            servlet.respond.countDown();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testAsyncBodyGeneratorWrappedByRequestFilter()
+            throws Exception
+    {
+        // the filter takes the original body over, and sends its content in a body of its own
+        HttpRequestFilter wrappingFilter = request -> {
+            AsyncBodyGenerator wrapper = asyncBodyGenerator();
+            ((AsyncBodyGenerator) request.getBodyGenerator()).attach(new AsyncBodyGenerator.Sink()
+            {
+                @Override
+                public ListenableFuture<Void> write(ByteBuffer content)
+                {
+                    wrapper.write(ByteBuffer.wrap("wrapped ".getBytes(US_ASCII)));
+                    return wrapper.write(content);
+                }
+
+                @Override
+                public void close()
+                {
+                    wrapper.close();
+                }
+
+                @Override
+                public void fail(Throwable failure)
+                {
+                    wrapper.fail(failure);
+                }
+            });
+            return fromRequest(request)
+                    .setBodyGenerator(wrapper)
+                    .build();
+        };
+        try (CloseableTestHttpServer server = newServer();
+                JettyHttpClient client = new JettyHttpClient("test", createClientConfig(), ImmutableList.of(wrappingFilter), ImmutableSet.of())) {
+            AsyncBodyGenerator body = asyncBodyGenerator();
+            ListenableFuture<Void> write = body.write(ByteBuffer.wrap("original".getBytes(US_ASCII)));
+            body.close();
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(body)
+                    .build();
+
+            assertThat(client.executeAsync(request, createStringResponseHandler()).get(10, SECONDS).getStatusCode()).isEqualTo(200);
+            assertThat(server.servlet().getRequestBytes()).isEqualTo("wrapped original".getBytes(US_ASCII));
+            write.get(10, SECONDS);
         }
     }
 
@@ -157,6 +360,31 @@ public class TestAsyncJettyHttpClient
                     return output.toByteArray();
                 }
             };
+        }
+    }
+
+    /**
+     * Reads the whole request body, and responds only when the test allows it.
+     */
+    private static final class HoldingUploadServlet
+            extends HttpServlet
+    {
+        private final CountDownLatch bodyReceived = new CountDownLatch(1);
+        private final CountDownLatch respond = new CountDownLatch(1);
+
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws IOException
+        {
+            request.getInputStream().readAllBytes();
+            bodyReceived.countDown();
+            try {
+                respond.await(20, SECONDS);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            response.setStatus(200);
         }
     }
 
