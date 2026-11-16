@@ -275,6 +275,7 @@ public abstract class TestMcp
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testLogging()
     {
         if (sessionController.isEmpty()) {

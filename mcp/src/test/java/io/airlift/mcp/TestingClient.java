@@ -58,6 +58,7 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
         return buildClient(closer, name, clientTransport);
     }
 
+    @SuppressWarnings("deprecation")
     public static TestingClient buildClient(Closer closer, String name, McpClientTransport clientTransport)
     {
         BlockingQueue<String> logs = new LinkedBlockingQueue<>();
