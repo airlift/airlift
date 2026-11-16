@@ -20,8 +20,8 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpRequest;
 
-import java.nio.ByteBuffer;
 import java.util.Optional;
+import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,7 +33,7 @@ class HttpClientLoggingListener
     private final HttpClientLogger logger;
     private final long requestTimestampMillis;
     private final HttpRequest request;
-    private long contentSize;
+    private LongSupplier responseSize = () -> 0;
     private final long requestCreatedTimestamp = System.nanoTime();
     private long requestBeginTimestamp;
     private long requestEndTimestamp;
@@ -47,16 +47,19 @@ class HttpClientLoggingListener
         this.logger = requireNonNull(logger, "logger is null");
     }
 
+    /**
+     * Must be called before the request is sent. The supplier is read when the exchange completes,
+     * so it has to be backed by the listener that the response content is delivered to.
+     */
+    void setResponseSize(LongSupplier responseSize)
+    {
+        this.responseSize = requireNonNull(responseSize, "responseSize is null");
+    }
+
     @Override
     public void onBegin(Request request)
     {
         requestBeginTimestamp = System.nanoTime();
-    }
-
-    @Override
-    public void onContent(Request request, ByteBuffer content)
-    {
-        contentSize += content.remaining();
     }
 
     @Override
@@ -88,12 +91,13 @@ class HttpClientLoggingListener
     {
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestampMillis, requestCreatedTimestamp, requestBeginTimestamp, requestEndTimestamp);
         Throwable throwable = result.getFailure();
+        long responseSize = this.responseSize.getAsLong();
         ResponseInfo responseInfo;
         if (throwable != null) {
-            responseInfo = ResponseInfo.failed(Optional.of(result.getResponse()), Optional.of(throwable), responseBeginTimestamp, responseCompleteTimestamp);
+            responseInfo = ResponseInfo.failed(Optional.of(result.getResponse()), Optional.of(throwable), responseSize, responseBeginTimestamp, responseCompleteTimestamp);
         }
         else {
-            responseInfo = ResponseInfo.from(Optional.of(result.getResponse()), contentSize, responseBeginTimestamp, responseCompleteTimestamp);
+            responseInfo = ResponseInfo.from(Optional.of(result.getResponse()), responseSize, responseBeginTimestamp, responseCompleteTimestamp);
         }
         logger.log(requestInfo, responseInfo);
     }
