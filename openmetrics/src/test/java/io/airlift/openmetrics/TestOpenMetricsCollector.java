@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -332,7 +333,8 @@ public class TestOpenMetricsCollector
         TimeStat timeStat = new TimeStat(ticker);
         timeStat.addNanos(100);
         timeStat.addNanos(200);
-        ticker.increment(1, SECONDS);
+        // long enough for the values to be merged, short enough for the decaying windows to still count them fully
+        ticker.increment(100, MILLISECONDS);
 
         Optional<Metric> metric = OpenMetricsCollector.toOpenMetric(new Attribute(List.of("metric_name"), timeStat, "metric help"), LABELS);
 

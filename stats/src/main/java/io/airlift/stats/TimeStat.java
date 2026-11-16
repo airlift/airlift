@@ -60,9 +60,9 @@ public class TimeStat
     {
         this.ticker = ticker;
         if (StatsBackendFactory.getBackend() == AIRLIFT) {
-            oneMinute = new TimeDistribution(ticker, DecayConfig.oneMinute(), unit);
-            fiveMinutes = new TimeDistribution(ticker, DecayConfig.fiveMinutes(), unit);
-            fifteenMinutes = new TimeDistribution(ticker, DecayConfig.fifteenMinutes(), unit);
+            oneMinute = new TimeDistribution(ticker, DecayConfig.oneMinute(ticker), unit);
+            fiveMinutes = new TimeDistribution(ticker, DecayConfig.fiveMinutes(ticker), unit);
+            fifteenMinutes = new TimeDistribution(ticker, DecayConfig.fifteenMinutes(ticker), unit);
         }
         else {
             oneMinute = null;
@@ -95,7 +95,7 @@ public class TimeStat
             throw new IllegalArgumentException("value is negative: " + nanos);
         }
         if (oneMinute != null && fiveMinutes != null && fifteenMinutes != null) {
-            // all three windows decay on the system ticker, so read the clock once
+            // all three windows decay on the same ticker, so read the clock once
             long nowInSeconds = oneMinute.nowInSeconds();
             oneMinute.add(nanos, nowInSeconds);
             fiveMinutes.add(nanos, nowInSeconds);
