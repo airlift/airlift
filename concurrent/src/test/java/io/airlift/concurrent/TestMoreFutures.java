@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -894,6 +895,38 @@ public class TestMoreFutures
             // the rejection reaches neither the thread completing the future nor the other listeners
             assertThat(completion.complete(future)).isTrue();
             assertThat(invocations).containsExactly("listener");
+        }
+    }
+
+    @Test
+    public void testCallbacksDoNotCreateCancellationException()
+    {
+        for (boolean interrupt : new boolean[] {false, true}) {
+            SettableFuture<String> delegate = SettableFuture.create();
+            AtomicInteger getCount = new AtomicInteger();
+            ListenableFuture<String> future = new SimpleForwardingListenableFuture<>(delegate)
+            {
+                @Override
+                public String get()
+                        throws InterruptedException, ExecutionException
+                {
+                    getCount.incrementAndGet();
+                    return super.get();
+                }
+            };
+            List<Object> invocations = new ArrayList<>();
+            addSuccessCallback(future, value -> invocations.add(value));
+            addSuccessCallback(future, () -> invocations.add("success"));
+            addExceptionCallback(future, () -> invocations.add("exception"));
+
+            // getting the value of a cancelled future creates a CancellationException, which these callbacks have no use for
+            delegate.cancel(interrupt);
+            assertThat(invocations).containsExactly("exception");
+            assertThat(getCount).hasValue(0);
+
+            addExceptionCallback(future, throwable -> invocations.add(throwable));
+            assertThat(invocations).hasSize(2).last().isInstanceOf(CancellationException.class);
+            assertThat(getCount).hasValue(1);
         }
     }
 
