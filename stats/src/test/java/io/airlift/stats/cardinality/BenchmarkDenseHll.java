@@ -32,6 +32,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +59,12 @@ public class BenchmarkDenseHll
 
     @Benchmark
     public DenseHll benchmarkMergeWithDense(MergeWithDenseData data)
+    {
+        return data.base.mergeWith(data.toMerge);
+    }
+
+    @Benchmark
+    public DenseHll benchmarkMergeWithDenseOfSameCardinality(MergeWithDenseOfSameCardinalityData data)
     {
         return data.base.mergeWith(data.toMerge);
     }
@@ -116,6 +123,35 @@ public class BenchmarkDenseHll
             for (int i = 0; i < SMALL_CARDINALITY; i++) {
                 toMerge.insertHash(ThreadLocalRandom.current().nextLong());
             }
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class MergeWithDenseOfSameCardinalityData
+    {
+        // The seeds are chosen so that both HLLs have the same baseline once they have
+        // been merged for the first time: 0 with 10000 values and 6 with 1000000 values,
+        // where a few of the buckets also have overflows.
+        @Param({"10000", "1000000"})
+        public int cardinality;
+
+        public DenseHll base;
+        public DenseHll toMerge;
+
+        @Setup(Level.Iteration)
+        public void initialize()
+        {
+            base = generate(new Random(6));
+            toMerge = generate(new Random(2));
+        }
+
+        private DenseHll generate(Random random)
+        {
+            DenseHll hll = new DenseHll(12);
+            for (int i = 0; i < cardinality; i++) {
+                hll.insertHash(random.nextLong());
+            }
+            return hll;
         }
     }
 
