@@ -11,6 +11,7 @@ import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.validation.ServiceWithObjectField;
+import io.airlift.json.JsonCodecFactory;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -18,7 +19,6 @@ import java.util.Optional;
 
 import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.servertests.openapi.TestOpenApi.validateOpenApiJson;
-import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,7 +37,7 @@ public class TestOpenApiObjectField
 
         OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), ImmutableList.of(), "/", Duration.ofMinutes(5), OPENAPI_3_0_1), ApiBuilderConfig.jackson());
         OpenAPI openAPI = provider.build(serviceType, _ -> true);
-        String actual = jsonCodec(OpenAPI.class).toJson(openAPI);
+        String actual = new JsonCodecFactory().prettyPrint().jsonCodec(OpenAPI.class).toJson(openAPI);
 
         validateOpenApiJson(actual);
 

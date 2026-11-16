@@ -41,15 +41,19 @@ import java.util.function.Supplier;
 
 import static com.google.common.base.Throwables.getCausalChain;
 import static java.util.Objects.requireNonNull;
-import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
+/**
+ * Converts values to and from JSON.
+ * <p>
+ * Codecs created by the static factories write compact JSON, like those of a
+ * default {@link JsonCodecFactory}. For indented output use
+ * {@code new JsonCodecFactory().prettyPrint().jsonCodec(...)}, created once
+ * and reused, since each factory builds its own mapper.
+ */
 @ThreadSafe
 public class JsonCodec<T>
 {
-    private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get()
-            .rebuild()
-            .enable(INDENT_OUTPUT)
-            .build();
+    private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get();
 
     public static <T> JsonCodec<T> jsonCodec(Class<T> type)
     {

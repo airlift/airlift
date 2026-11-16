@@ -43,6 +43,23 @@ public class TestJsonCodecFactory
     }
 
     @Test
+    public void testPrettyPrint()
+    {
+        Person person = new Person().setName("dain").setRocks(true);
+        JsonCodec<Person> compactCodec = jsonCodecFactory.jsonCodec(Person.class);
+        JsonCodec<Person> prettyCodec = jsonCodecFactory.prettyPrint().jsonCodec(Person.class);
+
+        String compactJson = compactCodec.toJson(person);
+        String prettyJson = prettyCodec.toJson(person);
+        assertThat(compactJson).doesNotContain(" ", "\n");
+        assertThat(prettyJson).startsWith("{\n  \"").endsWith("\n}");
+        assertThat(prettyJson.replaceAll("\\s", "")).isEqualTo(compactJson);
+
+        assertThat(compactCodec.fromJson(prettyJson)).isEqualTo(person);
+        assertThat(prettyCodec.fromJson(compactJson)).isEqualTo(person);
+    }
+
+    @Test
     public void testListJsonCodec()
     {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.listJsonCodec(Person.class);

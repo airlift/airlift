@@ -236,8 +236,8 @@ public class TestJsonCodec
 
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 0)).isNotPresent();
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 1000)).isNotPresent();
-        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1035)).isNotPresent();
-        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1036)).isPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1024)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1025)).isPresent();
     }
 
     @Test
@@ -267,8 +267,8 @@ public class TestJsonCodec
 
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 0)).isNotPresent();
         assertThat(jsonCodec.toJsonWithLengthLimit(person, 1000)).isNotPresent();
-        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1035)).isNotPresent();
-        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1036)).isPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1024)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1025)).isPresent();
     }
 
     @Test
@@ -280,8 +280,8 @@ public class TestJsonCodec
 
         assertThat(jsonCodec.toJsonWithLengthLimit(people, 0)).isNotPresent();
         assertThat(jsonCodec.toJsonWithLengthLimit(people, 5000)).isNotPresent();
-        assertThat(jsonCodec.toJsonWithLengthLimit(people, 10381)).isNotPresent();
-        assertThat(jsonCodec.toJsonWithLengthLimit(people, 10382)).isPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(people, 10260)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(people, 10261)).isPresent();
     }
 
     @Test
@@ -336,7 +336,7 @@ public class TestJsonCodec
     {
         JsonCodec<MyRecord> jsonCodec = jsonCodec(MyRecord.class);
 
-        assertThat(jsonCodec.toJson(new MyRecord("value"))).isEqualTo("{\n  \"foo\" : \"value\"\n}");
+        assertThat(jsonCodec.toJson(new MyRecord("value"))).isEqualTo("{\"foo\":\"value\"}");
         assertThat(jsonCodec.fromJson("{\"foo\":\"value\"}")).isEqualTo(new MyRecord("value"));
         assertThatThrownBy(() -> jsonCodec.fromJson("\"value\""))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -388,6 +388,51 @@ public class TestJsonCodec
     }
 
     @Test
+    public void testStaticCodecsWriteCompactJson()
+    {
+        Point point = new Point(1, 2);
+        String pointJson = "{\"x\":1,\"y\":2}";
+
+        assertThat(jsonCodec(Point.class).toJson(point)).isEqualTo(pointJson);
+        assertThat(new String(jsonCodec(Point.class).toJsonBytes(point), UTF_8)).isEqualTo(pointJson);
+        assertThat(jsonCodec(Point.class).toJsonWithLengthLimit(point, pointJson.length())).contains(pointJson);
+        assertThat(jsonCodec(new TypeToken<Point>() {}).toJson(point)).isEqualTo(pointJson);
+
+        assertThat(listJsonCodec(Point.class).toJson(List.of(point, point))).isEqualTo("[" + pointJson + "," + pointJson + "]");
+        assertThat(listJsonCodec(jsonCodec(Point.class)).toJson(List.of(point))).isEqualTo("[" + pointJson + "]");
+
+        assertThat(mapJsonCodec(String.class, Point.class).toJson(Map.of("a", point))).isEqualTo("{\"a\":" + pointJson + "}");
+        assertThat(mapJsonCodec(String.class, jsonCodec(Point.class)).toJson(Map.of("a", point))).isEqualTo("{\"a\":" + pointJson + "}");
+    }
+
+    @Test
+    public void testStaticCodecsReadIndentedJson()
+    {
+        Point point = new Point(1, 2);
+        // as written by the static factories while they indented their output, and by JsonCodecFactory.prettyPrint()
+        String pointJson = "{\n  \"x\" : 1,\n  \"y\" : 2\n}";
+        String listJson = "[ {\n  \"x\" : 1,\n  \"y\" : 2\n}, {\n  \"x\" : 1,\n  \"y\" : 2\n} ]";
+        String mapJson = "{\n  \"a\" : {\n    \"x\" : 1,\n    \"y\" : 2\n  }\n}";
+
+        JsonCodecFactory prettyFactory = new JsonCodecFactory().prettyPrint();
+        assertThat(prettyFactory.jsonCodec(Point.class).toJson(point)).isEqualTo(pointJson);
+        assertThat(prettyFactory.listJsonCodec(Point.class).toJson(List.of(point, point))).isEqualTo(listJson);
+        assertThat(prettyFactory.mapJsonCodec(String.class, Point.class).toJson(Map.of("a", point))).isEqualTo(mapJson);
+
+        JsonCodec<Point> jsonCodec = jsonCodec(Point.class);
+        assertThat(jsonCodec.fromJson(pointJson)).isEqualTo(point);
+        assertThat(jsonCodec.fromJson(pointJson.getBytes(UTF_8))).isEqualTo(point);
+        assertThat(jsonCodec.fromJson(utf8Slice(pointJson))).isEqualTo(point);
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(pointJson.getBytes(UTF_8)))).isEqualTo(point);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(pointJson.getBytes(UTF_8)), UTF_8))).isEqualTo(point);
+
+        assertThat(listJsonCodec(Point.class).fromJson(listJson)).isEqualTo(List.of(point, point));
+        assertThat(mapJsonCodec(String.class, Point.class).fromJson(mapJson)).isEqualTo(Map.of("a", point));
+    }
+
+    public record Point(int x, int y) {}
+
+    @Test
     public void testMonthFromNumberIsZeroBased()
     {
         assertThat(jsonCodec(Month.class).fromJson("0")).isEqualTo(Month.JANUARY);
@@ -399,16 +444,7 @@ public class TestJsonCodec
     public void testMonthAndYearHonorJsonFormat()
     {
         assertThat(jsonCodec(FormattedMonthAndYear.class).toJson(new FormattedMonthAndYear(Month.MARCH, Month.MARCH, Year.of(2024), Year.of(2024), Year.of(2024))))
-                .isEqualTo(
-                        """
-                        {
-                          "plainMonth" : "MARCH",
-                          "numberMonth" : 2,
-                          "plainYear" : "2024",
-                          "patternYear" : "24",
-                          "numberYear" : 2024
-                        }\
-                        """);
+                .isEqualTo("{\"plainMonth\":\"MARCH\",\"numberMonth\":2,\"plainYear\":\"2024\",\"patternYear\":\"24\",\"numberYear\":2024}");
     }
 
     public record FormattedMonthAndYear(
@@ -547,41 +583,20 @@ public class TestJsonCodec
         assertSerializationRoundTrip(
                 jsonCodec(MyRecord.class),
                 new MyRecord("my value"),
-                """
-                {
-                  "foo" : "my value"
-                }\
-                """);
+                "{\"foo\":\"my value\"}");
 
         assertSerializationRoundTrip(
                 JsonCodec.jsonCodec(MyRecordWithBeanLikeGetter.class),
                 new MyRecordWithBeanLikeGetter("my value"),
-                """
-                {
-                  "foo" : "my value"
-                }\
-                """);
+                "{\"foo\":\"my value\"}");
 
         assertSerializationRoundTrip(
                 JsonCodec.jsonCodec(MyRecordAdditionalGetter.class),
                 new MyRecordAdditionalGetter("my value", true, true),
-                """
-                {
-                  "foo" : "my value",
-                  "condition" : true,
-                  "isCool" : true,
-                  "additionalProperty" : "additional property value"
-                }\
-                """);
+                "{\"foo\":\"my value\",\"condition\":true,\"isCool\":true,\"additionalProperty\":\"additional property value\"}");
 
         assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value"))).isEqualTo(
-                """
-                {
-                  "foo" : "not really a foo value",
-                  "bar" : "there is no bar field in the record",
-                  "safe" : false
-                }\
-                """);
+                "{\"foo\":\"not really a foo value\",\"bar\":\"there is no bar field in the record\",\"safe\":false}");
     }
 
     private static <T> void assertSerializationRoundTrip(JsonCodec<T> codec, T object, String expected)
