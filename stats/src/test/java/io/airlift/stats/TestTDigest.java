@@ -24,10 +24,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.slice.SizeOf.instanceSize;
+import static io.airlift.slice.SizeOf.sizeOf;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -340,6 +343,147 @@ public class TestTDigest
     }
 
     @Test
+    public void testMergeManyDigests()
+    {
+        for (int valuesPerPart : new int[] {1, 2, 10, 100, 3000}) {
+            Random random = new Random(valuesPerPart);
+            int parts = 500;
+            double[] values = new double[parts * valuesPerPart];
+
+            TDigest merged = new TDigest();
+            // compacts before every merge, which is at least as often as merging did when it never grew
+            // the arrays beyond what the merged centroids needed
+            TDigest compactedBeforeEveryMerge = new TDigest();
+            for (int part = 0; part < parts; part++) {
+                TDigest digest = new TDigest();
+                for (int i = 0; i < valuesPerPart; i++) {
+                    double value = random.nextGaussian();
+                    values[part * valuesPerPart + i] = value;
+                    digest.add(value);
+                }
+                digest = TDigest.deserialize(digest.serialize());
+
+                merged.mergeWith(digest);
+                compactedBeforeEveryMerge.forceMerge();
+                compactedBeforeEveryMerge.mergeWith(digest);
+            }
+            Arrays.sort(values);
+
+            assertSimilar(merged, compactedBeforeEveryMerge);
+            for (double quantile : new double[] {0.001, 0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99, 0.999}) {
+                // the centroids differ, but both are as accurate as a digest of this compression is expected to be
+                double allowedError = Math.max(0.02 * Math.min(quantile, 1 - quantile), 2.0 / values.length);
+                assertThat(rankError(values, merged.valueAt(quantile), quantile))
+                        .as("%s values per part, quantile %s", valuesPerPart, quantile)
+                        .isLessThanOrEqualTo(allowedError);
+                assertThat(rankError(values, compactedBeforeEveryMerge.valueAt(quantile), quantile))
+                        .as("%s values per part, quantile %s", valuesPerPart, quantile)
+                        .isLessThanOrEqualTo(allowedError);
+            }
+        }
+    }
+
+    @Test
+    public void testMergeLargerDigestsMatchesReference()
+    {
+        // more centroids each than mergeWith() buffers without compacting
+        for (int valuesPerPart : new int[] {40, 100, 3000}) {
+            Random random = new Random(valuesPerPart);
+
+            TDigest merged = new TDigest();
+            ReferenceMerge reference = new ReferenceMerge();
+            for (int part = 0; part < 300; part++) {
+                TDigest digest = new TDigest();
+                for (int i = 0; i < valuesPerPart; i++) {
+                    digest.add(random.nextGaussian(), 1 + random.nextInt(3));
+                }
+                digest = TDigest.deserialize(digest.serialize());
+                assertThat(digest.getCentroidCount()).isGreaterThan(21);
+
+                merged.mergeWith(digest);
+                reference.mergeWith(digest);
+            }
+
+            merged.forceMerge();
+            reference.digest.forceMerge();
+            assertThat(merged.getCentroidCount()).isEqualTo(reference.digest.getCentroidCount());
+            assertThat(Arrays.copyOf(merged.means, merged.centroidCount)).isEqualTo(Arrays.copyOf(reference.digest.means, merged.centroidCount));
+            assertThat(Arrays.copyOf(merged.weights, merged.centroidCount)).isEqualTo(Arrays.copyOf(reference.digest.weights, merged.centroidCount));
+            assertSimilar(merged, reference.digest);
+        }
+    }
+
+    /**
+     * mergeWith() as it was when it compacted whenever the arrays were full and then grew them to
+     * fit exactly, for merging digests that are themselves compacted.
+     */
+    private static final class ReferenceMerge
+    {
+        private final TDigest digest = new TDigest();
+        private boolean needsMerge;
+
+        public void mergeWith(TDigest other)
+        {
+            if (digest.centroidCount + other.centroidCount > digest.means.length) {
+                if (needsMerge) {
+                    digest.forceMerge();
+                    needsMerge = false;
+                }
+                if (digest.means.length < digest.centroidCount + other.centroidCount) {
+                    digest.means = Arrays.copyOf(digest.means, digest.centroidCount + other.centroidCount);
+                    digest.weights = Arrays.copyOf(digest.weights, digest.centroidCount + other.centroidCount);
+                }
+            }
+
+            System.arraycopy(other.means, 0, digest.means, digest.centroidCount, other.centroidCount);
+            System.arraycopy(other.weights, 0, digest.weights, digest.centroidCount, other.centroidCount);
+
+            digest.centroidCount += other.centroidCount;
+            digest.totalWeight += other.totalWeight;
+
+            digest.min = Math.min(digest.min, other.min);
+            digest.max = Math.max(digest.max, other.max);
+
+            needsMerge = true;
+        }
+    }
+
+    @Test
+    public void testMergeSmallDigestsWithoutCompacting()
+    {
+        TDigest merged = new TDigest();
+        for (int i = 0; i < 200; i++) {
+            TDigest digest = new TDigest();
+            digest.add(i);
+            merged.mergeWith(TDigest.deserialize(digest.serialize()));
+        }
+
+        // fewer centroids than a compacted digest may have anyway, so every value is still there
+        assertThat(merged.getCentroidCount()).isEqualTo(200);
+    }
+
+    @Test
+    public void testMergeManySmallDigestsRetainedSize()
+    {
+        // what a digest of the default compression sets aside for its centroids once compacted
+        int compactedCapacity = (int) (2 * TDigest.DEFAULT_COMPRESSION + 10);
+
+        Random random = new Random(1);
+        TDigest merged = new TDigest();
+        for (int i = 0; i < 10_000; i++) {
+            TDigest digest = new TDigest();
+            digest.add(random.nextGaussian());
+            merged.mergeWith(TDigest.deserialize(digest.serialize()));
+
+            assertThat(merged.getCentroidCount()).isLessThanOrEqualTo(compactedCapacity);
+        }
+
+        // means and weights, and as much again for the buffers that compacting uses
+        assertThat((long) merged.estimatedInMemorySizeInBytes())
+                .isLessThanOrEqualTo(instanceSize(TDigest.class) + 4 * sizeOf(new double[compactedCapacity]));
+    }
+
+    @Test
     public void testUnmergeable()
             throws IOException
     {
@@ -442,6 +586,27 @@ public class TestTDigest
         for (int value : values) {
             digest.add(value);
         }
+    }
+
+    /**
+     * How far the quantile is from the quantiles that the value is at in the sorted values
+     */
+    private static double rankError(double[] sortedValues, double value, double quantile)
+    {
+        int below = 0;
+        while (below < sortedValues.length && sortedValues[below] < value) {
+            below++;
+        }
+        int notAbove = below;
+        while (notAbove < sortedValues.length && sortedValues[notAbove] <= value) {
+            notAbove++;
+        }
+        double low = (double) below / sortedValues.length;
+        double high = (double) notAbove / sortedValues.length;
+        if (quantile < low) {
+            return low - quantile;
+        }
+        return Math.max(quantile - high, 0);
     }
 
     private void assertSimilar(TDigest actual, TDigest expected)

@@ -85,6 +85,11 @@ public class TDigest
     private static final int T_DIGEST_SIZE = instanceSize(TDigest.class);
     private static final int INITIAL_CAPACITY = 1;
     private static final int FUDGE_FACTOR = 10;
+    // mergeWith() buffers a digest that has at most this fraction of the centroids a compacted digest
+    // may have. A larger one is a long sorted run, which is cheaper to merge in right away than to
+    // sort later together with others: folding equally sized digests, buffering was faster up to
+    // about 20 centroids each and slower from about 40.
+    private static final int SMALL_DIGEST_DIVISOR = 10;
 
     private final int maxSize;
     private final double compression;
@@ -458,13 +463,23 @@ public class TDigest
     public void mergeWith(TDigest other)
     {
         if (centroidCount + other.centroidCount > means.length) {
-            // first, try to compact the digests to make room. Skip a digest that is already
-            // compacted: re-merging it frees no space and only allocates a fresh temp buffer.
-            mergeIfNeeded(internalCompressionFactor(compression));
-            other.mergeIfNeeded(internalCompressionFactor(compression));
+            int compactedCapacity = compactedCapacity();
+            if (other.centroidCount <= compactedCapacity / SMALL_DIGEST_DIVISOR && centroidCount + other.centroidCount <= compactedCapacity) {
+                // A small digest is buffered the way add() buffers values: the arrays grow geometrically,
+                // up to the room a compacted digest may take anyway, and are compacted once that is full.
+                // Otherwise a digest whose arrays are exactly full, as after deserialize() or copyOf(),
+                // would be compacted on every merge, however little is merged into it.
+                ensureCapacity(Math.max(centroidCount + other.centroidCount, Math.min(means.length * 2, compactedCapacity)));
+            }
+            else {
+                // first, try to compact the digests to make room. Skip a digest that is already
+                // compacted: re-merging it frees no space and only allocates a fresh temp buffer.
+                mergeIfNeeded(internalCompressionFactor(compression));
+                other.mergeIfNeeded(internalCompressionFactor(compression));
 
-            // but if that's not sufficient to fit all clusters, grow the arrays
-            ensureCapacity(centroidCount + other.centroidCount);
+                // but if that's not sufficient to fit all clusters, grow the arrays
+                ensureCapacity(centroidCount + other.centroidCount);
+            }
         }
 
         System.arraycopy(other.means, 0, means, centroidCount, other.centroidCount);
@@ -1099,6 +1114,12 @@ public class TDigest
     private static double internalCompressionFactor(double compression)
     {
         return 2 * compression;
+    }
+
+    // the part of maxSize that is for the centroids of a compacted digest, the rest being for new values
+    private int compactedCapacity()
+    {
+        return (int) (internalCompressionFactor(compression) + FUDGE_FACTOR);
     }
 
     // Maps a double's bits to a long that orders identically to the double under signed comparison,
