@@ -49,6 +49,15 @@ final class DenseHll
     private static final int DENSE_INSTANCE_SIZE = instanceSize(DenseHll.class);
     private static final int OVERFLOW_GROW_INCREMENT = 5;
 
+    // For every possible slot (two packed deltas), the sum of 2^(MAX_DELTA - delta)
+    private static final int[] SCALED_SLOT_SUMS = new int[1 << Byte.SIZE];
+
+    static {
+        for (int slot = 0; slot < SCALED_SLOT_SUMS.length; slot++) {
+            SCALED_SLOT_SUMS[slot] = (1 << (MAX_DELTA - (slot >> BITS_PER_BUCKET))) + (1 << (MAX_DELTA - (slot & BUCKET_MASK)));
+        }
+    }
+
     private final byte indexBitLength;
     private byte baseline;
     private int baselineCount;
@@ -173,16 +182,75 @@ final class DenseHll
             return Math.round(linearCounting(baselineCount, numberOfBuckets));
         }
 
-        double sum = 0;
-        for (int i = 0; i < numberOfBuckets; i++) {
-            int value = getValue(i);
-            sum += 1.0 / (1L << value);
-        }
+        double sum = sumOfInversePowers();
 
         double estimate = (alpha(indexBitLength) * numberOfBuckets * numberOfBuckets) / sum;
         estimate = correctBias(estimate);
 
         return Math.round(estimate);
+    }
+
+    /**
+     * Returns the sum of 2^-value over all buckets, bit for bit equal to adding the terms one bucket at a time
+     */
+    @VisibleForTesting
+    double sumOfInversePowers()
+    {
+        // Read as unsigned, so that a (corrupt) negative overflow makes the sum fall back
+        int maxOverflow = 0;
+        for (int i = 0; i < overflows; i++) {
+            maxOverflow = Math.max(maxOverflow, Byte.toUnsignedInt(overflowValues[i]));
+        }
+
+        int maxDelta = MAX_DELTA + maxOverflow;
+        if (!canSumExactlyAsIntegers(maxDelta)) {
+            return sumOfInversePowersSequentially();
+        }
+
+        long scaledSum = 0;
+        for (byte slot : deltas) {
+            scaledSum += SCALED_SLOT_SUMS[Byte.toUnsignedInt(slot)];
+        }
+        scaledSum <<= maxOverflow;
+
+        for (int i = 0; i < overflows; i++) {
+            if (isEffectiveOverflowEntry(i)) {
+                // The bucket was added as 2^-MAX_DELTA, but it is 2^-(MAX_DELTA + overflow)
+                scaledSum -= (1L << maxOverflow) - (1L << (maxOverflow - overflowValues[i]));
+            }
+        }
+
+        return (double) scaledSum / (1L << (baseline + maxDelta));
+    }
+
+    /**
+     * Every term 2^-value is a multiple of 2^-(baseline + maxDelta), so the sum is that unit times an integer
+     * of at most numberOfBuckets * 2^maxDelta. If that fits in a double's significand, no addition rounds
+     * in any order, and integer and sequential sums are equal.
+     */
+    private boolean canSumExactlyAsIntegers(int maxDelta)
+    {
+        // a negative baseline is corrupt; baseline + maxDelta must be a valid shift for the final division
+        return baseline >= 0
+                && baseline + maxDelta < Long.SIZE - 1
+                && indexBitLength + maxDelta <= Double.PRECISION;
+    }
+
+    // Same condition under which getValue() adds the overflow of the entry's bucket
+    private boolean isEffectiveOverflowEntry(int entry)
+    {
+        int bucket = overflowBuckets[entry];
+        return bucket < numberOfBuckets(indexBitLength) && getDelta(bucket) == MAX_DELTA && findOverflowEntry(bucket) == entry;
+    }
+
+    private double sumOfInversePowersSequentially()
+    {
+        double sum = 0;
+        for (int i = 0; i < numberOfBuckets(indexBitLength); i++) {
+            int value = getValue(i);
+            sum += 1.0 / (1L << value);
+        }
+        return sum;
     }
 
     private double correctBias(double rawEstimate)
