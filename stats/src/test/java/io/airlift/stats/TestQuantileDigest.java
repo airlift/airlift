@@ -9,12 +9,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.slice.SizeOf.instanceSize;
+import static io.airlift.slice.SizeOf.sizeOf;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -572,6 +575,103 @@ public class TestQuantileDigest
     }
 
     @Test
+    public void testMergeIntoEmptyCopiesNodes()
+    {
+        for (int seed = 0; seed < 500; seed++) {
+            Random random = new Random(seed);
+            double maxError = new double[] {0, 0.001, 0.01, 0.1, 1}[random.nextInt(5)];
+            QuantileDigest other = new QuantileDigest(maxError);
+            int count = random.nextInt(random.nextBoolean() ? 20 : 5000);
+            int domain = random.nextInt(3);
+            for (int i = 0; i < count; i++) {
+                long value = switch (domain) {
+                    case 0 -> random.nextInt(100);
+                    case 1 -> random.nextLong();
+                    default -> (long) (random.nextGaussian() * 1_000_000_000);
+                };
+                other.add(value, 1 + random.nextInt(5));
+            }
+            int nodeCount = other.getNodeCount();
+
+            QuantileDigest merged = new QuantileDigest(maxError);
+            merged.merge(other);
+            merged.validate();
+
+            // the arrays are no larger than growing them a node at a time would leave them
+            assertThat(merged.estimatedInMemorySizeInBytes())
+                    .as("seed %s", seed)
+                    .isEqualTo(inMemorySize(Math.max(nodeCount, 1)));
+
+            // merging into an empty digest copies every node and then compresses
+            QuantileDigest expected = new QuantileDigest(other);
+            expected.compress();
+            assertThat(merged.getCount()).as("seed %s", seed).isEqualTo(expected.getCount());
+            assertThat(merged.serialize()).as("seed %s", seed).isEqualTo(expected.serialize());
+        }
+    }
+
+    @Test
+    public void testMergeIntoEmptiedDigestReusesFreeNodes()
+    {
+        TestingTicker ticker = new TestingTicker();
+        int ageInSeconds = (int) QuantileDigest.RESCALE_THRESHOLD_SECONDS;
+        double alpha = DecayConfig.computeAlpha(1e-9, ageInSeconds);
+
+        QuantileDigest digest = new QuantileDigest(0.01, alpha, ticker);
+        addRange(digest, 0, 200);
+        int nodeCount = digest.getNodeCount();
+        int inMemorySize = digest.estimatedInMemorySizeInBytes();
+
+        // every value decays to nothing, so compressing removes all the nodes
+        ticker.increment(ageInSeconds, TimeUnit.SECONDS);
+        digest.merge(new QuantileDigest(0.01, alpha, ticker));
+        assertThat(digest.getNodeCount()).isEqualTo(0);
+
+        QuantileDigest other = new QuantileDigest(0.01, alpha, ticker);
+        addRange(other, 0, 200);
+        assertThat(other.getNodeCount()).isEqualTo(nodeCount);
+
+        digest.merge(other);
+        digest.validate();
+
+        // the nodes fit in the slots that were freed
+        assertThat(digest.estimatedInMemorySizeInBytes()).isEqualTo(inMemorySize);
+
+        QuantileDigest expected = new QuantileDigest(other);
+        expected.compress();
+        assertThat(digest.serialize()).isEqualTo(expected.serialize());
+    }
+
+    @Test
+    public void testMergeIntoDeserializedEmpty()
+    {
+        // an empty digest deserializes to arrays of length zero
+        QuantileDigest digest = new QuantileDigest(new QuantileDigest(0.01).serialize());
+
+        QuantileDigest other = new QuantileDigest(0.01);
+        addRange(other, 0, 100);
+
+        digest.merge(other);
+        digest.validate();
+
+        assertThat(digest.serialize()).isEqualTo(other.serialize());
+    }
+
+    @Test
+    public void testAddToDeserializedEmpty()
+    {
+        // an empty digest deserializes to arrays of length zero
+        QuantileDigest digest = new QuantileDigest(new QuantileDigest(0.01).serialize());
+
+        for (int i = 0; i < 100; i++) {
+            digest.add(i);
+        }
+        digest.validate();
+
+        assertThat(digest.getCount()).isEqualTo(100);
+    }
+
+    @Test
     public void testMergeWithEmpty()
     {
         QuantileDigest a = new QuantileDigest(0.01);
@@ -792,6 +892,15 @@ public class TestQuantileDigest
         addAll(digest, values);
 
         assertThat(digest.equivalent(deserialize(digest.serialize()))).as("Serialization roundtrip failed for input: %s".formatted(values)).isTrue();
+    }
+
+    private static int inMemorySize(int capacity)
+    {
+        return (int) (instanceSize(QuantileDigest.class) +
+                sizeOf(new double[capacity]) +
+                sizeOf(new byte[capacity]) +
+                sizeOf(new long[capacity]) +
+                2 * sizeOf(new int[capacity]));
     }
 
     private QuantileDigest deserialize(Slice serialized)
