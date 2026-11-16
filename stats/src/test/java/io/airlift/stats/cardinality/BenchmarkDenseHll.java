@@ -13,6 +13,7 @@
  */
 package io.airlift.stats.cardinality;
 
+import io.airlift.slice.Slice;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -71,6 +72,12 @@ public class BenchmarkDenseHll
     public long benchmarkCardinality(CardinalityData data)
     {
         return data.instance.cardinality();
+    }
+
+    @Benchmark
+    public DenseHll benchmarkDeserialize(DeserializeData data)
+    {
+        return new DenseHll(data.serialized);
     }
 
     @State(Scope.Thread)
@@ -154,6 +161,31 @@ public class BenchmarkDenseHll
             for (int i = 0; i < values; i++) {
                 instance.insertHash(ThreadLocalRandom.current().nextLong());
             }
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class DeserializeData
+    {
+        @Param({"11", "12", "16"})
+        public int indexBitLength;
+
+        // With 2 values per bucket about 1 in 7 deltas is zero.
+        // With 100 the baseline is above zero, so hardly any is.
+        @Param({"2", "100"})
+        public int valuesPerBucket;
+
+        public Slice serialized;
+
+        @Setup
+        public void initialize()
+        {
+            DenseHll hll = new DenseHll(indexBitLength);
+            int values = valuesPerBucket << indexBitLength;
+            for (int i = 0; i < values; i++) {
+                hll.insertHash(ThreadLocalRandom.current().nextLong());
+            }
+            serialized = hll.serialize();
         }
     }
 
