@@ -21,6 +21,7 @@ import org.openjdk.jmh.runner.options.VerboseMode;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +34,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 public class BenchmarkTDigest
 {
     private static final int NUMBER_OF_ENTRIES = 100_000;
+    private static final int NUMBER_OF_PARTS = 1_000;
 
     @State(Scope.Thread)
     public static class Data
@@ -113,6 +115,30 @@ public class BenchmarkTDigest
         }
     }
 
+    @State(Scope.Thread)
+    public static class Parts
+    {
+        @Param({"1", "10", "100", "10000"})
+        private int valuesPerPart;
+        private TDigest[] parts;
+
+        @Setup
+        public void setup()
+        {
+            // the same digests in every fork, so that runs can be compared
+            Random random = new Random(1);
+            parts = new TDigest[NUMBER_OF_PARTS];
+            for (int i = 0; i < parts.length; i++) {
+                TDigest digest = new TDigest();
+                for (int j = 0; j < valuesPerPart; j++) {
+                    digest.add(random.nextGaussian() * 1_000_000_000);
+                }
+                // like the intermediate states that get merged, with arrays that are exactly full
+                parts[i] = TDigest.deserialize(digest.serialize());
+            }
+        }
+    }
+
     @Benchmark
     @OperationsPerInvocation(NUMBER_OF_ENTRIES)
     public TDigest benchmarkInserts(Data data)
@@ -137,6 +163,17 @@ public class BenchmarkTDigest
     {
         TDigest merged = TDigest.copyOf(data.digest1);
         merged.mergeWith(data.digest2);
+        return merged;
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(NUMBER_OF_PARTS)
+    public TDigest benchmarkMergeMany(Parts data)
+    {
+        TDigest merged = new TDigest();
+        for (TDigest part : data.parts) {
+            merged.mergeWith(part);
+        }
         return merged;
     }
 
