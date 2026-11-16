@@ -13,6 +13,7 @@
  */
 package io.airlift.jackson;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
 import com.google.common.base.Suppliers;
@@ -54,6 +55,14 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Registers the subtypes of a base type together with a discriminator property that selects them.
+ * <p>
+ * The discriminator is written as the first property of a subtype, and may be at any position when read.
+ * A subtype that is {@link JsonFormat.Shape#ARRAY array-shaped} gets it as the last element instead,
+ * because the elements of an array are read back by position. This applies to a shape declared for the
+ * subtype itself; requesting the array shape only on a property that refers to a subtype is not supported.
+ */
 public class JacksonSubType
 {
     private final Set<JacksonModule> modules;
@@ -272,7 +281,26 @@ public class JacksonSubType
                 }
             };
 
-            properties.add(propertyWriter);
+            if (isArrayShaped(config, annotatedClass)) {
+                // the elements of an array are read back by position, so the discriminator must not shift them
+                properties.add(propertyWriter);
+            }
+            else {
+                // written first so that decoding can resolve the subtype without buffering the properties that precede it
+                properties.addFirst(propertyWriter);
+            }
+        }
+
+        private boolean isArrayShaped(MapperConfig<?> config, AnnotatedClass annotatedClass)
+        {
+            // as Jackson does for the type itself: the format declared for it, which any of the installed introspectors
+            // may supply, overridden by the one configured for the type
+            JsonFormat.Value format = config.getDefaultPropertyFormat(annotatedClass.getRawType());
+            JsonFormat.Value declared = config.getAnnotationIntrospector().findFormat(config, annotatedClass);
+            if (declared != null) {
+                format = declared.withOverrides(format);
+            }
+            return format.getShape() == JsonFormat.Shape.ARRAY;
         }
 
         @Override
