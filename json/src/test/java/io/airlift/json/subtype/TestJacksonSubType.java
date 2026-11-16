@@ -13,6 +13,7 @@
  */
 package io.airlift.json.subtype;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.ImmutableList;
@@ -31,9 +32,15 @@ import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.cfg.MapperConfig;
 import tools.jackson.databind.exc.InvalidDefinitionException;
 import tools.jackson.databind.exc.InvalidTypeIdException;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedClass;
+import tools.jackson.databind.introspect.NopAnnotationIntrospector;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 import java.util.List;
 
@@ -220,11 +227,132 @@ public class TestJacksonSubType
         String programmer2Json = jsonMapper2.writeValueAsString(programmer1);
         String manager2Json = jsonMapper2.writeValueAsString(manager1);
 
-        assertThat(programmer1Json).isEqualTo("{\"name\":\"Joe\",\"type\":\"Programmer\"}");
-        assertThat(manager1Json).isEqualTo("{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"type\":\"Programmer\"},{\"name\":\"Rachel\",\"type\":\"Programmer\"}],\"type\":\"Manager\"}");
+        assertThat(programmer1Json).isEqualTo("{\"type\":\"Programmer\",\"name\":\"Joe\"}");
+        assertThat(manager1Json).isEqualTo("{\"type\":\"Manager\",\"name\":\"Jane\",\"reports\":[{\"type\":\"Programmer\",\"name\":\"Joe\"},{\"type\":\"Programmer\",\"name\":\"Rachel\"}]}");
 
-        assertThat(programmer2Json).isEqualTo("{\"name\":\"Joe\",\"category\":\"Programmer\"}");
-        assertThat(manager2Json).isEqualTo("{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"category\":\"Programmer\"},{\"name\":\"Rachel\",\"category\":\"Programmer\"}],\"category\":\"Manager\"}");
+        assertThat(programmer2Json).isEqualTo("{\"category\":\"Programmer\",\"name\":\"Joe\"}");
+        assertThat(manager2Json).isEqualTo("{\"category\":\"Manager\",\"name\":\"Jane\",\"reports\":[{\"category\":\"Programmer\",\"name\":\"Joe\"},{\"category\":\"Programmer\",\"name\":\"Rachel\"}]}");
+    }
+
+    @Test
+    public void testDiscriminatorPosition()
+    {
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
+                .forBase(Employee.class, "type")
+                .add(Programmer.class)
+                .add(Manager.class)
+                .build();
+        JsonMapper jsonMapper = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType)).get();
+        JsonCodec<Employee> jsonCodec = new JsonCodecFactory(jsonMapper).jsonCodec(Employee.class);
+
+        String discriminatorFirst = "{\"type\":\"Manager\",\"name\":\"Horace\",\"reports\":[" +
+                "{\"type\":\"Programmer\",\"name\":\"Chris\"}," +
+                "{\"type\":\"Manager\",\"name\":\"Jane\",\"reports\":[{\"type\":\"Programmer\",\"name\":\"Joe\"},{\"type\":\"Programmer\",\"name\":\"Rachel\"}]}]}";
+        // the discriminator used to be written last, and other writers may put it anywhere
+        String discriminatorLast = "{\"name\":\"Horace\",\"reports\":[" +
+                "{\"name\":\"Chris\",\"type\":\"Programmer\"}," +
+                "{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"type\":\"Programmer\"},{\"name\":\"Rachel\",\"type\":\"Programmer\"}],\"type\":\"Manager\"}],\"type\":\"Manager\"}";
+        String discriminatorMixed = "{\"name\":\"Horace\",\"type\":\"Manager\",\"reports\":[" +
+                "{\"type\":\"Programmer\",\"name\":\"Chris\"}," +
+                "{\"name\":\"Jane\",\"type\":\"Manager\",\"reports\":[{\"name\":\"Joe\",\"type\":\"Programmer\"},{\"type\":\"Programmer\",\"name\":\"Rachel\"}]}]}";
+
+        assertThat(jsonMapper.writeValueAsString(manager2)).isEqualTo(discriminatorFirst);
+        assertThat(jsonCodec.toJson(manager2)).isEqualTo(discriminatorFirst);
+
+        for (String json : ImmutableList.of(discriminatorFirst, discriminatorLast, discriminatorMixed)) {
+            assertThat(jsonMapper.readValue(json, Employee.class)).isEqualTo(manager2);
+            assertThat(jsonCodec.fromJson(json)).isEqualTo(manager2);
+            assertThat((Object) jsonMapper.readerFor(Employee.class).readValue(json)).isEqualTo(manager2);
+            assertThat(jsonMapper.treeToValue(jsonMapper.readTree(json), Employee.class)).isEqualTo(manager2);
+        }
+    }
+
+    @Test
+    public void testArrayShapedSubtype()
+    {
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
+                .forBase(Shaped.class, "type")
+                .add(ArrayShaped.class)
+                .add(ObjectShaped.class)
+                .build();
+        JsonMapper jsonMapper = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType)).get();
+
+        // the elements of an array are read back by position, so the discriminator stays behind them
+        assertArrayShapedRoundTrip(
+                jsonMapper,
+                ImmutableList.of(new ArrayShaped("Alice", 7), new ObjectShaped("Bob", 8)),
+                "[[\"ArrayShaped\",[\"Alice\",7,\"ArrayShaped\"]],{\"type\":\"ObjectShaped\",\"name\":\"Bob\",\"age\":8}]");
+
+        // the shape may also come from a config override, which JsonMapperProvider does not support for records
+        JsonMapper.Builder builder = JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .withConfigOverride(ObjectShaped.class, override -> override.setFormat(JsonFormat.Value.forShape(JsonFormat.Shape.ARRAY)));
+        jacksonSubType.modules().forEach(builder::addModule);
+
+        assertArrayShapedRoundTrip(
+                builder.build(),
+                ImmutableList.of(new ArrayShaped("Alice", 7), new ObjectShaped("Bob", 8)),
+                "[[\"ArrayShaped\",[\"Alice\",7,\"ArrayShaped\"]],[\"ObjectShaped\",[\"Bob\",8,\"ObjectShaped\"]]]");
+    }
+
+    @Test
+    public void testArrayShapeFromAnotherIntrospector()
+    {
+        JacksonSubType jacksonSubType = JacksonSubType.builder()
+                .forBase(Shaped.class, "type")
+                .add(ArrayShaped.class)
+                .add(ObjectShaped.class)
+                .build();
+        JacksonModule arrayShapeModule = new SimpleModule()
+        {
+            @Override
+            public void setupModule(SetupContext context)
+            {
+                super.setupModule(context);
+                context.insertAnnotationIntrospector(new NopAnnotationIntrospector()
+                {
+                    @Override
+                    public JsonFormat.Value findFormat(MapperConfig<?> config, Annotated annotated)
+                    {
+                        if (annotated instanceof AnnotatedClass && annotated.getRawType().equals(ObjectShaped.class)) {
+                            return JsonFormat.Value.forShape(JsonFormat.Shape.ARRAY);
+                        }
+                        return null;
+                    }
+                });
+            }
+        };
+
+        // the shape is found whichever introspector supplies it, and wherever that one is in the chain
+        for (boolean registryFirst : ImmutableList.of(true, false)) {
+            JsonMapper.Builder builder = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            if (registryFirst) {
+                jacksonSubType.modules().forEach(builder::addModule);
+                builder.addModule(arrayShapeModule);
+            }
+            else {
+                builder.addModule(arrayShapeModule);
+                jacksonSubType.modules().forEach(builder::addModule);
+            }
+
+            assertArrayShapedRoundTrip(
+                    builder.build(),
+                    ImmutableList.of(new ArrayShaped("Alice", 7), new ObjectShaped("Bob", 8)),
+                    "[[\"ArrayShaped\",[\"Alice\",7,\"ArrayShaped\"]],[\"ObjectShaped\",[\"Bob\",8,\"ObjectShaped\"]]]");
+        }
+    }
+
+    private static void assertArrayShapedRoundTrip(JsonMapper jsonMapper, List<Shaped> values, String json)
+    {
+        JsonCodec<List<Shaped>> jsonCodec = new JsonCodecFactory(jsonMapper).listJsonCodec(Shaped.class);
+        assertThat(jsonCodec.toJson(values)).isEqualTo(json);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(values);
+
+        for (Shaped value : values) {
+            String valueJson = jsonMapper.writerFor(Shaped.class).writeValueAsString(value);
+            assertThat(jsonMapper.readValue(valueJson, Shaped.class)).isEqualTo(value);
+            assertThat(jsonMapper.treeToValue(jsonMapper.readTree(valueJson), Shaped.class)).isEqualTo(value);
+        }
     }
 
     @Test
@@ -238,7 +366,7 @@ public class TestJacksonSubType
         JsonMapper jsonMapper = new JsonMapperProvider().withJacksonSubTypes(ImmutableSet.of(jacksonSubType)).get();
 
         for (AnnotatedValue value : ImmutableList.of(new FirstValue("first"), new SecondValue("second"))) {
-            String expectedJson = "{\"value\":\"" + value.value() + "\",\"type\":\"" + value.value() + "\"}";
+            String expectedJson = "{\"type\":\"" + value.value() + "\",\"value\":\"" + value.value() + "\"}";
             for (String json : ImmutableList.of(
                     jsonMapper.writeValueAsString(value),
                     jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value),
@@ -280,7 +408,7 @@ public class TestJacksonSubType
             JsonMapper jsonMapper = builder.build();
 
             AnnotatedValue value = new FirstValue("first");
-            String expectedJson = "{\"value\":\"first\",\"type\":\"first\"}";
+            String expectedJson = "{\"type\":\"first\",\"value\":\"first\"}";
             for (String json : ImmutableList.of(
                     jsonMapper.writeValueAsString(value),
                     jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value),
@@ -294,7 +422,7 @@ public class TestJacksonSubType
             // the unannotated registry keeps working: one discriminator, and subtypes still deserialize directly
             Programmer programmer = new Programmer("Joe");
             String programmerJson = jsonMapper.writeValueAsString(programmer);
-            assertThat(programmerJson).isEqualTo("{\"name\":\"Joe\",\"type\":\"Programmer\"}");
+            assertThat(programmerJson).isEqualTo("{\"type\":\"Programmer\",\"name\":\"Joe\"}");
             assertThat(jsonMapper.writerFor(Employee.class).writeValueAsString(programmer)).isEqualTo(programmerJson);
             assertThat((Object) jsonMapper.readerFor(Employee.class)
                     .with(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
@@ -317,16 +445,16 @@ public class TestJacksonSubType
 
         OwnKindValue value = new OwnKindValue("own");
         // through the base, the registry discriminator applies; on its own, the subtype's declaration is not replaced
-        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"value\":\"own\",\"type\":\"own\"}");
+        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"type\":\"own\",\"value\":\"own\"}");
         String ownJson = jsonMapper.writerFor(OwnKindValue.class).writeValueAsString(value);
-        assertThat(ownJson).isEqualTo("{\"kind\":\"TestJacksonSubType$OwnKindValue\",\"value\":\"own\",\"type\":\"own\"}");
+        assertThat(ownJson).isEqualTo("{\"kind\":\"TestJacksonSubType$OwnKindValue\",\"type\":\"own\",\"value\":\"own\"}");
         assertThat((Object) jsonMapper.readerFor(OwnKindValue.class).readValue(ownJson)).isEqualTo(value);
 
         // a declaration on a type between the subtype and the base belongs to the subtype as well
         InheritedKindValue inherited = new InheritedKindValue("inherited");
-        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(inherited)).isEqualTo("{\"value\":\"inherited\",\"type\":\"inherited\"}");
+        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(inherited)).isEqualTo("{\"type\":\"inherited\",\"value\":\"inherited\"}");
         String inheritedJson = jsonMapper.writerFor(InheritedKindValue.class).writeValueAsString(inherited);
-        assertThat(inheritedJson).isEqualTo("{\"kind\":\"TestJacksonSubType$InheritedKindValue\",\"value\":\"inherited\",\"type\":\"inherited\"}");
+        assertThat(inheritedJson).isEqualTo("{\"kind\":\"TestJacksonSubType$InheritedKindValue\",\"type\":\"inherited\",\"value\":\"inherited\"}");
         assertThat((Object) jsonMapper.readerFor(InheritedKindValue.class).readValue(inheritedJson)).isEqualTo(inherited);
     }
 
@@ -343,9 +471,9 @@ public class TestJacksonSubType
 
         // a declaration on an interface outside the registry hierarchy is the subtype's own as well
         SideKindValue value = new SideKindValue("side");
-        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"value\":\"side\",\"type\":\"side\"}");
+        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"type\":\"side\",\"value\":\"side\"}");
         String json = jsonMapper.writerFor(SideKindValue.class).writeValueAsString(value);
-        assertThat(json).isEqualTo("{\"kind\":\"TestJacksonSubType$SideKindValue\",\"value\":\"side\",\"type\":\"side\"}");
+        assertThat(json).isEqualTo("{\"kind\":\"TestJacksonSubType$SideKindValue\",\"type\":\"side\",\"value\":\"side\"}");
         assertThat((Object) jsonMapper.readerFor(SideKindValue.class).readValue(json)).isEqualTo(value);
     }
 
@@ -365,9 +493,9 @@ public class TestJacksonSubType
 
         // a declaration supplied through a mix-in is the subtype's own, exactly like one written on the type
         MixInKindValue value = new MixInKindValue("mixin");
-        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"value\":\"mixin\",\"type\":\"mixin\"}");
+        assertThat(jsonMapper.writerFor(AnnotatedValue.class).writeValueAsString(value)).isEqualTo("{\"type\":\"mixin\",\"value\":\"mixin\"}");
         String json = jsonMapper.writerFor(MixInKindValue.class).writeValueAsString(value);
-        assertThat(json).isEqualTo("{\"kind\":\"TestJacksonSubType$MixInKindValue\",\"value\":\"mixin\",\"type\":\"mixin\"}");
+        assertThat(json).isEqualTo("{\"kind\":\"TestJacksonSubType$MixInKindValue\",\"type\":\"mixin\",\"value\":\"mixin\"}");
         assertThat((Object) jsonMapper.readerFor(MixInKindValue.class).readValue(json)).isEqualTo(value);
     }
 
@@ -409,6 +537,15 @@ public class TestJacksonSubType
 
     public record InheritedKindValue(String value)
             implements KindValue {}
+
+    public sealed interface Shaped {}
+
+    @JsonFormat(shape = JsonFormat.Shape.ARRAY)
+    public record ArrayShaped(String name, int age)
+            implements Shaped {}
+
+    public record ObjectShaped(String name, int age)
+            implements Shaped {}
 
     private static void internalTest(JsonMapper jsonMapper)
     {
