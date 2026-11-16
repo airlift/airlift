@@ -20,6 +20,7 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -64,6 +65,12 @@ public class BenchmarkDenseHll
     public DenseHll benchmarkMergeWithSparse(MergeWithSparseData data)
     {
         return data.base.mergeWith(data.toMerge);
+    }
+
+    @Benchmark
+    public long benchmarkCardinality(CardinalityData data)
+    {
+        return data.instance.cardinality();
     }
 
     @State(Scope.Thread)
@@ -122,6 +129,30 @@ public class BenchmarkDenseHll
             toMerge = new SparseHll(12);
             for (int i = 0; i < SMALL_CARDINALITY; i++) {
                 toMerge.insertHash(ThreadLocalRandom.current().nextLong());
+            }
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class CardinalityData
+    {
+        @Param({"11", "12", "16"})
+        public int indexBitLength;
+
+        // Both fill levels are past the point where linear counting applies.
+        // The higher one raises the baseline and creates overflow entries.
+        @Param({"2", "100"})
+        public int valuesPerBucket;
+
+        public DenseHll instance;
+
+        @Setup
+        public void initialize()
+        {
+            instance = new DenseHll(indexBitLength);
+            int values = valuesPerBucket << indexBitLength;
+            for (int i = 0; i < values; i++) {
+                instance.insertHash(ThreadLocalRandom.current().nextLong());
             }
         }
     }
