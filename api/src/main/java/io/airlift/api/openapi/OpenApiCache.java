@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonCodecFactory;
 import jakarta.ws.rs.container.ContainerRequestContext;
 
 import java.lang.reflect.Method;
@@ -13,12 +14,12 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
-import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.util.Objects.requireNonNull;
 
 class OpenApiCache
 {
-    private static final JsonCodec<OpenAPI> OPEN_API_CODEC = jsonCodec(OpenAPI.class);
+    // the OpenAPI document is read by people as well as by tools
+    private static final JsonCodec<OpenAPI> OPEN_API_CODEC = new JsonCodecFactory().prettyPrint().jsonCodec(OpenAPI.class);
 
     private final OpenApiProvider openApiProvider;
     private final OpenApiFilter openApiFilter;

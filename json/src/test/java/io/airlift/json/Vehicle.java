@@ -30,7 +30,7 @@ public interface Vehicle
 
         String json = jsonCodec.toJson(expected);
         assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
-        assertThat(json.contains("\"@type\" : \"car\"")).isTrue();
+        assertThat(json.contains("\"@type\":\"car\"")).isTrue();
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
@@ -44,7 +44,7 @@ public interface Vehicle
 
         json = jsonCodec.toJson(expected);
         assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
-        assertThat(json.contains("\"@type\" : \"truck\"")).isTrue();
+        assertThat(json.contains("\"@type\":\"truck\"")).isTrue();
 
         bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);

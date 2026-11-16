@@ -47,7 +47,7 @@ class TestStreamingJsonResponseHandler
         assertThat(value.statusCode()).isEqualTo(response.statusCode());
         assertThat(value.exception()).isEmpty();
         assertThat(value.request()).isEqualTo(REQUEST);
-        assertThat(value.bytesRead()).isEqualTo(34);
+        assertThat(value.bytesRead()).isEqualTo(json.getBytes(UTF_8).length);
         assertThat(response.headers().asMap())
                 .containsEntry(CONTENT_TYPE, List.of(JSON_UTF_8.toString()));
         assertThat(value.headers()).isEqualTo(response.headers());

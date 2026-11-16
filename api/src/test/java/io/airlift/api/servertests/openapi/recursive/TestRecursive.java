@@ -15,6 +15,7 @@ import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonCodecFactory;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -23,14 +24,13 @@ import java.util.Optional;
 
 import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
 import static io.airlift.api.servertests.openapi.TestOpenApi.validateOpenApiJson;
-import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRecursive
         extends ServerTestBase
 {
-    private static final JsonCodec<OpenAPI> OPEN_API_CODEC = jsonCodec(OpenAPI.class);
+    private static final JsonCodec<OpenAPI> OPEN_API_CODEC = new JsonCodecFactory().prettyPrint().jsonCodec(OpenAPI.class);
 
     private final OpenApiProvider openApiProvider;
     private final Collection<ModelServiceType> modelServiceTypes;
