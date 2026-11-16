@@ -65,6 +65,7 @@ final class DenseHll
     private static final long LOWEST_BIT_OF_EACH_DELTA = 0x1111_1111_1111_1111L;
     private static final long LOWEST_DELTA_OF_EACH_BYTE = 0x0F0F_0F0F_0F0F_0F0FL;
     private static final long LOWEST_BIT_OF_EACH_BYTE = 0x0101_0101_0101_0101L;
+    private static final long HIGHEST_BIT_OF_EACH_BYTE = 0x8080_8080_8080_8080L;
 
     private final byte indexBitLength;
     private byte baseline;
@@ -529,8 +530,56 @@ final class DenseHll
         int newBaseline = Math.max(this.baseline, other.baseline);
         int baselineCount = 0;
 
-        int bucket = 0;
-        for (int i = 0; i < deltas.length; i++) {
+        // The deltas of the HLL with the lower baseline have to be reduced by the difference between the baselines
+        // before they can be compared with the other ones. No delta is larger than MAX_DELTA, so reducing them
+        // by more than that makes no difference.
+        byte[] higherBaselineDeltas = this.baseline >= other.baseline ? this.deltas : other.deltas;
+        byte[] lowerBaselineDeltas = this.baseline >= other.baseline ? other.deltas : this.deltas;
+        long reduction = Math.min(Math.abs(this.baseline - other.baseline), MAX_DELTA) * LOWEST_BIT_OF_EACH_BYTE;
+
+        // merge 16 buckets at a time
+        int slot = 0;
+        for (; slot <= deltas.length - Long.BYTES; slot += Long.BYTES) {
+            long higherBaseline = (long) LONG_HANDLE.get(higherBaselineDeltas, slot);
+            long lowerBaseline = (long) LONG_HANDLE.get(lowerBaselineDeltas, slot);
+
+            if (hasMaxDelta(higherBaseline) || hasMaxDelta(lowerBaseline)) {
+                // Overflow entries are read, added and removed only for buckets that have MAX_DELTA before
+                // or after the merge, and a merged delta can be MAX_DELTA only if one of the original ones is
+                baselineCount += mergeSlots(other, newBaseline, slot, slot + Long.BYTES);
+                continue;
+            }
+
+            // The low and the high delta of each byte are merged separately, as that takes a fifth bit
+            long lowDeltas = mergeDeltas(higherBaseline & LOWEST_DELTA_OF_EACH_BYTE, lowerBaseline & LOWEST_DELTA_OF_EACH_BYTE, reduction);
+            long highDeltas = mergeDeltas((higherBaseline >>> BITS_PER_BUCKET) & LOWEST_DELTA_OF_EACH_BYTE, (lowerBaseline >>> BITS_PER_BUCKET) & LOWEST_DELTA_OF_EACH_BYTE, reduction);
+            long merged = lowDeltas | (highDeltas << BITS_PER_BUCKET);
+
+            LONG_HANDLE.set(deltas, slot, merged);
+            baselineCount += countZeroDeltas(merged);
+        }
+        // there are fewer than 8 slots when indexBitLength is less than 4
+        baselineCount += mergeSlots(other, newBaseline, slot, deltas.length);
+
+        this.baseline = (byte) newBaseline;
+        this.baselineCount = baselineCount;
+
+        // all baseline values in one of the HLLs lost to the values
+        // in the other HLL, so we need to adjust the final baseline
+        adjustBaselineIfNeeded();
+
+        return this;
+    }
+
+    /**
+     * Merges the given slots one bucket at a time. Returns the number of merged buckets that are at the new baseline.
+     */
+    private int mergeSlots(DenseHll other, int newBaseline, int fromSlot, int toSlot)
+    {
+        int baselineCount = 0;
+
+        int bucket = fromSlot * 2;
+        for (int i = fromSlot; i < toSlot; i++) {
             int newSlot = 0;
 
             byte slot1 = deltas[i];
@@ -572,14 +621,37 @@ final class DenseHll
             this.deltas[i] = (byte) newSlot;
         }
 
-        this.baseline = (byte) newBaseline;
-        this.baselineCount = baselineCount;
+        return baselineCount;
+    }
 
-        // all baseline values in one of the HLLs lost to the values
-        // in the other HLL, so we need to adjust the final baseline
-        adjustBaselineIfNeeded();
+    /**
+     * Returns max(deltas, deltasToReduce - reduction) for each of the 8 bytes. None of the bytes can be larger than MAX_DELTA.
+     */
+    private static long mergeDeltas(long deltas, long deltasToReduce, long reduction)
+    {
+        // Setting the highest bit of each byte keeps the subtraction from borrowing from the next byte.
+        // The bit is still set afterwards in the bytes where deltasToReduce - reduction is not less than deltas.
+        long difference = (deltasToReduce | HIGHEST_BIT_OF_EACH_BYTE) - (deltas + reduction);
+        long notLess = difference & HIGHEST_BIT_OF_EACH_BYTE;
+        // In those bytes, add the difference, which is in the other 7 bits, to get deltasToReduce - reduction
+        return deltas + (difference & (notLess - (notLess >>> (Byte.SIZE - 1))));
+    }
 
-        return this;
+    private static boolean hasMaxDelta(long word)
+    {
+        // AND the 4 bits of each delta into its lowest bit
+        word &= word >>> 2;
+        word &= word >>> 1;
+        return (word & LOWEST_BIT_OF_EACH_DELTA) != 0;
+    }
+
+    private static int countZeroDeltas(long word)
+    {
+        // OR the 4 bits of each delta into its lowest bit
+        word |= word >>> 2;
+        word |= word >>> 1;
+        word &= LOWEST_BIT_OF_EACH_DELTA;
+        return Long.SIZE / BITS_PER_BUCKET - Long.bitCount(word);
     }
 
     /**
