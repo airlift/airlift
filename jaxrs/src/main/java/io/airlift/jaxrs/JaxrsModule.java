@@ -58,6 +58,7 @@ public class JaxrsModule
 
         JaxrsBinder jaxrsBinder = jaxrsBinder(binder, qualifier);
         jaxrsBinder.bind(JaxRsJsonMapper.class);
+        jaxrsBinder.bind(UnflushedCloseInterceptor.class);
         jaxrsBinder.bind(JsonParsingFeature.class, new JsonParsingFeature.Provider(qualifier));
 
         newOptionalBinder(binder, qualifiedKey(qualifier, MappingEnabled.class))
