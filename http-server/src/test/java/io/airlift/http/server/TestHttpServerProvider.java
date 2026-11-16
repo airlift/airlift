@@ -694,6 +694,34 @@ public class TestHttpServerProvider
     }
 
     @Test
+    @Timeout(30)
+    public void testGracefulStop()
+            throws Exception
+    {
+        config.setStopTimeout(new Duration(20, SECONDS));
+        DummyServlet servlet = new DummyServlet();
+        createAndStartServer(servlet);
+
+        try (HttpClient client = new JettyHttpClient()) {
+            URI uri = URI.create(httpServerInfo.getHttpUri().toASCIIString() + "/?sleep=1000");
+            Request request = prepareGet().setUri(uri).build();
+            HttpResponseFuture<StatusResponse> future = client.executeAsync(request, createStatusResponseHandler());
+
+            // wait until the servlet starts processing the request
+            servlet.getSleeping().get(1, SECONDS);
+
+            // stop server while the request is still active
+            server.stop();
+
+            // wait until the server is stopped
+            server.join();
+
+            // the request that was active when the server was stopped should complete
+            assertThat(future.get(5, SECONDS).getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+        }
+    }
+
+    @Test
     public void testInsufficientThreadsHttp()
     {
         config.setMaxThreads(1);
