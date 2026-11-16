@@ -151,6 +151,28 @@ public class TestTimeStat
     }
 
     @Test
+    public void testWindowsDecayOnTicker()
+    {
+        TimeStat stat = new TimeStat(ticker);
+        for (long value = 0; value < VALUES; value++) {
+            stat.add(value, TimeUnit.MILLISECONDS);
+        }
+
+        // each window keeps 1/e of its count once its own length has passed on the ticker
+        ticker.increment(60, TimeUnit.SECONDS);
+        assertThat(stat.getAllTime().getCount()).isEqualTo(VALUES);
+        assertThat(stat.getOneMinute().getCount()).isCloseTo(VALUES * Math.exp(-1), within(1e-9));
+        assertThat(stat.getFiveMinutes().getCount()).isCloseTo(VALUES * Math.exp(-60.0 / 300), within(1e-9));
+        assertThat(stat.getFifteenMinutes().getCount()).isCloseTo(VALUES * Math.exp(-60.0 / 900), within(1e-9));
+
+        ticker.increment(240, TimeUnit.SECONDS);
+        assertThat(stat.getAllTime().getCount()).isEqualTo(VALUES);
+        assertThat(stat.getOneMinute().getCount()).isCloseTo(VALUES * Math.exp(-5), within(1e-9));
+        assertThat(stat.getFiveMinutes().getCount()).isCloseTo(VALUES * Math.exp(-1), within(1e-9));
+        assertThat(stat.getFifteenMinutes().getCount()).isCloseTo(VALUES * Math.exp(-300.0 / 900), within(1e-9));
+    }
+
+    @Test
     public void testAirliftExponentialHistogramSnapshot()
     {
         TimeStat stat = new TimeStat(ticker);
