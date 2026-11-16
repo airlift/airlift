@@ -10,13 +10,16 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.airlift.slice.BasicSliceInput;
-import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
+import io.airlift.slice.Slices;
 import jakarta.annotation.Nullable;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,6 +66,13 @@ public class QuantileDigest
     static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
 
     private static final int INITIAL_CAPACITY = 1;
+
+    // level and left/right flags, count, value
+    private static final int SERIALIZED_NODE_SIZE = SizeOf.SIZE_OF_BYTE + SizeOf.SIZE_OF_DOUBLE + SizeOf.SIZE_OF_LONG;
+    // The node loops work on the backing array directly: the Slice accessors cost about as much as
+    // the rest of the per-node work. These are the handles Slice itself uses, so the bytes are the same.
+    private static final VarHandle LONG_LITTLE_ENDIAN = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+    private static final VarHandle DOUBLE_LITTLE_ENDIAN = MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN);
 
     private final double maxError;
     @Nullable
@@ -178,19 +188,31 @@ public class QuantileDigest
         int height = MAX_BITS - Long.numberOfLeadingZeros(min ^ max) + 1;
         checkArgument(height >= 64 || nodeCount <= (1L << height) - 1, "Too many nodes in deserialized tree. Possible corruption");
 
-        counts = new double[nodeCount];
-        levels = new byte[nodeCount];
-        values = new long[nodeCount];
+        // checked once for all the nodes, and before anything is allocated for them
+        if ((long) nodeCount * SERIALIZED_NODE_SIZE > input.available()) {
+            throw new IndexOutOfBoundsException("Serialized digest is too short for %s nodes".formatted(nodeCount));
+        }
+        byte[] bytes = serialized.byteArray();
+        int position = serialized.byteArrayOffset() + (int) input.position();
 
-        int[] stack = new int[(Integer.highestOneBit(nodeCount - 1) << 1) + 1]; // log2 ceiling
+        // locals, so that the loop does not go through the fields
+        double[] counts = new double[nodeCount];
+        byte[] levels = new byte[nodeCount];
+        long[] values = new long[nodeCount];
+        int[] lefts = new int[nodeCount];
+        int[] rights = new int[nodeCount];
+        double weightedCount = 0;
+
+        // The stack holds the roots of the subtrees that are waiting for their parent. Levels decrease
+        // from parent to child, so in a digest that can be built by adding values it never holds more
+        // than one node per level. It grows for input whose levels do not follow that rule.
+        int[] stack = new int[Math.min(nodeCount, MAX_BITS + 1)];
         int top = -1;
 
         // The nodes are organized in a left-to-right post-order sequence, so
         // we rebuild the tree (left/right links) bottom up
-        lefts = new int[nodeCount];
-        rights = new int[nodeCount];
         for (int node = 0; node < nodeCount; node++) {
-            byte nodeStructure = input.readByte();
+            byte nodeStructure = bytes[position];
             boolean hasRight = (nodeStructure & Flags.HAS_RIGHT) != 0;
             boolean hasLeft = (nodeStructure & Flags.HAS_LEFT) != 0;
             byte level = (byte) ((nodeStructure >>> 2) & 0b111111);
@@ -216,14 +238,26 @@ public class QuantileDigest
                 lefts[node] = -1;
             }
 
-            stack[++top] = node;
+            top++;
+            if (top == stack.length) {
+                stack = Arrays.copyOf(stack, stack.length * 2);
+            }
+            stack[top] = node;
 
-            double count = input.readDouble();
+            double count = (double) DOUBLE_LITTLE_ENDIAN.get(bytes, position + SizeOf.SIZE_OF_BYTE);
             weightedCount += count;
             counts[node] = count;
-            values[node] = input.readLong();
+            values[node] = (long) LONG_LITTLE_ENDIAN.get(bytes, position + SizeOf.SIZE_OF_BYTE + SizeOf.SIZE_OF_DOUBLE);
+            position += SERIALIZED_NODE_SIZE;
         }
         checkArgument(nodeCount == 0 || top == 0, "Tree is corrupted. Expected a single root node");
+
+        this.counts = counts;
+        this.levels = levels;
+        this.values = values;
+        this.lefts = lefts;
+        this.rights = rights;
+        this.weightedCount = weightedCount;
         root = nodeCount - 1; // last node in post-order
 
         nextNode = nodeCount;
@@ -553,7 +587,9 @@ public class QuantileDigest
     {
         compress();
 
-        SliceOutput output = new DynamicSliceOutput(estimatedSerializedSizeInBytes());
+        byte[] bytes = new byte[estimatedSerializedSizeInBytes()];
+        Slice result = Slices.wrappedBuffer(bytes);
+        SliceOutput output = result.getOutput();
 
         output.writeByte(Flags.FORMAT);
         output.writeDouble(maxError);
@@ -563,36 +599,40 @@ public class QuantileDigest
         output.writeLong(max);
         output.writeInt(getNodeCount());
 
-        int[] nodes = new int[getNodeCount()];
-        postOrderTraversal(root, new Callback()
-        {
-            int index;
+        int position = output.size();
+        if (root != -1) {
+            position = serializeNodes(root, bytes, position);
+        }
+        checkState(position == bytes.length, "Expected serialized size doesn't match actual written size");
 
-            @Override
-            public boolean process(int node)
-            {
-                nodes[index++] = node;
-                return true;
-            }
-        });
+        return result;
+    }
 
-        for (int node : nodes) {
-            // The max value for a level is 64.  Non-leaf nodes are decremented by 1
-            // to save a bit (so max serialized value is 63 (111111, 6 bits needed)).
-            // This is shifted 2 bits to give space for left/right child flags.
-            byte nodeStructure = (byte) (Math.max(levels[node] - 1, 0) << 2);
-            if (lefts[node] != -1) {
-                nodeStructure |= Flags.HAS_LEFT;
-            }
-            if (rights[node] != -1) {
-                nodeStructure |= Flags.HAS_RIGHT;
-            }
-            output.writeByte(nodeStructure);
-            output.writeDouble(counts[node]);
-            output.writeLong(values[node]);
+    /**
+     * Writes the subtree in left-to-right post-order and returns the position after its last node.
+     */
+    private int serializeNodes(int node, byte[] bytes, int position)
+    {
+        int left = lefts[node];
+        int right = rights[node];
+
+        // The max value for a level is 64.  Non-leaf nodes are decremented by 1
+        // to save a bit (so max serialized value is 63 (111111, 6 bits needed)).
+        // This is shifted 2 bits to give space for left/right child flags.
+        byte nodeStructure = (byte) (Math.max(levels[node] - 1, 0) << 2);
+        if (left != -1) {
+            position = serializeNodes(left, bytes, position);
+            nodeStructure |= Flags.HAS_LEFT;
+        }
+        if (right != -1) {
+            position = serializeNodes(right, bytes, position);
+            nodeStructure |= Flags.HAS_RIGHT;
         }
 
-        return output.slice();
+        bytes[position] = nodeStructure;
+        DOUBLE_LITTLE_ENDIAN.set(bytes, position + SizeOf.SIZE_OF_BYTE, counts[node]);
+        LONG_LITTLE_ENDIAN.set(bytes, position + SizeOf.SIZE_OF_BYTE + SizeOf.SIZE_OF_DOUBLE, values[node]);
+        return position + SERIALIZED_NODE_SIZE;
     }
 
     @VisibleForTesting
