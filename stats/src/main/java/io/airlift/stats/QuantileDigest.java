@@ -292,6 +292,14 @@ public class QuantileDigest
         rescaleToCommonLandmark(this, other);
 
         // 2. merge other's nodes into this; the tree traversal itself does not modify other
+        if (root == -1) {
+            // Every node of other is about to be copied. Without a root the compression factor is 1,
+            // so the arrays would otherwise be reallocated for each one of them. Without a root every
+            // slot below nextNode is free, so the nodes only need room beyond the existing arrays.
+            if (other.getNodeCount() > counts.length) {
+                resize(other.getNodeCount());
+            }
+        }
         root = merge(root, other, other.root);
 
         max = Math.max(max, other.max);
@@ -755,13 +763,7 @@ public class QuantileDigest
             if (nextNode == counts.length) {
                 // try to double the array, but don't allocate too much to avoid going over the upper bound of nodes
                 // by a large margin (hence, the heuristic to not allocate more than k / 5 nodes)
-                int newSize = counts.length + Math.min(counts.length, calculateCompressionFactor() / 5 + 1);
-                counts = Arrays.copyOf(counts, newSize);
-                levels = Arrays.copyOf(levels, newSize);
-                values = Arrays.copyOf(values, newSize);
-
-                lefts = Arrays.copyOf(lefts, newSize);
-                rights = Arrays.copyOf(rights, newSize);
+                resize(counts.length + Math.max(1, Math.min(counts.length, calculateCompressionFactor() / 5 + 1)));
             }
 
             node = nextNode;
@@ -778,6 +780,16 @@ public class QuantileDigest
         rights[node] = -1;
 
         return node;
+    }
+
+    private void resize(int newSize)
+    {
+        counts = Arrays.copyOf(counts, newSize);
+        levels = Arrays.copyOf(levels, newSize);
+        values = Arrays.copyOf(values, newSize);
+
+        lefts = Arrays.copyOf(lefts, newSize);
+        rights = Arrays.copyOf(rights, newSize);
     }
 
     private int merge(int node, QuantileDigest other, int otherNode)

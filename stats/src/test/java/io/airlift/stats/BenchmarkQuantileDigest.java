@@ -109,6 +109,14 @@ public class BenchmarkQuantileDigest
     }
 
     @Benchmark
+    public QuantileDigest benchmarkMergeIntoEmpty(Digest data)
+    {
+        QuantileDigest merged = new QuantileDigest(0.01);
+        merged.merge(data.digest2);
+        return merged;
+    }
+
+    @Benchmark
     public QuantileDigest benchmarkDeserialize(Digest data)
     {
         return new QuantileDigest(data.serializedDigest);
