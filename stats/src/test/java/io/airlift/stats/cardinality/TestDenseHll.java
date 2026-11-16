@@ -14,6 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.DynamicSliceOutput;
+import io.airlift.slice.Slice;
 import io.airlift.slice.XxHash64;
 import org.junit.jupiter.api.Test;
 
@@ -317,6 +318,37 @@ public class TestDenseHll
         }
 
         assertThat(Double.doubleToRawLongBits(hll.sumOfInversePowers())).isEqualTo(Double.doubleToRawLongBits(expected));
+    }
+
+    @Test
+    public void testDeserializedBaselineCount()
+    {
+        Random random = new Random(1);
+        for (int indexBitLength = 1; indexBitLength <= 16; indexBitLength++) {
+            int numberOfBuckets = numberOfBuckets(indexBitLength);
+            for (int zeroDeltasPercentage : new int[] {0, 1, 10, 30, 50, 70, 90, 99, 100}) {
+                for (int iteration = 0; iteration < 20; iteration++) {
+                    byte[] deltas = new byte[numberOfBuckets / 2];
+                    for (int i = 0; i < deltas.length; i++) {
+                        int high = random.nextInt(100) < zeroDeltasPercentage ? 0 : 1 + random.nextInt(15);
+                        int low = random.nextInt(100) < zeroDeltasPercentage ? 0 : 1 + random.nextInt(15);
+                        deltas[i] = (byte) (high << 4 | low);
+                    }
+
+                    Slice serialized = new DynamicSliceOutput(deltas.length + 5)
+                            .appendByte(Format.DENSE_V2.getTag())
+                            .appendByte(indexBitLength)
+                            .appendByte(0) // baseline
+                            .appendBytes(deltas)
+                            .appendShort(0) // overflows
+                            .slice();
+                    DenseHll hll = new DenseHll(serialized);
+
+                    // compares the baseline count with the number of zero deltas found one bucket at a time
+                    hll.verify();
+                }
+            }
+        }
     }
 
     private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)

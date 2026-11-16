@@ -21,6 +21,9 @@ import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -57,6 +60,11 @@ final class DenseHll
             SCALED_SLOT_SUMS[slot] = (1 << (MAX_DELTA - (slot >> BITS_PER_BUCKET))) + (1 << (MAX_DELTA - (slot & BUCKET_MASK)));
         }
     }
+
+    private static final VarHandle LONG_HANDLE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+    private static final long LOWEST_BIT_OF_EACH_DELTA = 0x1111_1111_1111_1111L;
+    private static final long LOWEST_DELTA_OF_EACH_BYTE = 0x0F0F_0F0F_0F0F_0F0FL;
+    private static final long LOWEST_BIT_OF_EACH_BYTE = 0x0101_0101_0101_0101L;
 
     private final byte indexBitLength;
     private byte baseline;
@@ -132,12 +140,7 @@ final class DenseHll
             throw new IllegalArgumentException("Invalid format tag: %d".formatted(formatTag));
         }
 
-        baselineCount = 0;
-        for (int i = 0; i < numberOfBuckets; i++) {
-            if (getDelta(i) == 0) {
-                baselineCount++;
-            }
-        }
+        baselineCount = countZeroDeltas(deltas);
 
         checkArgument(!input.isReadable(), "input is too big");
     }
@@ -430,6 +433,37 @@ final class DenseHll
         }
 
         return baseline + delta;
+    }
+
+    private static int countZeroDeltas(byte[] deltas)
+    {
+        int nonZeroDeltas = 0;
+
+        int offset = 0;
+        for (; offset <= deltas.length - Long.BYTES; offset += Long.BYTES) {
+            long word = (long) LONG_HANDLE.get(deltas, offset);
+            // OR the 4 bits of each delta into its lowest bit
+            word |= word >>> 2;
+            word |= word >>> 1;
+            word &= LOWEST_BIT_OF_EACH_DELTA;
+            // Count the bits that are set: add up the two in each byte, then all the bytes into the highest one.
+            // Long.bitCount(word) does the same, but is slower on aarch64, where it takes four instructions
+            // through a vector register.
+            word = (word + (word >>> BITS_PER_BUCKET)) & LOWEST_DELTA_OF_EACH_BYTE;
+            nonZeroDeltas += (int) ((word * LOWEST_BIT_OF_EACH_BYTE) >>> (Long.SIZE - Byte.SIZE));
+        }
+
+        // there are fewer than 8 bytes when indexBitLength is less than 4
+        for (; offset < deltas.length; offset++) {
+            if ((deltas[offset] & 0xF0) != 0) {
+                nonZeroDeltas++;
+            }
+            if ((deltas[offset] & 0x0F) != 0) {
+                nonZeroDeltas++;
+            }
+        }
+
+        return deltas.length * 2 - nonZeroDeltas;
     }
 
     private void adjustBaselineIfNeeded()
