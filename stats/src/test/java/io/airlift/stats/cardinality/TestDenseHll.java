@@ -13,13 +13,17 @@
  */
 package io.airlift.stats.cardinality;
 
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.Slice;
 import io.airlift.slice.XxHash64;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
@@ -291,6 +295,95 @@ public class TestDenseHll
         assertSumOfInversePowers(hll);
     }
 
+    @Test
+    public void testMergeLeavesSameStateAsBucketAtATimeMerge()
+    {
+        Random random = new Random(1);
+        for (int iteration = 0; iteration < 3_000; iteration++) {
+            int indexBitLength = 1 + random.nextInt(16);
+            // equal baselines, baselines that are close, and baselines further apart than the largest delta
+            int baseline = random.nextInt(40);
+            int otherBaseline = switch (random.nextInt(4)) {
+                case 0 -> baseline;
+                case 1 -> baseline + 1 + random.nextInt(3);
+                case 2 -> baseline + 1 + random.nextInt(14);
+                default -> baseline + 15 + random.nextInt(10);
+            };
+            boolean corrupt = iteration % 5 == 0;
+
+            DenseHll hll = randomHll(random, indexBitLength, baseline, corrupt);
+            DenseHll other = randomHll(random, indexBitLength, otherBaseline, corrupt);
+            if (random.nextBoolean()) {
+                DenseHll swapped = hll;
+                hll = other;
+                other = swapped;
+            }
+
+            assertMergeLeavesSameState(hll, other);
+            if (!corrupt) {
+                hll.verify();
+            }
+        }
+    }
+
+    @Test
+    public void testMergeOfInsertedHashesLeavesSameStateAsBucketAtATimeMerge()
+    {
+        Random random = new Random(2);
+        for (int iteration = 0; iteration < 300; iteration++) {
+            int indexBitLength = 1 + random.nextInt(16);
+            DenseHll hll = new DenseHll(indexBitLength);
+            DenseHll other = new DenseHll(indexBitLength);
+            // up to about 250 values per bucket
+            for (int i = random.nextInt(1 << (indexBitLength + random.nextInt(9))); i > 0; i--) {
+                hll.insertHash(random.nextLong());
+            }
+            for (int i = random.nextInt(1 << (indexBitLength + random.nextInt(9))); i > 0; i--) {
+                other.insertHash(random.nextLong());
+            }
+
+            assertMergeLeavesSameState(hll, other);
+            hll.verify();
+
+            // merging an HLL with itself
+            assertMergeLeavesSameState(other, other);
+            other.verify();
+        }
+    }
+
+    private static DenseHll randomHll(Random random, int indexBitLength, int baseline, boolean corrupt)
+    {
+        int numberOfBuckets = numberOfBuckets(indexBitLength);
+
+        // without any zero delta, the baseline has to be adjusted after the merge
+        int zeroDeltasPercentage = new int[] {0, 0, 1, 20, 80}[random.nextInt(5)];
+        byte[] deltas = new byte[numberOfBuckets / 2];
+        for (int i = 0; i < deltas.length; i++) {
+            int high = random.nextInt(100) < zeroDeltasPercentage ? 0 : 1 + random.nextInt(14);
+            int low = random.nextInt(100) < zeroDeltasPercentage ? 0 : 1 + random.nextInt(14);
+            deltas[i] = (byte) (high << 4 | low);
+        }
+
+        // some of the buckets with the maximum delta have an overflow
+        int[] maxDeltaBuckets = random.ints(0, numberOfBuckets).distinct().limit(random.nextInt(Math.min(numberOfBuckets, 12) + 1)).toArray();
+        for (int bucket : maxDeltaBuckets) {
+            deltas[bucket / 2] |= (byte) (bucket % 2 == 0 ? 0xF0 : 0x0F);
+        }
+        int[] overflowBuckets = IntStream.of(maxDeltaBuckets).filter(_ -> random.nextBoolean()).toArray();
+        if (corrupt) {
+            // the entries may repeat a bucket, point to a bucket with a smaller delta, or to the bucket past the last one
+            overflowBuckets = random.ints(random.nextInt(Math.min(numberOfBuckets, 12) + 1), 0, Math.min(numberOfBuckets + 1, 1 << 16)).toArray();
+            if (random.nextBoolean()) {
+                baseline = (byte) random.nextInt();
+            }
+        }
+        int[] overflowValues = new int[overflowBuckets.length];
+        for (int i = 0; i < overflowValues.length; i++) {
+            overflowValues[i] = 1 + random.nextInt(corrupt ? 127 : 20);
+        }
+        return deserialize(indexBitLength, baseline, deltas, overflowBuckets, overflowValues);
+    }
+
     private static DenseHll deserialize(int indexBitLength, int baseline, byte[] deltas, int[] overflowBuckets, int[] overflowValues)
     {
         DynamicSliceOutput output = new DynamicSliceOutput(deltas.length + 3 * overflowBuckets.length + 5)
@@ -390,5 +483,221 @@ public class TestDenseHll
     private int[] prefixLengths()
     {
         return new int[] {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    }
+
+    private static void assertMergeLeavesSameState(DenseHll hll, DenseHll other)
+    {
+        BucketAtATimeHll expected = new BucketAtATimeHll(hll);
+        BucketAtATimeHll expectedOther = hll == other ? expected : new BucketAtATimeHll(other);
+
+        expected.mergeWith(expectedOther);
+        hll.mergeWith(other);
+
+        expected.assertSameState(hll);
+        expectedOther.assertSameState(other);
+    }
+
+    /**
+     * Copy of the state of a DenseHll, with mergeWith(DenseHll) as it was when it merged one bucket at a time
+     */
+    private static final class BucketAtATimeHll
+    {
+        private static final int MAX_DELTA = 15;
+        private static final int OVERFLOW_GROW_INCREMENT = 5;
+
+        private byte baseline;
+        private int baselineCount;
+        private final byte[] deltas;
+
+        private int overflows;
+        private int[] overflowBuckets;
+        private byte[] overflowValues;
+
+        public BucketAtATimeHll(DenseHll hll)
+        {
+            baseline = (byte) getField(hll, "baseline");
+            baselineCount = (int) getField(hll, "baselineCount");
+            deltas = ((byte[]) getField(hll, "deltas")).clone();
+            overflows = (int) getField(hll, "overflows");
+            overflowBuckets = ((int[]) getField(hll, "overflowBuckets")).clone();
+            overflowValues = ((byte[]) getField(hll, "overflowValues")).clone();
+        }
+
+        public void assertSameState(DenseHll hll)
+        {
+            assertThat(getField(hll, "baseline")).isEqualTo(baseline);
+            assertThat(getField(hll, "baselineCount")).isEqualTo(baselineCount);
+            assertThat((byte[]) getField(hll, "deltas")).isEqualTo(deltas);
+            assertThat(getField(hll, "overflows")).isEqualTo(overflows);
+            // the arrays have to match in full, including the unused entries
+            assertThat((int[]) getField(hll, "overflowBuckets")).isEqualTo(overflowBuckets);
+            assertThat((byte[]) getField(hll, "overflowValues")).isEqualTo(overflowValues);
+        }
+
+        private static Object getField(DenseHll hll, String name)
+        {
+            try {
+                Field field = DenseHll.class.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(hll);
+            }
+            catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        public void mergeWith(BucketAtATimeHll other)
+        {
+            int newBaseline = Math.max(this.baseline, other.baseline);
+            int baselineCount = 0;
+
+            int bucket = 0;
+            for (int i = 0; i < deltas.length; i++) {
+                int newSlot = 0;
+
+                byte slot1 = deltas[i];
+                byte slot2 = other.deltas[i];
+
+                for (int shift = 4; shift >= 0; shift -= 4) {
+                    int delta1 = (slot1 >>> shift) & 0b1111;
+                    int delta2 = (slot2 >>> shift) & 0b1111;
+
+                    int value1 = this.baseline + delta1;
+                    int value2 = other.baseline + delta2;
+
+                    int overflowEntry = -1;
+                    if (delta1 == MAX_DELTA) {
+                        overflowEntry = findOverflowEntry(bucket);
+                        if (overflowEntry != -1) {
+                            value1 += overflowValues[overflowEntry];
+                        }
+                    }
+
+                    if (delta2 == MAX_DELTA) {
+                        value2 += other.getOverflow(bucket);
+                    }
+
+                    int newValue = Math.max(value1, value2);
+                    int newDelta = newValue - newBaseline;
+
+                    if (newDelta == 0) {
+                        baselineCount++;
+                    }
+
+                    newDelta = updateOverflow(bucket, overflowEntry, newDelta);
+
+                    newSlot <<= 4;
+                    newSlot |= newDelta;
+                    bucket++;
+                }
+
+                this.deltas[i] = (byte) newSlot;
+            }
+
+            this.baseline = (byte) newBaseline;
+            this.baselineCount = baselineCount;
+
+            adjustBaselineIfNeeded();
+        }
+
+        private void adjustBaselineIfNeeded()
+        {
+            while (baselineCount == 0) {
+                baseline++;
+
+                for (int bucket = 0; bucket < deltas.length * 2; ++bucket) {
+                    int delta = getDelta(bucket);
+
+                    boolean hasOverflow = false;
+                    if (delta == MAX_DELTA) {
+                        for (int i = 0; i < overflows; i++) {
+                            if (overflowBuckets[i] == bucket) {
+                                hasOverflow = true;
+                                overflowValues[i]--;
+
+                                if (overflowValues[i] == 0) {
+                                    int lastEntry = overflows - 1;
+                                    if (i < lastEntry) {
+                                        overflowBuckets[i] = overflowBuckets[lastEntry];
+                                        overflowValues[i] = overflowValues[lastEntry];
+
+                                        overflowBuckets[lastEntry] = -1;
+                                        overflowValues[lastEntry] = 0;
+                                    }
+                                    overflows--;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasOverflow) {
+                        delta--;
+                        setDelta(bucket, delta);
+                    }
+
+                    if (delta == 0) {
+                        ++baselineCount;
+                    }
+                }
+            }
+        }
+
+        private int getDelta(int bucket)
+        {
+            return (deltas[bucket >> 1] >> shiftForBucket(bucket)) & 0b1111;
+        }
+
+        private void setDelta(int bucket, int value)
+        {
+            int slot = bucket >> 1;
+            deltas[slot] = (byte) (deltas[slot] & ~(0b1111 << shiftForBucket(bucket)) | (value << shiftForBucket(bucket)));
+        }
+
+        private static int shiftForBucket(int bucket)
+        {
+            return ((~bucket) & 1) << 2;
+        }
+
+        private int findOverflowEntry(int bucket)
+        {
+            for (int i = 0; i < overflows; i++) {
+                if (overflowBuckets[i] == bucket) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private int getOverflow(int bucket)
+        {
+            int entry = findOverflowEntry(bucket);
+            return entry == -1 ? 0 : overflowValues[entry];
+        }
+
+        private int updateOverflow(int bucket, int overflowEntry, int delta)
+        {
+            if (delta > MAX_DELTA) {
+                if (overflowEntry != -1) {
+                    overflowValues[overflowEntry] = (byte) (delta - MAX_DELTA);
+                }
+                else {
+                    overflowBuckets = Ints.ensureCapacity(overflowBuckets, overflows + 1, OVERFLOW_GROW_INCREMENT);
+                    overflowValues = Bytes.ensureCapacity(overflowValues, overflows + 1, OVERFLOW_GROW_INCREMENT);
+
+                    overflowBuckets[overflows] = bucket;
+                    overflowValues[overflows] = (byte) (delta - MAX_DELTA);
+                    overflows++;
+                }
+                delta = MAX_DELTA;
+            }
+            else if (overflowEntry != -1) {
+                overflowBuckets[overflowEntry] = overflowBuckets[overflows - 1];
+                overflowValues[overflowEntry] = overflowValues[overflows - 1];
+                overflows--;
+            }
+
+            return delta;
+        }
     }
 }
