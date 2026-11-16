@@ -52,6 +52,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -61,7 +62,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -303,17 +303,14 @@ public class HttpServer
          * Jetty's handlers chain is:
          *    channel listener (protocol)
          *    |--- graceful handler (tracks active requests)
-         *         |--- statistics handler
-         *              |--- compression handler (if enabled)
-         *                   |--- servlet context handler
-         *                        |--- error handler
-         *                        |--- servlet filters (i.e. tracing)
-         *                        |--- the servlet (i.e. Jersey's ServletContainer)
-         *                        |--- static resources
+         *         |--- compression handler (if enabled)
+         *              |--- servlet context handler
+         *                   |--- error handler
+         *                   |--- servlet filters (i.e. tracing)
+         *                   |--- the servlet (i.e. Jersey's ServletContainer)
+         *                   |--- static resources
          *    |--- error handler
          */
-        StatisticsHandler statsHandler = new StatisticsHandler();
-
         Set<String> connectorNames = new HashSet<>();
         if (config.isHttpEnabled()) {
             connectorNames.add("http");
@@ -330,6 +327,7 @@ public class HttpServer
                 serverFeatures.contains(LEGACY_URI_COMPLIANCE),
                 serverFeatures.contains(REQUEST_CANCELLATION));
 
+        Handler handler = servletContext;
         if (config.isGzipCompressionEnabled() || config.isBrotliCompressionEnabled() || config.isZstdCompressionEnabled()) {
             CompressionHandler compressionHandler = new CompressionHandler();
 
@@ -366,11 +364,7 @@ public class HttpServer
 
             compressionHandler.putConfiguration("/*", compressionConfig);
             compressionHandler.setHandler(servletContext);
-
-            statsHandler.setHandler(compressionHandler);
-        }
-        else {
-            statsHandler.setHandler(servletContext);
+            handler = compressionHandler;
         }
 
         if (config.isLogEnabled()) {
@@ -382,7 +376,7 @@ public class HttpServer
                     config.isLogCompressionEnabled(),
                     config.isLogImmediateFlush()));
         }
-        server.setHandler(new GracefulHandler(statsHandler));
+        server.setHandler(new GracefulHandler(handler));
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
