@@ -65,7 +65,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
@@ -260,7 +259,7 @@ public class OperationsImpl
     private ListToolsResult listTools(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<Tool> localTools = entities.tools(requestContext);
-        return paginationUtil.paginate(listRequest, localTools, Tool::name, (tools, newCursor) -> withCacheableResult(metadata, ListToolsResult.class, new ListToolsResult(tools, newCursor)));
+        return paginationUtil.paginateEntityList(entities, listRequest, localTools, Tool::name, (tools, newCursor) -> withCacheableResult(metadata, ListToolsResult.class, new ListToolsResult(tools, newCursor)));
     }
 
     private CallToolResult callTool(RequestContextImpl requestContext, RequestMetadata requestMetadata, CallToolRequest callToolRequest)
@@ -282,7 +281,7 @@ public class OperationsImpl
     private ListPromptsResult listPrompts(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<Prompt> localPrompts = entities.prompts(requestContext);
-        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, (prompts, nextCursor) -> withCacheableResult(metadata, ListPromptsResult.class, new ListPromptsResult(prompts, nextCursor)));
+        return paginationUtil.paginateEntityList(entities, listRequest, localPrompts, Prompt::name, (prompts, nextCursor) -> withCacheableResult(metadata, ListPromptsResult.class, new ListPromptsResult(prompts, nextCursor)));
     }
 
     private GetPromptResult getPrompt(RequestContextImpl requestContext, RequestMetadata requestMetadata, GetPromptRequest getPromptRequest)
@@ -299,13 +298,13 @@ public class OperationsImpl
     private ListResourcesResult listResources(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<Resource> localResources = entities.resources(requestContext);
-        return paginationUtil.paginate(listRequest, localResources, Resource::name, (resources, nextCursor) -> withCacheableResult(metadata, ListResourcesResult.class, new ListResourcesResult(resources, nextCursor)));
+        return paginationUtil.paginateEntityList(entities, listRequest, localResources, Resource::name, (resources, nextCursor) -> withCacheableResult(metadata, ListResourcesResult.class, new ListResourcesResult(resources, nextCursor)));
     }
 
     private ListResourceTemplatesResult listResourceTemplates(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext);
-        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ((resourceTemplates, nextCursor) -> withCacheableResult(metadata, ListResourceTemplatesResult.class, new ListResourceTemplatesResult(resourceTemplates, nextCursor))));
+        return paginationUtil.paginateEntityList(entities, listRequest, localResourceTemplates, ResourceTemplate::name, ((resourceTemplates, nextCursor) -> withCacheableResult(metadata, ListResourceTemplatesResult.class, new ListResourceTemplatesResult(resourceTemplates, nextCursor))));
     }
 
     private ReadResourceResult readResources(RequestContextImpl requestContext, McpMetadata metadata, ReadResourceRequest readResourceRequest)
@@ -315,12 +314,9 @@ public class OperationsImpl
 
     private ListSkillsResult listSkills(RequestContextImpl requestContext, McpMetadata metadata, ListRequest listRequest)
     {
-        List<String> skillUris = entities.skills(requestContext)
-                .stream()
-                .map(Resource::uri)
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, skillUris, Function.identity(), (uris, nextCursor) -> {
-            List<Skill> skills = uris.stream()
+        return paginationUtil.paginateEntityList(entities, listRequest, entities.skills(requestContext), Resource::uri, (resources, nextCursor) -> {
+            List<Skill> skills = resources.stream()
+                    .map(Resource::uri)
                     .flatMap(uri -> listedSkill(requestContext, uri).stream())
                     .collect(toImmutableList());
             return withCacheableResult(metadata, ListSkillsResult.class, new ListSkillsResult(skills, nextCursor));
