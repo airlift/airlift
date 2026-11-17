@@ -9,10 +9,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.airlift.mcp.model.JsonRpcErrorCode.CONNECTION_CLOSED;
@@ -70,7 +70,7 @@ class MessageWriterImpl
     MessageWriterImpl(ResponseFacade response, boolean resumable)
     {
         this.response = requireNonNull(response, "response is null");
-        this.sentMessages = resumable ? Optional.of(new CopyOnWriteArrayList<>()) : Optional.empty();
+        this.sentMessages = resumable ? Optional.of(new ArrayList<>()) : Optional.empty();
     }
 
     @Override
@@ -101,9 +101,11 @@ class MessageWriterImpl
     public List<SentMessage> takeSentMessages()
     {
         return sentMessages.map(messages -> {
-            List<SentMessage> result = ImmutableList.copyOf(messages);
-            messages.clear();
-            return result;
+            synchronized (messages) {
+                List<SentMessage> result = ImmutableList.copyOf(messages);
+                messages.clear();
+                return result;
+            }
         }).orElseGet(ImmutableList::of);
     }
 
@@ -128,7 +130,11 @@ class MessageWriterImpl
     {
         String messageId = UUID.randomUUID().toString();
 
-        sentMessages.ifPresent(messages -> messages.add(new SentMessage(messageId, data)));
+        sentMessages.ifPresent(messages -> {
+            synchronized (messages) {
+                messages.add(new SentMessage(messageId, data));
+            }
+        });
 
         internalWriteMessage(messageId, data);
     }
