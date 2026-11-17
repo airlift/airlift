@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -87,6 +90,25 @@ public class TestMessageWriterImpl
 
         // subsequent take returns empty
         assertThat(writer.takeSentMessages()).isEmpty();
+    }
+
+    @Test
+    public void testDrainWhileWriting()
+            throws Exception
+    {
+        MessageWriterImpl writer = new MessageWriterImpl(buildFacade(new StringWriter()), true);
+        List<String> expected = IntStream.range(0, 1000).mapToObj(Integer::toString).toList();
+        List<SentMessage> drained = new ArrayList<>();
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var writes = executor.submit(() -> expected.forEach(writer::writeMessage));
+            while (!writes.isDone()) {
+                drained.addAll(writer.takeSentMessages());
+                Thread.yield();
+            }
+            writes.get();
+        }
+        drained.addAll(writer.takeSentMessages());
+        assertThat(drained).extracting(SentMessage::data).containsExactlyElementsOf(expected);
     }
 
     @Test
