@@ -31,7 +31,6 @@ import io.airlift.mcp.operations.MaxProtocolLevel;
 import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -78,11 +77,9 @@ public class OperationsCommon
 
     ListToolsResult listTools(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
-        List<Tool> localTools = entities.tools(requestContext)
-                .stream()
-                .map(tool -> supportsIcons(protocol(requestContext)) ? tool : tool.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
+        boolean includeIcons = supportsIcons(protocol(requestContext));
+        return paginationUtil.paginateEntityList(entities, listRequest, entities.tools(requestContext), Tool::name, (page, nextCursor) ->
+                new ListToolsResult(includeIcons ? page : page.stream().map(Tool::withoutIcons).collect(toImmutableList()), nextCursor));
     }
 
     CallToolResult callTool(LegacyRequestContextImpl requestContext, CallToolRequest callToolRequest)
@@ -109,11 +106,9 @@ public class OperationsCommon
 
     ListPromptsResult listPrompts(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
-        List<Prompt> localPrompts = entities.prompts(requestContext)
-                .stream()
-                .map(prompt -> supportsIcons(protocol(requestContext)) ? prompt : prompt.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
+        boolean includeIcons = supportsIcons(protocol(requestContext));
+        return paginationUtil.paginateEntityList(entities, listRequest, entities.prompts(requestContext), Prompt::name, (page, nextCursor) ->
+                new ListPromptsResult(includeIcons ? page : page.stream().map(Prompt::withoutIcons).collect(toImmutableList()), nextCursor));
     }
 
     GetPromptResult getPrompt(LegacyRequestContextImpl requestContext, GetPromptRequest getPromptRequest)
@@ -134,20 +129,16 @@ public class OperationsCommon
 
     ListResourcesResult listResources(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
-        List<Resource> localResources = entities.resources(requestContext)
-                .stream()
-                .map(resource -> supportsIcons(protocol(requestContext)) ? resource : resource.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
+        boolean includeIcons = supportsIcons(protocol(requestContext));
+        return paginationUtil.paginateEntityList(entities, listRequest, entities.resources(requestContext), Resource::name, (page, nextCursor) ->
+                new ListResourcesResult(includeIcons ? page : page.stream().map(Resource::withoutIcons).collect(toImmutableList()), nextCursor));
     }
 
     ListResourceTemplatesResult listResourceTemplates(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
-        List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext)
-                .stream()
-                .map(resourceTemplate -> supportsIcons(protocol(requestContext)) ? resourceTemplate : resourceTemplate.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
+        boolean includeIcons = supportsIcons(protocol(requestContext));
+        return paginationUtil.paginateEntityList(entities, listRequest, entities.resourceTemplates(requestContext), ResourceTemplate::name, (page, nextCursor) ->
+                new ListResourceTemplatesResult(includeIcons ? page : page.stream().map(ResourceTemplate::withoutIcons).collect(toImmutableList()), nextCursor));
     }
 
     ReadResourceResult readResources(LegacyRequestContextImpl requestContext, ReadResourceRequest readResourceRequest)

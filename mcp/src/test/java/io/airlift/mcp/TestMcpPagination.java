@@ -103,6 +103,20 @@ public class TestMcpPagination
     }
 
     @Test
+    public void testCursorBetweenToolNames()
+    {
+        List<String> sorted = tools.stream().sorted().toList();
+        String cursor = sorted.getFirst() + "!";
+        ListToolsResult result = client.mcpClient().listTools(cursor);
+        assertThat(result.tools()).extracting(McpSchema.Tool::name)
+                .containsExactlyElementsOf(sorted.stream().filter(name -> name.compareTo(cursor) > 0).limit(PAGE_SIZE).toList());
+
+        ListToolsResult last = client.mcpClient().listTools(sorted.getLast());
+        assertThat(last.tools()).isEmpty();
+        assertThat(last.nextCursor()).isNull();
+    }
+
+    @Test
     public void testWithClientPagination()
     {
         asserWithClientPagination(tools, client.mcpClient().listTools().tools(), McpSchema.Tool::name);
