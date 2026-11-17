@@ -49,6 +49,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestBufferedHandler
 {
     @Test
+    public void testBufferedJsonFormatting()
+    {
+        TestingMessageOutput output = new TestingMessageOutput();
+        JsonFormatter formatter = new JsonFormatter(Map.of());
+        LogRecord record = logRecord(INFO, "TestLogger", "Zażółć\n世界");
+        BufferedHandler handler = new BufferedHandler(output, formatter, new ErrorManager());
+        handler.initialize();
+        handler.publish(record);
+        handler.setFormatter(new JsonFormatter(Map.of())
+        {
+            @Override
+            public String format(LogRecord record)
+            {
+                return "custom\n";
+            }
+        });
+        handler.publish(record);
+        handler.close();
+
+        assertThat(output.getFlushedMessages()).containsExactly(formatter.format(record), "custom\n");
+    }
+
+    @Test
     public void testIdleFlush()
             throws Exception
     {
