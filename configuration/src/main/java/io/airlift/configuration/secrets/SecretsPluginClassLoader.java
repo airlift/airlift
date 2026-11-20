@@ -29,6 +29,10 @@ import static java.util.Objects.requireNonNull;
 class SecretsPluginClassLoader
         extends URLClassLoader
 {
+    static {
+        registerAsParallelCapable();
+    }
+
     private final String pluginName;
     private final ClassLoader spiClassLoader;
     private final List<String> spiPackages;
