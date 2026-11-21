@@ -84,7 +84,7 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     public void writeMetricExposition(Writer writer)
             throws IOException
     {
-        String renderedLabels = renderLabels(labels);
+        String renderedLabels = renderLabels(writer, labels);
 
         if (count != null) {
             writeValue(writer, "_count", renderedLabels, count.toString());
