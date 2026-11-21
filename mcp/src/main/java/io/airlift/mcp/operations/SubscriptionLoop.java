@@ -1,9 +1,8 @@
 package io.airlift.mcp.operations;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.model.CancelledNotification;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
@@ -29,7 +27,6 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_SUBSCRIPTIONS_ACKNOWLEDGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
 import static io.airlift.mcp.model.Meta.normalize;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 class SubscriptionLoop
@@ -50,7 +47,7 @@ class SubscriptionLoop
     private final Duration resourceSubscriptionCachePeriod;
     private final UUID subscriptionId;
 
-    private Map<Object, String> hashes;
+    private Map<Object, Optional<SubscriptionSnapshot>> snapshots = Map.of();
 
     SubscriptionLoop(
             JsonMapper jsonMapper,
@@ -71,7 +68,7 @@ class SubscriptionLoop
 
         subscriptionId = UUID.randomUUID();
 
-        hashes = buildHashes();
+        snapshots = buildSnapshots();
     }
 
     public record Acknowledgment(SubscriptionFilter notifications, Optional<Map<String, Object>> meta)
@@ -108,17 +105,23 @@ class SubscriptionLoop
                 break;
             }
 
-            Map<Object, String> newHashes = buildHashes();
-            newHashes.forEach((key, hash) -> {
-                if (!hash.equals(hashes.get(key))) {
-                    sendChange(key);
-                }
-            });
-            hashes = newHashes;
+            checkForChanges();
         }
 
         CancelledNotification cancelledNotification = withSubscriptionId(CancelledNotification.class, new CancelledNotification(requestId, Optional.empty(), Optional.empty()));
         requestContext.sendMessage(NOTIFICATION_CANCELLED, Optional.of(cancelledNotification));
+    }
+
+    @VisibleForTesting
+    void checkForChanges()
+    {
+        Map<Object, Optional<SubscriptionSnapshot>> newSnapshots = buildSnapshots();
+        newSnapshots.forEach((key, value) -> {
+            if (!value.equals(snapshots.get(key))) {
+                sendChange(key);
+            }
+        });
+        snapshots = newSnapshots;
     }
 
     public record Notification(Optional<String> uri, Optional<Map<String, Object>> meta)
@@ -168,41 +171,29 @@ class SubscriptionLoop
         return clazz.cast(instance.withMeta(meta));
     }
 
-    private Map<Object, String> buildHashes()
+    private Map<Object, Optional<SubscriptionSnapshot>> buildSnapshots()
     {
-        ImmutableMap.Builder<Object, String> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<Object, Optional<SubscriptionSnapshot>> builder = ImmutableMap.builder();
         if (subscriptionFilter.toolsListChanged().orElse(false)) {
-            builder.put(TOOLS_LIST_KEY, listHash(entities.tools(requestContext).stream()));
+            builder.put(TOOLS_LIST_KEY, Optional.of(snapshot(TOOLS_LIST_KEY, entities.tools(requestContext))));
         }
         if (subscriptionFilter.promptsListChanged().orElse(false)) {
-            builder.put(PROMPTS_LIST_KEY, listHash(entities.prompts(requestContext).stream()));
+            builder.put(PROMPTS_LIST_KEY, Optional.of(snapshot(PROMPTS_LIST_KEY, entities.prompts(requestContext))));
         }
         if (subscriptionFilter.resourcesListChanged().orElse(false)) {
-            builder.put(RESOURCES_LIST_KEY, listHash(entities.resources(requestContext).stream()));
-            builder.put(RESOURCE_TEMPLATES_LIST_KEY, listHash(entities.resourceTemplates(requestContext).stream()));
+            builder.put(RESOURCES_LIST_KEY, Optional.of(snapshot(RESOURCES_LIST_KEY, entities.resources(requestContext))));
+            builder.put(RESOURCE_TEMPLATES_LIST_KEY, Optional.of(snapshot(RESOURCE_TEMPLATES_LIST_KEY, entities.resourceTemplates(requestContext))));
         }
         subscriptionFilter.resourceSubscriptions().ifPresent(resourceSubscriptions -> resourceSubscriptions.forEach(uri -> {
             Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()))
                     .flatMap(ReadResourceResult::contents);
-            String hash = resourceContents
-                    .map(contents -> listHash(contents.stream()))
-                    .orElse("");
-            builder.put(uri, hash);
+            builder.put(uri, resourceContents.map(contents -> snapshot(uri, contents)));
         }));
         return builder.build();
     }
 
-    @SuppressWarnings("UnstableApiUsage")
-    private <T> String listHash(Stream<? extends T> stream)
+    private SubscriptionSnapshot snapshot(Object key, List<? extends Meta<?>> items)
     {
-        Hasher hasher = Hashing.sha256().newHasher();
-        stream.map(this::asJson)
-                .forEach(json -> hasher.putString(json, UTF_8));
-        return hasher.hash().toString();
-    }
-
-    private <T> String asJson(T item)
-    {
-        return jsonMapper.writeValueAsString(item);
+        return SubscriptionSnapshot.snapshot(jsonMapper, items, snapshots.getOrDefault(key, Optional.empty()).orElse(null));
     }
 }
