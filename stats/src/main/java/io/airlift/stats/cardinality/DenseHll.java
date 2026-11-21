@@ -61,6 +61,8 @@ final class DenseHll
         }
     }
 
+    private static final boolean VECTOR_API_ENABLED = ModuleLayer.boot().findModule("jdk.incubator.vector").isPresent();
+
     private static final VarHandle LONG_HANDLE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
     private static final long LOWEST_BIT_OF_EACH_DELTA = 0x1111_1111_1111_1111L;
     private static final long LOWEST_DELTA_OF_EACH_BYTE = 0x0F0F_0F0F_0F0F_0F0FL;
@@ -472,48 +474,75 @@ final class DenseHll
         while (baselineCount == 0) {
             baseline++;
 
-            for (int bucket = 0; bucket < numberOfBuckets(indexBitLength); ++bucket) {
-                int delta = getDelta(bucket);
+            // Keep the incubator dependency optional and avoid vector setup for small sketches.
+            if (VECTOR_API_ENABLED && deltas.length >= 128) {
+                baselineCount = DenseHllVector.adjustBaseline(this, deltas, overflows != 0);
+                continue;
+            }
 
-                boolean hasOverflow = false;
-                if (delta == MAX_DELTA) {
-                    // scan overflows
-                    for (int i = 0; i < overflows; i++) {
-                        if (overflowBuckets[i] == bucket) {
-                            hasOverflow = true;
-                            overflowValues[i]--;
+            int slot = 0;
+            for (; slot <= deltas.length - Long.BYTES; slot += Long.BYTES) {
+                long word = (long) LONG_HANDLE.get(deltas, slot);
+                if (overflows != 0 && hasMaxDelta(word)) {
+                    baselineCount += adjustBaselineScalar(slot * 2, (slot + Long.BYTES) * 2);
+                    continue;
+                }
 
-                            if (overflowValues[i] == 0) {
-                                int lastEntry = overflows - 1;
-                                if (i < lastEntry) {
-                                    // remove the entry by moving the last entry to this position
-                                    overflowBuckets[i] = overflowBuckets[lastEntry];
-                                    overflowValues[i] = overflowValues[lastEntry];
+                // Every delta is positive when baselineCount is zero, so subtracting one
+                // from all sixteen nibbles cannot borrow across bucket boundaries.
+                word -= LOWEST_BIT_OF_EACH_DELTA;
+                LONG_HANDLE.set(deltas, slot, word);
+                baselineCount += countZeroDeltas(word);
+            }
+            baselineCount += adjustBaselineScalar(slot * 2, deltas.length * 2);
+        }
+    }
 
-                                    // clean up to make it easier to catch bugs
-                                    overflowBuckets[lastEntry] = -1;
-                                    overflowValues[lastEntry] = 0;
-                                }
-                                overflows--;
+    int adjustBaselineScalar(int fromBucket, int toBucket)
+    {
+        int baselineCount = 0;
+        for (int bucket = fromBucket; bucket < toBucket; bucket++) {
+            int delta = getDelta(bucket);
+
+            boolean hasOverflow = false;
+            if (delta == MAX_DELTA) {
+                // scan overflows
+                for (int i = 0; i < overflows; i++) {
+                    if (overflowBuckets[i] == bucket) {
+                        hasOverflow = true;
+                        overflowValues[i]--;
+
+                        if (overflowValues[i] == 0) {
+                            int lastEntry = overflows - 1;
+                            if (i < lastEntry) {
+                                // remove the entry by moving the last entry to this position
+                                overflowBuckets[i] = overflowBuckets[lastEntry];
+                                overflowValues[i] = overflowValues[lastEntry];
+
+                                // clean up to make it easier to catch bugs
+                                overflowBuckets[lastEntry] = -1;
+                                overflowValues[lastEntry] = 0;
                             }
-                            break;
+                            overflows--;
                         }
+                        break;
                     }
                 }
+            }
 
-                if (!hasOverflow) {
-                    // getDelta is guaranteed to return a value greater than zero
-                    // because baselineCount is zero (i.e., number of deltas with zero value)
-                    // So it's safe to decrement here
-                    delta--;
-                    setDelta(bucket, delta);
-                }
+            if (!hasOverflow) {
+                // getDelta is guaranteed to return a value greater than zero
+                // because baselineCount is zero (i.e., number of deltas with zero value)
+                // So it's safe to decrement here
+                delta--;
+                setDelta(bucket, delta);
+            }
 
-                if (delta == 0) {
-                    ++baselineCount;
-                }
+            if (delta == 0) {
+                ++baselineCount;
             }
         }
+        return baselineCount;
     }
 
     /**

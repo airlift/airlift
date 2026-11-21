@@ -21,6 +21,7 @@ import io.airlift.slice.XxHash64;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -293,6 +294,33 @@ public class TestDenseHll
         }
         assertThat(hll.sumOfInversePowers()).isEqualTo(expected);
         assertSumOfInversePowers(hll);
+    }
+
+    @Test
+    public void testRepeatedBaselineAdjustments()
+    {
+        for (int indexBitLength = 1; indexBitLength <= 16; indexBitLength++) {
+            for (int delta : new int[] {1, 4, 14}) {
+                int buckets = numberOfBuckets(indexBitLength);
+                byte[] deltas = new byte[buckets / 2];
+                Arrays.fill(deltas, (byte) (delta * 0x11));
+                DenseHll hll = deserialize(indexBitLength, 0, deltas, new int[0], new int[0]);
+                assertMergeLeavesSameState(hll, new DenseHll(indexBitLength));
+                hll.verify();
+
+                // Exercise overflow removal before, at, and after the boundaries between words.
+                int[] overflowBuckets = IntStream.of(0, 15, 16, buckets - 1).filter(bucket -> bucket < buckets).distinct().toArray();
+                int[] overflowValues = new int[overflowBuckets.length];
+                for (int i = 0; i < overflowBuckets.length; i++) {
+                    int bucket = overflowBuckets[i];
+                    deltas[bucket / 2] |= (byte) (bucket % 2 == 0 ? 0xF0 : 0x0F);
+                    overflowValues[i] = i + 1;
+                }
+                hll = deserialize(indexBitLength, 0, deltas, overflowBuckets, overflowValues);
+                assertMergeLeavesSameState(hll, new DenseHll(indexBitLength));
+                hll.verify();
+            }
+        }
     }
 
     @Test
