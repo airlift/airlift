@@ -45,6 +45,7 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 public class TestBootstrap
 {
@@ -477,6 +478,165 @@ public class TestBootstrap
     }
 
     @Test
+    public void testConfigurationProviderReceivesResolvedProperties()
+    {
+        AtomicReference<Map<String, String>> receivedProperties = new AtomicReference<>();
+        FooConfig config = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .setOptionalConfigurationProperty("foo.password", "${ENV:FOO_PASSWORD}")
+                .withConfigurationProvider(properties -> {
+                    receivedProperties.set(properties);
+                    return Map.of("foo.enabled", String.valueOf(properties.get("foo.password").equals("superSecretPassword")));
+                })
+                .withUseSystemProperties(false)
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(receivedProperties.get()).containsExactly(Map.entry("foo.password", "superSecretPassword"));
+        assertThat(config.isFoo()).isTrue();
+    }
+
+    @Test
+    public void testConfigurationProviderPrecedence()
+    {
+        System.setProperty("foo.password2", "system");
+        try {
+            Injector injector = new Bootstrap(binder -> {
+                configBinder(binder).bindConfig(FooConfig.class);
+                configBinder(binder).bindConfig(BarConfig.class);
+            })
+                    .setRequiredConfigurationProperty("foo.enabled", "false")
+                    .setOptionalConfigurationProperty("foo.password", "optional")
+                    .withConfigurationProvider(_ -> Map.of(
+                            "foo.enabled", "true",
+                            "foo.password", "provided",
+                            "foo.password2", "provided",
+                            "bar.password", "provided"))
+                    .initialize();
+
+            FooConfig fooConfig = injector.getInstance(FooConfig.class);
+            assertThat(fooConfig.isFoo()).isFalse();
+            assertThat(fooConfig.getPassword()).isEqualTo("optional");
+            assertThat(fooConfig.getPassword2()).isEqualTo("system");
+            assertThat(injector.getInstance(BarConfig.class).getPassword()).isEqualTo("provided");
+        }
+        finally {
+            System.clearProperty("foo.password2");
+        }
+    }
+
+    @Test
+    public void testConfigurationProvidersReceiveSameProperties()
+    {
+        List<Map<String, String>> receivedProperties = new ArrayList<>();
+        FooConfig config = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .setRequiredConfigurationProperty("foo.enabled", "true")
+                .withConfigurationProvider(properties -> {
+                    receivedProperties.add(properties);
+                    return Map.of("foo.password", "first");
+                })
+                .withConfigurationProvider(properties -> {
+                    receivedProperties.add(properties);
+                    return Map.of("foo.password", "first", "foo.password2", "second");
+                })
+                .withUseSystemProperties(false)
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(receivedProperties).containsExactly(
+                Map.of("foo.enabled", "true"),
+                Map.of("foo.enabled", "true"));
+        assertThat(config.getPassword()).isEqualTo("first");
+        assertThat(config.getPassword2()).isEqualTo("second");
+    }
+
+    @Test
+    public void testConflictingConfigurationProviders()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .withConfigurationProvider(new FooEnabledProvider())
+                .withConfigurationProvider(new FooDisabledProvider());
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
+                        assertThat(e.getErrors()).singleElement()
+                                .extracting(Message::getMessage)
+                                .isEqualTo("Configuration property 'foo.enabled' has conflicting values from providers io.airlift.bootstrap.TestBootstrap$FooEnabledProvider and io.airlift.bootstrap.TestBootstrap$FooDisabledProvider"));
+    }
+
+    @Test
+    public void testConflictingConfigurationProvidersForSetProperty()
+    {
+        FooConfig config = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .setRequiredConfigurationProperty("foo.enabled", "true")
+                .withConfigurationProvider(new FooEnabledProvider())
+                .withConfigurationProvider(new FooDisabledProvider())
+                .withUseSystemProperties(false)
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(config.isFoo()).isTrue();
+    }
+
+    @Test
+    public void testProvidedPropertiesAreNotResolved()
+    {
+        FooConfig config = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .withConfigurationProvider(_ -> Map.of("foo.password", "${ENV:FOO_PASSWORD}"))
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(config.getPassword()).isEqualTo("${ENV:FOO_PASSWORD}");
+    }
+
+    @Test
+    public void testProvidedPropertiesAreVisibleToConfigurationAwareModules()
+    {
+        AbstractConfigurationAwareModule module = new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                if (buildConfigObject(FooConfig.class).isFoo()) {
+                    configBinder(binder).bindConfig(BarConfig.class);
+                }
+            }
+        };
+        Bootstrap bootstrap = new Bootstrap(module)
+                .setOptionalConfigurationProperty("bar.enabled", "true")
+                .withConfigurationProvider(_ -> Map.of("foo.enabled", "true"));
+
+        assertThat(bootstrap.configure())
+                .containsExactly(
+                        new ConfigPropertyMetadata("bar.enabled", false),
+                        new ConfigPropertyMetadata("foo.enabled", false));
+    }
+
+    @Test
+    public void testProvidedPropertiesAreNotReportedAsUnused()
+    {
+        new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .withConfigurationProvider(_ -> Map.of("unknown.property", "value"))
+                .initialize();
+    }
+
+    @Test
+    public void testConfigurationProviderFailure()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
+                .withConfigurationProvider(_ -> {
+                    throw new IllegalStateException("secret value");
+                });
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
+                        assertThat(e.getErrors()).singleElement()
+                                .extracting(Message::getMessage, STRING)
+                                .startsWith("Configuration provider ")
+                                .endsWith(" failed: java.lang.IllegalStateException"))
+                .hasMessageNotContaining("secret value");
+    }
+
+    @Test
     public void testOptionalBindingWithLifeCycle()
     {
         Module module = binder -> {
@@ -610,6 +770,26 @@ public class TestBootstrap
         public FooInstance(@SuppressWarnings("UnusedVariable") FooConfig config)
         {
             fooInstanceCreated = true;
+        }
+    }
+
+    public static class FooEnabledProvider
+            implements ConfigurationProvider
+    {
+        @Override
+        public Map<String, String> provide(Map<String, String> properties)
+        {
+            return Map.of("foo.enabled", "true");
+        }
+    }
+
+    public static class FooDisabledProvider
+            implements ConfigurationProvider
+    {
+        @Override
+        public Map<String, String> provide(Map<String, String> properties)
+        {
+            return Map.of("foo.enabled", "false");
         }
     }
 
