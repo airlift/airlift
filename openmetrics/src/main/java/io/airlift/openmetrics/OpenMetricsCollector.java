@@ -94,7 +94,25 @@ public class OpenMetricsCollector
         if (filters == null || filters.isEmpty()) {
             return toOpenMetrics(collector.collect(), exponentialHistograms);
         }
-        return filterMetrics(toOpenMetrics(collector.collect(), exponentialHistograms), ImmutableSet.copyOf(filters));
+        Set<String> selectedNames = ImmutableSet.copyOf(filters);
+        ImmutableSet.Builder<String> prefixes = ImmutableSet.builder();
+        for (String name : selectedNames) {
+            prefixes.add(name);
+            for (int index = name.indexOf('_'); index >= 0; index = name.indexOf('_', index + 1)) {
+                prefixes.add(name.substring(0, index));
+            }
+        }
+        Set<String> selectedPrefixes = prefixes.build();
+        List<CollectedMetricGroup> groups = collector.collect((source, path) -> {
+            try {
+                return selectedPrefixes.contains(openMetricsMetricName(source, path));
+            }
+            catch (RuntimeException e) {
+                // Unnameable sources are collected as before and filtered exactly afterwards
+                return true;
+            }
+        });
+        return filterMetrics(toOpenMetrics(groups, exponentialHistograms), selectedNames);
     }
 
     public Optional<Metric> findMetric(String metricName)
@@ -136,7 +154,7 @@ public class OpenMetricsCollector
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
         collectedMetricGroups.stream()
                 .flatMap(group -> group.attributes().stream()
-                        .map(attribute -> toOpenMetric(openMetricsMetricName(group, attribute), attribute, group.labels(), exponentialHistograms)))
+                        .map(attribute -> toOpenMetric(openMetricsMetricName(group.source(), attribute.path()), attribute, group.labels(), exponentialHistograms)))
                 .flatMap(Optional::stream)
                 .forEach(metrics::add);
         return metrics.build();
@@ -270,10 +288,10 @@ public class OpenMetricsCollector
         return NON_ALLOWED_LABEL_CHARACTERS.collapseFrom(name, '_');
     }
 
-    private static String openMetricsMetricName(CollectedMetricGroup group, Attribute attribute)
+    private static String openMetricsMetricName(MetricSource source, List<String> path)
     {
-        String attributeName = openMetricsMetricName(attribute.path());
-        return switch (group.source()) {
+        String attributeName = openMetricsMetricName(path);
+        return switch (source) {
             case MetricSource.JmxMetricSource jmxMetricSource -> jmxMetricNamePrefix(jmxMetricSource.name()) + ATTRIBUTE_SEPARATOR + attributeName;
             case MetricSource.ManagedMetricSource managedMetricSource -> {
                 String metricName = sanitizeMetricName(managedMetricSource.name());
