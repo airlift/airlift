@@ -46,6 +46,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestMetricExpositions
 {
     @Test
+    public void testSharedLabelsAcrossMetricFamilies()
+    {
+        Map<String, String> labels = ImmutableMap.of("z", "line\nquote\"", "a", "back\\slash");
+        List<Metric> metrics = List.of(
+                new Gauge("gauge", 1, labels, ""),
+                new Counter("counter", 2, ImmutableMap.of("a", "back\\slash", "z", "line\nquote\""), ""),
+                new Summary("summary", 3L, 4.0, null, Map.of(0.5, 5.0), labels, ""),
+                new Gauge("different", 6, Map.of("a", "different"), ""),
+                new Gauge("empty", 7, Map.of(), ""));
+        String expected = metrics.stream()
+                .map(TestMetricExpositions::getMetricExpositionWithDescriptor)
+                .collect(java.util.stream.Collectors.joining());
+        assertThat(renderMetricsExpositions(metrics)).isEqualTo(expected);
+        assertThat(renderMetricsExpositions(metrics)).isEqualTo(expected);
+    }
+
+    @Test
     public void testMetricLabelEscaping()
     {
         String expected =

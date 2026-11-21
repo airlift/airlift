@@ -4,10 +4,12 @@ import com.google.common.base.Strings;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Metric;
 
+import java.io.FilterWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,7 @@ public class MetricsUtils
     static void writeMetricFamilies(Writer writer, Map<String, List<Metric>> metricFamilies)
             throws IOException
     {
+        writer = new ExpositionWriter(writer);
         for (List<Metric> metricFamily : metricFamilies.values()) {
             metricFamily.getFirst().writeMetricDescriptor(writer);
             for (Metric metric : metricFamily) {
@@ -94,7 +97,7 @@ public class MetricsUtils
             throws IOException
     {
         writer.write(name);
-        String renderedLabels = renderLabels(labels);
+        String renderedLabels = renderLabels(writer, labels);
         if (!renderedLabels.isEmpty()) {
             writer.write(renderedLabels);
         }
@@ -132,6 +135,29 @@ public class MetricsUtils
                 .sorted(comparingByKey())
                 .map(e -> e.getKey() + "=\"" + escape(e.getValue()) + "\"")
                 .collect(joining(",", "{", "}"));
+    }
+
+    public static String renderLabels(Writer writer, Map<String, String> labels)
+    {
+        if (labels.isEmpty()) {
+            return "";
+        }
+        if (writer instanceof ExpositionWriter expositionWriter) {
+            return expositionWriter.renderedLabels.computeIfAbsent(labels, MetricsUtils::renderLabels);
+        }
+        return renderLabels(labels);
+    }
+
+    private static class ExpositionWriter
+            extends FilterWriter
+    {
+        // Retain labels only for this scrape. Metric labels are immutable.
+        private final Map<Map<String, String>, String> renderedLabels = new HashMap<>();
+
+        private ExpositionWriter(Writer writer)
+        {
+            super(writer);
+        }
     }
 
     public static String escape(String value)
