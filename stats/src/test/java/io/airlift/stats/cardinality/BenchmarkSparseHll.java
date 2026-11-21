@@ -15,9 +15,9 @@ package io.airlift.stats.cardinality;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -28,7 +28,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Thread)
@@ -41,24 +41,50 @@ public class BenchmarkSparseHll
     @Benchmark
     public SparseHll benchmarkInsert(Data data)
     {
+        SparseHll instance = new SparseHll(11);
+        for (long hash : data.hashes) {
+            instance.insertHash(hash);
+        }
+        return instance;
+    }
+
+    @Benchmark
+    public SparseHll benchmarkDuplicateInsert(Data data)
+    {
         for (long hash : data.hashes) {
             data.instance.insertHash(hash);
         }
-
         return data.instance;
+    }
+
+    @Benchmark
+    public HyperLogLog benchmarkInsertThroughDenseTransition(Data data)
+    {
+        HyperLogLog instance = HyperLogLog.newInstance(2048);
+        for (long hash : data.hashes) {
+            instance.addHash(hash);
+        }
+        return instance;
     }
 
     @State(Scope.Thread)
     public static class Data
     {
-        public SparseHll instance = new SparseHll(11);
-        public long[] hashes = new long[500];
+        @Param({"10", "100", "500", "2000"})
+        public int count;
 
-        @Setup(Level.Iteration)
+        public SparseHll instance;
+        public long[] hashes;
+
+        @Setup
         public void initialize()
         {
+            instance = new SparseHll(11);
+            hashes = new long[count];
+            Random random = new Random(0);
             for (int i = 0; i < hashes.length; i++) {
-                hashes[i] = ThreadLocalRandom.current().nextLong();
+                hashes[i] = random.nextLong();
+                instance.insertHash(hashes[i]);
             }
         }
     }

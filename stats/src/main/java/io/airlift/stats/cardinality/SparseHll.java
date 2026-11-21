@@ -27,6 +27,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.SizeOf.sizeOf;
+import static io.airlift.slice.SizeOf.sizeOfIntArray;
 import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
@@ -96,7 +97,17 @@ final class SparseHll
         if (position < 0) {
             // ensure capacity
             if (numberOfEntries + 1 > entries.length) {
-                entries = Arrays.copyOf(entries, entries.length + 10);
+                int newCapacity = Math.max(entries.length + 1, entries.length + entries.length / 2);
+                // Do not convert to dense just because geometric growth reserved unused slots.
+                int denseSize = DenseHll.estimatedInMemorySize(indexBitLength);
+                int maxSparseCapacity = (denseSize - SPARSE_INSTANCE_SIZE - toIntExact(sizeOfIntArray(0))) / Integer.BYTES;
+                while (maxSparseCapacity > 0 && SPARSE_INSTANCE_SIZE + sizeOfIntArray(maxSparseCapacity) > denseSize) {
+                    maxSparseCapacity--;
+                }
+                if (entries.length < maxSparseCapacity) {
+                    newCapacity = Math.min(newCapacity, maxSparseCapacity);
+                }
+                entries = Arrays.copyOf(entries, newCapacity);
             }
 
             // shift right
