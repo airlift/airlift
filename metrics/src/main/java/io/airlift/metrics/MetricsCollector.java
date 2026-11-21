@@ -129,7 +129,7 @@ public class MetricsCollector
                 }
                 else {
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
-                    if (attributeValue instanceof Number || attributeValue instanceof Boolean) {
+                    if (attributeValue instanceof Number || attributeValue instanceof Boolean || attributeValue instanceof CompositeData) {
                         metrics.add(new CollectedMetricGroup.Attribute(attributePath, attributeValue, attributeDescription));
                     }
                 }
