@@ -13,6 +13,9 @@
  */
 package io.airlift.spi.secrets;
 
+import java.util.Optional;
+import java.util.function.Function;
+
 public interface SecretProvider
 {
     /**
@@ -22,4 +25,12 @@ public interface SecretProvider
      * @throws RuntimeException if key cannot be resolved.
      */
     String resolveSecretValue(String key);
+
+    default <T extends Secret> Optional<T> resolveSecret(String key, Class<T> type, Function<String, Optional<Object>> contextResolver)
+    {
+        if (type.isAssignableFrom(StringSecret.class)) {
+            return Optional.of((T) new StringSecret(resolveSecretValue(key)));
+        }
+        return Optional.empty();
+    }
 }
