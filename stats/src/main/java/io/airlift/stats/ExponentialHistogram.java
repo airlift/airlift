@@ -441,8 +441,17 @@ public final class ExponentialHistogram
             Buckets buckets = bucketSelector.buckets(snapshot);
             int scaleReduction = snapshot.scale() - targetScale;
             long[] bucketCounts = buckets.counts;
-            for (int i = 0; i < bucketCounts.length; i++) {
-                counts[(int) (downscaleBucketIndex((long) buckets.offset() + i, scaleReduction) - firstIndex)] += bucketCounts[i];
+            if (scaleReduction == 0) {
+                // At equal scales, both arrays advance by one bucket per iteration.
+                int offset = (int) (buckets.offset() - firstIndex);
+                for (int i = 0; i < bucketCounts.length; i++) {
+                    counts[offset + i] += bucketCounts[i];
+                }
+            }
+            else {
+                for (int i = 0; i < bucketCounts.length; i++) {
+                    counts[(int) (downscaleBucketIndex((long) buckets.offset() + i, scaleReduction) - firstIndex)] += bucketCounts[i];
+                }
             }
         }
         return new Buckets((int) firstIndex, counts);

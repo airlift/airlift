@@ -4,7 +4,11 @@ import io.airlift.stats.ExponentialHistogram.Buckets;
 import io.airlift.stats.ExponentialHistogram.ExponentialHistogramSnapshot;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -176,6 +180,51 @@ class TestExponentialHistogram
         assertThat(snapshot.max()).isEqualTo(4);
         assertThat(snapshot.positiveBuckets()).isEqualTo(new Buckets(-1, new long[] {1, 2, 1}));
         assertThat(snapshot.negativeBuckets()).isEqualTo(new Buckets(-1, new long[] {1, 1}));
+    }
+
+    @Test
+    public void testMergeBucketRangesAgainstScalarReference()
+    {
+        Random random = new Random(1);
+        for (int iteration = 0; iteration < 200; iteration++) {
+            List<ExponentialHistogramSnapshot> snapshots = new ArrayList<>();
+            for (int source = 0; source < 5; source++) {
+                long[] counts = new long[random.nextInt(258)];
+                long count = 0;
+                for (int index = 0; index < counts.length; index++) {
+                    counts[index] = random.nextInt(100);
+                    count += counts[index];
+                }
+                Buckets buckets = new Buckets(random.nextInt(65) - 32, counts);
+                snapshots.add(new ExponentialHistogramSnapshot(
+                        8 + (iteration % 2 == 0 ? 0 : random.nextInt(3)),
+                        count * 2,
+                        0,
+                        count == 0 ? Double.NaN : -1,
+                        count == 0 ? Double.NaN : 1,
+                        0,
+                        buckets,
+                        buckets));
+            }
+            ExponentialHistogramSnapshot merged = ExponentialHistogramSnapshot.merge(snapshots, 128 + random.nextInt(256));
+            Map<Integer, Long> expected = new HashMap<>();
+            for (ExponentialHistogramSnapshot snapshot : snapshots) {
+                Buckets buckets = snapshot.positiveBuckets();
+                long[] counts = buckets.counts();
+                for (int index = 0; index < counts.length; index++) {
+                    int bucket = (buckets.offset() + index) >> (snapshot.scale() - merged.scale());
+                    expected.merge(bucket, counts[index], Long::sum);
+                }
+            }
+            int first = expected.keySet().stream().mapToInt(Integer::intValue).min().orElse(0);
+            int last = expected.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
+            long[] counts = new long[last - first + 1];
+            for (int index = 0; index < counts.length; index++) {
+                counts[index] = expected.getOrDefault(first + index, 0L);
+            }
+            assertThat(merged.positiveBuckets()).isEqualTo(new Buckets(first, counts));
+            assertThat(merged.negativeBuckets()).isEqualTo(new Buckets(first, counts));
+        }
     }
 
     @Test
