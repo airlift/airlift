@@ -194,8 +194,9 @@ public class BenchmarkDenseHll
         {
             instance = new DenseHll(indexBitLength);
             int values = valuesPerBucket << indexBitLength;
+            Random random = new Random(1);
             for (int i = 0; i < values; i++) {
-                instance.insertHash(ThreadLocalRandom.current().nextLong());
+                instance.insertHash(random.nextLong());
             }
         }
     }
