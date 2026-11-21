@@ -1,6 +1,7 @@
 package io.airlift.concurrent;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.units.Duration;
@@ -10,19 +11,28 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.airlift.concurrent.MoreFutures.addExceptionCallback;
+import static io.airlift.concurrent.MoreFutures.addSuccessCallback;
 import static io.airlift.concurrent.MoreFutures.addTimeout;
 import static io.airlift.concurrent.MoreFutures.allAsList;
 import static io.airlift.concurrent.MoreFutures.allAsListWithCancellationOnFailure;
@@ -54,6 +64,8 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 @TestInstance(PER_CLASS)
 public class TestMoreFutures
 {
+    private static final IOException CALLBACK_TEST_FAILURE = new IOException("future failure");
+
     private final ScheduledExecutorService executorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("test-%s"));
 
     @AfterAll
@@ -714,6 +726,276 @@ public class TestMoreFutures
         assertThat(future2).isCancelled();
     }
 
+    @Test
+    public void testAddSuccessCallbackWithConsumer()
+    {
+        assertCallback(
+                (future, invocations, executor) -> addSuccessCallback(future, value -> invocations.add(value), executor),
+                invocations -> assertThat(invocations).containsExactly("value"),
+                invocations -> assertThat(invocations).isEmpty(),
+                invocations -> assertThat(invocations).isEmpty());
+    }
+
+    @Test
+    public void testAddSuccessCallbackWithRunnable()
+    {
+        assertCallback(
+                (future, invocations, executor) -> addSuccessCallback(future, () -> invocations.add("called"), executor),
+                invocations -> assertThat(invocations).containsExactly("called"),
+                invocations -> assertThat(invocations).isEmpty(),
+                invocations -> assertThat(invocations).isEmpty());
+    }
+
+    @Test
+    public void testAddExceptionCallbackWithConsumer()
+    {
+        assertCallback(
+                (future, invocations, executor) -> addExceptionCallback(future, throwable -> invocations.add(throwable), executor),
+                invocations -> assertThat(invocations).isEmpty(),
+                invocations -> assertThat(invocations).containsExactly(CALLBACK_TEST_FAILURE),
+                invocations -> assertThat(invocations).singleElement().isInstanceOf(CancellationException.class));
+    }
+
+    @Test
+    public void testAddExceptionCallbackWithRunnable()
+    {
+        assertCallback(
+                (future, invocations, executor) -> addExceptionCallback(future, () -> invocations.add("called"), executor),
+                invocations -> assertThat(invocations).isEmpty(),
+                invocations -> assertThat(invocations).containsExactly("called"),
+                invocations -> assertThat(invocations).containsExactly("called"));
+    }
+
+    @Test
+    public void testCallbacksWithDirectExecutor()
+    {
+        // the overloads without an executor run the callback on the thread completing the future
+        for (CallbackCompletion completion : CallbackCompletion.values()) {
+            SettableFuture<String> future = SettableFuture.create();
+            List<Object> invocations = new ArrayList<>();
+            addSuccessCallback(future, value -> invocations.add("success consumer " + value));
+            addSuccessCallback(future, () -> invocations.add("success runnable"));
+            addExceptionCallback(future, throwable -> invocations.add("exception consumer " + throwable.getClass().getSimpleName()));
+            addExceptionCallback(future, () -> invocations.add("exception runnable"));
+            assertThat(invocations).isEmpty();
+
+            completion.complete(future);
+            List<Object> expected = switch (completion) {
+                case SUCCESS -> ImmutableList.of("success consumer value", "success runnable");
+                case FAILURE -> ImmutableList.of("exception consumer IOException", "exception runnable");
+                case CANCEL, CANCEL_WITH_INTERRUPT -> ImmutableList.of("exception consumer CancellationException", "exception runnable");
+            };
+            assertThat(invocations).isEqualTo(expected);
+
+            // or on the thread registering the callback when the future is already done
+            invocations.clear();
+            addSuccessCallback(future, value -> invocations.add("success consumer " + value));
+            addSuccessCallback(future, () -> invocations.add("success runnable"));
+            addExceptionCallback(future, throwable -> invocations.add("exception consumer " + throwable.getClass().getSimpleName()));
+            addExceptionCallback(future, () -> invocations.add("exception runnable"));
+            assertThat(invocations).isEqualTo(expected);
+        }
+    }
+
+    @Test
+    public void testCallbacksRunInRegistrationOrder()
+    {
+        for (CallbackCompletion completion : CallbackCompletion.values()) {
+            SettableFuture<String> future = SettableFuture.create();
+            List<Object> invocations = new ArrayList<>();
+            future.addListener(() -> invocations.add("first"), directExecutor());
+            addSuccessCallback(future, () -> invocations.add("success"));
+            addExceptionCallback(future, () -> invocations.add("exception"));
+            future.addListener(() -> invocations.add("second"), directExecutor());
+            addExceptionCallback(future, () -> invocations.add("exception"));
+            addSuccessCallback(future, () -> invocations.add("success"));
+            future.addListener(() -> invocations.add("last"), directExecutor());
+
+            completion.complete(future);
+            String expected = completion == CallbackCompletion.SUCCESS ? "success" : "exception";
+            assertThat(invocations).containsExactly("first", expected, "second", expected, "last");
+        }
+    }
+
+    @Test
+    public void testFailingCallbackWithDirectExecutor()
+    {
+        RuntimeException callbackFailure = new RuntimeException("callback failure");
+        List<CallbackRegistration> registrations = ImmutableList.of(
+                (future, invocations, _) -> addSuccessCallback(future, _ -> {
+                    invocations.add("called");
+                    throw callbackFailure;
+                }),
+                (future, invocations, _) -> addSuccessCallback(future, () -> {
+                    invocations.add("called");
+                    throw callbackFailure;
+                }),
+                (future, invocations, _) -> addExceptionCallback(future, _ -> {
+                    invocations.add("called");
+                    throw callbackFailure;
+                }),
+                (future, invocations, _) -> addExceptionCallback(future, () -> {
+                    invocations.add("called");
+                    throw callbackFailure;
+                }));
+
+        for (CallbackRegistration registration : registrations) {
+            for (CallbackCompletion completion : CallbackCompletion.values()) {
+                // the failure reaches neither the thread completing the future nor the listeners registered after the callback
+                SettableFuture<String> future = SettableFuture.create();
+                List<Object> invocations = new ArrayList<>();
+                List<Object> listenerInvocations = new ArrayList<>();
+                registration.register(future, invocations, directExecutor());
+                future.addListener(() -> listenerInvocations.add("called"), directExecutor());
+                assertThat(completion.complete(future)).isTrue();
+                assertThat(listenerInvocations).containsExactly("called");
+
+                // nor the thread registering the callback when the future is already done
+                List<Object> doneInvocations = new ArrayList<>();
+                registration.register(future, doneInvocations, directExecutor());
+                assertThat(doneInvocations).isEqualTo(invocations);
+            }
+        }
+    }
+
+    @Test
+    public void testFailingCallbackWithExecutor()
+    {
+        // the failure is thrown from the task handed to the executor
+        RuntimeException callbackFailure = new RuntimeException("callback failure");
+        for (boolean alreadyDone : new boolean[] {false, true}) {
+            assertThatThrownBy(completeAndGetExecutor((future, _, executor) -> addSuccessCallback(future, _ -> { throw callbackFailure; }, executor), CallbackCompletion.SUCCESS, alreadyDone, false)::runAll)
+                    .isSameAs(callbackFailure);
+            assertThatThrownBy(completeAndGetExecutor((future, _, executor) -> addSuccessCallback(future, () -> { throw callbackFailure; }, executor), CallbackCompletion.SUCCESS, alreadyDone, false)::runAll)
+                    .isSameAs(callbackFailure);
+            for (CallbackCompletion completion : ImmutableList.of(CallbackCompletion.FAILURE, CallbackCompletion.CANCEL, CallbackCompletion.CANCEL_WITH_INTERRUPT)) {
+                assertThatThrownBy(completeAndGetExecutor((future, _, executor) -> addExceptionCallback(future, _ -> { throw callbackFailure; }, executor), completion, alreadyDone, false)::runAll)
+                        .isSameAs(callbackFailure);
+                assertThatThrownBy(completeAndGetExecutor((future, _, executor) -> addExceptionCallback(future, () -> { throw callbackFailure; }, executor), completion, alreadyDone, false)::runAll)
+                        .isSameAs(callbackFailure);
+            }
+        }
+    }
+
+    @Test
+    public void testCallbacksWithRejectingExecutor()
+    {
+        Executor rejectingExecutor = _ -> {
+            throw new RejectedExecutionException("rejected");
+        };
+        for (CallbackCompletion completion : CallbackCompletion.values()) {
+            SettableFuture<String> future = SettableFuture.create();
+            List<Object> invocations = new ArrayList<>();
+            addSuccessCallback(future, value -> invocations.add(value), rejectingExecutor);
+            addSuccessCallback(future, () -> invocations.add("called"), rejectingExecutor);
+            addExceptionCallback(future, throwable -> invocations.add(throwable), rejectingExecutor);
+            addExceptionCallback(future, () -> invocations.add("called"), rejectingExecutor);
+            future.addListener(() -> invocations.add("listener"), directExecutor());
+
+            // the rejection reaches neither the thread completing the future nor the other listeners
+            assertThat(completion.complete(future)).isTrue();
+            assertThat(invocations).containsExactly("listener");
+        }
+    }
+
+    @Test
+    public void testCallbacksDoNotCreateCancellationException()
+    {
+        for (boolean interrupt : new boolean[] {false, true}) {
+            SettableFuture<String> delegate = SettableFuture.create();
+            AtomicInteger getCount = new AtomicInteger();
+            ListenableFuture<String> future = new SimpleForwardingListenableFuture<>(delegate)
+            {
+                @Override
+                public String get()
+                        throws InterruptedException, ExecutionException
+                {
+                    getCount.incrementAndGet();
+                    return super.get();
+                }
+            };
+            List<Object> invocations = new ArrayList<>();
+            addSuccessCallback(future, value -> invocations.add(value));
+            addSuccessCallback(future, () -> invocations.add("success"));
+            addExceptionCallback(future, () -> invocations.add("exception"));
+
+            // getting the value of a cancelled future creates a CancellationException, which these callbacks have no use for
+            delegate.cancel(interrupt);
+            assertThat(invocations).containsExactly("exception");
+            assertThat(getCount).hasValue(0);
+
+            addExceptionCallback(future, throwable -> invocations.add(throwable));
+            assertThat(invocations).hasSize(2).last().isInstanceOf(CancellationException.class);
+            assertThat(getCount).hasValue(1);
+        }
+    }
+
+    @Test
+    public void testCallbacksRejectNullArguments()
+    {
+        SettableFuture<String> future = SettableFuture.create();
+        assertThatThrownBy(() -> addSuccessCallback(null, _ -> {}, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("future is null");
+        assertThatThrownBy(() -> addSuccessCallback(null, () -> {}, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("future is null");
+        assertThatThrownBy(() -> addExceptionCallback(null, _ -> {}, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("future is null");
+        assertThatThrownBy(() -> addExceptionCallback(null, () -> {}, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("future is null");
+
+        assertThatThrownBy(() -> addSuccessCallback(future, (Consumer<String>) null, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("successCallback is null");
+        assertThatThrownBy(() -> addSuccessCallback(future, (Runnable) null, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("successCallback is null");
+        assertThatThrownBy(() -> addExceptionCallback(future, (Consumer<Throwable>) null, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("exceptionCallback is null");
+        assertThatThrownBy(() -> addExceptionCallback(future, (Runnable) null, directExecutor())).isInstanceOf(NullPointerException.class).hasMessage("exceptionCallback is null");
+
+        // a missing executor is reported on registration, not when the future completes
+        assertThatThrownBy(() -> addSuccessCallback(future, _ -> {}, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> addSuccessCallback(future, () -> {}, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> addExceptionCallback(future, _ -> {}, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> addExceptionCallback(future, () -> {}, null)).isInstanceOf(NullPointerException.class);
+    }
+
+    private static void assertCallback(
+            CallbackRegistration registration,
+            Consumer<List<Object>> successVerifier,
+            Consumer<List<Object>> failureVerifier,
+            Consumer<List<Object>> cancellationVerifier)
+    {
+        // a forwarding future takes Guava's slow path, as it does not give access to its failure
+        for (boolean forwarding : new boolean[] {false, true}) {
+            for (boolean alreadyDone : new boolean[] {false, true}) {
+                for (CallbackCompletion completion : CallbackCompletion.values()) {
+                    List<Object> invocations = new ArrayList<>();
+                    QueuingExecutor executor = completeAndGetExecutor(registration, invocations, completion, alreadyDone, forwarding);
+                    // the callback runs on the executor, not on the thread registering it or completing the future
+                    assertThat(invocations).isEmpty();
+                    executor.runAll();
+                    Consumer<List<Object>> verifier = switch (completion) {
+                        case SUCCESS -> successVerifier;
+                        case FAILURE -> failureVerifier;
+                        case CANCEL, CANCEL_WITH_INTERRUPT -> cancellationVerifier;
+                    };
+                    verifier.accept(invocations);
+                }
+            }
+        }
+    }
+
+    private static QueuingExecutor completeAndGetExecutor(CallbackRegistration registration, CallbackCompletion completion, boolean alreadyDone, boolean forwarding)
+    {
+        return completeAndGetExecutor(registration, new ArrayList<>(), completion, alreadyDone, forwarding);
+    }
+
+    private static QueuingExecutor completeAndGetExecutor(CallbackRegistration registration, List<Object> invocations, CallbackCompletion completion, boolean alreadyDone, boolean forwarding)
+    {
+        SettableFuture<String> future = SettableFuture.create();
+        QueuingExecutor executor = new QueuingExecutor();
+        if (alreadyDone) {
+            completion.complete(future);
+        }
+        registration.register(forwarding ? new SimpleForwardingListenableFuture<>(future) {} : future, invocations, executor);
+        if (!alreadyDone) {
+            completion.complete(future);
+        }
+        return executor;
+    }
+
     private static void assertGetUncheckedListenable(Function<ListenableFuture<Object>, Object> getter)
     {
         assertThat(getter.apply(immediateFuture("foo"))).isEqualTo("foo");
@@ -816,6 +1098,64 @@ public class TestMoreFutures
             }
             causeVerifier.accept(e.getCause());
         };
+    }
+
+    private interface CallbackRegistration
+    {
+        void register(ListenableFuture<String> future, List<Object> invocations, Executor executor);
+    }
+
+    private enum CallbackCompletion
+    {
+        SUCCESS {
+            @Override
+            boolean complete(SettableFuture<String> future)
+            {
+                return future.set("value");
+            }
+        },
+        FAILURE {
+            @Override
+            boolean complete(SettableFuture<String> future)
+            {
+                return future.setException(CALLBACK_TEST_FAILURE);
+            }
+        },
+        CANCEL {
+            @Override
+            boolean complete(SettableFuture<String> future)
+            {
+                return future.cancel(false);
+            }
+        },
+        CANCEL_WITH_INTERRUPT {
+            @Override
+            boolean complete(SettableFuture<String> future)
+            {
+                return future.cancel(true);
+            }
+        };
+
+        abstract boolean complete(SettableFuture<String> future);
+    }
+
+    private static class QueuingExecutor
+            implements Executor
+    {
+        private final Queue<Runnable> tasks = new ArrayDeque<>();
+
+        @Override
+        public void execute(Runnable task)
+        {
+            tasks.add(task);
+        }
+
+        void runAll()
+        {
+            while (!tasks.isEmpty()) {
+                tasks.remove().run();
+            }
+        }
     }
 
     private interface UncheckedGetter

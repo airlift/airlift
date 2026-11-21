@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.internal.InternalFutureFailureAccess;
 import io.airlift.units.Duration;
 import jakarta.annotation.Nullable;
 
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
@@ -36,6 +38,7 @@ import static com.google.common.collect.Streams.stream;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static com.google.common.util.concurrent.internal.InternalFutures.tryInternalFastPathGetFailure;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -537,18 +540,7 @@ public final class MoreFutures
         requireNonNull(future, "future is null");
         requireNonNull(successCallback, "successCallback is null");
 
-        FutureCallback<T> callback = new FutureCallback<>()
-        {
-            @Override
-            public void onSuccess(@Nullable T result)
-            {
-                successCallback.accept(result);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {}
-        };
-        Futures.addCallback(future, callback, executor);
+        future.addListener(new SuccessCallbackListener<>(future, successCallback), executor);
     }
 
     /**
@@ -616,8 +608,9 @@ public final class MoreFutures
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Runnable exceptionCallback, Executor executor)
     {
         requireNonNull(exceptionCallback, "exceptionCallback is null");
+        requireNonNull(future, "future is null");
 
-        addExceptionCallback(future, _ -> exceptionCallback.run(), executor);
+        future.addListener(new ExceptionCallbackListener<>(future, exceptionCallback), executor);
     }
 
     /**
@@ -633,6 +626,93 @@ public final class MoreFutures
         ListenableFuture<List<V>> listFuture = Futures.allAsList(futuresSnapshot);
         addExceptionCallback(listFuture, () -> futuresSnapshot.forEach(future -> future.cancel(true)));
         return listFuture;
+    }
+
+    /**
+     * Does what the listener of {@link Futures#addCallback} does for a callback ignoring the failure,
+     * except that it does not get the value of a cancelled future. Getting it creates
+     * a {@link CancellationException}, filling in its stack trace, only for it to be ignored.
+     */
+    private static final class SuccessCallbackListener<T>
+            implements Runnable
+    {
+        private final ListenableFuture<T> future;
+        private final Consumer<T> successCallback;
+
+        private SuccessCallbackListener(ListenableFuture<T> future, Consumer<T> successCallback)
+        {
+            this.future = future;
+            this.successCallback = successCallback;
+        }
+
+        @Override
+        public void run()
+        {
+            if (future.isCancelled() || isKnownToHaveFailed(future)) {
+                return;
+            }
+            T value;
+            try {
+                value = Futures.getDone(future);
+            }
+            catch (Throwable e) {
+                // the future failed
+                return;
+            }
+            successCallback.accept(value);
+        }
+
+        @Override
+        public String toString()
+        {
+            return toStringHelper(this).addValue(successCallback).toString();
+        }
+    }
+
+    /**
+     * @see SuccessCallbackListener
+     */
+    private static final class ExceptionCallbackListener<T>
+            implements Runnable
+    {
+        private final ListenableFuture<T> future;
+        private final Runnable exceptionCallback;
+
+        private ExceptionCallbackListener(ListenableFuture<T> future, Runnable exceptionCallback)
+        {
+            this.future = future;
+            this.exceptionCallback = exceptionCallback;
+        }
+
+        @Override
+        public void run()
+        {
+            if (!future.isCancelled() && !isKnownToHaveFailed(future)) {
+                try {
+                    Futures.getDone(future);
+                    return;
+                }
+                catch (Throwable e) {
+                    // the future failed
+                }
+            }
+            exceptionCallback.run();
+        }
+
+        @Override
+        public String toString()
+        {
+            return toStringHelper(this).addValue(exceptionCallback).toString();
+        }
+    }
+
+    /**
+     * The check the listener of {@link Futures#addCallback} makes to avoid creating an {@link ExecutionException}
+     * for a failed future. When it returns false, the future may still have failed.
+     */
+    private static boolean isKnownToHaveFailed(Future<?> future)
+    {
+        return future instanceof InternalFutureFailureAccess failureAccess && tryInternalFastPathGetFailure(failureAccess) != null;
     }
 
     private static class UnmodifiableCompletableFuture<V>
