@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -73,24 +74,32 @@ public class MetricsCollector
 
     public List<CollectedMetricGroup> collect()
     {
+        return collect((_, _) -> true);
+    }
+
+    /// Collects only attributes accepted by the filter. Rejecting a path also skips its descendants,
+    /// so filters selecting nested attributes must accept their ancestor paths (including empty paths).
+    public List<CollectedMetricGroup> collect(BiPredicate<MetricSource, List<String>> attributeFilter)
+    {
+        requireNonNull(attributeFilter, "attributeFilter is null");
         Collection<ManagedObjectExport> managedExports = mbeanExporter.getManagedObjectExports().values();
         Set<ObjectName> managedObjectNames = managedExports.stream()
                 .map(ManagedObjectExport::getObjectName)
                 .collect(toImmutableSet());
 
         return ImmutableList.<CollectedMetricGroup>builder()
-                .addAll(collectManagedClasses(managedExports))
-                .addAll(collectMBeans(managedObjectNames))
+                .addAll(collectManagedClasses(managedExports, attributeFilter))
+                .addAll(collectMBeans(managedObjectNames, attributeFilter))
                 .build();
     }
 
-    private List<CollectedMetricGroup> collectManagedClasses(Collection<ManagedObjectExport> managedExports)
+    private List<CollectedMetricGroup> collectManagedClasses(Collection<ManagedObjectExport> managedExports, BiPredicate<MetricSource, List<String>> attributeFilter)
     {
         return managedExports.stream()
-                .map(export -> new CollectedMetricGroup(
-                        managedMetricSource(export),
-                        labels,
-                        collectManagedClassAttributes(List.of(), export.getManagedClass())))
+                .map(export -> {
+                    MetricSource source = managedMetricSource(export);
+                    return new CollectedMetricGroup(source, labels, collectManagedClassAttributes(source, List.of(), export.getManagedClass(), attributeFilter));
+                })
                 .filter(group -> !group.attributes().isEmpty())
                 .collect(toImmutableList());
     }
@@ -104,13 +113,16 @@ public class MetricsCollector
                 export.getOriginalProperties());
     }
 
-    private static List<CollectedMetricGroup.Attribute> collectManagedClassAttributes(List<String> path, ManagedClass managedClass)
+    private static List<CollectedMetricGroup.Attribute> collectManagedClassAttributes(MetricSource source, List<String> path, ManagedClass managedClass, BiPredicate<MetricSource, List<String>> attributeFilter)
     {
         ImmutableList.Builder<CollectedMetricGroup.Attribute> metrics = ImmutableList.builder();
 
         Map<String, ManagedClass> children = managedClass.getChildren();
         for (String attributeName : managedClass.getAttributeNames()) {
             List<String> attributePath = managedClass.isAttributeFlatten(attributeName) ? path : append(path, attributeName);
+            if (!attributeFilter.test(source, attributePath)) {
+                continue;
+            }
             try {
                 String attributeDescription = managedClass.getAttributeDescription(attributeName);
 
@@ -125,7 +137,7 @@ public class MetricsCollector
                     }
                     catch (IllegalStateException _) {
                     }
-                    metrics.addAll(collectManagedClassAttributes(attributePath, child));
+                    metrics.addAll(collectManagedClassAttributes(source, attributePath, child, attributeFilter));
                 }
                 else {
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
@@ -151,24 +163,28 @@ public class MetricsCollector
                 value instanceof DistributionStat;
     }
 
-    private List<CollectedMetricGroup> collectMBeans(Set<ObjectName> managedObjectNames)
+    private List<CollectedMetricGroup> collectMBeans(Set<ObjectName> managedObjectNames, BiPredicate<MetricSource, List<String>> attributeFilter)
     {
         return allMetricsObjectNames.stream()
                 .map(objectName -> mbeanServer.queryNames(objectName, null))
                 .flatMap(Set::stream)
                 .distinct()
                 .filter(objectName -> !managedObjectNames.contains(objectName))
-                .map(this::collectMBean)
+                .map(objectName -> collectMBean(objectName, attributeFilter))
                 .flatMap(Optional::stream)
                 .toList();
     }
 
-    private Optional<CollectedMetricGroup> collectMBean(ObjectName objectName)
+    private Optional<CollectedMetricGroup> collectMBean(ObjectName objectName, BiPredicate<MetricSource, List<String>> attributeFilter)
     {
         ImmutableList.Builder<CollectedMetricGroup.Attribute> attributes = ImmutableList.builder();
+        MetricSource source = new JmxMetricSource(objectName);
         try {
             MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
             for (MBeanAttributeInfo mBeanAttributeInfo : mbeanInfo.getAttributes()) {
+                if (!attributeFilter.test(source, List.of(mBeanAttributeInfo.getName()))) {
+                    continue;
+                }
                 collectMBeanAttribute(objectName, mBeanAttributeInfo.getName(), mBeanAttributeInfo.getDescription())
                         .ifPresent(attributes::add);
             }
@@ -181,7 +197,7 @@ public class MetricsCollector
         if (collectedAttributes.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new CollectedMetricGroup(new JmxMetricSource(objectName), labels, collectedAttributes));
+        return Optional.of(new CollectedMetricGroup(source, labels, collectedAttributes));
     }
 
     private Optional<CollectedMetricGroup.Attribute> collectMBeanAttribute(ObjectName objectName, String attributeName, String description)
