@@ -16,7 +16,8 @@
 package io.airlift.http.client;
 
 public sealed interface BodyGenerator
-        permits ByteBufferBodyGenerator,
+        permits AsyncBodyGenerator,
+                ByteBufferBodyGenerator,
                 FileBodyGenerator,
                 StaticBodyGenerator,
                 StreamingBodyGenerator {}
