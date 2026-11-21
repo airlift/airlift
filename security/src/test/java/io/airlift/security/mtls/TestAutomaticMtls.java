@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
+import javax.security.auth.x500.X500Principal;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -24,6 +25,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
+import static com.google.common.io.BaseEncoding.base16;
 import static io.airlift.security.mtls.AutomaticMtls.addCertificateAndKeyForCurrentNode;
 import static io.airlift.security.mtls.AutomaticMtls.addCertificateToKeyStore;
 import static io.airlift.security.mtls.AutomaticMtls.certificateBuilder;
@@ -40,6 +42,19 @@ class TestAutomaticMtls
     private static final String KEYSTORE_PASSWORD = "123456";
 
     @Test
+    public void testKeyDerivationIsStable()
+            throws GeneralSecurityException
+    {
+        // Peers derive the same key pair independently from the shared secret, so the derivation
+        // must produce identical keys across releases and JVMs. Locking in the derived public key
+        // for a fixed secret catches any accidental change to the derivation, which would break
+        // mTLS between nodes running different versions.
+        X509Certificate certificate = certificateBuilder("test-shared-secret", "test-common-name").buildSelfSigned();
+        assertThat(base16().lowerCase().encode(certificate.getPublicKey().getEncoded()))
+                .isEqualTo("3059301306072a8648ce3d020106082a8648ce3d0301070342000499bffd6cd783605d4766fb8ac4443d5efad60dc0af213b06d955f7e32c0cc92d8a058b1e3c923220da040419c5b4f98737e1bf1185d02b5da0168adc90e035bb");
+    }
+
+    @Test
     public void testTrustManager()
             throws GeneralSecurityException
     {
@@ -54,9 +69,18 @@ class TestAutomaticMtls
                 .isInstanceOf(SecurityException.class)
                 .hasMessageContaining("Peer cert public key doesn't match trusted key");
 
+        // the common name is part of the key derivation, so a different common name fails the key check
         assertThatThrownBy(() -> checkCertificate(certificate, "sharedSecret", "wrongCommonName"))
                 .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Peer certificate subject 'CN=commonName' does not match expected subject: 'CN=wrongCommonName'");
+                .hasMessageContaining("Peer cert public key doesn't match trusted key");
+
+        X509Certificate wrongSubjectCertificate = certificateBuilder("sharedSecret", "commonName")
+                .setSubject(new X500Principal("CN=wrongCommonName"))
+                .buildSelfSigned();
+
+        assertThatThrownBy(() -> checkCertificate(wrongSubjectCertificate, "sharedSecret", "commonName"))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining("Peer certificate subject 'CN=wrongCommonName' does not match expected subject: 'CN=commonName'");
     }
 
     @Test
