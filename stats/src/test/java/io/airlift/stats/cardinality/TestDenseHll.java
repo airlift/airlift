@@ -185,6 +185,26 @@ public class TestDenseHll
     }
 
     @Test
+    public void testSumOfInversePowersWithPackedValues()
+    {
+        // Include arrays shorter than an unrolled group and every packed pair of deltas.
+        for (int indexBitLength : new int[] {1, 2, 3, 4, 12}) {
+            for (int value = 0; value < 256; value++) {
+                byte[] deltas = new byte[numberOfBuckets(indexBitLength) / 2];
+                for (int slot = 0; slot < deltas.length; slot++) {
+                    deltas[slot] = (byte) (value + 31 * slot);
+                }
+                assertSumOfInversePowers(deserialize(indexBitLength, 0, deltas, new int[0], new int[0]));
+            }
+        }
+
+        // The maximum scaled sum is 2^31 and must not overflow a signed int.
+        DenseHll empty = new DenseHll(16);
+        assertThat(empty.sumOfInversePowers()).isEqualTo(65536.0);
+        assertSumOfInversePowers(empty);
+    }
+
+    @Test
     public void testSumOfInversePowersWithOverflows()
     {
         Random random = new Random(2);

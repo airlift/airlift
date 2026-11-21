@@ -211,9 +211,21 @@ final class DenseHll
             return sumOfInversePowersSequentially();
         }
 
-        long scaledSum = 0;
-        for (byte slot : deltas) {
-            scaledSum += SCALED_SLOT_SUMS[Byte.toUnsignedInt(slot)];
+        // Independent accumulators avoid a single loop-carried addition dependency.
+        long sum0 = 0;
+        long sum1 = 0;
+        long sum2 = 0;
+        long sum3 = 0;
+        int slot = 0;
+        for (; slot <= deltas.length - 4; slot += 4) {
+            sum0 += SCALED_SLOT_SUMS[Byte.toUnsignedInt(deltas[slot])];
+            sum1 += SCALED_SLOT_SUMS[Byte.toUnsignedInt(deltas[slot + 1])];
+            sum2 += SCALED_SLOT_SUMS[Byte.toUnsignedInt(deltas[slot + 2])];
+            sum3 += SCALED_SLOT_SUMS[Byte.toUnsignedInt(deltas[slot + 3])];
+        }
+        long scaledSum = sum0 + sum1 + sum2 + sum3;
+        for (; slot < deltas.length; slot++) {
+            scaledSum += SCALED_SLOT_SUMS[Byte.toUnsignedInt(deltas[slot])];
         }
         scaledSum <<= maxOverflow;
 
