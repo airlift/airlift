@@ -363,7 +363,12 @@ public class BufferedHandler
     private byte[] formatMessageBytes(LogRecord logRecord)
     {
         try {
-            return getFormatter().format(logRecord).getBytes(UTF_8);
+            Formatter formatter = getFormatter();
+            // Subclasses may override format(LogRecord).
+            if (formatter.getClass() == JsonFormatter.class) {
+                return ((JsonFormatter) formatter).formatBytes(logRecord);
+            }
+            return formatter.format(logRecord).getBytes(UTF_8);
         }
         catch (Exception e) {
             // Wrap exception with the proper classification

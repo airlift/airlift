@@ -11,10 +11,12 @@ import tools.jackson.core.ObjectWriteContext;
 import tools.jackson.core.json.JsonFactory;
 
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class JsonFormatter
@@ -33,7 +35,32 @@ public class JsonFormatter
     @Override
     public String format(LogRecord record)
     {
-        JsonRecord jsonRecord = new JsonRecord(
+        JsonRecord jsonRecord = toJsonRecord(record);
+        try {
+            return toString(jsonRecord);
+        }
+        catch (IllegalArgumentException e) {
+            return formatError(record, jsonRecord, e);
+        }
+    }
+
+    byte[] formatBytes(LogRecord record)
+    {
+        JsonRecord jsonRecord = toJsonRecord(record);
+        try {
+            byte[] json = CODEC.toJsonBytes(jsonRecord);
+            byte[] line = Arrays.copyOf(json, json.length + 1);
+            line[json.length] = '\n';
+            return line;
+        }
+        catch (IllegalArgumentException e) {
+            return formatError(record, jsonRecord, e).getBytes(UTF_8);
+        }
+    }
+
+    private JsonRecord toJsonRecord(LogRecord record)
+    {
+        return new JsonRecord(
                 record.getInstant(),
                 Level.fromJulLevel(record.getLevel()),
                 Thread.currentThread().getName(),
@@ -43,28 +70,26 @@ public class JsonFormatter
                 record.getThrown(),
                 Context.current(),
                 logAnnotations);
+    }
 
+    private String formatError(LogRecord record, JsonRecord jsonRecord, IllegalArgumentException outer)
+    {
         try {
-            return toString(jsonRecord);
+            return toString(new JsonRecord(
+                    record.getInstant(),
+                    Level.fromJulLevel(record.getLevel()),
+                    Thread.currentThread().getName(),
+                    record.getLoggerName(),
+                    outer.getMessage(),
+                    EMPTY_ARRAY,
+                    outer,
+                    Context.current(),
+                    logAnnotations));
         }
-        catch (IllegalArgumentException outer) {
-            try {
-                return toString(new JsonRecord(
-                        record.getInstant(),
-                        Level.fromJulLevel(record.getLevel()),
-                        Thread.currentThread().getName(),
-                        record.getLoggerName(),
-                        outer.getMessage(),
-                        EMPTY_ARRAY,
-                        outer,
-                        Context.current(),
-                        logAnnotations));
-            }
-            catch (IllegalArgumentException inner) {
-                inner.addSuppressed(outer);
+        catch (IllegalArgumentException inner) {
+            inner.addSuppressed(outer);
 
-                return minimalJsonErrorLogLine(jsonRecord, inner);
-            }
+            return minimalJsonErrorLogLine(jsonRecord, inner);
         }
     }
 
