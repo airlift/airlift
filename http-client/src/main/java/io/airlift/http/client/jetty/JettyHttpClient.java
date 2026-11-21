@@ -121,6 +121,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -911,7 +912,8 @@ public class JettyHttpClient
         // create jetty request and response listener
         RequestContext context = buildRequestContext(request);
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
+        CountingInputStreamResponseListener listener = new CountingInputStreamResponseListener();
+        context.logResponseSize(listener::getBytesReceived);
         // fire the request
         context.request().send(listener);
 
@@ -1042,6 +1044,7 @@ public class JettyHttpClient
         DataSize maxResponseContentLength = getMaxResponseContentLength(request);
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
         JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
+        jettyRequest.logResponseSize(listener::getBytesReceived);
 
         try {
             return listener.send();
@@ -1142,21 +1145,30 @@ public class JettyHttpClient
         jettyRequest.onResponseBegin(httpStatusListeners);
 
         // Add log listener
+        Optional<HttpClientLoggingListener> loggingListener = Optional.empty();
         if (logEnabled) {
             HttpClientLoggingListener httpClientLoggingListener = new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
             jettyRequest.onRequestListener(httpClientLoggingListener);
             jettyRequest.onResponseBegin(httpClientLoggingListener);
             jettyRequest.onComplete(httpClientLoggingListener);
+            loggingListener = Optional.of(httpClientLoggingListener);
         }
 
         // Add request size listener
         RequestSizeListener requestSizeListener = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSizeListener);
 
-        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
+        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime, loggingListener);
     }
 
-    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
+    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp, Optional<HttpClientLoggingListener> loggingListener)
+    {
+        // The log listener takes no response content events, so the size it logs comes from the listener the request is sent with
+        void logResponseSize(LongSupplier responseSize)
+        {
+            loggingListener.ifPresent(listener -> listener.setResponseSize(responseSize));
+        }
+    }
 
     private boolean shouldBeDiagnosed(Result result)
     {
@@ -1464,6 +1476,24 @@ public class JettyHttpClient
         public long getBytes()
         {
             return bytes;
+        }
+    }
+
+    private static class CountingInputStreamResponseListener
+            extends InputStreamResponseListener
+    {
+        private long bytesReceived;
+
+        @Override
+        public void onContent(Response response, Content.Chunk chunk, Runnable demander)
+        {
+            bytesReceived += chunk.remaining();
+            super.onContent(response, chunk, demander);
+        }
+
+        public long getBytesReceived()
+        {
+            return bytesReceived;
         }
     }
 
