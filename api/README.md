@@ -20,6 +20,7 @@ See [Introduction](docs/starting.md) for details on how API Builder enhances JAX
 
 | Document                                            | Description                                                                                              |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [Tutorial](docs/tutorial.md)                        | An explanatory guide for new users showing how to bring up an API server from scratch via extended examples. |
 | [Resources](docs/resources.md)                      | Details on what constitutes a "resource", how to create them, etc.                                       |
 | [Methods](docs/methods.md)                          | Details on operation/method types, how to create new methods, etc.                                       |
 | [URIs](docs/uris.md)                                | How URIs are automatically generated and their format                                                    |
