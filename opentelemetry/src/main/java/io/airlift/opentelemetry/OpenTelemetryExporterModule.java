@@ -42,6 +42,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
@@ -83,10 +84,12 @@ public class OpenTelemetryExporterModule
 
     static SpanExporter createSpanExporter(OpenTelemetryExporterConfig config)
     {
+        Map<String, String> headers = config.getHeaders();
         return switch (config.getProtocol()) {
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcSpanExporter.builder()
+                            .setHeaders(() -> headers)
                             .setEndpoint(config.getEndpoint().toString()),
                     OtlpGrpcSpanExporterBuilder::setTrustedCertificates,
                     OtlpGrpcSpanExporterBuilder::setClientTls)
@@ -94,6 +97,7 @@ public class OpenTelemetryExporterModule
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpSpanExporter.builder()
+                            .setHeaders(() -> headers)
                             .setEndpoint(httpProtobufEndpoint(config.getEndpoint(), TRACES_PATH)),
                     OtlpHttpSpanExporterBuilder::setTrustedCertificates,
                     OtlpHttpSpanExporterBuilder::setClientTls)
@@ -120,6 +124,7 @@ public class OpenTelemetryExporterModule
 
     static MetricExporter createMetricExporter(OpenTelemetryExporterConfig config)
     {
+        Map<String, String> headers = config.getHeaders();
         AggregationTemporalitySelector temporalitySelector = switch (config.getMetricsTemporalityPreference()) {
             case DELTA -> deltaPreferred();
             case CUMULATIVE -> alwaysCumulative();
@@ -129,6 +134,7 @@ public class OpenTelemetryExporterModule
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcMetricExporter.builder()
+                            .setHeaders(() -> headers)
                             .setAggregationTemporalitySelector(temporalitySelector)
                             .setEndpoint(config.getEndpoint().toString()),
                     OtlpGrpcMetricExporterBuilder::setTrustedCertificates,
@@ -137,6 +143,7 @@ public class OpenTelemetryExporterModule
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpMetricExporter.builder()
+                            .setHeaders(() -> headers)
                             .setAggregationTemporalitySelector(temporalitySelector)
                             .setEndpoint(httpProtobufEndpoint(config.getEndpoint(), METRICS_PATH)),
                     OtlpHttpMetricExporterBuilder::setTrustedCertificates,
@@ -166,10 +173,12 @@ public class OpenTelemetryExporterModule
 
     static LogRecordExporter createLogRecordExporter(OpenTelemetryExporterConfig config)
     {
+        Map<String, String> headers = config.getHeaders();
         return switch (config.getProtocol()) {
             case GRPC -> configureTls(
                     config,
                     OtlpGrpcLogRecordExporter.builder()
+                            .setHeaders(() -> headers)
                             .setEndpoint(config.getEndpoint().toString()),
                     OtlpGrpcLogRecordExporterBuilder::setTrustedCertificates,
                     OtlpGrpcLogRecordExporterBuilder::setClientTls)
@@ -177,6 +186,7 @@ public class OpenTelemetryExporterModule
             case HTTP_PROTOBUF -> configureTls(
                     config,
                     OtlpHttpLogRecordExporter.builder()
+                            .setHeaders(() -> headers)
                             .setEndpoint(httpProtobufEndpoint(config.getEndpoint(), LOGS_PATH)),
                     OtlpHttpLogRecordExporterBuilder::setTrustedCertificates,
                     OtlpHttpLogRecordExporterBuilder::setClientTls)
