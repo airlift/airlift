@@ -513,10 +513,46 @@ public final class ExponentialHistogram
 
     private static long[] downscaleBucketCounts(int offset, long[] counts, int scaleReduction)
     {
-        int newOffset = offset >> scaleReduction;
-        long[] newCounts = new long[((offset + counts.length - 1) >> scaleReduction) - newOffset + 1];
-        for (int index = 0; index < counts.length; index++) {
-            newCounts[((offset + index) >> scaleReduction) - newOffset] += counts[index];
+        long newOffset = downscaleBucketIndex(offset, scaleReduction);
+        long newLastIndex = downscaleBucketIndex((long) offset + counts.length - 1, scaleReduction);
+        long[] newCounts = new long[(int) (newLastIndex - newOffset + 1)];
+        if (scaleReduction == 1) {
+            int index = 0;
+            int output = 0;
+            if ((offset & 1) != 0) {
+                newCounts[output++] = counts[index++];
+            }
+            for (; index < counts.length - 1; index += 2) {
+                newCounts[output++] = counts[index] + counts[index + 1];
+            }
+            if (index < counts.length) {
+                newCounts[output] = counts[index];
+            }
+            return newCounts;
+        }
+
+        // With four or eight inputs per output, the indexed loop is cheaper than
+        // setting up a separate reduction for each group.
+        if (scaleReduction < 4) {
+            for (int index = 0; index < counts.length; index++) {
+                newCounts[((offset + index) >> scaleReduction) - (int) newOffset] += counts[index];
+            }
+            return newCounts;
+        }
+
+        // Accumulate each destination bucket locally and store it once. The first group may
+        // be partial when the input offset is not aligned to the new bucket width.
+        long groupSize = 1L << scaleReduction;
+        long groupEnd = groupSize - (offset & (groupSize - 1));
+        int index = 0;
+        for (int output = 0; output < newCounts.length; output++) {
+            int end = (int) Math.min(groupEnd, counts.length);
+            long sum = 0;
+            for (; index < end; index++) {
+                sum += counts[index];
+            }
+            newCounts[output] = sum;
+            groupEnd += groupSize;
         }
         return newCounts;
     }
