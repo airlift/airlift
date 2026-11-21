@@ -8,6 +8,7 @@ import io.airlift.mcp.McpCapabilityFilter;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.McpTasks;
 import io.airlift.mcp.handler.CompletionEntry;
 import io.airlift.mcp.handler.CompletionHandler;
 import io.airlift.mcp.handler.PromptEntry;
@@ -32,6 +33,7 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Skill;
 import io.airlift.mcp.model.SkillResource;
 import io.airlift.mcp.model.SkillResources;
+import io.airlift.mcp.model.TaskSupport;
 import io.airlift.mcp.model.Tool;
 import org.glassfish.jersey.uri.UriTemplate;
 
@@ -48,6 +50,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpSkillBuilder.mcpSkillBuilder;
@@ -80,6 +83,7 @@ public class InternalEntities
     private final Map<UriTemplate, RegisteredTemplate> resourceTemplates = new ConcurrentHashMap<>();
     private final Map<String, CompletionEntry> completions = new ConcurrentHashMap<>();
     private final McpCapabilityFilter capabilityFilter;
+    private final boolean hasTasks;
 
     @Inject
     InternalEntities(
@@ -88,11 +92,13 @@ public class InternalEntities
             Set<ResourceEntry> resources,
             Set<ResourceTemplateEntry> resourceTemplates,
             Set<CompletionEntry> completions,
-            McpCapabilityFilter capabilityFilter)
+            McpCapabilityFilter capabilityFilter,
+            Optional<McpTasks> tasks)
     {
         this.capabilityFilter = requireNonNull(capabilityFilter, "capabilityFilter is null");
+        hasTasks = requireNonNull(tasks, "tasks is null").isPresent();
 
-        tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
+        tools.forEach(this::addTool);
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
         resources.forEach(resource -> putResource(resource.resource(), resource.handler(), resource.kind()));
         resourceTemplates.forEach(resourceTemplate -> putResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler(), resourceTemplate.kind()));
@@ -102,7 +108,19 @@ public class InternalEntities
     @Override
     public void addTool(Tool tool, ToolHandler toolHandler)
     {
-        tools.put(tool.name(), new ToolEntry(tool, toolHandler));
+        addTool(new ToolEntry(tool, toolHandler));
+    }
+
+    @Override
+    public void addTool(ToolEntry toolEntry)
+    {
+        // a task-declaring tool cannot run without a task engine, so refuse it here rather than fail each call
+        checkArgument(hasTasks || toolEntry.taskSupport() == TaskSupport.NONE,
+                "Tool %s is declared with taskSupport %s, which requires a task engine: bind McpTasks with McpModule.Builder.withTasks()",
+                toolEntry.tool().name(),
+                toolEntry.taskSupport());
+
+        tools.put(toolEntry.tool().name(), toolEntry);
     }
 
     @Override

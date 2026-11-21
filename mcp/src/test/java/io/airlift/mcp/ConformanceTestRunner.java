@@ -5,9 +5,21 @@ import static java.util.Objects.requireNonNull;
 
 public class ConformanceTestRunner
 {
-    private static final String CONFORMANCE_PACKAGE = "@modelcontextprotocol/conformance@0.2.0-alpha.11";
+    private static final String CONFORMANCE_PACKAGE = "@modelcontextprotocol/conformance@0.2.0-alpha.12";
 
     private final String mcpUri;
+
+    /**
+     * @param exitCode the conformance runner's verdict: zero when every failing check is listed
+     *         in the expected-failures file - and every listed check still fails
+     */
+    public record Result(int exitCode, String output)
+    {
+        public Result
+        {
+            requireNonNull(output, "output is null");
+        }
+    }
 
     public ConformanceTestRunner(String mcpUri)
     {
@@ -30,15 +42,26 @@ public class ConformanceTestRunner
         }
     }
 
-    public String runTest(String scenario)
+    public Result runTest(String scenario)
     {
         // see: https://github.com/modelcontextprotocol/conformance?tab=readme-ov-file#testing-servers
         try {
-            Process process = new ProcessBuilder("npm", "exec", "--yes", CONFORMANCE_PACKAGE, "--", "server", "--url", mcpUri, "--scenario", scenario, "--verbose")
+            Process process = new ProcessBuilder(
+                    "npm",
+                    "exec",
+                    "--yes",
+                    CONFORMANCE_PACKAGE,
+                    "--",
+                    "server",
+                    "--url",
+                    mcpUri,
+                    "--scenario",
+                    scenario,
+                    "--verbose")
                     .start();
-            process.waitFor();
-            String result = process.inputReader(UTF_8).readAllAsString();
-            return result + process.errorReader(UTF_8).readAllAsString();
+            int exitCode = process.waitFor();
+            String output = process.inputReader(UTF_8).readAllAsString() + process.errorReader(UTF_8).readAllAsString();
+            return new Result(exitCode, output);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

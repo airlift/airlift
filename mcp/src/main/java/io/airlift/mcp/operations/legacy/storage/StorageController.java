@@ -1,4 +1,4 @@
-package io.airlift.mcp.storage;
+package io.airlift.mcp.operations.legacy.storage;
 
 import java.time.Duration;
 import java.util.List;
