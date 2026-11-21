@@ -84,18 +84,48 @@ public class TestSparseHll
     public void testRetainedSize()
     {
         SparseHll sparseHll = new SparseHll(10);
-        // use an empty array to mock the entries in SparseHll
-        int[] entries = new int[1];
-        long retainedSize = sizeOf(entries) + SPARSE_HLL_INSTANCE_SIZE;
-        for (int value = 0; value < 100; value++) {
-            sparseHll.insertHash(Murmur3Hash128.hash64(value));
-            if (value % 10 == 1) {
-                // we increase the capacity by 10 once full
-                entries = new int[value + 10];
-                retainedSize = sizeOf(entries) + SPARSE_HLL_INSTANCE_SIZE;
-            }
-            assertThat(sparseHll.estimatedInMemorySize()).isEqualTo(retainedSize);
+        for (int value = 0; value < 1000; value++) {
+            sparseHll.insertHash((long) value << 38);
+            long minimumSize = SPARSE_HLL_INSTANCE_SIZE + sizeOf(new int[value + 1]);
+            long maximumSize = SPARSE_HLL_INSTANCE_SIZE + sizeOf(new int[Math.max(value + 1, (value + 1) * 3 / 2)]);
+            assertThat((long) sparseHll.estimatedInMemorySize()).isBetween(minimumSize, maximumSize);
         }
+    }
+
+    @Test
+    public void testGrowthDoesNotPrematurelyMakeDense()
+    {
+        for (int indexBits : prefixLengths()) {
+            HyperLogLog hll = HyperLogLog.newInstance(1 << indexBits);
+            int denseSize = DenseHll.estimatedInMemorySize(indexBits);
+            int count = 0;
+            while (SPARSE_HLL_INSTANCE_SIZE + sizeOf(new int[count + 1]) <= denseSize) {
+                hll.addHash((long) count++ << 38);
+                assertThat(SparseHll.canDeserialize(hll.serialize())).isTrue();
+            }
+            hll.addHash((long) count << 38);
+            assertThat(DenseHll.canDeserialize(hll.serialize())).isTrue();
+        }
+    }
+
+    @Test
+    public void testInsertAfterDeserializeAndMerge()
+    {
+        SparseHll expected = new SparseHll(11);
+        for (long i = 0; i < 100; i++) {
+            expected.insertHash(Murmur3Hash128.hash64(i));
+        }
+        SparseHll restored = new SparseHll(expected.serialize());
+        SparseHll merged = new SparseHll(11);
+        merged.mergeWith(expected);
+        for (long i = 100; i < 1000; i++) {
+            long hash = Murmur3Hash128.hash64(i);
+            expected.insertHash(hash);
+            restored.insertHash(hash);
+            merged.insertHash(hash);
+        }
+        assertSlicesEqual(restored.serialize(), expected.serialize());
+        assertSlicesEqual(merged.serialize(), expected.serialize());
     }
 
     private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
