@@ -44,6 +44,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -299,12 +300,22 @@ class OpenApiBuilder
             apiResponse.description("Success").setContent(new Content().addMediaType(APPLICATION_JSON, item));
             apiResponses.addApiResponse(SUCCESS, apiResponse);
         }
-        modelMethod.responses().forEach(modelResponse -> {
-            ApiResponse apiErrorResponse = new ApiResponse();
-            MediaType item = new MediaType().schema(schemaBuilder.withSchemaTag(TAG_RESPONSE_DEFINITIONS).buildSchema(modelResponse.resource(), BuildSchemaMode.STANDARD));
-            apiErrorResponse.description(modelResponse.responseClass().getSimpleName()).setContent(new Content().addMediaType(APPLICATION_JSON, item));
-            apiResponses.addApiResponse(Integer.toString(modelResponse.status().code()), apiErrorResponse);
-        });
+        // A method can declare a response with the same status as one of the defaults, and both can be returned,
+        // so responses that share a status are documented together rather than one replacing the other
+        modelMethod.responses().stream()
+                .collect(Collectors.groupingBy(modelResponse -> modelResponse.status().code(), LinkedHashMap::new, toImmutableList()))
+                .forEach((statusCode, modelResponses) -> {
+                    List<Schema> schemas = modelResponses.stream()
+                            .map(modelResponse -> schemaBuilder.withSchemaTag(TAG_RESPONSE_DEFINITIONS).buildSchema(modelResponse.resource(), BuildSchemaMode.STANDARD))
+                            .collect(toImmutableList());
+                    Schema schema = (schemas.size() == 1) ? schemas.getFirst() : new Schema().oneOf(schemas);
+                    String description = modelResponses.stream()
+                            .map(modelResponse -> modelResponse.responseClass().getSimpleName())
+                            .collect(Collectors.joining(", "));
+                    ApiResponse apiErrorResponse = new ApiResponse();
+                    apiErrorResponse.description(description).setContent(new Content().addMediaType(APPLICATION_JSON, new MediaType().schema(schema)));
+                    apiResponses.addApiResponse(Integer.toString(statusCode), apiErrorResponse);
+                });
         operation.responses(apiResponses);
 
         modelMethod.requestBody().ifPresent(requestBody -> {
