@@ -2,24 +2,49 @@ package io.airlift.http.client;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableMap;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+
+import java.util.Map;
 
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public final class HeaderName
 {
+    private static final HeaderName[] KNOWN_BY_ORDINAL;
+    private static final Map<String, HeaderName> KNOWN_BY_NAME;
+
+    static {
+        HttpHeader[] values = HttpHeader.values();
+        HeaderName[] byOrdinal = new HeaderName[values.length];
+        ImmutableMap.Builder<String, HeaderName> byName = ImmutableMap.builderWithExpectedSize(values.length);
+        for (HttpHeader header : values) {
+            HeaderName name = new HeaderName(header.lowerCaseName());
+            byOrdinal[header.ordinal()] = name;
+            byName.put(name.lowerCase, name);
+        }
+        KNOWN_BY_ORDINAL = byOrdinal;
+        KNOWN_BY_NAME = byName.build();
+    }
+
     private final String lowerCase;
 
     @JsonCreator
     public static HeaderName of(String value)
     {
-        return new HeaderName(value.toLowerCase(ENGLISH));
+        String lowerCase = value.toLowerCase(ENGLISH);
+        HeaderName cached = KNOWN_BY_NAME.get(lowerCase);
+        return cached != null ? cached : new HeaderName(lowerCase);
     }
 
-    // Visible only to the Response interface
     static HeaderName of(HttpField httpField)
     {
+        HttpHeader header = httpField.getHeader();
+        if (header != null) {
+            return KNOWN_BY_ORDINAL[header.ordinal()];
+        }
         return new HeaderName(httpField.getLowerCaseName());
     }
 
