@@ -313,6 +313,38 @@ class TestExponentialHistogram
     }
 
     @Test
+    public void testDownscaleBucketGroups()
+    {
+        for (int offset : new int[] {-17, -16, -15, -1, 0, 1, 15, 16, 17}) {
+            for (int length : new int[] {1, 2, 3, 7, 8, 9, 159, 160, 161, 257}) {
+                long[] counts = new long[length];
+                long count = 0;
+                for (int index = 0; index < length; index++) {
+                    counts[index] = index + 1;
+                    count += counts[index];
+                }
+                Buckets buckets = new Buckets(offset, counts);
+                ExponentialHistogramSnapshot source = new ExponentialHistogramSnapshot(20, count * 2, 0, -1, 1, 0, buckets, buckets);
+                for (int reduction : new int[] {1, 2, 3, 4, 8, 20, 30}) {
+                    int first = offset >> reduction;
+                    int last = (offset + length - 1) >> reduction;
+                    long[] expected = new long[last - first + 1];
+                    for (int index = 0; index < length; index++) {
+                        expected[((offset + index) >> reduction) - first] += counts[index];
+                    }
+                    ExponentialHistogramSnapshot result = source.downscaleToAtMost(20 - reduction);
+                    assertThat(result.positiveBuckets()).isEqualTo(new Buckets(first, expected));
+                    assertThat(result.negativeBuckets()).isEqualTo(new Buckets(first, expected));
+                    ExponentialHistogram mutable = new ExponentialHistogram(source, 1024);
+                    mutable.downscaleToAtMost(20 - reduction);
+                    assertThat(mutable.snapshot()).isEqualTo(result);
+                    assertThat(source.positiveBuckets().counts()).containsExactly(counts);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testSnapshotDownscaleToAtMostValidatesScale()
     {
         ExponentialHistogramSnapshot snapshot = new ExponentialHistogram().snapshot();
