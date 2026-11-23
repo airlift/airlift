@@ -327,6 +327,9 @@ class SchemaBuilder
         if (schema.getAllOf() != null) {
             schema.getAllOf().forEach(item -> addReferencedOfSchemas(item, localOfSchemas, localSchemas, visited));
         }
+        if (schema.getAnyOf() != null) {
+            schema.getAnyOf().forEach(item -> addReferencedOfSchemas(item, localOfSchemas, localSchemas, visited));
+        }
         if (schema.getOneOf() != null) {
             schema.getOneOf().forEach(item -> addReferencedOfSchemas(item, localOfSchemas, localSchemas, visited));
         }
@@ -542,8 +545,9 @@ class SchemaBuilder
             }
         }
         else {
-            Schema<?> componentSchema = describedProperty(buildSchema(component, mode));
-            schema.addProperty(component.name(), componentSchema);
+            Schema<?> componentSchema = buildSchema(component, mode);
+            boolean nullable = mode.isPartialPatch() && component.modifiers().contains(ModelResourceModifier.OPTIONAL);
+            schema.addProperty(component.name(), nullable ? nullableProperty(componentSchema) : describedProperty(componentSchema));
             if (!mode.isPartialPatch() && !component.modifiers().contains(ModelResourceModifier.OPTIONAL)) {
                 schema.addRequiredItem(component.name());
             }
@@ -560,6 +564,28 @@ class SchemaBuilder
         String description = property.getDescription();
         property.description(null);
         return new Schema<>().addAllOfItem(property).description(description);
+    }
+
+    private Schema<?> nullableProperty(Schema<?> property)
+    {
+        if (!refSiblingsAllowed && (property.get$ref() == null)) {
+            return property.nullable(true);
+        }
+        String description = property.getDescription();
+        property.description(null);
+        return new Schema<>().addAnyOfItem(property).addAnyOfItem(nullSchema()).description(description);
+    }
+
+    private Schema<?> nullSchema()
+    {
+        if (refSiblingsAllowed) {
+            return new Schema<>().type("null");
+        }
+        Schema<Object> nullSchema = new Schema<>();
+        nullSchema.setType("string");
+        nullSchema.setNullable(true);
+        nullSchema.addEnumItemObject(null);
+        return nullSchema;
     }
 
     private void buildUnwrappedJsonValueListComponentSchema(BuildSchemaMode mode, Schema<?> schema, ModelResource component)
