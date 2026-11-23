@@ -61,6 +61,14 @@ public interface McpEntities
 
     void addTool(Tool tool, ToolHandler toolHandler);
 
+    /**
+     * Adds a tool, including how it can be executed as a task.
+     *
+     * @throws IllegalArgumentException if the tool is declared with a {@link io.airlift.mcp.model.TaskSupport}
+     *         other than {@link io.airlift.mcp.model.TaskSupport#NONE} and no task engine is bound
+     */
+    void addTool(ToolEntry toolEntry);
+
     void removeTool(String toolName);
 
     void addPrompt(Prompt prompt, PromptHandler promptHandler);
