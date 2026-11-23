@@ -1,7 +1,14 @@
 package io.airlift.api.servertests.patch;
 
 import com.google.common.collect.ImmutableSet;
+import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.ApiPatch;
+import io.airlift.api.builders.ApiBuilder;
+import io.airlift.api.model.ModelService;
+import io.airlift.api.model.ModelServices;
+import io.airlift.api.openapi.OpenApiMetadata;
+import io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion;
+import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.api.validation.ValidatorException;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
@@ -10,11 +17,17 @@ import io.airlift.json.JsonCodec;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_0_1;
+import static io.airlift.api.openapi.OpenApiMetadata.OpenApiVersion.OPENAPI_3_2_0;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.Request.Builder.preparePatch;
@@ -76,6 +89,58 @@ public class TestPatch
         assertThat(ApiPatch.buildSecondLevel("")).isEqualTo(Map.entry("", ""));
         assertThatThrownBy(() -> ApiPatch.buildSecondLevel("a.b.c")).isInstanceOf(ValidatorException.class);
         assertThatThrownBy(() -> ApiPatch.buildSecondLevel(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    public void testOptionalFieldsAreNullableInOpenApi301()
+    {
+        JsonNode properties = packagePatchProperties(OPENAPI_3_0_1);
+        assertThat(properties.get("notes")).isEqualTo(jsonMapper.readTree(
+                """
+                {"type": "string", "description": "dummy", "nullable": true}
+                """));
+        assertThat(properties.get("state")).isEqualTo(jsonMapper.readTree(
+                """
+                {"anyOf": [{"$ref": "#/components/schemas/ItemState"}, {"type": "string", "nullable": true, "enum": [null]}], "description": "dummy"}
+                """));
+        assertThat(properties.get("label")).isEqualTo(jsonMapper.readTree(
+                """
+                {"anyOf": [{"$ref": "#/components/schemas/LabelPatch"}, {"type": "string", "nullable": true, "enum": [null]}]}
+                """));
+        assertThat(properties.get("veryImportantThing")).isEqualTo(jsonMapper.readTree(
+                """
+                {"type": "string", "description": "dummy"}
+                """));
+    }
+
+    @Test
+    public void testOptionalFieldsAreNullableInOpenApi320()
+    {
+        JsonNode properties = packagePatchProperties(OPENAPI_3_2_0);
+        assertThat(properties.get("notes")).isEqualTo(jsonMapper.readTree(
+                """
+                {"anyOf": [{"type": "string"}, {"type": "null"}], "description": "dummy"}
+                """));
+        assertThat(properties.get("state")).isEqualTo(jsonMapper.readTree(
+                """
+                {"anyOf": [{"$ref": "#/components/schemas/ItemState"}, {"type": "null"}], "description": "dummy"}
+                """));
+        assertThat(properties.get("label")).isEqualTo(jsonMapper.readTree(
+                """
+                {"anyOf": [{"$ref": "#/components/schemas/LabelPatch"}, {"type": "null"}]}
+                """));
+        assertThat(properties.get("veryImportantThing")).isEqualTo(jsonMapper.readTree(
+                """
+                {"type": "string", "description": "dummy"}
+                """));
+    }
+
+    private JsonNode packagePatchProperties(OpenApiVersion version)
+    {
+        ModelServices modelServices = ApiBuilder.apiBuilder().add(PackageService.class).build().modelServices();
+        ModelService service = modelServices.services().iterator().next();
+        OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), version), ApiBuilderConfig.jackson());
+        return jsonMapper.readTree(jsonMapper.writeValueAsString(provider.build(service.service().type(), _ -> true))).at("/components/schemas/PackagePatch/properties");
     }
 
     private JsonResponse<Fields> doRequest(String json)

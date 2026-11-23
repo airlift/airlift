@@ -11,17 +11,20 @@ import java.util.Optional;
 public record Package(
         @ApiReadOnly @ApiDescription("dummy") PackageId packageId,
         @ApiDescription("dummy") Optional<Manifest> manifest,
+        @ApiDescription("dummy") Optional<String> notes,
+        @ApiDescription("dummy") Optional<ItemState> state,
+        @ApiDescription("dummy") Optional<Label> label,
         @ApiReadOnly @ApiDescription("dummy") Item mainItem,
         @ApiDescription("dummy") String veryImportantThing,
         @ApiDescription("dummy") List<ItemId> itemIds)
 {
     public Package withVeryImportantThing(String veryImportantThing)
     {
-        return new Package(packageId, manifest, mainItem, veryImportantThing, itemIds);
+        return new Package(packageId, manifest, notes, state, label, mainItem, veryImportantThing, itemIds);
     }
 
     public Package withManifest(Optional<Manifest> manifest)
     {
-        return new Package(packageId, manifest, mainItem, veryImportantThing, itemIds);
+        return new Package(packageId, manifest, notes, state, label, mainItem, veryImportantThing, itemIds);
     }
 }

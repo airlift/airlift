@@ -29,6 +29,7 @@ public class Schema<T>
     private String $ref;
     private List<T> _enum;
     private List<Schema> allOf;
+    private List<Schema> anyOf;
     private List<Schema> oneOf;
     private Discriminator discriminator;
     private List<String> tags;
@@ -271,6 +272,32 @@ public class Schema<T>
             this.allOf = new ArrayList<>();
         }
         this.allOf.add(allOfItem);
+        return this;
+    }
+
+    @JsonProperty
+    public List<Schema> getAnyOf()
+    {
+        return anyOf;
+    }
+
+    public void setAnyOf(List<Schema> anyOf)
+    {
+        this.anyOf = anyOf;
+    }
+
+    public Schema anyOf(List<Schema> anyOf)
+    {
+        this.anyOf = anyOf;
+        return this;
+    }
+
+    public Schema addAnyOfItem(Schema anyOfItem)
+    {
+        if (this.anyOf == null) {
+            this.anyOf = new ArrayList<>();
+        }
+        this.anyOf.add(anyOfItem);
         return this;
     }
 
