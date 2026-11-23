@@ -26,9 +26,29 @@ The client supports modifying requests via a user specified set of filters. Thes
         .withFilter(FirstFilter.class)
         .withFilter(SecondFilter.class);
 
-When using the `HttpClient` with other platform services, you can use the `TraceTokenRequestFilter` to automatically send the current trace token with each request. The binder has shortcut for this:
+### Tracing
 
-    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withTracing();
+The Jetty HTTP client has built-in OpenTelemetry instrumentation; no tracing filter or
+`withTracing()` binder call is needed. For a Guice-bound client, the HTTP client module
+uses the `OpenTelemetry` and `Tracer` bindings when available. Without those bindings,
+it defaults to no-op telemetry and a no-op tracer.
+
+For an Airlift application, install `OpenTelemetryModule` and
+`OpenTelemetryExporterModule` as described in the [OpenTelemetry README](../opentelemetry/README.md).
+With an exporter configured, the client creates a CLIENT span for each request and uses
+the configured propagator to inject its context into outgoing headers. Airlift's
+OpenTelemetry module configures W3C trace context propagation. For custom OpenTelemetry
+setups, supply a `Tracer` and an `OpenTelemetry` instance with the desired propagators.
+The HTTP client also accepts an explicit `SpanBuilder` on a `Request` when a request
+needs a custom client span.
+
+The old `TraceTokenRequestFilter` and `.withTracing()` API were removed. Migrate by
+removing the binder call and configuring OpenTelemetry in the application and downstream
+services. W3C trace context is a different propagation format from the old
+`X-Airlift-TraceToken` header; services that still require that header need a separate
+migration strategy.
+
+### Aliases
 
 The binder also supports alias annotations. These are useful when you have multiple logical clients that all use the same physical service. For example, the `foo-server` might implement the `foo` and `bar` services. In the future, the `bar` service could be moved to it's own `bar-server`. Using aliases allows you to have separate annotations, `FooClient` and `BarClient`, for the different logical services, making it easy to later migrate to separate clients and configurations by making a single change to the bindings.
 
@@ -40,13 +60,15 @@ Using aliases is similar to using filters:
 
 Note that the filters and aliases are unique to the binding, allowing you to have a different set for each one.
 
+### Request logging
+
 The HTTP client also supports logging, which can be enabled with the `http-client.log.enabled` config property.
 Here is a sample log line:
 
 ```
-2018-02-21T18:26:50.438-08:00	HTTP/1.1	DELETE	http://127.0.0.1:8080/v1/task/20180222_022649_00001_dn54g.0.0/results/0	204	0	16	null
+2018-02-21T18:26:50.438-08:00	HTTP/1.1	DELETE	http://127.0.0.1:8080/v1/task/20180222_022649_00001_dn54g.0.0/results/0	204	0	16	1	2	3	4	16
 ```
-A request log line has thirteen columns delimited with the tab character:
+A request log line has twelve columns delimited with the tab character:
 - Request timestamp in the ISO 8601 format.
 - The protocol version.
 - The method (GET, POST, DELETE, etc.).
@@ -59,4 +81,3 @@ A request log line has thirteen columns delimited with the tab character:
 - Time from request is sent to response begins [ms].
 - Time from response begins to response is complete [ms].
 - Time to last byte [ms], which is the amount of time from when the request is created to when the entire response is received.
-- Airlift trace token if present in the request headers ("X-Airlift-TraceToken").
