@@ -45,8 +45,7 @@ public class TestRequestCancellationServletFilter
 
         RequestCancellationServletFilter.registerJettyListeners(
                 request,
-                cancellation,
-                new RequestCancellationServletFilter.CancellationCleanup(cancellation));
+                new RequestCancellationServletFilter.RequestCancellation(cancellation));
 
         request.failureListener.get().accept(new RuntimeException("request failed"));
 
@@ -61,8 +60,7 @@ public class TestRequestCancellationServletFilter
 
         RequestCancellationServletFilter.registerJettyListeners(
                 new TestingRequestLifecycle(connection),
-                cancellation,
-                new RequestCancellationServletFilter.CancellationCleanup(cancellation));
+                new RequestCancellationServletFilter.RequestCancellation(cancellation));
 
         connection.listeners.getFirst().onClosed(connection);
 
@@ -70,7 +68,43 @@ public class TestRequestCancellationServletFilter
     }
 
     @Test
-    public void testRequestCompletionRemovesConnectionListener()
+    public void testMultipleRequestsShareSingleConnectionListener()
+    {
+        TestingConnection connection = new TestingConnection();
+        CompletableFuture<Void> firstCancellation = new CompletableFuture<>();
+        CompletableFuture<Void> secondCancellation = new CompletableFuture<>();
+        TestingRequestLifecycle firstRequest = new TestingRequestLifecycle(connection);
+        TestingRequestLifecycle secondRequest = new TestingRequestLifecycle(connection);
+
+        RequestCancellationServletFilter.registerJettyListeners(
+                firstRequest,
+                new RequestCancellationServletFilter.RequestCancellation(firstCancellation));
+        RequestCancellationServletFilter.registerJettyListeners(
+                secondRequest,
+                new RequestCancellationServletFilter.RequestCancellation(secondCancellation));
+
+        assertThat(connection.listeners).hasSize(1);
+        RequestCancellationServletFilter.ConnectionCancellationTracker tracker =
+                (RequestCancellationServletFilter.ConnectionCancellationTracker) connection.listeners.getFirst();
+        assertThat(tracker.activeCount()).isEqualTo(2);
+
+        // Complete first request: should untrack only first request without mutating connection listeners
+        firstRequest.completionListener.get().accept(null);
+        assertThat(connection.listeners).hasSize(1);
+        assertThat(tracker.activeCount()).isEqualTo(1);
+        assertThat(firstCancellation).isCompleted();
+        assertThat(firstCancellation).isNotCancelled();
+
+        // Closing the connection cancels only the still-active second request
+        connection.close();
+        assertThat(tracker.activeCount()).isZero();
+        assertThat(firstCancellation).isCompleted();
+        assertThat(firstCancellation).isNotCancelled();
+        assertThat(secondCancellation).isCancelled();
+    }
+
+    @Test
+    public void testRequestCompletionRemovesActiveCancellation()
     {
         CompletableFuture<Void> cancellation = new CompletableFuture<>();
         TestingConnection connection = new TestingConnection();
@@ -78,17 +112,19 @@ public class TestRequestCancellationServletFilter
 
         RequestCancellationServletFilter.registerJettyListeners(
                 request,
-                cancellation,
-                new RequestCancellationServletFilter.CancellationCleanup(cancellation));
+                new RequestCancellationServletFilter.RequestCancellation(cancellation));
 
         assertThat(connection.listeners).hasSize(1);
-        Connection.Listener connectionListener = connection.listeners.getFirst();
+        RequestCancellationServletFilter.ConnectionCancellationTracker tracker =
+                (RequestCancellationServletFilter.ConnectionCancellationTracker) connection.listeners.getFirst();
+        assertThat(tracker.activeCount()).isEqualTo(1);
 
         request.completionListener.get().accept(null);
-        connectionListener.onClosed(connection);
+        assertThat(tracker.activeCount()).isZero();
+
+        tracker.onClosed(connection);
         connection.close();
 
-        assertThat(connection.listeners).isEmpty();
         assertThat(cancellation).isCompleted();
         assertThat(cancellation).isNotCancelled();
     }
@@ -102,15 +138,27 @@ public class TestRequestCancellationServletFilter
 
         RequestCancellationServletFilter.registerJettyListeners(
                 request,
-                cancellation,
-                new RequestCancellationServletFilter.CancellationCleanup(cancellation));
+                new RequestCancellationServletFilter.RequestCancellation(cancellation));
 
-        connection.closeDuringListenerRemoval = true;
         request.completionListener.get().accept(null);
+        connection.close();
 
-        assertThat(connection.listeners).isEmpty();
         assertThat(cancellation).isCompleted();
         assertThat(cancellation).isNotCancelled();
+    }
+
+    @Test
+    public void testAddAfterConnectionCloseCancelsImmediately()
+    {
+        RequestCancellationServletFilter.ConnectionCancellationTracker tracker =
+                new RequestCancellationServletFilter.ConnectionCancellationTracker();
+        tracker.onClosed(null);
+
+        CompletableFuture<Void> cancellation = new CompletableFuture<>();
+        tracker.add(new RequestCancellationServletFilter.RequestCancellation(cancellation));
+
+        assertThat(cancellation).isCancelled();
+        assertThat(tracker.activeCount()).isZero();
     }
 
     @Test
@@ -118,9 +166,7 @@ public class TestRequestCancellationServletFilter
     {
         CompletableFuture<Void> cancellation = new CompletableFuture<>();
 
-        new RequestCancellationServletFilter.CancellationAsyncListener(
-                cancellation,
-                new RequestCancellationServletFilter.CancellationCleanup(cancellation))
+        new RequestCancellationServletFilter.RequestCancellation(cancellation)
                 .onTimeout(null);
 
         assertThat(cancellation).isCancelled();
@@ -131,9 +177,7 @@ public class TestRequestCancellationServletFilter
     {
         CompletableFuture<Void> cancellation = new CompletableFuture<>();
 
-        new RequestCancellationServletFilter.CancellationAsyncListener(
-                cancellation,
-                new RequestCancellationServletFilter.CancellationCleanup(cancellation))
+        new RequestCancellationServletFilter.RequestCancellation(cancellation)
                 .onError(null);
 
         assertThat(cancellation).isCancelled();
@@ -143,9 +187,11 @@ public class TestRequestCancellationServletFilter
     public void testConnectionCloseCancelsRequest()
     {
         CompletableFuture<Void> cancellation = new CompletableFuture<>();
+        RequestCancellationServletFilter.ConnectionCancellationTracker tracker =
+                new RequestCancellationServletFilter.ConnectionCancellationTracker();
+        tracker.add(new RequestCancellationServletFilter.RequestCancellation(cancellation));
 
-        new RequestCancellationServletFilter.WeakCancellationListener(cancellation)
-                .onClosed(null);
+        tracker.onClosed(null);
 
         assertThat(cancellation).isCancelled();
     }
@@ -241,7 +287,6 @@ public class TestRequestCancellationServletFilter
             implements Connection
     {
         private final List<Listener> listeners = new ArrayList<>();
-        private boolean closeDuringListenerRemoval;
 
         @Override
         public void addEventListener(EventListener listener)
@@ -252,9 +297,6 @@ public class TestRequestCancellationServletFilter
         @Override
         public void removeEventListener(EventListener listener)
         {
-            if (closeDuringListenerRemoval) {
-                ((Listener) listener).onClosed(this);
-            }
             listeners.remove(listener);
         }
 

@@ -1,5 +1,6 @@
 package io.airlift.http.server;
 
+import com.google.common.collect.MapMaker;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.Filter;
@@ -12,10 +13,13 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Request;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.Optional;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 public final class RequestCancellationServletFilter
@@ -23,19 +27,22 @@ public final class RequestCancellationServletFilter
 {
     public static final String REQUEST_CANCELLATION_ATTRIBUTE = "io.airlift.request-cancellation";
 
+    private static final ConcurrentMap<Connection, ConnectionCancellationTracker> CONNECTION_TRACKERS = new MapMaker()
+            .weakKeys()
+            .makeMap();
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
         CompletableFuture<Void> cancellation = new CompletableFuture<>();
-        CancellationCleanup cleanup = new CancellationCleanup(cancellation);
+        RequestCancellation state = new RequestCancellation(cancellation);
         request.setAttribute(REQUEST_CANCELLATION_ATTRIBUTE, cancellation);
-        boolean cleanupRegistered = getJettyRequest(request)
-                .map(jettyRequest -> {
-                    registerJettyListeners(jettyRequest, cancellation, cleanup);
-                    return true;
-                })
-                .orElse(false);
+        Request jettyRequest = getJettyRequest(request);
+        boolean cleanupRegistered = jettyRequest != null;
+        if (cleanupRegistered) {
+            registerJettyListeners(jettyRequest, state);
+        }
 
         try {
             chain.doFilter(request, response);
@@ -43,85 +50,187 @@ public final class RequestCancellationServletFilter
         finally {
             if (request.isAsyncStarted()) {
                 try {
-                    request.getAsyncContext().addListener(new CancellationAsyncListener(cancellation, cleanup));
+                    request.getAsyncContext().addListener(state);
                 }
                 catch (IllegalStateException ignored) {
-                    cleanup.run();
+                    state.complete();
                 }
             }
             else if (!cleanupRegistered) {
-                cleanup.run();
+                state.complete();
             }
         }
     }
 
-    private static void registerJettyListeners(Request request, CompletableFuture<Void> cancellation, CancellationCleanup cleanup)
+    private static void registerJettyListeners(Request request, RequestCancellation state)
     {
-        registerJettyListeners(new JettyRequestLifecycle(request), cancellation, cleanup);
+        request.addFailureListener(state::onFailure);
+        registerConnectionCancellation(request.getConnectionMetaData().getConnection(), state);
+        Request.addCompletionListener(request, state);
     }
 
-    static void registerJettyListeners(RequestLifecycle request, CompletableFuture<Void> cancellation, CancellationCleanup cleanup)
+    static void registerJettyListeners(RequestLifecycle request, RequestCancellation state)
     {
-        request.addFailureListener(_ -> cancellation.cancel(false));
-        Connection connection = request.getConnection();
-        if (connection != null) {
-            // Connections can outlive individual requests, so this listener is weak and is removed on request completion.
-            WeakCancellationListener listener = new WeakCancellationListener(cancellation);
-            connection.addEventListener(listener);
-            cleanup.setConnectionListener(new ConnectionListenerRegistration(connection, listener));
+        request.addFailureListener(state::onFailure);
+        registerConnectionCancellation(request.getConnection(), state);
+        request.addCompletionListener(state);
+    }
+
+    private static void registerConnectionCancellation(Connection connection, RequestCancellation state)
+    {
+        if (connection == null) {
+            return;
         }
-        request.addCompletionListener(_ -> cleanup.run());
+        // Connections can outlive individual requests and multiplex HTTP/2 streams,
+        // so register at most one Connection.Listener per Connection and track active cancellations in a concurrent set.
+        ConnectionCancellationTracker tracker = CONNECTION_TRACKERS.computeIfAbsent(connection, key -> {
+            ConnectionCancellationTracker newTracker = new ConnectionCancellationTracker();
+            key.addEventListener(newTracker);
+            return newTracker;
+        });
+        tracker.add(state);
+        state.setConnectionTracker(tracker);
     }
 
-    private static Optional<Request> getJettyRequest(ServletRequest request)
+    private static Request getJettyRequest(ServletRequest request)
     {
         try {
-            return Optional.of(ServletContextRequest.getServletContextRequest(request));
+            return ServletContextRequest.getServletContextRequest(request);
         }
         catch (IllegalStateException ignored) {
-            return Optional.empty();
+            return null;
         }
     }
 
-    static class CancellationCleanup
-            implements Runnable
+    static final class RequestCancellation
+            implements AsyncListener, Consumer<Throwable>
     {
-        private final CompletableFuture<Void> cancellation;
-        private final AtomicBoolean done = new AtomicBoolean();
-        private volatile Optional<ConnectionListenerRegistration> connectionListener = Optional.empty();
+        private static final VarHandle DONE;
 
-        CancellationCleanup(CompletableFuture<Void> cancellation)
+        static {
+            try {
+                DONE = MethodHandles.lookup().findVarHandle(RequestCancellation.class, "done", boolean.class);
+            }
+            catch (ReflectiveOperationException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        }
+
+        private final CompletableFuture<Void> cancellation;
+        @SuppressWarnings("unused")
+        private volatile boolean done;
+        private volatile ConnectionCancellationTracker connectionTracker;
+
+        RequestCancellation(CompletableFuture<Void> cancellation)
         {
             this.cancellation = cancellation;
         }
 
-        private void setConnectionListener(ConnectionListenerRegistration connectionListener)
+        void onFailure(Throwable ignored)
         {
-            this.connectionListener = Optional.of(connectionListener);
-            if (done.get()) {
-                connectionListener.close();
+            cancel();
+        }
+
+        void cancel()
+        {
+            cancellation.cancel(false);
+        }
+
+        void setConnectionTracker(ConnectionCancellationTracker tracker)
+        {
+            this.connectionTracker = tracker;
+            if ((boolean) DONE.getVolatile(this)) {
+                tracker.remove(this);
+                this.connectionTracker = null;
             }
         }
 
-        @Override
-        public void run()
+        void complete()
         {
-            if (!done.compareAndSet(false, true)) {
+            if (!DONE.compareAndSet(this, false, true)) {
                 return;
             }
 
             cancellation.complete(null);
-            connectionListener.ifPresent(ConnectionListenerRegistration::close);
+            ConnectionCancellationTracker tracker = this.connectionTracker;
+            if (tracker != null) {
+                tracker.remove(this);
+                this.connectionTracker = null;
+            }
+        }
+
+        @Override
+        public void accept(Throwable ignored)
+        {
+            complete();
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event)
+        {
+            complete();
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event)
+        {
+            cancellation.cancel(false);
+            complete();
+        }
+
+        @Override
+        public void onError(AsyncEvent event)
+        {
+            cancellation.cancel(false);
+            complete();
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event)
+        {
+            event.getAsyncContext().addListener(this);
         }
     }
 
-    private record ConnectionListenerRegistration(Connection connection, Connection.Listener listener)
-            implements AutoCloseable
+    static final class ConnectionCancellationTracker
+            implements Connection.Listener
     {
-        @Override
-        public void close()
+        private final Set<RequestCancellation> activeCancellations = ConcurrentHashMap.newKeySet(2);
+        private volatile boolean closed;
+
+        void add(RequestCancellation cancellation)
         {
-            connection.removeEventListener(listener);
+            activeCancellations.add(cancellation);
+            if (closed) {
+                if (activeCancellations.remove(cancellation)) {
+                    cancellation.cancel();
+                }
+            }
+        }
+
+        void remove(RequestCancellation cancellation)
+        {
+            activeCancellations.remove(cancellation);
+        }
+
+        int activeCount()
+        {
+            return activeCancellations.size();
+        }
+
+        @Override
+        public void onClosed(Connection connection)
+        {
+            closed = true;
+            if (connection != null) {
+                CONNECTION_TRACKERS.remove(connection, this);
+            }
+            Iterator<RequestCancellation> iterator = activeCancellations.iterator();
+            while (iterator.hasNext()) {
+                RequestCancellation cancellation = iterator.next();
+                iterator.remove();
+                cancellation.cancel();
+            }
         }
     }
 
@@ -132,75 +241,5 @@ public final class RequestCancellationServletFilter
         Connection getConnection();
 
         void addCompletionListener(Consumer<Throwable> listener);
-    }
-
-    private record JettyRequestLifecycle(Request request)
-            implements RequestLifecycle
-    {
-        @Override
-        public void addFailureListener(Consumer<Throwable> listener)
-        {
-            request.addFailureListener(listener);
-        }
-
-        @Override
-        public Connection getConnection()
-        {
-            return request.getConnectionMetaData().getConnection();
-        }
-
-        @Override
-        public void addCompletionListener(Consumer<Throwable> listener)
-        {
-            Request.addCompletionListener(request, listener);
-        }
-    }
-
-    record WeakCancellationListener(WeakReference<CompletableFuture<Void>> cancellation)
-            implements Connection.Listener
-    {
-        WeakCancellationListener(CompletableFuture<Void> cancellation)
-        {
-            this(new WeakReference<>(cancellation));
-        }
-
-        @Override
-        public void onClosed(Connection connection)
-        {
-            CompletableFuture<Void> cancellation = this.cancellation.get();
-            if (cancellation != null) {
-                cancellation.cancel(false);
-            }
-        }
-    }
-
-    record CancellationAsyncListener(CompletableFuture<Void> cancellation, CancellationCleanup cleanup)
-            implements AsyncListener
-    {
-        @Override
-        public void onComplete(AsyncEvent event)
-        {
-            cleanup.run();
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event)
-        {
-            cancellation.cancel(false);
-            cleanup.run();
-        }
-
-        @Override
-        public void onError(AsyncEvent event)
-        {
-            cancellation.cancel(false);
-            cleanup.run();
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event)
-        {
-            event.getAsyncContext().addListener(this);
-        }
     }
 }
