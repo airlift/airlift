@@ -131,10 +131,11 @@ public final class AutomaticMtls
     {
         try {
             byte[] seed = sharedSecret.getBytes(UTF_8);
-            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            // Explicitly pin SUN/SunEC so deterministic key derivation is unaffected by higher-priority JCA providers (e.g. ACCP) that ignore caller-supplied SecureRandom
+            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG", "SUN");
             secureRandom.setSeed(seed);
 
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", "SunEC");
             generator.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
             return generator.generateKeyPair();
         }
