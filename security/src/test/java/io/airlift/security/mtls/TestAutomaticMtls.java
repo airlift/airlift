@@ -19,9 +19,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyPairGeneratorSpi;
 import java.security.KeyStore;
+import java.security.Provider;
+import java.security.SecureRandom;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.List;
 
 import static io.airlift.security.mtls.AutomaticMtls.addCertificateAndKeyForCurrentNode;
@@ -57,6 +64,66 @@ class TestAutomaticMtls
         assertThatThrownBy(() -> checkCertificate(certificate, "sharedSecret", "wrongCommonName"))
                 .isInstanceOf(SecurityException.class)
                 .hasMessageContaining("Peer certificate subject 'CN=commonName' does not match expected subject: 'CN=wrongCommonName'");
+    }
+
+    @Test
+    public void testDeterministicKeyDerivationWithHigherPriorityEcProvider()
+            throws Exception
+    {
+        X509Certificate baselineCert = certificateBuilder("sharedSecret", "commonName")
+                .addSanDnsNames(List.of("localhost"))
+                .buildSelfSigned();
+
+        // Register a higher-priority EC KeyPairGenerator provider (like ACCP) that ignores caller-supplied SecureRandom
+        Provider provider = new NonDeterministicEcProvider();
+        Security.insertProviderAt(provider, 1);
+        try {
+            assertThat(KeyPairGenerator.getInstance("EC").getProvider().getName())
+                    .isEqualTo("NonDeterministicEcTestProvider");
+
+            X509Certificate certWithOverride = certificateBuilder("sharedSecret", "commonName")
+                    .addSanDnsNames(List.of("localhost"))
+                    .buildSelfSigned();
+
+            assertThat(certWithOverride.getPublicKey().getEncoded())
+                    .isEqualTo(baselineCert.getPublicKey().getEncoded());
+            checkCertificate(certWithOverride, "sharedSecret", "commonName");
+        }
+        finally {
+            Security.removeProvider(provider.getName());
+        }
+    }
+
+    private static class NonDeterministicEcProvider
+            extends Provider
+    {
+        private NonDeterministicEcProvider()
+        {
+            super("NonDeterministicEcTestProvider", "1.0", "test");
+            putService(new Service(this, "KeyPairGenerator", "EC", NonDeterministicEcKeyPairGenerator.class.getName(), null, null));
+        }
+    }
+
+    public static class NonDeterministicEcKeyPairGenerator
+            extends KeyPairGeneratorSpi
+    {
+        @Override
+        public void initialize(int keysize, SecureRandom random)
+        {
+            throw new AssertionError("AutomaticMtls must not use non-SunEC EC KeyPairGenerator");
+        }
+
+        @Override
+        public void initialize(AlgorithmParameterSpec params, SecureRandom random)
+        {
+            throw new AssertionError("AutomaticMtls must not use non-SunEC EC KeyPairGenerator");
+        }
+
+        @Override
+        public KeyPair generateKeyPair()
+        {
+            throw new AssertionError("AutomaticMtls must not use non-SunEC EC KeyPairGenerator");
+        }
     }
 
     @Test
