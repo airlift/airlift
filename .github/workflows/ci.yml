@@ -38,6 +38,8 @@ jobs:
         run: ./mvnw install -B -V -DskipTests -Dair.check.skip-all
       - name: Maven Tests
         run: ./mvnw install -B -P ci
+      - name: Vector API HLL Tests
+        run: ./mvnw test -B -pl stats -Dtest=TestDenseHll,TestDenseSerialization -Dair.test.jvm.additional-arguments=--add-modules=jdk.incubator.vector
 
   error-prone:
     runs-on: ubuntu-latest
