@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-It is assumed that you have Java (minimum version 11), git, and Maven installed. 
+It is assumed that you have Java (minimum version 17), git, and Maven installed. 
 
 ## An Airlift Service in 5 Quick Steps
 
