@@ -125,9 +125,15 @@ public interface HttpClientLogger
 
         public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause, long responseBeginTimestamp, long responseCompleteTimestamp)
         {
+            return failed(response, failureCause, 0L, responseBeginTimestamp, responseCompleteTimestamp);
+        }
+
+        public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause, long responseSize, long responseBeginTimestamp, long responseCompleteTimestamp)
+        {
             requireNonNull(response, "response is null");
             requireNonNull(failureCause, "failureCause is null");
-            return new ResponseInfo(response, 0L, responseBeginTimestamp, responseCompleteTimestamp, failureCause);
+            checkArgument(responseSize >= 0, "responseSize is negative");
+            return new ResponseInfo(response, responseSize, responseBeginTimestamp, responseCompleteTimestamp, failureCause);
         }
 
         public Optional<Response> getResponse()

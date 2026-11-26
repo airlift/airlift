@@ -39,6 +39,11 @@ class JettyResponseListener<T, E extends Exception>
         this.maxLength = maxLength;
     }
 
+    long getBytesReceived()
+    {
+        return bytesReceived;
+    }
+
     public JettyResponseFuture<T, E> send()
     {
         request.send(this);
