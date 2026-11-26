@@ -16,6 +16,7 @@ import org.eclipse.jetty.client.Response;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -45,6 +46,7 @@ class JettyResponseFuture<T, E extends Exception>
     private final Span span;
     private final RequestStats stats;
     private final boolean recordRequestComplete;
+    private final Consumer<Throwable> failureListener;
 
     JettyResponseFuture(
             Request request,
@@ -53,7 +55,8 @@ class JettyResponseFuture<T, E extends Exception>
             StreamingResponseHandler<T, E> responseHandler,
             Span span,
             RequestStats stats,
-            boolean recordRequestComplete)
+            boolean recordRequestComplete,
+            Consumer<Throwable> failureListener)
     {
         this.request = requireNonNull(request, "request is null");
         this.jettyRequest = requireNonNull(jettyRequest, "jettyRequest is null");
@@ -62,6 +65,7 @@ class JettyResponseFuture<T, E extends Exception>
         this.span = requireNonNull(span, "span is null");
         this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
+        this.failureListener = requireNonNull(failureListener, "failureListener is null");
     }
 
     @Override
@@ -173,6 +177,7 @@ class JettyResponseFuture<T, E extends Exception>
         }
 
         stats.recordRequestFailed();
+        failureListener.accept(throwable);
 
         // give handler a chance to rewrite the exception or return a value instead
         if (throwable instanceof Exception) {
