@@ -51,6 +51,15 @@ public class TestServiceTypes
     }
 
     @Test
+    public void testToString()
+    {
+        assertThat(ServiceTypes.serviceType("apple").toString())
+                .isEqualTo("@io.airlift.discovery.client.ServiceType(value=\"apple\")");
+        assertThat(ServiceTypes.serviceType("a\"b").toString())
+                .isEqualTo("@io.airlift.discovery.client.ServiceType(value=\"a\\\"b\")");
+    }
+
+    @Test
     public void testAnnotationType()
     {
         assertThat(ServiceTypes.serviceType("apple").annotationType()).isEqualTo(ServiceType.class);
