@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
 import static tools.jackson.core.StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION;
+import static tools.jackson.core.StreamWriteFeature.FLUSH_PASSED_TO_STREAM;
 import static tools.jackson.jakarta.rs.cfg.JakartaRSFeature.ADD_NO_SNIFF_HEADER;
 
 // For backward compatibility with existing consumers
@@ -39,6 +40,9 @@ public class JaxRsJsonMapper
     {
         provider = new JacksonJsonProvider(jsonMapper.rebuild()
                 .enable(INCLUDE_SOURCE_IN_LOCATION)
+                // Jackson flushes the entity stream once the value is written and again when the generator is closed.
+                // Either flush makes the server commit the response before it completes (see UnflushedCloseInterceptor).
+                .disable(FLUSH_PASSED_TO_STREAM)
                 .build());
         provider.enable(ADD_NO_SNIFF_HEADER);
     }
