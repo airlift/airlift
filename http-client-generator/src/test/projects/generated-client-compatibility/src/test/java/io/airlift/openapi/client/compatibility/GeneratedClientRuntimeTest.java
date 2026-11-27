@@ -17,6 +17,8 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import io.airlift.api.binding.ApiModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
@@ -67,6 +69,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -707,6 +712,13 @@ class GeneratedClientRuntimeTest
         assertThat(request.getHeader(AUTHORIZATION)).isEqualTo("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
         assertThat(request.getHeader(HeaderName.of("X-Service-Key"))).isEqualTo("api-key-secret");
 
+        Request.Builder apiKeyRequestBuilder = Request.Builder.prepareGet().setUri(TEST_URI);
+        credentials.applyServiceKey(apiKeyRequestBuilder);
+        assertThat(apiKeyRequestBuilder.build().isFollowRedirects()).isFalse();
+        Request.Builder basicRequestBuilder = Request.Builder.prepareGet().setUri(TEST_URI);
+        credentials.applyServiceBasic(basicRequestBuilder);
+        assertThat(basicRequestBuilder.build().isFollowRedirects()).isTrue();
+
         assertThat(credentials.toString())
                 .isEqualTo("ApiCredentials{schemes=[serviceBasic, serviceKey, serviceBearer]}")
                 .doesNotContain("Aladdin", "open sesame", "api-key-secret", "bearer-secret");
@@ -716,6 +728,44 @@ class GeneratedClientRuntimeTest
         assertThatThrownBy(() -> ApiCredentials.builder().withServiceBasic("user:name", "secret"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Illegal character ':' found in username");
+    }
+
+    @Test
+    void testHeaderApiKeyIsNotSentToRedirectTarget()
+            throws IOException
+    {
+        AtomicInteger redirectTargetRequests = new AtomicInteger();
+        HttpServer redirectTarget = startLocalServer(exchange -> {
+            redirectTargetRequests.incrementAndGet();
+            byte[] body = "{\"value\":\"redirected\"}".getBytes(UTF_8);
+            exchange.getResponseHeaders().set(CONTENT_TYPE.toString(), JSON_UTF_8.toString());
+            exchange.sendResponseHeaders(OK.code(), body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        URI redirectTargetUri = URI.create("http://localhost:" + redirectTarget.getAddress().getPort() + "/");
+        HttpServer origin = startLocalServer(exchange -> {
+            exchange.getResponseHeaders().set("Location", redirectTargetUri.toString());
+            exchange.sendResponseHeaders(307, -1);
+            exchange.close();
+        });
+        try {
+            ApiCredentials credentials = ApiCredentials.builder()
+                    .withServiceBasic("client", "secret")
+                    .withServiceKey("header-secret")
+                    .build();
+            URI originUri = URI.create("http://localhost:" + origin.getAddress().getPort());
+            NamedAuthenticationServiceClient client = new NamedAuthenticationServiceClient(httpClient, originUri, credentials, RetryPolicy.disabled());
+
+            assertThatThrownBy(client::combined)
+                    .isInstanceOf(ApiException.class)
+                    .satisfies(exception -> assertThat(((ApiException) exception).getStatusCode()).isEqualTo(307));
+            assertThat(redirectTargetRequests).hasValue(0);
+        }
+        finally {
+            origin.stop(0);
+            redirectTarget.stop(0);
+        }
     }
 
     @Test
@@ -923,6 +973,15 @@ class GeneratedClientRuntimeTest
                         assertThat(exception.getError()).isEmpty();
                     });
         }
+    }
+
+    private static HttpServer startLocalServer(HttpHandler handler)
+            throws IOException
+    {
+        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/", handler);
+        server.start();
+        return server;
     }
 
     private static io.airlift.http.client.Response unauthorizedResponse(String... challenges)

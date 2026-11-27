@@ -308,7 +308,7 @@ components:
       name: X-API-Key
 ```
 
-This adds a `withApiKey(String)` credential that is sent in the declared header.
+This adds a `withApiKey(String)` credential that is sent in the declared header. Requests that carry an API key do not follow redirects, because the HTTP client resends most headers to the redirect target; a redirect response fails the call with an `ApiException`.
 
 #### Credential Configuration
 
