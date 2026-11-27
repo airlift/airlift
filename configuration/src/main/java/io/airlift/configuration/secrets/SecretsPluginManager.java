@@ -14,6 +14,9 @@
 package io.airlift.configuration.secrets;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.ConfigurationFactory;
@@ -28,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
@@ -62,6 +66,13 @@ public final class SecretsPluginManager
 
     private static final Pattern SECRETS_PROVIDER_NAME_PATTERN = Pattern.compile("[a-z][a-z0-9_-]*");
 
+    private static final boolean DISABLE_SHARED_CLASS_LOADERS =
+            Boolean.getBoolean("io.airlift.configuration.secrets.SecretsPluginManager.disableSharedClassLoaders");
+
+    private static final LoadingCache<ClassLoaderKey, SecretsPluginClassLoader> sharedClassLoaders = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(CacheLoader.from(key -> createClassLoader(key.pluginName(), key.urls())));
+
     private final Map<String, SecretProviderFactory> secretsProviderFactories = new ConcurrentHashMap<>();
     private final AtomicReference<Map<String, SecretProvider>> secretsProviders = new AtomicReference<>(ImmutableMap.of());
     private final File installedSecretPluginsDir;
@@ -81,7 +92,7 @@ public final class SecretsPluginManager
 
         listFiles(installedSecretPluginsDir).stream()
                 .filter(File::isDirectory)
-                .forEach(file -> loadConfigurationResolvers(file.getAbsolutePath(), () -> createClassLoader(file.getName(), buildClassPath(file))));
+                .forEach(file -> loadConfigurationResolvers(file.getAbsolutePath(), () -> getClassLoader(file.getName(), buildClassPath(file))));
     }
 
     @VisibleForTesting
@@ -171,6 +182,19 @@ public final class SecretsPluginManager
                 .collect(toImmutableList());
     }
 
+    private static SecretsPluginClassLoader getClassLoader(String pluginName, List<URL> urls)
+    {
+        if (DISABLE_SHARED_CLASS_LOADERS) {
+            return createClassLoader(pluginName, urls);
+        }
+        return sharedClassLoaders.getUnchecked(
+                new ClassLoaderKey(
+                        pluginName,
+                        urls.stream()
+                                .map(URL::toExternalForm)
+                                .collect(toImmutableList())));
+    }
+
     private static SecretsPluginClassLoader createClassLoader(String pluginName, List<URL> urls)
     {
         ClassLoader parent = SecretsPluginManager.class.getClassLoader();
@@ -199,6 +223,32 @@ public final class SecretsPluginManager
         }
         catch (MalformedURLException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private static URL toUrl(String url)
+    {
+        try {
+            return URI.create(url).toURL();
+        }
+        catch (MalformedURLException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private record ClassLoaderKey(String pluginName, List<String> classPath)
+    {
+        private ClassLoaderKey
+        {
+            requireNonNull(pluginName, "pluginName is null");
+            classPath = ImmutableList.copyOf(classPath);
+        }
+
+        List<URL> urls()
+        {
+            return classPath.stream()
+                    .map(SecretsPluginManager::toUrl)
+                    .collect(toImmutableList());
         }
     }
 }
