@@ -43,6 +43,17 @@ otel.exporter.interval=10s
 For HTTP/protobuf, `otel.exporter.endpoint` is the base collector URL. Airlift derives the
 signal-specific OTLP paths `/v1/traces`, `/v1/metrics`, and `/v1/logs`.
 
+Collectors that require authentication or other request metadata can use `otel.exporter.headers`.
+The same headers are sent for traces, metrics, and logs with either transport.
+
+```properties
+otel.exporter.headers=authorization=Bearer%20example-token,x-tenant=example
+```
+
+Separate `name=value` pairs with commas. A value may contain equals signs and literal plus signs.
+Encode commas as `%2C` and percent signs as `%25`. Header names are case-insensitive and must be
+unique. Airlift treats this property as sensitive and redacts it from configuration logs.
+
 ## Airlift Application Logs
 
 To export ordinary Airlift/JUL application logs written through `io.airlift.log.Logger`, install an

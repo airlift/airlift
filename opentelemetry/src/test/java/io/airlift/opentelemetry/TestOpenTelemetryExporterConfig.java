@@ -27,6 +27,7 @@ import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.TemporalityPr
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestOpenTelemetryExporterConfig
 {
@@ -36,6 +37,7 @@ public class TestOpenTelemetryExporterConfig
         assertRecordedDefaults(recordDefaults(OpenTelemetryExporterConfig.class)
                 .setEndpoint(URI.create("http://localhost:4317"))
                 .setProtocol(GRPC)
+                .setHeaders("")
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
                 .setMetricsTemporalityPreference(DELTA)
                 .setHistogramMaxTrackedSeries(100_000)
@@ -79,6 +81,7 @@ public class TestOpenTelemetryExporterConfig
         Map<String, String> properties = ImmutableMap.<String, String>builder()
                 .put("otel.exporter.endpoint", "http://example.com:1234")
                 .put("otel.exporter.protocol", "http/protobuf")
+                .put("otel.exporter.headers", "Authorization=ApiKey token+prefix=, x-tenant=team%2Cblue%25")
                 .put("otel.exporter.interval", "5m")
                 .put("otel.exporter.metrics.temporality-preference", "cumulative")
                 .put("otel.exporter.histogram.max-tracked-series", "500")
@@ -100,6 +103,7 @@ public class TestOpenTelemetryExporterConfig
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
                 .setEndpoint(URI.create("http://example.com:1234"))
                 .setProtocol(HTTP_PROTOBUF)
+                .setHeaders("authorization=ApiKey token+prefix=,x-tenant=team%2Cblue%25")
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
                 .setMetricsTemporalityPreference(CUMULATIVE)
                 .setHistogramMaxTrackedSeries(500)
@@ -124,6 +128,30 @@ public class TestOpenTelemetryExporterConfig
                         "otel.exporter.tls.trusted-certificates-pem",
                         "otel.exporter.tls.client-certificate-pem",
                         "otel.exporter.tls.client-key-pem"));
+    }
+
+    @Test
+    public void testHeaderValues()
+    {
+        assertThat(new OpenTelemetryExporterConfig()
+                .setHeaders("Authorization=ApiKey token+prefix=, x-tenant=team%2Cblue%25")
+                .getHeaders())
+                .isEqualTo(Map.of("authorization", "ApiKey token+prefix=", "x-tenant", "team,blue%"));
+    }
+
+    @Test
+    public void testInvalidHeadersDoNotExposeValues()
+    {
+        for (String value : List.of(
+                "test-secret",
+                "bad name=test-secret",
+                "Authorization=test-secret,X-Tenant=x,authorization=another-secret",
+                "authorization=test-secret%0D%0A",
+                "authorization=test-secret%xy")) {
+            assertThatThrownBy(() -> new OpenTelemetryExporterConfig().setHeaders(value))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageNotContaining("test-secret");
+        }
     }
 
     @Test
@@ -201,6 +229,7 @@ public class TestOpenTelemetryExporterConfig
                 Set.of(
                         "otel.exporter.endpoint",
                         "otel.exporter.protocol",
+                        "otel.exporter.headers",
                         "otel.exporter.interval",
                         "otel.exporter.metrics.temporality-preference",
                         "otel.exporter.histogram.max-tracked-series",

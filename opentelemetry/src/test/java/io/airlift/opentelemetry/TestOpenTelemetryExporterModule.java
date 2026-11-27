@@ -1,5 +1,6 @@
 package io.airlift.opentelemetry;
 
+import com.sun.net.httpserver.HttpServer;
 import io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol;
 import io.airlift.opentelemetry.OpenTelemetryExporterConfig.TemporalityPreference;
 import io.airlift.security.cert.CertificateBuilder;
@@ -26,6 +27,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import javax.security.auth.x500.X500Principal;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -33,6 +35,9 @@ import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol.GRPC;
 import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol.HTTP_PROTOBUF;
@@ -79,7 +84,8 @@ final class TestOpenTelemetryExporterModule
     {
         OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
                 .setProtocol(GRPC)
-                .setEndpoint(URI.create("http://localhost:4317"));
+                .setEndpoint(URI.create("http://localhost:4317"))
+                .setHeaders("authorization=ApiKey example");
 
         assertExportersCreated(config);
     }
@@ -92,6 +98,42 @@ final class TestOpenTelemetryExporterModule
                 .setEndpoint(URI.create("http://localhost:4318"));
 
         assertExportersCreated(config);
+    }
+
+    @Test
+    void testHttpExportersSendConfiguredHeaders()
+            throws Exception
+    {
+        Map<String, List<String>> receivedHeaders = new ConcurrentHashMap<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        server.createContext("/", exchange -> {
+            try (exchange) {
+                exchange.getRequestBody().readAllBytes();
+                receivedHeaders.put(exchange.getRequestURI().getPath(), exchange.getRequestHeaders().getOrDefault("Authorization", List.of()));
+                exchange.sendResponseHeaders(200, -1);
+            }
+        });
+        server.start();
+
+        OpenTelemetryExporterConfig config = new OpenTelemetryExporterConfig()
+                .setProtocol(HTTP_PROTOBUF)
+                .setEndpoint(URI.create("http://localhost:" + server.getAddress().getPort()))
+                .setHeaders("Authorization=ApiKey%20example+token=");
+        try (SpanExporter traces = OpenTelemetryExporterModule.createSpanExporter(config);
+                MetricExporter metrics = OpenTelemetryExporterModule.createMetricExporter(config);
+                LogRecordExporter logs = OpenTelemetryExporterModule.createLogRecordExporter(config)) {
+            assertThat(traces.export(List.of()).join(10, SECONDS).isSuccess()).isTrue();
+            assertThat(metrics.export(List.of()).join(10, SECONDS).isSuccess()).isTrue();
+            assertThat(logs.export(List.of()).join(10, SECONDS).isSuccess()).isTrue();
+            List<String> authorization = List.of("ApiKey example+token=");
+            assertThat(receivedHeaders).isEqualTo(Map.of(
+                    "/v1/traces", authorization,
+                    "/v1/metrics", authorization,
+                    "/v1/logs", authorization));
+        }
+        finally {
+            server.stop(0);
+        }
     }
 
     @Test

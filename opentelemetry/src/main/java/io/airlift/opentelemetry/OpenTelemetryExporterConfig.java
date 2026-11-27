@@ -12,17 +12,27 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ROOT;
 
 public class OpenTelemetryExporterConfig
 {
     private static final URI DEFAULT_GRPC_ENDPOINT = URI.create("http://localhost:4317");
     private static final URI DEFAULT_HTTP_PROTOBUF_ENDPOINT = URI.create("http://localhost:4318");
+    private static final Pattern HEADER_NAME = Pattern.compile("[A-Za-z0-9!#$%&'*+.^_`|~-]+");
 
     private URI endpoint;
     private Protocol protocol = Protocol.GRPC;
+    private Map<String, String> headers = Map.of();
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
     private TemporalityPreference metricsTemporalityPreference = TemporalityPreference.DELTA;
     private int histogramMaxTrackedSeries = 100_000;
@@ -71,6 +81,42 @@ public class OpenTelemetryExporterConfig
     public OpenTelemetryExporterConfig setProtocol(Protocol protocol)
     {
         this.protocol = protocol;
+        return this;
+    }
+
+    public Map<String, String> getHeaders()
+    {
+        return headers;
+    }
+
+    @Config("otel.exporter.headers")
+    @ConfigDescription("Comma-separated name=value headers for OTLP export (values may be percent-encoded)")
+    @ConfigSecuritySensitive
+    public OpenTelemetryExporterConfig setHeaders(String headers)
+    {
+        if (headers.isBlank()) {
+            this.headers = Map.of();
+            return this;
+        }
+
+        Map<String, String> parsed = new HashMap<>();
+        for (String header : headers.split(",", -1)) {
+            int separator = header.indexOf('=');
+            checkArgument(separator > 0, "OTLP headers must be specified as name=value pairs");
+            String name = header.substring(0, separator).strip();
+            checkArgument(HEADER_NAME.matcher(name).matches(), "Invalid OTLP header name");
+            String value;
+            try {
+                // Percent encoding is used here, while '+' remains a literal header character.
+                value = URLDecoder.decode(header.substring(separator + 1).strip().replace("+", "%2B"), UTF_8);
+            }
+            catch (IllegalArgumentException _) {
+                throw new IllegalArgumentException("Invalid percent escape in OTLP header value");
+            }
+            checkArgument(value.chars().allMatch(character -> character >= ' ' && character <= '~'), "Invalid OTLP header value");
+            checkArgument(parsed.putIfAbsent(name.toLowerCase(ROOT), value) == null, "Duplicate OTLP header name");
+        }
+        this.headers = Map.copyOf(parsed);
         return this;
     }
 
